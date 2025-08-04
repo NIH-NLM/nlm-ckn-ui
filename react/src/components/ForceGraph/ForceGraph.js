@@ -583,6 +583,274 @@ const ForceGraph = ({
         </div>
         <div className="options-tabs-content">
           {/* Content for each tab, conditionally rendered based on activeTab. */}
+          {activeTab === "general" && (
+            <div
+              id="tab-panel-general"
+              role="tabpanel"
+              className="tab-panel active"
+            >
+              <div className="option-group">
+                <label htmlFor="depth-select">Depth:</label>
+                <select
+                  id="depth-select"
+                  value={depth}
+                  onChange={handleDepthChange}
+                >
+                  {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((value) => (
+                    <option key={value} value={value}>
+                      {value}
+                    </option>
+                  ))}
+                </select>
+                <label htmlFor="edge-direction">Edge Direction:</label>
+                <select
+                    id="edge-direction"
+                    value={edgeDirection}
+                    onChange={handleEdgeDirectionChange}
+                >
+                  {["ANY", "INBOUND", "OUTBOUND"].map((value) => (
+                      <option key={value} value={value}>
+                        {value}
+                      </option>
+                  ))}
+                </select>
+              </div>
+              <div className="option-group font-size-picker">
+                <div className="node-font-size-picker">
+                  <label htmlFor="node-font-size-select">Node font size:</label>
+                  <select
+                    id="node-font-size-select"
+                    value={nodeFontSize}
+                    onChange={handleNodeFontSizeChange}
+                  >
+                    {[
+                      4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32,
+                    ].map((size) => (
+                      <option key={size} value={size}>
+                        {size}px
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="edge-font-size-picker">
+                  <label htmlFor="edge-font-size-select">Edge font size:</label>
+                  <select
+                    id="edge-font-size-select"
+                    value={edgeFontSize}
+                    onChange={handleEdgeFontSizeChange}
+                  >
+                    {[2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28].map(
+                      (size) => (
+                        <option key={size} value={size}>
+                          {size}px
+                        </option>
+                      ),
+                    )}
+                  </select>
+                </div>
+              </div>
+              <div className="option-group labels-toggle-container">
+                <label>Toggle Labels:</label>
+                <div className="labels-toggle">
+                  <div className="label-toggle-item">
+                    Collection
+                    <label className="switch">
+                      <input
+                        type="checkbox"
+                        checked={labelStates["collection-label"]}
+                        onChange={() => handleLabelToggle("collection-label")}
+                      />
+                      <span className="slider round"></span>
+                    </label>
+                  </div>
+                  <div className="label-toggle-item">
+                    Edge
+                    <label className="switch">
+                      <input
+                        type="checkbox"
+                        checked={labelStates["link-label"]}
+                        onChange={() => handleLabelToggle("link-label")}
+                      />
+                      <span className="slider round"></span>
+                    </label>
+                  </div>
+                  <div className="label-toggle-item">
+                    Source
+                    <label className="switch">
+                      <input
+                        type="checkbox"
+                        checked={labelStates["link-source"]}
+                        onChange={() => handleLabelToggle("link-source")}
+                      />
+                      <span className="slider round"></span>
+                    </label>
+                  </div>
+                  <div className="label-toggle-item">
+                    Node
+                    <label className="switch">
+                      <input
+                        type="checkbox"
+                        checked={labelStates["node-label"]}
+                        onChange={() => handleLabelToggle("node-label")}
+                      />
+                      <span className="slider round"></span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div className="option-group labels-toggle-container">
+                {" "}
+                <label>Collapse Leaf Nodes:</label>
+                <div className="labels-toggle graph-source-toggle">
+                  {" "}
+                  <label className="switch">
+                    <input
+                      type="checkbox"
+                      checked={collapseOnStart}
+                      onChange={handleLeafToggle}
+                      aria-label="Toggle whether to show leaf nodes by default"
+                    />
+                    <span className="slider round"></span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="option-group labels-toggle-container">
+                {" "}
+                <label>Graph Source:</label>
+                <div className="labels-toggle graph-source-toggle">
+                  {" "}
+                  Evidence
+                  <label className="switch">
+                    <input
+                      type="checkbox"
+                      checked={graphType === "ontologies"}
+                      onChange={handleGraphToggle}
+                      aria-label="Toggle between Phenotypes and Ontologies"
+                    />
+                    <span className="slider round"></span>
+                  </label>
+                  Knowledge
+                </div>
+              </div>
+              <div className="option-group checkbox-container">
+                <button
+                  className="simulation-toggle background-color-bg"
+                  onClick={handleSimulationRestart}
+                >
+                  Restart Simulation
+                </button>
+              </div>
+            </div>
+          )}
+          {activeTab === "multiNode" &&
+            graphNodeIds &&
+            graphNodeIds.length >= 2 && (
+              <div
+                id="tab-panel-multiNode"
+                role="tabpanel"
+                className="tab-panel active"
+              >
+                <div className="option-group multi-node">
+                  <label htmlFor="set-operation-select">Graph operation:</label>
+                  <select
+                    id="set-operation-select"
+                    value={setOperation}
+                    onChange={handleOperationChange}
+                  >
+                    {["Intersection", "Union", "Symmetric Difference"].map(
+                      (value) => (
+                        <option key={value} value={value}>
+                          {value}
+                        </option>
+                      ),
+                    )}
+                  </select>
+                </div>
+                <div className="option-group multi-node">
+                  Shortest Path
+                  <label className="switch">
+                    <input
+                      type="checkbox"
+                      checked={findShortestPaths}
+                      onChange={handleShortestPathToggle}
+                    />
+                    <span className="slider round"></span>
+                  </label>
+                </div>
+              </div>
+            )}
+          {activeTab === "collections" && (
+            <div
+              id="tab-panel-collections"
+              role="tabpanel"
+              className="tab-panel active"
+            >
+              <div className="option-group collection-picker">
+                <label>Active Collections:</label>
+                <div className="checkboxes-container">
+                  {collections.map((collection) => (
+                    <div key={collection} className="checkbox-container">
+                      <button
+                        id={collection}
+                        onClick={() => handleCollectionChange(collection)}
+                        className={
+                          allowedCollections.includes(collection)
+                            ? "collection-button-selected"
+                            : "collection-button-deselected"
+                        }
+                      >
+                        {collectionsMap.has(collection)
+                          ? collectionsMap.get(collection)["display_name"]
+                          : collection}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="checkboxes-container collection-controls">
+                  <button
+                    onClick={handleAllOn}
+                    className={
+                      allowedCollections.length === collections.length
+                        ? "collection-button-selected collection-button-all"
+                        : "collection-button-deselected collection-button-all"
+                    }
+                    disabled={allowedCollections.length === collections.length}
+                  >
+                    All On
+                  </button>
+                  <button
+                    onClick={handleAllOff}
+                    className={
+                      allowedCollections.length === 0
+                        ? "collection-button-selected collection-button-all"
+                        : "collection-button-deselected collection-button-all"
+                    }
+                    disabled={allowedCollections.length === 0}
+                  >
+                    All Off
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          {activeTab === "export" && (
+            <div
+              id="tab-panel-export"
+              role="tabpanel"
+              className="tab-panel active"
+            >
+              <div className="option-group export-buttons">
+                <label>Export Graph:</label>
+                <button onClick={() => exportGraph("svg")}>
+                  Download as SVG
+                </button>
+                <button onClick={() => exportGraph("png")}>
+                  Download as PNG
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
