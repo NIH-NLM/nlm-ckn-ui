@@ -762,6 +762,7 @@ button {
   font-size: 16px;
   border-radius: 4px;
   transition: background-color 0.3s;
+  margin: 0 1rem;
 }
 
 button:hover {
@@ -890,6 +891,7 @@ option {
   padding: 10px;
   borderradius: 4px;
   boxshadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  max-width: 15em;
 }
 
 .popup-button {
@@ -1707,6 +1709,7 @@ button.collection-button-deselected:hover {
   cursor: pointer;
   padding: 0;
   line-height: 1;
+  margin: 0;
 }
 .popup-close-button:hover {
   color: var(--color-dark);

@@ -336,7 +336,7 @@ const ForceGraph = ({
     () => [
       { key: "z", ctrlKey: true, metaKey: true, handler: handleUndo },
       ...(isMac
-        ? [{ key: "z", metaKey: true, shiftKey: true, handler: predo }]
+        ? [{ key: "z", metaKey: true, shiftKey: true, handler: handleRedo }]
         : [{ key: "y", ctrlKey: true, handler: handleRedo }]),
       { key: "s", ctrlKey: true, metaKey: true, handler: handleSave },
       { key: "o", ctrlKey: true, metaKey: true, handler: handleLoad },
@@ -535,13 +535,15 @@ const ForceGraph = ({
               : { display: "none" }
           }
         >
-          <a
-            href={`/#/collections/${popup.nodeId}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Go To "{popup.nodeLabel}"
-          </a>
+          <button>
+            <a
+              href={`/#/collections/${popup.nodeId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Go To "{popup.nodeLabel}"
+            </a>
+          </button>
           <button
             onClick={handleExpand}
             style={{ display: !popup.isEdge ? "block" : "none" }}
@@ -560,7 +562,13 @@ const ForceGraph = ({
           >
             Remove Node
           </button>
-          <button onClick={handlePopupClose}>×</button>
+          <button
+            className="popup-close-button"
+            onClick={handlePopupClose}
+            aria-label="Close popup"
+          >
+            ×
+          </button>
         </div>
       </div>
 
