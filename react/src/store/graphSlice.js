@@ -1,7 +1,8 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import undoable from "redux-undo";
 
-// Helper function to fetch data
+// API helper to fetch graph data from backend.
+// Chooses endpoint based on whether shortest path is requested.
 const fetchGraphDataAPI = async (params) => {
   const {
     nodeIds,
@@ -12,11 +13,14 @@ const fetchGraphDataAPI = async (params) => {
     nodeLimit,
     graphType,
   } = params;
+
+  // Select endpoint for standard traversal or shortest path.
   const endpoint =
     shortestPaths && nodeIds.length > 1
       ? "/arango_api/shortest_paths/"
       : "/arango_api/graph/";
 
+  // Construct request body based on endpoint.
   const body =
     shortestPaths && nodeIds.length > 1
       ? { node_ids: nodeIds, edge_direction: edgeDirection }
@@ -40,13 +44,12 @@ const fetchGraphDataAPI = async (params) => {
   return response.json();
 };
 
-// AsyncThunk handles async api calls
+// Async thunk for fetching graph data.
+// Gathers parameters from current Redux state to make API call.
 export const fetchAndProcessGraph = createAsyncThunk(
   "graph/fetchAndProcess",
   async (_, { getState }) => {
-    // Get Redux state
     const { settings, originNodeIds } = getState().graph.present;
-
     const params = {
       nodeIds: originNodeIds,
       shortestPaths: settings.findShortestPaths,
@@ -56,7 +59,6 @@ export const fetchAndProcessGraph = createAsyncThunk(
       nodeLimit: settings.nodeLimit,
       graphType: settings.graphType,
     };
-
     try {
       const rawData = await fetchGraphDataAPI(params);
       return rawData;
@@ -67,12 +69,12 @@ export const fetchAndProcessGraph = createAsyncThunk(
   },
 );
 
+// Async thunk for expanding a single node.
+// Fetches neighbors at depth 1 and returns new nodes/links.
 export const expandNode = createAsyncThunk(
   "graph/expandNode",
   async (nodeIdToExpand, { getState }) => {
     const { settings } = getState().graph.present;
-
-    // Any direction, depth 1 for expand
     const response = await fetch("/arango_api/graph/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -85,11 +87,8 @@ export const expandNode = createAsyncThunk(
         graph: settings.graphType,
       }),
     });
-
     if (!response.ok) throw new Error("Expansion fetch failed");
-
     const expansionData = await response.json();
-
     return {
       newNodes: expansionData.nodes?.[nodeIdToExpand]?.map((d) => d.node) || [],
       newLinks: expansionData.links || [],
@@ -98,9 +97,9 @@ export const expandNode = createAsyncThunk(
   },
 );
 
-// Define state, reducers, and actions
+// Initial state for graph slice.
 const initialState = {
-  // ForceGraph component states
+  // User-configurable settings for graph generation and appearance.
   settings: {
     depth: 2,
     edgeDirection: "ANY",
@@ -120,87 +119,82 @@ const initialState = {
     collapseOnStart: true,
     graphType: "phenotypes",
   },
-  // Graph definition
-  originNodeIds: [], // The initial search nodes
-  rawData: {}, // Data from API call
+  // Core graph data and state.
+  originNodeIds: [], // Initial nodes for graph query.
+  rawData: {}, // Unprocessed data directly from API.
   graphData: {
-    // Processed data ready for D3
+    // Processed data with positions, ready for D3.
     nodes: [],
     links: [],
   },
+  // State for managing node collapse/expand behavior.
   collapsed: {
-    initial: [], // Nodes collapsed by default on a new graph
-    userDefined: [], // Nodes the user has explicitly collapsed
-    userIgnored: [], // Nodes from the `initial` list the user has expanded
+    initial: [], // Nodes collapsed by default on new graph.
+    userDefined: [], // Nodes user has explicitly collapsed.
+    userIgnored: [], // Initial nodes user has expanded.
   },
-  nodeToCenter: null,
-  // Status for loading indicators
-  status: "idle",
+  nodeToCenter: null, // ID of node to center view on after update.
+  // Async operation status for UI feedback.
+  status: "idle", // (idle | loading | processing | succeeded | failed)
   error: null,
-  lastActionType: null,
+  lastActionType: null, // Tracks last action for conditional logic in UI.
 };
 
+// Redux slice for managing all graph-related state.
 const graphSlice = createSlice({
   name: "graph",
   initialState,
-  // Reducers handle synchronous state
+  // Synchronous actions and reducers.
   reducers: {
-    // Action to update any setting
+    // Updates single setting in state.
     updateSetting: (state, action) => {
       const { setting, value } = action.payload;
       state.settings[setting] = value;
       state.lastActionType = "updateSetting";
     },
-    // Action to set the processed graph data, including node positions
+    // Sets final, processed graph data, including node positions.
     setGraphData: (state, action) => {
       state.graphData = action.payload;
       state.status = "succeeded";
       state.lastActionType = "setGraphData";
     },
-    // Action to initialize the graph with new origin nodes
+    // Resets graph state for new query.
     initializeGraph: (state, action) => {
       state.originNodeIds = action.payload.nodeIds;
-      // Reset state for new graph
       state.status = "idle";
       state.lastActionType = "initializeGraph";
       state.rawData = {};
       state.graphData = { nodes: [], links: [] };
       state.collapsed = { initial: [], userDefined: [], userIgnored: [] };
     },
-    // Action to set the available collections
+    // Populates allowed collections after initial fetch.
     setAvailableCollections: (state, action) => {
       state.settings.allowedCollections = action.payload;
       state.lastActionType = "setAvailableCollections";
     },
-    // Action to update node position state
+    // Updates a node's position, typically after user drag.
     updateNodePosition: (state, action) => {
       const { nodeId, x, y } = action.payload;
-
-      const nodeToUpdate = state.graphData.nodes.find(
-        (node) => node.id === nodeId,
-      );
-
+      const nodeToUpdate = state.graphData.nodes.find((n) => n.id === nodeId);
       if (nodeToUpdate) {
         nodeToUpdate.x = x;
         nodeToUpdate.y = y;
       }
       state.lastActionType = "updateNodePosition";
     },
+    // Stores initial list of nodes to be collapsed.
     setInitialCollapseList: (state, action) => {
       state.collapsed.initial = action.payload;
       state.lastActionType = "setInitialCollapseList";
     },
-
-    // Remove from collapse list or add to ignore
+    // Records user action to expand a node.
     uncollapseNode: (state, action) => {
       const nodeId = action.payload;
-
-      // Remove from user-defined list
+      // Remove from user-defined collapse list.
       state.collapsed.userDefined = state.collapsed.userDefined.filter(
         (id) => id !== nodeId,
       );
-
-      // Add to ignore if in initial list
+      // Add to ignore list if it was initially collapsed.
       if (
         state.collapsed.initial.includes(nodeId) &&
         !state.collapsed.userIgnored.includes(nodeId)
@@ -209,30 +203,29 @@ const graphSlice = createSlice({
       }
       state.lastActionType = "uncollapseNode";
     },
-    // Add to collapse list or remove from ignore
+    // Records user action to collapse a node.
     collapseNode: (state, action) => {
       const nodeId = action.payload;
-
-      // Add to the user-defined list
+      // Add to user-defined collapse list.
       if (!state.collapsed.userDefined.includes(nodeId)) {
         state.collapsed.userDefined.push(nodeId);
       }
-
-      // Remove from ignore
+      // Remove from ignore list.
       state.collapsed.userIgnored = state.collapsed.userIgnored.filter(
         (id) => id !== nodeId,
       );
       state.lastActionType = "collapseNode";
     },
-    // Clear centering state
+    // Clears node centering state.
     clearNodeToCenter: (state) => {
       state.nodeToCenter = null;
       state.lastActionType = "clearNodeToCenter";
     },
   },
-  // Handle async thunks
+  // Reducers for handling async thunk lifecycle actions.
   extraReducers: (builder) => {
     builder
+      // Reducers for main graph fetch.
       .addCase(fetchAndProcessGraph.pending, (state) => {
         state.status = "loading";
         state.lastActionType = "fetch/pending";
@@ -247,15 +240,15 @@ const graphSlice = createSlice({
         state.error = action.error.message;
         state.lastActionType = "fetch/rejected";
       })
+      // Reducers for node expansion.
       .addCase(expandNode.pending, (state) => {
         state.lastActionType = "expand/pending";
       })
       .addCase(expandNode.fulfilled, (state, action) => {
-        const { newNodes, newLinks } = action.payload;
+        const { newNodes, newLinks, centerNodeId } = action.payload;
 
-        // Copy state to local
+        // Merge new data from expansion into existing rawData.
         const firstOrigin = state.originNodeIds[0];
-        // Verify
         const currentNodes =
           firstOrigin && state.rawData.nodes[firstOrigin]
             ? [...state.rawData.nodes[firstOrigin]]
@@ -264,7 +257,6 @@ const graphSlice = createSlice({
         const existingNodeIds = new Set(currentNodes.map((n) => n.node._id));
         const existingLinkIds = new Set(currentLinks.map((l) => l._id));
 
-        // Merge
         newNodes.forEach((node) => {
           if (!existingNodeIds.has(node._id)) {
             currentNodes.push({ node: node, path: null });
@@ -276,16 +268,12 @@ const graphSlice = createSlice({
           }
         });
 
-        // Set state from local
+        // Update state with merged data.
         if (firstOrigin) {
           state.rawData.nodes[firstOrigin] = currentNodes;
         }
         state.rawData.links = currentLinks;
-
-        // Save centerNodeId
-        state.nodeToCenter = action.payload.centerNodeId;
-
-        // Update status
+        state.nodeToCenter = centerNodeId;
         state.status = "processing";
         state.lastActionType = "expand/fulfilled";
       })
@@ -309,16 +297,15 @@ export const {
   collapseNode,
 } = graphSlice.actions;
 
-// Undo wrapper
+// Wrap base reducer with redux-undo.
 const undoableGraphReducer = undoable(graphSlice.reducer, {
-  // Create history on setGraphData or updateNodePosition
+  // Only create new history states on these specific actions.
   filter: (action, currentState, previousHistory) => {
     return (
       action.type === setGraphData.type ||
       action.type === updateNodePosition.type
     );
   },
-  // Exclude other actions from triggering an undo state
   ignoreInitialState: true,
 });
 
