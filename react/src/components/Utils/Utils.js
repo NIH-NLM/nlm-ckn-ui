@@ -1,4 +1,4 @@
-import collectionsMapData from "../../assets/collectionsMap.json";
+import collMaps from "../../assets/cell-kn-mvp-collection-maps.json";
 import React, { useEffect, useMemo, useState } from "react";
 import { getColorForCollection } from "../../services/ColorServices/ColorServices";
 import { Link } from "react-router-dom";
@@ -63,16 +63,16 @@ export const hasAnyNodes = (data, nodeId) => {
   return result;
 };
 
-export const parseCollections = (collections, collectionsMap = null) => {
-  if (collectionsMap) {
+export const parseCollections = (collections, collectionMaps = null) => {
+  if (collectionMaps) {
     return collections.sort((a, b) => {
       const aDisplay =
-        collectionsMap.get(a) && collectionsMap.get(a)["display_name"]
-          ? collectionsMap.get(a)["display_name"]
+        collectionMaps.get(a) && collectionMaps.get(a)["display_name"]
+          ? collectionMaps.get(a)["display_name"]
           : a;
       const bDisplay =
-        collectionsMap.get(b) && collectionsMap.get(b)["display_name"]
-          ? collectionsMap.get(b)["display_name"]
+        collectionMaps.get(b) && collectionMaps.get(b)["display_name"]
+          ? collectionMaps.get(b)["display_name"]
           : b;
 
       return aDisplay.toLowerCase().localeCompare(bDisplay.toLowerCase());
@@ -84,59 +84,133 @@ export const parseCollections = (collections, collectionsMap = null) => {
   }
 };
 
+/**
+ * Generates display label for data item based on dynamic configuration.
+ * Finds first valid field from options, applies transformations, and returns result.
+ * @param {object} item - Data object needing label. Must contain `_id` property.
+ * @returns {string} Processed label string or default "NAME UNKNOWN" fallback.
+ */
 export const getLabel = (item) => {
   try {
-    const collectionsMap = new Map(collectionsMapData);
+    // Load collection configuration maps.
+    const collectionMaps = new Map(collMaps.data);
     const itemCollection = item._id.split("/")[0];
 
+    // Get label rules for item's collection, fallback to 'edges' rules.
     const labelOptions =
-      collectionsMap.get(itemCollection)?.["individual_labels"] ??
-      collectionsMap.get("edges")?.["individual_labels"];
+      collectionMaps.get(itemCollection)?.["individual_labels"] ??
+      collectionMaps.get("edges")?.["individual_labels"];
 
-    const label = labelOptions
-      ?.map((key) => item[key])
-      .find((value) => value !== undefined)
-      ?.toString()
-      .split(",")
-      .flatMap((value) => (Array.isArray(value) ? value : [value]))
-      .join(" | ");
+    let label;
 
-    // Return NAME UNKNOWN if undefined.
-    return label ?? "NAME UNKNOWN";
+    if (Array.isArray(labelOptions)) {
+      // Iterate through label configurations to find first match.
+      for (const config of labelOptions) {
+        // Get value from item using specified field.
+        const value = item[config.field_to_use];
+
+        // Check if value exists and is not null.
+        if (value !== null && value !== undefined) {
+          // Convert value to string for processing.
+          let processedLabel = String(value);
+
+          // Perform string replacement if specified.
+          if (config.to_be_replaced) {
+            processedLabel = processedLabel.replaceAll(
+              config.to_be_replaced,
+              config.replace_with || ""
+            );
+          }
+
+          // Convert to lower case if specified.
+          if (config.make_lower_case) {
+            processedLabel = processedLabel.toLowerCase();
+          }
+
+          // Assign processed label and exit loop.
+          label = processedLabel;
+          break;
+        }
+      }
+    }
+
+    // Return generated label or default fallback text.
+    return label || "NAME UNKNOWN";
+
   } catch (error) {
+    // Log any exceptions during processing.
     console.error(`getLabel failed with exception: ${error}`);
   }
 };
 
+/**
+ * Generates dynamic URL for data item based on configuration.
+ * Finds first valid URL rule, applies transformations, and returns result.
+ * @param {object} item - Data object needing URL. Must contain `_id` property.
+ * @returns {string|null} Processed URL string, or null if no URL could be generated.
+ */
 export const getUrl = (item) => {
-  const collectionsMap = new Map(collectionsMapData);
-  // Get item collection
-  const itemCollection = item._id.split("/")[0];
-  const collectionMap = collectionsMap.get(itemCollection);
+  try {
+    // Load collection configuration maps.
+    const collectionMaps = new Map(collMaps.data);
+    const itemCollection = item._id.split("/")[0];
+    const collectionMap = collectionMaps.get(itemCollection);
 
-  // Collection exists in map
-  if (collectionMap) {
-    const individualUrl = collectionMap?.["individual_url"];
-    let replacement = item[collectionMap["field_to_use"]].replaceAll(
-      collectionMap["to_be_replaced"],
-      collectionMap["replace_with"],
-    );
-    if (collectionMap["make_lower_case"]) {
-      replacement = replacement.toLowerCase();
+    if (collectionMap) {
+      // Get URL generation rules from configuration.
+      const urlOptions = collectionMap["individual_urls"];
+
+      if (Array.isArray(urlOptions)) {
+        // Iterate URL configurations to find first valid option.
+        for (const config of urlOptions) {
+          // Get value from item using specified field.
+          const value = item[config.field_to_use];
+
+          // Check if value exists and is not null.
+          if (value !== null && value !== undefined) {
+            // Start with value as string for processing.
+            let replacement = String(value);
+
+            // Perform string replacement if specified.
+            if (config.to_be_replaced) {
+              replacement = replacement.replaceAll(
+                config.to_be_replaced,
+                config.replace_with || ""
+              );
+            }
+
+            // Convert to lower case if specified.
+            if (config.make_lower_case) {
+              replacement = replacement.toLowerCase();
+            }
+
+            // Build final URL by replacing placeholder in template.
+            const url = config.individual_url.replace(
+              "<FIELD_TO_USE>",
+              replacement
+            );
+
+            // Return successfully generated URL immediately.
+            return url;
+          }
+        }
+      }
     }
-    // Create url
-    const url = individualUrl.replace("<FIELD_TO_USE>", replacement);
-    return url;
-  } else {
+
+    // Return null if no configuration or valid URL found.
     return null;
+  } catch (error) {
+    // Log any exceptions during processing.
+    console.error(`getUrl failed with exception: ${error}`);
+    return null; // Ensure null return on error.
   }
 };
 
 export const getTitle = (item) => {
-  const collectionsMap = new Map(collectionsMapData);
+  const collectionMaps = new Map(collMaps.data);
   // Get item collection
   const itemCollection = item._id.split("/")[0];
-  const collectionMap = collectionsMap.get(itemCollection);
+  const collectionMap = collectionMaps.get(itemCollection);
 
   // Collection exists in map
   if (collectionMap) {

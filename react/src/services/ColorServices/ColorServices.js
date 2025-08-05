@@ -1,8 +1,8 @@
 import * as d3 from "d3";
-import collectionsMap from "../../assets/collectionsMap.json";
+import collMaps from "../../assets/cell-kn-mvp-collection-maps.json";
 
 // Extract the unique collection identifiers
-const collectionIds = collectionsMap
+const collectionIds = collMaps.data
   .map(([id]) => id)
   .filter((id) => id !== "edges"); // Filter out 'edges'
 

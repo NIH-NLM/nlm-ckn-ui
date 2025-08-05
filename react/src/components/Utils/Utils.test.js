@@ -12,7 +12,7 @@ import {
 
 // Mock the collectionsMapData import
 jest.mock(
-  "../../assets/collectionsMap.json",
+  "../../assets/cell-kn-mvp-collection-maps.json",
   () => [
     [
       "nodes_a",
@@ -216,7 +216,7 @@ describe("Utils Module", () => {
     it("should sort collections using display_name from map (case-insensitive)", () => {
       // Use the mocked collectionsMapData via the Map constructor
       const collectionsMap = new Map(
-        require("../../assets/collectionsMap.json"),
+        require("../../assets/cell-kn-mvp-collection-maps.json"),
       );
       const input = ["nodes_b", "nodes_a"]; // Based on mock display names: Nodes B, Nodes A
       const expected = ["nodes_a", "nodes_b"]; // Sorted: Nodes A, Nodes B
@@ -225,7 +225,7 @@ describe("Utils Module", () => {
 
     it("should fallback to collection key for sorting if display_name is missing", () => {
       const collectionsMap = new Map(
-        require("../../assets/collectionsMap.json"),
+        require("../../assets/cell-kn-mvp-collection-maps.json"),
       );
       // nodes_c has no display_name in mock, nodes_a has "Nodes A"
       const input = ["nodes_c", "nodes_a"];
@@ -236,7 +236,7 @@ describe("Utils Module", () => {
 
     it("should fallback to collection key for sorting if collection not in map", () => {
       const collectionsMap = new Map(
-        require("../../assets/collectionsMap.json"),
+        require("../../assets/cell-kn-mvp-collection-maps.json"),
       );
       // nodes_x not in mock map, nodes_a has "Nodes A"
       const input = ["nodes_x", "nodes_a"];
@@ -247,7 +247,7 @@ describe("Utils Module", () => {
 
     it("should handle mixed cases with and without map entries", () => {
       const collectionsMap = new Map(
-        require("../../assets/collectionsMap.json"),
+        require("../../assets/cell-kn-mvp-collection-maps.json"),
       );
       // nodes_a: "Nodes A", nodes_b: "Nodes B", nodes_c: no display, nodes_x: no entry
       const input = ["nodes_x", "nodes_c", "nodes_b", "nodes_a"];

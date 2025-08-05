@@ -1,10 +1,10 @@
 import { Link, useParams } from "react-router-dom";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { fetchCollections, parseCollections, getLabel } from "../Utils/Utils";
-import collectionsMapData from "../../assets/collectionsMap.json";
+import collMaps from "../../assets/cell-kn-mvp-collection-maps.json";
 import ListDocuments from "../ListDocuments/ListDocuments";
 
-const collectionsMap = new Map(collectionsMapData);
+const collectionMaps = new Map(collMaps.data);
 const ITEMS_PER_LOAD = 50;
 
 const BrowseBox = () => {
@@ -23,7 +23,7 @@ const BrowseBox = () => {
   useEffect(() => {
     setCollections([]);
     fetchCollections(graphType).then((data) => {
-      setCollections(parseCollections(data, collectionsMap));
+      setCollections(parseCollections(data, collectionMaps));
     });
   }, [graphType]);
 
@@ -144,7 +144,7 @@ const BrowseBox = () => {
           ) : (
             <ul className="collections-list">
               {collections.map((collKey) => {
-                const collectionInfo = collectionsMap.get(collKey);
+                const collectionInfo = collectionMaps.get(collKey);
                 const displayName = collectionInfo?.display_name || collKey;
                 const abbreviatedName =
                   collectionInfo?.abbreviated_name || collKey;
@@ -176,7 +176,7 @@ const BrowseBox = () => {
                 <input
                   type="text"
                   className="document-filter-input"
-                  placeholder={`Filter items in ${collectionsMap.get(currentCollection)?.display_name || currentCollection}...`}
+                  placeholder={`Filter items in ${collectionMaps.get(currentCollection)?.display_name || currentCollection}...`}
                   value={filterText}
                   onChange={handleFilterChange}
                 />

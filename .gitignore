@@ -8,6 +8,7 @@ db.sqlite3
 react/build/
 react/node_modules/
 react/coverage/
+react/src/assets/cell-kn-mvp-collection-maps.json
 
 # Environment
 *.DS_Store

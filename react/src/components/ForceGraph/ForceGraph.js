@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useContext, memo } from "react";
 import * as d3 from "d3";
 import ForceGraphConstructor from "../ForceGraphConstructor/ForceGraphConstructor";
-import collectionsMapData from "../../assets/collectionsMap.json";
+import collMaps from "../../assets/cell-kn-mvp-collection-maps.json";
 import {
   LoadingBar,
   fetchCollections,
@@ -60,7 +60,7 @@ const ForceGraph = ({
   const [popupIsEdge, setPopupIsEdge] = useState(false);
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
   const [graph, setGraph] = useState(null);
-  const collectionsMap = new Map(collectionsMapData);
+  const collectionMaps = new Map(collMaps.data);
   const [showNoDataPopup, setShowNoDataPopup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [collapseOnStart, setCollapseOnStart] = useState(true);
@@ -192,7 +192,7 @@ const ForceGraph = ({
             const graphInstance = ForceGraphConstructor(graphData, {
               nodeGroup: (d) => d._id.split("/")[0],
               nodeGroups: collections,
-              collectionsMap: collectionsMap,
+              collectionsMap: collectionMaps,
               originNodeIds: useFocusNodes ? originNodeIds : [],
               nodeFontSize: nodeFontSize,
               linkFontSize: edgeFontSize,
@@ -1172,8 +1172,8 @@ const ForceGraph = ({
                             : "collection-button-deselected"
                         }
                       >
-                        {collectionsMap.has(collection)
-                          ? collectionsMap.get(collection)["display_name"]
+                        {collectionMaps.has(collection)
+                          ? collectionMaps.get(collection)["display_name"]
                           : collection}
                       </button>
                     </div>

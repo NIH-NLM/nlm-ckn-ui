@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
-import collectionsMapData from "../../assets/collectionsMap.json";
+import collMaps from "../../assets/cell-kn-mvp-collection-maps.json";
 import { getLabel } from "../Utils/Utils";
 import { getColorForCollection } from "../../services/ColorServices/ColorServices";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -13,7 +13,7 @@ import { faArrowRight } from "@fortawesome/free-solid-svg-icons";
  */
 const SearchResultsTable = ({ searchResults, handleSelectItem }) => {
   // Memoized map for collection display names, created once
-  const collectionsMap = useMemo(() => new Map(collectionsMapData), []);
+  const collectionMaps = useMemo(() => new Map(collMaps.data), []);
   // Number of items to load/display initially and on each subsequent load
   const expandAmount = 20;
 
@@ -69,7 +69,7 @@ const SearchResultsTable = ({ searchResults, handleSelectItem }) => {
           if (parts.length > 0) {
             collectionKey = parts[0];
             collectionDisplayName =
-              collectionsMap.get(collectionKey)?.display_name || collectionKey;
+              collectionMaps.get(collectionKey)?.display_name || collectionKey;
           }
         }
 
