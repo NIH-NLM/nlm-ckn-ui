@@ -12,21 +12,24 @@ const FtuPartsContext = createContext({
 });
 
 function getFtuPartsFromIllustrationsJsonLd(jsonld) {
-  if (jsonld['@graph']?.length > 0) {
-    const partsArray = jsonld['@graph'].map((illustration) =>
-      illustration.mapping.map((part) => (
-        {
-          ftu_digital_object: illustration['@id'],
-          ftu_iri: illustration.representation_of.replace('UBERON:', 'http://purl.obolibrary.org/obo/UBERON_'),
-          ftu_part_iri: part.representation_of
-        }
-      ))
-    ).flat();
+  if (jsonld["@graph"]?.length > 0) {
+    const partsArray = jsonld["@graph"]
+      .map((illustration) =>
+        illustration.mapping.map((part) => ({
+          ftu_digital_object: illustration["@id"],
+          ftu_iri: illustration.representation_of.replace(
+            "UBERON:",
+            "http://purl.obolibrary.org/obo/UBERON_",
+          ),
+          ftu_part_iri: part.representation_of,
+        })),
+      )
+      .flat();
 
     return partsArray;
   } else {
-     return []; 
-  } 
+    return [];
+  }
 }
 
 // Create Provider

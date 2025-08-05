@@ -4,6 +4,8 @@ import { truncateString } from "../Utils/Utils";
 
 /* Pure Functions */
 
+// Merges new nodes into existing node list.
+// Filters duplicates and formats new nodes for D3 simulation.
 export function processGraphData(
   existingNodes,
   newNodes,
@@ -11,20 +13,30 @@ export function processGraphData(
   labelFn = (d) => d.label,
   nodeHover,
 ) {
+  // Filter out any new nodes that already exist in the graph.
   const filteredNewNodes = newNodes.filter(
     (newNode) =>
       !existingNodes.some((existing) => existing._id === nodeId(newNode)),
   );
-  filteredNewNodes.forEach((newNode) => {
-    newNode.id = nodeId(newNode);
-    let collection = newNode.id.split("/")[0];
-    newNode.nodeHover = labelFn(newNode);
-    newNode.color = getColorForCollection(collection);
-    newNode.nodeLabel = labelFn(newNode);
+
+  // Map new nodes to required structure for rendering.
+  const processedNewNodes = filteredNewNodes.map((newNode) => {
+    const collection = nodeId(newNode).split("/")[0];
+
+    return {
+      ...newNode,
+      id: nodeId(newNode),
+      nodeHover: labelFn(newNode),
+      color: getColorForCollection(collection),
+      nodeLabel: labelFn(newNode),
+    };
   });
-  return existingNodes.concat(filteredNewNodes);
+
+  return existingNodes.concat(processedNewNodes);
 }
 
+// Integrates new links into existing link list.
+// Resolves source/target objects and flags parallel links for curved rendering.
 export function processGraphLinks(
   existingLinks,
   newLinks,
@@ -39,19 +51,21 @@ export function processGraphLinks(
     const sourceNodeId = linkSource(newLink);
     const targetNodeId = linkTarget(newLink);
 
+    // Find full node objects for source and target.
     const sourceNode = nodes.find((node) => node.id === sourceNodeId);
     const targetNode = nodes.find((node) => node.id === targetNodeId);
 
+    // Skip link if either node is not found.
     if (!sourceNode || !targetNode) {
       return;
     }
 
-    // Check if this exact link (by _id) already exists
+    // Skip if link with same _id already exists.
     if (updatedExistingLinks.some((existing) => existing._id === newLink._id)) {
       return;
     }
 
-    // Prepare the new link object
+    // Prepare new link object with resolved nodes.
     const processedNewLink = {
       ...newLink,
       sourceText: newLink.source,
@@ -61,19 +75,19 @@ export function processGraphLinks(
       isParallelPair: false,
     };
 
-    // Check for its reverse partner among existing links
+    // Check for a reverse link to identify a parallel pair.
     const keyParts = processedNewLink._key.split("-");
     if (keyParts.length === 2) {
       const reverseKey = `${keyParts[1]}-${keyParts[0]}`;
       const reversePartner = updatedExistingLinks.find(
         (existingLink) =>
           existingLink._key === reverseKey &&
-          existingLink.source.id === targetNodeId && // Double check direction
+          existingLink.source.id === targetNodeId &&
           existingLink.target.id === sourceNodeId,
       );
 
+      // If reverse partner found, flag both links.
       if (reversePartner) {
-        // Found a parallel pair
         processedNewLink.isParallelPair = true;
         reversePartner.isParallelPair = true;
       }
@@ -81,36 +95,35 @@ export function processGraphLinks(
     updatedExistingLinks.push(processedNewLink);
   });
 
-  console.log(updatedExistingLinks);
   return updatedExistingLinks;
 }
 
 /* Rendering Functions */
 
+// Renders graph nodes and links using D3 data join pattern.
+// Handles enter, update, and exit selections for dynamic updates.
 function renderGraph(simulation, nodes, links, d3, containers, options) {
-  // Update simulation nodes and links
-  simulation.nodes(nodes);
-  options.forceLink.links(links);
-
-  // Render nodes
+  // Handle node enter/exit/update.
   const nodeSelection = containers.nodeContainer
     .selectAll("g.node")
     .data(nodes, (d) => d.id);
 
-  // Remove nodes not in the new data
+  // Remove nodes that are no longer present.
   nodeSelection.exit().remove();
 
-  // For each new node, decide whether to render it as a donut
+  // Create group for each new node.
   const nodeEnter = nodeSelection
     .enter()
     .append("g")
     .attr("class", "node")
     .call(options.drag);
 
+  // For each new node, create visual representation.
   nodeEnter.each(function (d) {
     const nodeG = d3.select(this);
+    // Render as donut if node is an origin node.
     if (options.originNodeIds && options.originNodeIds.includes(d.id)) {
-      // Outer circle
+      // Outer circle.
       nodeG
         .append("circle")
         .attr("r", options.nodeRadius)
@@ -119,7 +132,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
           event.preventDefault();
           options.onNodeClick(event, d);
         });
-      // Inner circle for donut effect
+      // Inner circle for donut effect.
       nodeG
         .append("circle")
         .attr("r", options.nodeRadius * 0.7)
@@ -129,7 +142,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
           options.onNodeClick(event, d);
         });
     } else {
-      // Regular single circle
+      // Render as standard circle.
       nodeG
         .append("circle")
         .attr("r", options.nodeRadius)
@@ -139,9 +152,8 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
           options.onNodeClick(event, d);
         });
     }
-    // Append title for hover and hidden text for the label
+    // Append tooltip title and hidden labels.
     nodeG.append("title").text((d) => d.nodeHover);
-    // Append collection text
     nodeG
       .append("text")
       .attr("class", "node-label")
@@ -164,21 +176,21 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
       );
   });
 
-  // Render links
+  // Handle link enter/exit/update.
   const linkSelection = containers.linkContainer
     .selectAll("g.link")
     .data(links, (d) => d._id);
 
-  // Remove links that are no longer in the data
+  // Remove links no longer in data.
   linkSelection.exit().remove();
 
-  // Create new link elements (a <g> for each link)
+  // Create group for each new link.
   const linkEnter = linkSelection.enter().append("g").attr("class", "link");
 
-  // --- Handle Non-Self-Links ---
+  // --- Manages links connecting two different nodes. ---
   const nonSelfLinkEnter = linkEnter.filter((d) => d.source.id !== d.target.id);
 
-  // Add invisible wide click area
+  // Append wide, invisible path for easier context menu clicking.
   nonSelfLinkEnter
     .append("path")
     .attr("class", "link-hit-area")
@@ -191,7 +203,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
       options.onNodeClick(event, d);
     });
 
-  // Add the visible path
+  // Append visible path for link.
   nonSelfLinkEnter
     .append("path")
     .attr("class", "link-visible")
@@ -211,7 +223,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
     .attr("marker-end", "url(#arrow)")
     .style("pointer-events", "none");
 
-  // Append the primary label text for non-self-links
+  // Append primary and source labels for link.
   nonSelfLinkEnter
     .append("text")
     .attr("class", "link-label")
@@ -221,8 +233,6 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
     .style("display", "none")
     .attr("text-anchor", "middle")
     .style("pointer-events", "none");
-
-  // Append the source label text for non-self-links
   nonSelfLinkEnter
     .append("text")
     .attr("class", "link-source")
@@ -234,10 +244,10 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
     .attr("dy", "1.2em")
     .style("pointer-events", "none");
 
-  // --- Handle Self-Links ---
+  // --- Manages links connecting node to itself. ---
   const selfLinkEnter = linkEnter.filter((d) => d.source.id === d.target.id);
 
-  // Add invisible click handler
+  // Append invisible path for click handling.
   selfLinkEnter
     .append("path")
     .attr("class", "self-link-hit-area")
@@ -249,7 +259,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
       options.onNodeClick(event, d);
     });
 
-  // Add the visible path for self-links
+  // Append visible path for self-link loop.
   selfLinkEnter
     .append("path")
     .attr("class", "self-link")
@@ -269,7 +279,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
     .attr("marker-mid", "url(#self-arrow)")
     .style("pointer-events", "none");
 
-  // Append the primary label text for self-links
+  // Append labels for self-link.
   selfLinkEnter
     .append("text")
     .attr("class", "link-label")
@@ -279,8 +289,6 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
     .style("display", "none")
     .attr("text-anchor", "middle")
     .style("pointer-events", "none");
-
-  // Append the source label text for self-links
   selfLinkEnter
     .append("text")
     .attr("class", "link-source")
@@ -292,14 +300,14 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
     .attr("dy", "1.2em")
     .style("pointer-events", "none");
 
-  // Merge enter selection with the update selection
+  // Merge new links into existing selection.
   linkSelection.merge(linkEnter);
-
-  simulation.alpha(1.5).restart();
 }
 
 /* Utility Functions */
 
+// Returns promise that resolves when simulation 'cools down'.
+// Used to wait for layout to stabilize before performing actions.
 function waitForAlpha(simulation, threshold) {
   return new Promise((resolve) => {
     if (simulation.alpha() < threshold) {
@@ -315,6 +323,8 @@ function waitForAlpha(simulation, threshold) {
   });
 }
 
+// Starts or stops D3 simulation forces.
+// Setting strengths to zero effectively freezes graph layout.
 function toggleSimulation(
   on,
   simulation,
@@ -343,24 +353,30 @@ function toggleSimulation(
 
 /* ForceGraphConstructor */
 
+// Main constructor for force-directed graph.
+// Initializes SVG, D3 simulation, and all related behaviors.
+// Returns object with methods to interact with graph.
 function ForceGraphConstructor(
+  svgElement,
   { nodes: initialNodes, links: initialLinks },
   options = {},
 ) {
   const combinedColors = [...d3.schemePaired, ...d3.schemeDark2];
   const uniqueColors = Array.from(new Set(combinedColors));
 
+  // Default configuration for graph properties.
   const defaultOptions = {
     nodeId: (d) => d._id,
-    label: (d) => d.label || d._id, // Fallback label
+    label: (d) => d.label || d._id,
     nodeGroup: undefined,
     nodeGroups: [],
     collectionsMap: new Map(),
     originNodeIds: [],
-    nodeHover: (d) => d.label || d._id, // Fallback hover
+    nodeHover: (d) => d.label || d._id,
     nodeFontSize: 10,
     linkFontSize: 10,
     onNodeClick: () => {},
+    onNodeDragEnd: () => {},
     interactionCallback: () => {},
     nodeRadius: 16,
     linkSource: ({ _from }) => _from,
@@ -375,13 +391,14 @@ function ForceGraphConstructor(
     nodeForceStrength: -1000,
     targetLinkDistance: 175,
     centerForceStrength: 1,
-    labelStates: {},
+    initialLabelStates: {},
     color: null,
     parallelLinkCurvature: 0.25,
   };
 
   const mergedOptions = { ...defaultOptions, ...options };
 
+  // Setup default drag behavior.
   mergedOptions.drag =
     options.drag ||
     d3
@@ -400,8 +417,14 @@ function ForceGraphConstructor(
         if (!event.active) simulation.alphaTarget(0);
         event.subject.fx = null;
         event.subject.fy = null;
+        mergedOptions.onNodeDragEnd({
+          nodeId: event.subject.id,
+          x: event.subject.x,
+          y: event.subject.y,
+        });
       });
 
+  // Setup color scale for node groups if provided.
   if (mergedOptions.nodeGroup && mergedOptions.nodeGroups.length > 0) {
     mergedOptions.color = d3.scaleOrdinal(
       mergedOptions.nodeGroups,
@@ -411,6 +434,7 @@ function ForceGraphConstructor(
     mergedOptions.color = () => mergedOptions.nodeColor || "#999";
   }
 
+  // Initialize D3 forces for simulation.
   const forceNode = d3
     .forceManyBody()
     .strength(mergedOptions.nodeForceStrength);
@@ -421,6 +445,7 @@ function ForceGraphConstructor(
   forceLink.distance(mergedOptions.targetLinkDistance);
   const linkForceStrength = forceLink.strength();
 
+  // Create main simulation.
   const simulation = d3
     .forceSimulation()
     .force("link", forceLink)
@@ -428,8 +453,9 @@ function ForceGraphConstructor(
     .force("center", forceCenter)
     .on("tick", ticked);
 
+  // Select and configure SVG element.
   const svg = d3
-    .create("svg")
+    .select(svgElement)
     .attr("width", mergedOptions.width)
     .attr("height", mergedOptions.height)
     .attr("viewBox", [
@@ -442,7 +468,7 @@ function ForceGraphConstructor(
 
   const g = svg.append("g");
 
-  // Setup zoom behavior
+  // Setup zoom and pan behavior.
   const zoomHandler = d3
     .zoom()
     .on("zoom", (event) => {
@@ -452,15 +478,16 @@ function ForceGraphConstructor(
   svg.call(zoomHandler);
   svg.call(
     zoomHandler.transform,
-    d3.zoomIdentity.translate(0, 0).scale(mergedOptions.initialScale), // Centered initial translate
+    d3.zoomIdentity.translate(0, 0).scale(mergedOptions.initialScale),
   );
 
-  // Create containers for links and nodes
+  // Create dedicated containers for links and nodes.
   const linkContainer = g.append("g").attr("class", "link-container");
   const nodeContainer = g.append("g").attr("class", "node-container");
 
-  // Create defs for arrow markers
+  // Define arrow markers for link directions.
   const defs = g.append("defs");
+  // Standard arrow for directed links.
   defs
     .append("marker")
     .attr("id", "arrow")
@@ -478,7 +505,7 @@ function ForceGraphConstructor(
         ? mergedOptions.linkStroke
         : null,
     );
-
+  // Arrow for self-referencing links.
   defs
     .append("marker")
     .attr("id", "self-arrow")
@@ -497,6 +524,7 @@ function ForceGraphConstructor(
         : null,
     );
 
+  // Create container for legend.
   const legend = svg
     .append("g")
     .attr("class", "legend")
@@ -508,6 +536,7 @@ function ForceGraphConstructor(
   const legendSize = 12;
   const legendSpacing = 4;
 
+  // Positions legend in top-left corner of SVG viewbox.
   function placeLegend(svgWidth, svgHeight) {
     legend.attr(
       "transform",
@@ -515,69 +544,55 @@ function ForceGraphConstructor(
     );
   }
 
+  // Handles resizing of SVG container.
+  // Recalculates viewbox and zoom to keep graph centered.
   function resize(newWidth, newHeight) {
-    // Save old state
     const oldWidth = mergedOptions.width;
     const oldHeight = mergedOptions.height;
-
-    // Get the current zoom transform
     const currentTransform = d3.zoomTransform(svg.node());
-
-    // Find the new center point
     const centerPoint = currentTransform.invert([oldWidth / 2, oldHeight / 2]);
 
-    // Update the stored options
     mergedOptions.width = newWidth;
     mergedOptions.height = newHeight;
 
-    // Update the SVG element's dimensions and viewBox
     svg
       .attr("width", newWidth)
       .attr("height", newHeight)
       .attr("viewBox", [-newWidth / 2, -newHeight / 2, newWidth, newHeight]);
 
-    // Update the zoom handler's extent
     zoomHandler.extent([
       [0, 0],
       [newWidth, newHeight],
     ]);
 
-    // Update legend position
     placeLegend(newWidth, newHeight);
 
-    // Apply new transform
+    // Recalculate translation to keep view centered after resize.
     const newTranslateX = newWidth / 2 - centerPoint[0] * currentTransform.k;
     const newTranslateY = newHeight / 2 - centerPoint[1] * currentTransform.k;
-
-    // Create the new transform, preserving the user's zoom level
     const newTransform = d3.zoomIdentity
       .translate(newTranslateX, newTranslateY)
       .scale(currentTransform.k);
 
-    // Apply the new transform to the zoom behavior.
     svg.call(zoomHandler.transform, newTransform);
-
-    // Start simulation
     simulation.alpha(1).restart();
   }
 
+  // Updates legend based on collections present in current nodes.
   function updateLegend(currentNodes) {
     const presentCollectionIds = [
       ...new Set(currentNodes.map((n) => n.id?.split("/")[0])),
-      // Sort alphabetically for consistent order
     ].filter(
       (id) => id && id !== "edges" && mergedOptions.collectionsMap.has(id),
     );
     presentCollectionIds.sort();
 
-    // Data join for legend items
     const legendItems = legend
       .selectAll(".legend-item")
       .data(presentCollectionIds, (d) => d);
 
     legendItems.exit().remove();
 
-    // Append rectangle
     const legendEnter = legendItems
       .enter()
       .append("g")
@@ -593,14 +608,13 @@ function ForceGraphConstructor(
       .attr("width", legendSize)
       .attr("height", legendSize);
 
-    // Append text
     legendEnter
       .append("text")
       .attr("x", legendSize + 5)
       .attr("y", legendSize / 2)
       .attr("dy", "0.35em");
 
-    // Adjust position for all items
+    // Update positions and content for all legend items.
     const legendUpdate = legendEnter.merge(legendItems);
     legendUpdate
       .transition()
@@ -609,7 +623,6 @@ function ForceGraphConstructor(
         "transform",
         (d, i) => `translate(0, ${i * (legendSize + legendSpacing)})`,
       );
-
     legendUpdate.select("rect").style("fill", (d) => getColorForCollection(d));
     legendUpdate
       .select("text")
@@ -620,125 +633,117 @@ function ForceGraphConstructor(
       );
   }
 
-  // Internal Data Storage
+  // Internal data storage for nodes and links.
   let processedNodes = [];
   let processedLinks = [];
 
-  // Call update graph for initial render
-  updateGraph({ newNodes: initialNodes, newLinks: initialLinks });
+  // Initial render on construction.
+  updateGraph({
+    newNodes: initialNodes,
+    newLinks: initialLinks,
+    save: mergedOptions.saveInitial,
+  });
 
-  // Handle movement
+  // Callback function for each simulation 'tick'.
+  // Updates positions of all nodes and links on screen.
   function ticked() {
     const linkElements = linkContainer.selectAll("g.link");
 
-    // Update path.self-link for self-loops
+    // Calculate path for self-looping links.
     linkElements.selectAll("path.self-link").attr("d", (d) => {
       if (!d.source) return "";
       const x = d.source.x;
       const y = d.source.y;
       const nodeR = mergedOptions.nodeRadius;
       const loopRadius = nodeR * 1.5;
-
       const dr = loopRadius * 2;
-      return `M${x},${y + nodeR} A${dr / 2},${dr / 2} 0 1,0 ${x + 0.1},${y + nodeR - 0.1}`; // Arc path
+      return `M${x},${y + nodeR} A${dr / 2},${dr / 2} 0 1,0 ${x + 0.1},${y + nodeR - 0.1}`;
     });
 
-    // Update path for non-self-links
-    linkElements
-      .selectAll("path:not(.self-link)") // Select paths that are not self-links
-      .attr("d", (d) => {
-        if (!d.source || !d.target) return ""; // Should have source and target
-        const sx = d.source.x;
-        const sy = d.source.y;
-        const tx = d.target.x;
-        const ty = d.target.y;
+    // Calculate path for standard (non-self) links.
+    linkElements.selectAll("path:not(.self-link)").attr("d", (d) => {
+      if (!d.source || !d.target) return "";
+      const sx = d.source.x;
+      const sy = d.source.y;
+      const tx = d.target.x;
+      const ty = d.target.y;
 
-        if (d.isParallelPair) {
-          const dx = tx - sx;
-          const dy = ty - sy;
-          const dr =
-            Math.sqrt(dx * dx + dy * dy) *
-            (1 / mergedOptions.parallelLinkCurvature);
+      // Use curved arc for parallel links.
+      if (d.isParallelPair) {
+        const dx = tx - sx;
+        const dy = ty - sy;
+        const dr =
+          Math.sqrt(dx * dx + dy * dy) *
+          (1 / mergedOptions.parallelLinkCurvature);
+        return `M${sx},${sy}A${dr},${dr} 0 0,1 ${tx},${ty}`;
+      } else {
+        // Use straight line for non-parallel links.
+        return `M${sx},${sy}L${tx},${ty}`;
+      }
+    });
 
-          // Using an arc path.
-          return `M${sx},${sy}A${dr},${dr} 0 0,1 ${tx},${ty}`;
-        } else {
-          // Straight line for non-parallel links
-          return `M${sx},${sy}L${tx},${ty}`;
-        }
-      });
-
+    // Apply new positions to all node groups.
     nodeContainer
       .selectAll("g.node")
       .attr("transform", (d) => `translate(${d.x},${d.y})`);
 
-    // Update positions for all link text elements
+    // Update positions and rotation for all link labels.
     linkElements.each(function (d) {
       if (!d.source || !d.target) return;
 
       let transformString = "";
 
       if (d.source.id === d.target.id) {
-        // --- Self-link text positioning ---
+        // Position self-link text below loop.
         const x = d.source.x;
         const y = d.source.y;
         const nodeR = mergedOptions.nodeRadius;
         const loopRadius = nodeR * 1.5;
-
-        // Position text below the apex of the self-loop.
         transformString = `translate(${x}, ${y + nodeR + loopRadius + mergedOptions.linkFontSize * 0.5 + 5})`;
       } else {
-        // --- Non-self-link text positioning ---
+        // Position non-self-link text along link path.
         const sx = d.source.x;
         const sy = d.source.y;
         const tx = d.target.x;
         const ty = d.target.y;
-
         let midX, midY, angle;
 
         if (d.isParallelPair) {
-          // For curved parallel links
+          // Calculate midpoint of curved arc.
           const mx = (sx + tx) / 2;
           const my = (sy + ty) / 2;
           const dx = tx - sx;
           const dy = ty - sy;
           angle = Math.atan2(dy, dx) * (180 / Math.PI);
-
           const dist = Math.sqrt(dx * dx + dy * dy);
-          // How far to offset text from the straight center line to follow the curve
           const curvatureOffset =
             dist * mergedOptions.parallelLinkCurvature * 0.3;
-
           const normX = dy / dist;
           const normY = -dx / dist;
-
           midX = mx + curvatureOffset * normX;
           midY = my + curvatureOffset * normY;
         } else {
-          // For straight links
+          // Calculate midpoint of straight line.
           midX = (sx + tx) / 2;
           midY = (sy + ty) / 2;
           angle = Math.atan2(ty - sy, tx - sx) * (180 / Math.PI);
         }
 
-        // Keep text upright by flipping it if it's upside down
+        // Keep text upright.
         if (Math.abs(angle) > 90) {
           angle += 180;
         }
 
-        // vertical offset from the line/arc for text
         const textVerticalOffset = 0;
         const offsetX = textVerticalOffset * Math.sin((angle * Math.PI) / 180);
         const offsetY = textVerticalOffset * -Math.cos((angle * Math.PI) / 180);
-
         transformString = `translate(${midX + offsetX}, ${midY + offsetY}) rotate(${angle})`;
       }
-
       d3.select(this).selectAll("text").attr("transform", transformString);
     });
   }
 
-  // Function to center on a given node id, with adjustable pan transition
+  // Pans and zooms view to center on specific node.
   function centerOnNode(nodeId, transitionDuration = 1000) {
     let node = simulation.nodes().find((node) => node._id === nodeId);
     if (!node) {
@@ -747,50 +752,31 @@ function ForceGraphConstructor(
     }
     const currentTransform = d3.zoomTransform(svg.node());
     const k = currentTransform.k;
-    // Calculate a new transform so that centerNode.x, centerNode.y are moved to (0,0), center of viewbox
     const newTransform = d3.zoomIdentity
       .translate(-node.x * k, -node.y * k)
       .scale(k);
-    // Update the zoom transform on the svg element
     svg
       .transition()
       .duration(transitionDuration)
       .call(zoomHandler.transform, newTransform);
   }
 
-  function toggleLabels(show, labelClass, frozenState = false) {
-    // A map to associate label classes with their respective D3 containers.
+  // Shows or hides a specified class of labels.
+  function toggleLabels(show, labelClass) {
     const containerMap = {
       "link-label": linkContainer,
       "link-source": linkContainer,
       "node-label": nodeContainer,
       "collection-label": nodeContainer,
     };
-
     const container = containerMap[labelClass];
-
-    // If the class is unknown, log a warning and do nothing.
-    if (!container) {
-      console.warn(
-        `toggleLabels: No container configured for class "${labelClass}"`,
-      );
-      return;
-    }
-
-    // Select all elements with the given class and set their display style.
+    if (!container) return;
     container
       .selectAll(`.${labelClass}`)
       .style("display", show ? "block" : "none");
-
-    // Update the internal state unless the state is frozen
-    if (!frozenState) {
-      if (mergedOptions && mergedOptions.labelStates) {
-        mergedOptions.labelStates[labelClass] = show;
-      }
-    }
   }
 
-  // Update node font size
+  // Updates font size for all node labels.
   function updateNodeFontSize(newFontSize) {
     mergedOptions.nodeFontSize = newFontSize;
     nodeContainer
@@ -798,7 +784,7 @@ function ForceGraphConstructor(
       .style("font-size", newFontSize + "px");
   }
 
-  // Update link font size
+  // Updates font size for all link labels.
   function updateLinkFontSize(newFontSize) {
     mergedOptions.linkFontSize = newFontSize;
     linkContainer
@@ -806,136 +792,49 @@ function ForceGraphConstructor(
       .style("font-size", newFontSize + "px");
   }
 
-  // Process new data and re-render.
-  function updateGraph({
-    newNodes = [],
-    newLinks = [],
-    collapseNodes = [],
-    removeNode = false,
-    centerNodeId = null,
-    simulate = false,
-  } = {}) {
-    // Determine whether new data is being added
-    const hasNewData = newNodes.length > 0 || newLinks.length > 0;
-
-    // If there is new data, toggle on simulation and turn off labels so nodes can reposition
-    if (hasNewData || simulate) {
-      // Toggle off labels
-      Object.keys(mergedOptions.labelStates).forEach((key) => {
-        toggleLabels(false, key, true);
-      });
-      toggleSimulation(
-        true,
-        simulation,
-        forceNode,
-        forceCenter,
-        forceLink,
-        processedLinks, // Pass current links for forceLink to operate on
-        mergedOptions.nodeForceStrength,
-        mergedOptions.centerForceStrength,
-        linkForceStrength,
-      );
+  // Clears all nodes and links from graph.
+  function resetGraph(resetZoom = true) {
+    simulation.stop();
+    processedNodes = [];
+    processedLinks = [];
+    simulation.nodes([]);
+    simulation.force("link").links([]);
+    nodeContainer.selectAll("*").remove();
+    linkContainer.selectAll("*").remove();
+    if (resetZoom == true) {
+      svg.call(zoomHandler.transform, d3.zoomIdentity);
     }
+  }
 
-    if (collapseNodes.length) {
-      // Identify nodes that are connected only to a collapse node
-      const nodesToRemove = [];
-      processedNodes.forEach((node) => {
-        // Skip nodes that are in collapseNodes or are origin nodes
-        if (mergedOptions.originNodeIds.includes(node.id)) {
-          return;
-        }
-        // Get all links associated with this node
-        const nodeLinks = processedLinks.filter(
-          (link) =>
-            (link.source.id || link.source) === node.id ||
-            (link.target.id || link.target) === node.id,
-        );
-        // Remove node if all links connect to the same collapse node
-        if (nodeLinks.length > 0) {
-          // Node must have at least one link to be considered
-          let firstNeighborId = null;
-          let allLinksToSameNeighbor = true;
+  // Rebuilds graph from a saved state object.
+  // Fixes node positions initially to prevent simulation drift on restore.
+  function restoreGraph({ nodes, links, labelStates }) {
+    resetGraph(false);
 
-          // Determine the ID of the neighbor connected by the first link
-          const firstLink = nodeLinks[0];
-          const sourceIdFirst = firstLink.source.id || firstLink.source;
-          const targetIdFirst = firstLink.target.id || firstLink.target;
-          firstNeighborId =
-            sourceIdFirst === node.id || sourceIdFirst === node._id
-              ? targetIdFirst
-              : sourceIdFirst;
-
-          // Check if all other links also go to this same firstNeighborId
-          for (let i = 1; i < nodeLinks.length; i++) {
-            const link = nodeLinks[i];
-            const sourceId = link.source.id || link.source;
-            const targetId = link.target.id || link.target;
-            const currentNeighborId =
-              sourceId === node.id || sourceId === node._id
-                ? targetId
-                : sourceId;
-
-            if (currentNeighborId !== firstNeighborId) {
-              allLinksToSameNeighbor = false;
-              break; // Found a link to a different neighbor
-            }
-          }
-
-          // If all links go to the same neighbor, check if that neighbor is in collapseNodes
-          if (allLinksToSameNeighbor) {
-            if (collapseNodes.includes(firstNeighborId)) {
-              nodesToRemove.push(node.id);
-            }
-          }
-        }
-      });
-
-      // Remove the nodes that were marked
-      processedNodes = processedNodes.filter(
-        (node) => !nodesToRemove.includes(node.id),
-      );
-      // Also remove any links associated with the nodes just removed
-      processedLinks = processedLinks.filter((link) => {
-        const sourceId = link.source.id || link.source;
-        const targetId = link.target.id || link.target;
-        return (
-          !nodesToRemove.includes(sourceId) && !nodesToRemove.includes(targetId)
-        );
-      });
-
-      // If removeNode is true, remove the collapseNodes themselves
-      if (removeNode) {
-        processedNodes = processedNodes.filter(
-          (node) => !collapseNodes.includes(node.id),
-        );
-        processedLinks = processedLinks.filter((link) => {
-          const sourceId = link.source.id || link.source;
-          const targetId = link.target.id || link.target;
-          return (
-            !collapseNodes.includes(sourceId) &&
-            !collapseNodes.includes(targetId)
-          );
-        });
-      }
-    }
-
-    // Add nodes and links
     processedNodes = processGraphData(
       processedNodes,
-      newNodes,
+      nodes,
       mergedOptions.nodeId,
       mergedOptions.label,
       mergedOptions.nodeHover,
     );
     processedLinks = processGraphLinks(
       processedLinks,
-      newLinks,
+      links,
       processedNodes,
       mergedOptions.linkSource,
       mergedOptions.linkTarget,
       mergedOptions.label,
     );
+
+    // Fix nodes to their saved positions.
+    processedNodes.forEach((node) => {
+      node.fx = node.x;
+      node.fy = node.y;
+    });
+
+    simulation.nodes(processedNodes);
+    forceLink.links(processedLinks);
 
     renderGraph(
       simulation,
@@ -944,7 +843,6 @@ function ForceGraphConstructor(
       d3,
       { nodeContainer, linkContainer },
       {
-        // Pass relevant options from mergedOptions
         forceLink,
         nodeRadius: mergedOptions.nodeRadius,
         nodeFontSize: mergedOptions.nodeFontSize,
@@ -961,37 +859,197 @@ function ForceGraphConstructor(
     );
     updateLegend(processedNodes);
 
-    const newThreshold = Math.max(1 / (processedNodes.length || 1), 0.002);
-    // Wait for simulation to settle then disable it
-    waitForAlpha(simulation, newThreshold).then(() => {
-      if (centerNodeId) {
-        centerOnNode(centerNodeId);
-      }
-      toggleSimulation(
-        false, // Turn off simulation
-        simulation,
-        forceNode,
-        forceCenter,
-        forceLink,
-        processedLinks, // Pass links so force can be disassociated if needed
-        mergedOptions.nodeForceStrength,
-        mergedOptions.centerForceStrength,
-      );
-      Object.keys(mergedOptions.labelStates).forEach((key) => {
-        const value = mergedOptions.labelStates[key];
-        toggleLabels(value, key, false); // Unfreeze and restore label state
-      });
+    // Stop simulation and run one tick to draw graph in correct position.
+    simulation.alpha(0);
+    ticked();
+
+    // Unfix node positions to allow interaction.
+    processedNodes.forEach((node) => {
+      node.fx = null;
+      node.fy = null;
+    });
+
+    // Restore previous label visibility states.
+    Object.keys(labelStates).forEach((key) => {
+      toggleLabels(labelStates[key], key);
     });
   }
 
-  return Object.assign(svg.node(), {
+  // Identifies leaf nodes connected only to a single neighbor from collapse list.
+  function findLeafNodes(collapseNodes) {
+    const leafNodes = [];
+    processedNodes.forEach((node) => {
+      // Origin nodes cannot be leaves.
+      if (mergedOptions.originNodeIds.includes(node.id)) return;
+      // Filter for links connected to current node.
+      const nodeLinks = processedLinks.filter(
+        (l) =>
+          (l.source.id || l.source) === node.id ||
+          (l.target.id || l.target) === node.id,
+      );
+      if (nodeLinks.length > 0) {
+        // Check if all links connect to the same neighbor.
+        const firstNeighborId =
+          (nodeLinks[0].source.id || nodeLinks[0].source) === node.id
+            ? nodeLinks[0].target.id || nodeLinks[0].target
+            : nodeLinks[0].source.id || nodeLinks[0].source;
+        const allLinksToSameNeighbor = nodeLinks.every(
+          (l) =>
+            ((l.source.id || l.source) === node.id &&
+              (l.target.id || l.target) === firstNeighborId) ||
+            ((l.target.id || l.target) === node.id &&
+              (l.source.id || l.source) === firstNeighborId),
+        );
+        // If so, and neighbor is in collapse list, mark as leaf.
+        if (allLinksToSameNeighbor && collapseNodes.includes(firstNeighborId)) {
+          leafNodes.push(node.id);
+        }
+      }
+    });
+    return leafNodes;
+  }
+
+  // Core function to update graph with new data.
+  // Handles data processing, rendering, and simulation lifecycle.
+  function updateGraph({
+    newNodes = [],
+    newLinks = [],
+    collapseNodes = [],
+    removeNode = false,
+    centerNodeId = null,
+    resetData = false,
+    save = true,
+    labelStates = mergedOptions.initialLabelStates,
+  } = {}) {
+    if (resetData) {
+      resetGraph();
+    }
+
+    // Process and merge new data into internal state.
+    processedNodes = processGraphData(
+      processedNodes,
+      newNodes,
+      mergedOptions.nodeId,
+      mergedOptions.label,
+      mergedOptions.nodeHover,
+    );
+    processedLinks = processGraphLinks(
+      processedLinks,
+      newLinks,
+      processedNodes,
+      mergedOptions.linkSource,
+      mergedOptions.linkTarget,
+      mergedOptions.label,
+    );
+
+    // Handle node collapsing/removal logic.
+    if (collapseNodes.length > 0) {
+      const nodesToRemove = findLeafNodes(collapseNodes);
+      processedNodes = processedNodes.filter(
+        (n) => !nodesToRemove.includes(n.id),
+      );
+      processedLinks = processedLinks.filter(
+        (l) =>
+          !nodesToRemove.includes(l.source.id) &&
+          !nodesToRemove.includes(l.target.id),
+      );
+      if (removeNode) {
+        processedNodes = processedNodes.filter(
+          (n) => !collapseNodes.includes(n.id),
+        );
+        processedLinks = processedLinks.filter(
+          (l) =>
+            !collapseNodes.includes(l.source.id) &&
+            !collapseNodes.includes(l.target.id),
+        );
+      }
+    }
+
+    // Update simulation with current data.
+    simulation.nodes(processedNodes);
+    forceLink.links(processedLinks);
+
+    // Re-render DOM with updated data.
+    renderGraph(
+      simulation,
+      processedNodes,
+      processedLinks,
+      d3,
+      { nodeContainer, linkContainer },
+      {
+        forceLink,
+        nodeRadius: mergedOptions.nodeRadius,
+        nodeFontSize: mergedOptions.nodeFontSize,
+        linkStroke: mergedOptions.linkStroke,
+        linkStrokeOpacity: mergedOptions.linkStrokeOpacity,
+        linkStrokeWidth: mergedOptions.linkStrokeWidth,
+        linkStrokeLinecap: mergedOptions.linkStrokeLinecap,
+        linkFontSize: mergedOptions.linkFontSize,
+        onNodeClick: mergedOptions.onNodeClick,
+        drag: mergedOptions.drag,
+        originNodeIds: mergedOptions.originNodeIds,
+        collectionsMap: mergedOptions.collectionsMap,
+      },
+    );
+    updateLegend(processedNodes);
+
+    // Start simulation to arrange new elements.
+    toggleSimulation(
+      true,
+      simulation,
+      forceNode,
+      forceCenter,
+      forceLink,
+      processedLinks,
+      mergedOptions.nodeForceStrength,
+      mergedOptions.centerForceStrength,
+      linkForceStrength,
+    );
+
+    // Wait for graph layout to stabilize.
+    const newThreshold = Math.max(1 / (processedNodes.length || 1), 0.002);
+    waitForAlpha(simulation, newThreshold).then(() => {
+      // Freeze graph once stable.
+      toggleSimulation(false, simulation, forceNode, forceCenter, forceLink);
+
+      // Perform post-simulation actions.
+      if (centerNodeId) {
+        centerOnNode(centerNodeId);
+      }
+      Object.keys(labelStates).forEach((key) => {
+        toggleLabels(labelStates[key], key);
+      });
+
+      // Save final state if required.
+      if (
+        save === true &&
+        typeof mergedOptions.onSimulationEnd === "function"
+      ) {
+        const finalNodes = processedNodes.map(
+          ({ x, y, index, vx, vy, ...rest }) => ({ x, y, ...rest }),
+        );
+        const finalLinks = processedLinks.map(
+          ({ source, target, ...rest }) => ({
+            ...rest,
+            source: source.id || source,
+            target: target.id || target,
+          }),
+        );
+        mergedOptions.onSimulationEnd(finalNodes, finalLinks);
+      }
+    });
+  }
+
+  // Expose public API for graph manipulation.
+  return {
     updateGraph,
+    restoreGraph,
     updateNodeFontSize,
     updateLinkFontSize,
     toggleLabels,
     centerOnNode,
     resize,
-  });
+  };
 }
 
 export default ForceGraphConstructor;

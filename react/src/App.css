@@ -762,6 +762,7 @@ button {
   font-size: 16px;
   border-radius: 4px;
   transition: background-color 0.3s;
+  margin: 0 1rem;
 }
 
 button:hover {
@@ -773,7 +774,7 @@ option {
 }
 
 /*Graph*/
-#chart-container {
+#chart-container-wrapper {
   border: 2px solid var(--color-dark);
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
@@ -890,6 +891,7 @@ option {
   padding: 10px;
   borderradius: 4px;
   boxshadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  max-width: 15em;
 }
 
 .popup-button {
@@ -1615,7 +1617,7 @@ button.collection-button-deselected:hover {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-#chart-container {
+#chart-container-wrapper {
   flex-grow: 1;
   width: 100%;
   border: none;
@@ -1707,6 +1709,7 @@ button.collection-button-deselected:hover {
   cursor: pointer;
   padding: 0;
   line-height: 1;
+  margin: 0;
 }
 .popup-close-button:hover {
   color: var(--color-dark);
@@ -1811,7 +1814,7 @@ input:checked + .slider:before {
   position: relative;
 }
 
-.force-graph-panel #chart-container {
+.force-graph-panel #chart-container-wrapper {
   flex-grow: 1;
   min-height: 400px;
   width: 100%;
@@ -2141,4 +2144,23 @@ svg {
 
 .popup-close-btn:hover {
   color: var(--color-dark);
+}
+
+/* Keyboard styling */
+kbd {
+  background-color: #eee;
+  border-radius: 3px;
+  border: 1px solid #b4b4b4;
+  box-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.2),
+    0 2px 0 0 rgba(255, 255, 255, 0.7) inset;
+  color: #333;
+  display: inline-block;
+  font-family: monospace;
+  font-size: 0.85em;
+  font-weight: 700;
+  line-height: 1;
+  padding: 2px 4px;
+  white-space: nowrap;
+  margin-left: 8px;
 }
