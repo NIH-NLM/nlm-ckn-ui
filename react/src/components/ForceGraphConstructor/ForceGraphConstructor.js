@@ -68,7 +68,7 @@ export function processGraphLinks(
     // Prepare new link object with resolved nodes.
     const processedNewLink = {
       ...newLink,
-      sourceText: newLink.source,
+      sourceText: newLink.source ?? newLink.Source,
       source: sourceNode,
       target: targetNode,
       label: labelFn(newLink),
