@@ -13,7 +13,7 @@ import { faArrowRight } from "@fortawesome/free-solid-svg-icons";
  */
 const SearchResultsTable = ({ searchResults, handleSelectItem }) => {
   // Memoized map for collection display names, created once
-  const collectionMaps = useMemo(() => new Map(collMaps), []);
+  const collectionMaps = useMemo(() => new Map(collMaps.maps), []);
   // Number of items to load/display initially and on each subsequent load
   const expandAmount = 20;
 

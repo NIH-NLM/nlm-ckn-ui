@@ -4,7 +4,7 @@ import { fetchCollections, parseCollections, getLabel } from "../Utils/Utils";
 import collMaps from "../../assets/cell-kn-mvp-collection-maps.json";
 import ListDocuments from "../ListDocuments/ListDocuments";
 
-const collectionMaps = new Map(collMaps);
+const collectionMaps = new Map(collMaps.maps);
 const ITEMS_PER_LOAD = 50;
 
 const BrowseBox = () => {

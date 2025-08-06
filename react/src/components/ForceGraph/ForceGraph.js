@@ -65,7 +65,7 @@ const ForceGraph = ({
 
   // Local component state for UI and temporary flags.
   const [collections, setCollections] = useState([]);
-  const collectionMaps = new Map(collMaps);
+  const collectionMaps = new Map(collMaps.maps);
   const [isRestoring, setIsRestoring] = useState(false);
   const [optionsVisible, setOptionsVisible] = useState(false);
   const [activeTab, setActiveTab] = useState("general");

@@ -89,7 +89,7 @@ export const parseCollections = (collections, collectionMaps = null) => {
 export const getLabel = (item) => {
   try {
     // Load collection configuration maps.
-    const collectionMaps = new Map(collMaps);
+    const collectionMaps = new Map(collMaps.maps);
     const itemCollection = item._id.split("/")[0];
 
     // Get label rules for item's collection, fallback for edges
@@ -154,7 +154,7 @@ export const getLabel = (item) => {
 export const getUrl = (item) => {
   try {
     // Load collection configuration maps.
-    const collectionMaps = new Map(collMaps);
+    const collectionMaps = new Map(collMaps.maps);
     const itemCollection = item._id.split("/")[0];
     const collectionMap = collectionMaps.get(itemCollection);
 
@@ -217,7 +217,7 @@ export const getUrl = (item) => {
 export const getDisplayFields = (item) => {
   try {
     // Load collection configuration maps.
-    const collectionMaps = new Map(collMaps);
+    const collectionMaps = new Map(collMaps.maps);
     const itemCollection = item._id.split("/")[0];
 
     // Get field display rules from configuration, with fallback for edges.
@@ -280,7 +280,7 @@ export const getDisplayFields = (item) => {
 };
 
 export const getTitle = (item) => {
-  const collectionMaps = new Map(collMaps);
+  const collectionMaps = new Map(collMaps.maps);
   // Get item collection
   const itemCollection = item._id.split("/")[0];
   const collectionMap = collectionMaps.get(itemCollection);
