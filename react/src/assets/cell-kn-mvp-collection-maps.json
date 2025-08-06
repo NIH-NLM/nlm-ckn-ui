@@ -918,7 +918,7 @@
     "display_name": "Protein",
     "individual_labels": [
       {
-        "field_to_use": "label",
+        "field_to_use": "Protein_name",
         "to_be_replaced": "",
         "replace_with": "",
         "make_lower_case": false
