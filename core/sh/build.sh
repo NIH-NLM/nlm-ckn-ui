@@ -144,6 +144,14 @@ if [ ! -f ".built" ] && [ $run_ontology == 1 ] \
     current_branch=$(git branch --show-current)
     git checkout $CELL_KN_MVP_ETL_ONTOLOGIES_VERSION
 
+    # Activate the Python environment, update ontologies downloaded
+    # from the OBO Foundry, then deactivate
+    . .venv/bin/activate
+    pushd src/main/python
+    python OntologyParserLoader.py --update
+    popd
+    deactivate
+
     # Make a clean package, then build the ontology graph
     mvn clean package -DskipTests
     classpath="target/cell-kn-mvp-etl-ontologies-1.0.jar"
