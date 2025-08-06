@@ -7,7 +7,7 @@ const range = [];
 
 collectionMaps.forEach((config, id) => {
   // Exclude edges from default categorical scale
-  if (id !== 'edges') {
+  if (id !== "edges") {
     domain.push(id);
     range.push(config.color);
   }

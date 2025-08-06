@@ -1304,6 +1304,12 @@
             "display_field_as": "Source",
             "field_url": "",
             "field_to_use": ""
+          },
+          {
+            "field_to_display": "Source",
+            "display_field_as": "Source",
+            "field_url": "",
+            "field_to_use": ""
           }
         ]
       }

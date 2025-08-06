@@ -614,7 +614,7 @@ const ForceGraph = ({
           </button>
         </div>
         <div className="options-tabs-content">
-                    {activeTab === "general" && (
+          {activeTab === "general" && (
             <div id="tab-panel-general" className="tab-panel active">
               <div className="option-group">
                 <label htmlFor="depth-select">Depth:</label>

@@ -93,16 +93,9 @@ export const getLabel = (item) => {
     const itemCollection = item._id.split("/")[0];
 
     // Get label rules for item's collection, fallback for edges
-    const labelOptions = collectionMaps.get(itemCollection)?.[
-      "individual_labels"
-    ] ?? [
-      {
-        field_to_use: "label",
-        to_be_replaced: "",
-        replace_with: "",
-        make_lower_case: false,
-      },
-    ];
+    const labelOptions =
+      collectionMaps.get(itemCollection)?.["individual_labels"] ??
+      collectionMaps.get("edges")?.["individual_labels"];
 
     let label;
 
@@ -221,28 +214,9 @@ export const getDisplayFields = (item) => {
     const itemCollection = item._id.split("/")[0];
 
     // Get field display rules from configuration, with fallback for edges.
-    const fieldConfigs = collectionMaps.get(itemCollection)?.[
-      "individual_fields"
-    ] ?? [
-      {
-        field_to_display: "label",
-        display_field_as: "Label",
-        field_url: "",
-        field_to_use: "",
-      },
-      {
-        field_to_display: "source",
-        display_field_as: "Source",
-        field_url: "",
-        field_to_use: "",
-      },
-      {
-        field_to_display: "Source",
-        display_field_as: "Source",
-        field_url: "",
-        field_to_use: "",
-      },
-    ];
+    const fieldConfigs =
+      collectionMaps.get(itemCollection)?.["individual_fields"] ??
+      collectionMaps.get("edges")?.["individual_fields"];
 
     // Return empty array if no specific field configuration exists.
     if (!Array.isArray(fieldConfigs)) {
