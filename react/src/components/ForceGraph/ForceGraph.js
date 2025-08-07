@@ -355,7 +355,6 @@ const ForceGraph = ({
     graphInstanceRef.current?.toggleSimulation(false);
   }, []);
 
-  // Use the new hook for press-and-hold functionality.
   useHotkeyHold("s", handleSimulationOn, handleSimulationOff);
 
   // --- Settings Panel Handlers ---
