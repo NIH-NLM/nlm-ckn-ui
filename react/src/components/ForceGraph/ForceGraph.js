@@ -433,8 +433,50 @@ const ForceGraph = ({
   const handlePopupClose = () => setPopup({ ...popup, visible: false });
   const toggleOptionsVisibility = () => setOptionsVisible(!optionsVisible);
 
-  // Exports current SVG view as an image file (SVG or PNG).
+  // Exports the current view as an image file (SVG, PNG) or data file (JSON).
   const exportGraph = (format) => {
+    // Create string from originNodeIds, with default fallback.
+    let nodeIdsString = "no-ids";
+    if (Array.isArray(originNodeIds) && originNodeIds.length > 0) {
+      nodeIdsString = originNodeIds
+        .map((id) => id.replaceAll("/", "-"))
+        .join("-");
+    }
+    // Create filename stem.
+    const filenameStem = `cell-kn-mvp-${nodeIdsString}-graph`;
+
+    // Handle JSON export
+    if (format === "json") {
+      // Error handling
+      if (!graphData) {
+        console.error("graphData is not available for export.");
+        return;
+      }
+
+      // Convert JS object to JSON string.
+      const jsonString = JSON.stringify(graphData, null, 2);
+
+      // Create a URL for the Blob.
+      const blob = new Blob([jsonString], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+
+      // Create a link element to trigger the download.
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filenameStem + ".json";
+
+      // Append to the document, click, and then remove.
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Clean up.
+      URL.revokeObjectURL(url);
+
+      return;
+    }
+
+    // Get svg element for image download.
     if (!wrapperRef.current) return;
     const svgElement = wrapperRef.current.querySelector("svg");
     if (!svgElement) return;
@@ -453,7 +495,7 @@ const ForceGraph = ({
     if (format === "svg") {
       const link = document.createElement("a");
       link.href = url;
-      link.download = "graph.svg";
+      link.download = filenameStem + ".svg";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -479,7 +521,7 @@ const ForceGraph = ({
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
       let downloadUrl = canvas.toDataURL(`image/${format}`);
-      let filename = `graph.${format}`;
+      let filename = `${filenameStem}.${format}`;
 
       const link = document.createElement("a");
       link.href = downloadUrl;
@@ -870,6 +912,9 @@ const ForceGraph = ({
                 </button>
                 <button onClick={() => exportGraph("png")}>
                   Download as PNG
+                </button>
+                <button onClick={() => exportGraph("json")}>
+                  Download as JSON
                 </button>
               </div>
             </div>
