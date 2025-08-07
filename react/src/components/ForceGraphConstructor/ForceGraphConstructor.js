@@ -170,8 +170,8 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
       .style("font-size", options.nodeFontSize + "px")
       .style("display", "none")
       .text((d) =>
-        options.collectionsMap.has(d._id.split("/")[0])
-          ? options.collectionsMap.get(d._id.split("/")[0])["abbreviated_name"]
+        options.collectionMaps.has(d._id.split("/")[0])
+          ? options.collectionMaps.get(d._id.split("/")[0])["abbreviated_name"]
           : d._id.split("/")[0],
       );
   });
@@ -370,7 +370,7 @@ function ForceGraphConstructor(
     label: (d) => d.label || d._id,
     nodeGroup: undefined,
     nodeGroups: [],
-    collectionsMap: new Map(),
+    collectionMaps: new Map(),
     originNodeIds: [],
     nodeHover: (d) => d.label || d._id,
     nodeFontSize: 10,
@@ -531,8 +531,6 @@ function ForceGraphConstructor(
     .style("font-family", "sans-serif")
     .style("font-size", "10px");
 
-  placeLegend(mergedOptions.width, mergedOptions.height);
-
   const legendSize = 12;
   const legendSpacing = 4;
 
@@ -583,7 +581,7 @@ function ForceGraphConstructor(
     const presentCollectionIds = [
       ...new Set(currentNodes.map((n) => n.id?.split("/")[0])),
     ].filter(
-      (id) => id && id !== "edges" && mergedOptions.collectionsMap.has(id),
+      (id) => id && id !== "edges" && mergedOptions.collectionMaps.has(id),
     );
     presentCollectionIds.sort();
 
@@ -628,7 +626,7 @@ function ForceGraphConstructor(
       .select("text")
       .text(
         (d) =>
-          `${mergedOptions.collectionsMap.get(d)?.["display_name"]} (${mergedOptions.collectionsMap.get(d)?.["abbreviated_name"]})` ||
+          `${mergedOptions.collectionMaps.get(d)?.["display_name"]} (${mergedOptions.collectionMaps.get(d)?.["abbreviated_name"]})` ||
           d,
       );
   }
@@ -854,7 +852,7 @@ function ForceGraphConstructor(
         onNodeClick: mergedOptions.onNodeClick,
         drag: mergedOptions.drag,
         originNodeIds: mergedOptions.originNodeIds,
-        collectionsMap: mergedOptions.collectionsMap,
+        collectionMaps: mergedOptions.collectionMaps,
       },
     );
     updateLegend(processedNodes);
@@ -988,7 +986,7 @@ function ForceGraphConstructor(
         onNodeClick: mergedOptions.onNodeClick,
         drag: mergedOptions.drag,
         originNodeIds: mergedOptions.originNodeIds,
-        collectionsMap: mergedOptions.collectionsMap,
+        collectionMaps: mergedOptions.collectionMaps,
       },
     );
     updateLegend(processedNodes);
