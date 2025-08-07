@@ -215,6 +215,11 @@ const ForceGraph = ({
               },
             );
             graphInstanceRef.current = newGraphInstance;
+            // Trigger resize to place legend correctly at graph creation.
+            newGraphInstance.resize(
+              wrapperRef.current.clientWidth,
+              wrapperRef.current.clientHeight,
+            );
             // Syncs initial label visibility with D3 instance.
             for (const labelClass in settings.labelStates) {
               newGraphInstance.toggleLabels(
