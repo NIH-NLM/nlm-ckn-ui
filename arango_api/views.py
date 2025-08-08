@@ -54,9 +54,16 @@ def get_graph(request):
     allowed_collections = request.data.get("allowed_collections")
     node_limit = request.data.get("node_limit", 100)
     graph = request.data.get("graph")
+    edge_filters = request.data.get("edge_filters", {})
 
     search_results = utils.get_graph(
-        node_ids, depth, edge_direction, allowed_collections, node_limit, graph
+        node_ids,
+        depth,
+        edge_direction,
+        allowed_collections,
+        node_limit,
+        graph,
+        edge_filters,
     )
     return JsonResponse(search_results, safe=False)
 
@@ -119,7 +126,6 @@ def get_edge_filter_options(request):
 
         # Get data.
         query_results = utils.query_edge_filter_options(graph, fields_to_query)
-        print(query_results)
 
         # Create Response.
         return JsonResponse(query_results, status=status.HTTP_200_OK)

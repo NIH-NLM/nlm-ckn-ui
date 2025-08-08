@@ -13,6 +13,7 @@ const fetchGraphDataAPI = async (params) => {
     allowedCollections,
     nodeLimit,
     graphType,
+    edgeFilters,
   } = params;
 
   // Select endpoint for standard traversal or shortest path.
@@ -32,6 +33,7 @@ const fetchGraphDataAPI = async (params) => {
           allowed_collections: allowedCollections,
           node_limit: nodeLimit,
           graph: graphType,
+          edge_filters: edgeFilters,
         };
 
   const response = await fetch(endpoint, {
@@ -59,6 +61,7 @@ export const fetchAndProcessGraph = createAsyncThunk(
       allowedCollections: settings.allowedCollections,
       nodeLimit: settings.nodeLimit,
       graphType: settings.graphType,
+      edgeFilters: settings.edgeFilters,
     };
     try {
       const rawData = await fetchGraphDataAPI(params);
@@ -120,6 +123,7 @@ export const expandNode = createAsyncThunk(
         allowed_collections: settings.allowedCollections,
         node_limit: settings.nodeLimit,
         graph: settings.graphType,
+        edgeFilters: settings.edgeFilters,
       }),
     });
     if (!response.ok) throw new Error("Expansion fetch failed");

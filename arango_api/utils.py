@@ -56,7 +56,6 @@ def get_by_id(coll, id):
 def get_edges_by_id(edge_coll, dr, item_coll, item_id):
     return db_ontologies.collection(edge_coll).find({dr: f"{item_coll}/{item_id}"})
 
-
 def get_graph(
         node_ids,
         depth,
@@ -64,7 +63,29 @@ def get_graph(
         allowed_collections,
         node_limit,
         graph,
+        edge_filters=None,
 ):
+    filter_conditions = []
+    bind_vars = {}
+
+    # Create filter clause
+    if edge_filters:
+        for field, values in edge_filters.items():
+            # Only add a filter if there are selected values for that field.
+            if values:
+                # Create a unique bind key for each field (e.g., 'allowed_label').
+                bind_key = f"allowed_{field}"
+                filter_conditions.append(f"e.`{field}` IN @{bind_key}")
+                bind_vars[bind_key] = values
+
+    # Join all conditions with "AND" to create the final filter clause.
+    edge_filter_clause = ""
+    if filter_conditions:
+        all_conditions = " AND ".join(filter_conditions)
+        # e == null ensures the first node (the origin) is always selected
+        edge_filter_clause = f"FILTER e == null OR ({all_conditions})"
+
+    # AQL query.
     query = f"""
             // Create temp variable for paths for each origin node
             LET temp = FLATTEN(
@@ -76,6 +97,7 @@ def get_graph(
                       vertexCollections: @allowed_collections,
                       order: "bfs"
                     }}
+                    {edge_filter_clause} // Edge property filter clause
                     LIMIT @node_limit
                     RETURN {{
                       node: v,
@@ -126,28 +148,25 @@ def get_graph(
     # Use correct graph name
     if graph == "phenotypes":
         graph_name = GRAPH_NAME_PHENOTYPES
+        db = db_phenotypes
     else:
         graph_name = GRAPH_NAME_ONTOLOGIES
-    # Depth is increased by one to find all edges that connect to final nodes
-    bind_vars = {
-        "node_ids": node_ids,
-        "graph_name": graph_name,
-        "depth": int(depth) + 1,
-        "allowed_collections": allowed_collections,
-        "node_limit": node_limit,
-    }
+        db = db_ontologies
+
+    bind_vars.update(
+        {
+            "node_ids": node_ids,
+            "graph_name": graph_name,
+            "depth": int(depth) + 1,
+            "allowed_collections": allowed_collections,
+            "node_limit": node_limit,
+        }
+    )
 
     # Execute the query
     try:
-        if graph == "phenotypes":
-            cursor = db_phenotypes.aql.execute(query, bind_vars=bind_vars)
-        else:
-            cursor = db_ontologies.aql.execute(query, bind_vars=bind_vars)
-
-        results = list(cursor)[
-            0
-        ]  # Collect the results - one element should be guaranteed
-
+        cursor = db.aql.execute(query, bind_vars=bind_vars)
+        results = list(cursor)[0]
     except Exception as e:
         print(f"Error executing query: {e}")
         results = []
@@ -761,7 +780,9 @@ def query_edge_filter_options(graph, fields_to_query):
         # AQL Query Construction
 
         # Create list of subquery strings, one for each edge collection.
-        union_subqueries = [f" (FOR doc IN `{coll}` RETURN doc) " for coll in edge_collections]
+        union_subqueries = [
+            f" (FOR doc IN `{coll}` RETURN doc) " for coll in edge_collections
+        ]
 
         # Join subqueries into a single AQL UNION clause.
         all_edges_clause = "UNION(" + ", ".join(union_subqueries) + ")"
