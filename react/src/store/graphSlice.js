@@ -88,11 +88,11 @@ export const fetchEdgeFilterOptions = createAsyncThunk(
 
     // Call backend API to get unique field values.
     const response = await fetch(
-      `/arango_api/edge_filter_options/${graphType}/`,
+      `/arango_api/edge_filter_options/`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fields: fieldsToQuery }),
+        body: JSON.stringify({ fields: fieldsToQuery, graph: graphType}),
       },
     );
 

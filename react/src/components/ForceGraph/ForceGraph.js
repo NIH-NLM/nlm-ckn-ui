@@ -893,7 +893,7 @@ const ForceGraph = ({
             <div id="tab-panel-collections" className="tab-panel active">
               {/* collection filters */}
               <div className="option-group collection-picker">
-                <label>Collection Filters:</label>
+                <h3>Collection Filters:</h3>
                 <div className="checkboxes-container">
                   {collections.map((collection) => (
                     <div key={collection} className="checkbox-container">
