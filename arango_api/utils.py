@@ -56,14 +56,15 @@ def get_by_id(coll, id):
 def get_edges_by_id(edge_coll, dr, item_coll, item_id):
     return db_ontologies.collection(edge_coll).find({dr: f"{item_coll}/{item_id}"})
 
+
 def get_graph(
-        node_ids,
-        depth,
-        edge_direction,
-        allowed_collections,
-        node_limit,
-        graph,
-        edge_filters=None,
+    node_ids,
+    depth,
+    edge_direction,
+    allowed_collections,
+    node_limit,
+    graph,
+    edge_filters=None,
 ):
     filter_conditions = []
     bind_vars = {}
