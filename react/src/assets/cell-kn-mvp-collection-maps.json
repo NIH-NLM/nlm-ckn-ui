@@ -1062,8 +1062,8 @@
         ],
         "individual_urls": [
           {
-            "individual_url": "http://cell-kn-mvp.org/#/browse/<FIELD_TO_USE>",
-            "field_to_use": "_id",
+            "individual_url": "https://<FIELD_TO_USE>",
+            "field_to_use": "DOI",
             "to_be_replaced": "",
             "replace_with": "",
             "make_lower_case": false
