@@ -16,12 +16,12 @@ def get_collections(graph, collection_type):
         all_collections = db_phenotypes.collections()
     else:
         all_collections = db_ontologies.collections()
-    document_collections = [
+    collections = [
         collection
         for collection in all_collections
         if collection["type"] == collection_type and not collection["name"].startswith("_")
     ]
-    return [collection["name"] for collection in document_collections]
+    return [collection["name"] for collection in collections]
 
 
 def get_all_by_collection(coll, graph):
