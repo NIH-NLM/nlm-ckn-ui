@@ -120,7 +120,7 @@ export const expandNode = createAsyncThunk(
         allowed_collections: settings.allowedCollections,
         node_limit: settings.nodeLimit,
         graph: settings.graphType,
-        edgeFilters: settings.edgeFilters,
+        edge_filters: settings.edgeFilters,
       }),
     });
     if (!response.ok) throw new Error("Expansion fetch failed");
