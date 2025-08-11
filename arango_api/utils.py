@@ -59,14 +59,13 @@ def get_graph(
     # Create filter clause
     if edge_filters:
         for field, values in edge_filters.items():
-            # Only add a filter if there are selected values for that field.
             if values:
-                # Create a unique bind key for each field (e.g., 'allowed_label').
+                # Create a unique bind key for each field.
                 bind_key = f"allowed_{field}"
                 filter_conditions.append(f"e.`{field}` IN @{bind_key}")
                 bind_vars[bind_key] = values
 
-    # Join all conditions with "AND" to create the final filter clause.
+    # Join all conditions to create the final filter clause.
     edge_filter_clause = ""
     if filter_conditions:
         all_conditions = " AND ".join(filter_conditions)
