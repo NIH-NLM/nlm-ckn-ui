@@ -56,7 +56,7 @@ def get_graph(
     filter_conditions = []
     bind_vars = {}
 
-    # Create filter clause
+    # Create filter clause.
     if edge_filters:
         for field, values in edge_filters.items():
             if values:
@@ -69,7 +69,7 @@ def get_graph(
     edge_filter_clause = ""
     if filter_conditions:
         all_conditions = " AND ".join(filter_conditions)
-        # e == null ensures the first node (the origin) is always selected
+        # e == null ensures the first node (the origin) is always selected.
         edge_filter_clause = f"FILTER e == null OR ({all_conditions})"
 
     # AQL query.
@@ -132,7 +132,7 @@ def get_graph(
             }}
     """
 
-    # Use correct graph name
+    # Use correct graph name.
     if graph == "phenotypes":
         graph_name = GRAPH_NAME_PHENOTYPES
         db = db_phenotypes
@@ -140,6 +140,7 @@ def get_graph(
         graph_name = GRAPH_NAME_ONTOLOGIES
         db = db_ontologies
 
+    # Depth is increased by one to find all edges that connect to final nodes.
     bind_vars.update(
         {
             "node_ids": node_ids,
@@ -150,9 +151,10 @@ def get_graph(
         }
     )
 
-    # Execute the query
+    # Execute the query.
     try:
         cursor = db.aql.execute(query, bind_vars=bind_vars)
+        # One element should be guaranteed.
         results = list(cursor)[0]
     except Exception as e:
         print(f"Error executing query: {e}")
