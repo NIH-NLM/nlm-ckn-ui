@@ -144,6 +144,7 @@ for conf in $confs; do
 	~/$mvp_directory/core/settings.py
 
     # Update, install, and enable the Apache site configuration
+    site=/etc/apache2/sites-available/$subdomain-cell-kn-mvp.conf
     if [ $conf == $CONF ]; then
 	sudo sed -i \
 	    "s/.*ServerName.*/    ServerName $domain/" \
