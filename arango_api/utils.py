@@ -10,7 +10,7 @@ from arango_api.db import (
 )
 
 
-def get_document_collections(graph):
+def get_collections(graph, collection_type):
     # Filter for document collections
     if graph == "phenotypes":
         all_collections = db_phenotypes.collections()
@@ -19,23 +19,9 @@ def get_document_collections(graph):
     document_collections = [
         collection
         for collection in all_collections
-        if collection["type"] == "document" and not collection["name"].startswith("_")
+        if collection["type"] == collection_type and not collection["name"].startswith("_")
     ]
     return [collection["name"] for collection in document_collections]
-
-
-def get_edge_collections(graph):
-    # Filter for edge collections
-    if graph == "phenotypes":
-        all_collections = db_phenotypes.collections()
-    else:
-        all_collections = db_ontologies.collections()
-    edge_collections = [
-        collection
-        for collection in all_collections
-        if collection["type"] == "edge" and not collection["name"].startswith("_")
-    ]
-    return [collection["name"] for collection in edge_collections]
 
 
 def get_all_by_collection(coll, graph):
@@ -258,7 +244,7 @@ def get_shortest_paths(node_ids, edge_direction):
 
 
 def get_all():
-    collections = get_document_collections()
+    collections = get_collections("ontologies", "document")
 
     # Create the base query
     union_queries = []
@@ -773,7 +759,7 @@ def query_edge_filter_options(graph, fields_to_query):
 
     try:
         # Get list of all edge collection names for the specified graph.
-        edge_collections = get_edge_collections(graph)
+        edge_collections = get_collections(graph, "edge")
 
         if not edge_collections:
             return {}

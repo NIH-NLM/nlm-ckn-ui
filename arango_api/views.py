@@ -8,7 +8,7 @@ from arango_api import utils
 @api_view(["POST"])
 def list_collection_names(request):
     graph = request.data.get("graph")
-    collection_names = utils.get_document_collections(graph)
+    collection_names = utils.get_collections(graph, "document")
     return JsonResponse(collection_names, safe=False)
 
 
