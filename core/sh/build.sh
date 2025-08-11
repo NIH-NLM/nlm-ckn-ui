@@ -13,10 +13,10 @@ DESCRIPTION
     Build the Cell KN MVP ArangoDB archive by checking out the
     specified versions to build, making clean packages, building the
     ontology graph, fetching external data, building the results and
-    phenotype graphs, archiving the ArangoDB database, and copying the
-    archive to the specified server. Changes on the current branches
-    are stashed prior to checking out the specified versions, then
-    applied on checking out the current version after the build.
+    phenotype graphs, archiving the ArangoDB database, and uploading
+    the archive to the Cell KN MVP servers. Changes on the current
+    branches are stashed prior to checking out the specified versions,
+    then applied on checking out the current version after the build.
 
 OPTIONS 
     -c    CONF
@@ -32,9 +32,12 @@ OPTIONS
 
     -R    Force -r
 
-    -a    Make ArangoDB archive, and copy it to cell-kn-mvp.org
+    -a    Make the ArangoDB archive
 
     -A    Force -a
+
+    -u    Upload the ArangoDB archive to cell-kn-mvp.org and
+          cell-kn-stg.org
 
     -h    Help
 
@@ -52,7 +55,8 @@ run_results=0
 force_results=0
 make_archive=0
 force_archive=0
-while getopts ":c:oOrRaAhex" opt; do
+upload_archive=0
+while getopts ":c:oOrRaAuhex" opt; do
     case $opt in
 	c)
 	    CONF=${OPTARG}
@@ -74,6 +78,9 @@ while getopts ":c:oOrRaAhex" opt; do
             ;;
         A)
             force_archive=1
+            ;;
+        u)
+            upload_archive=1
             ;;
 	h)
 	    usage
@@ -136,6 +143,14 @@ if [ ! -f ".built" ] && [ $run_ontology == 1 ] \
     git stash
     current_branch=$(git branch --show-current)
     git checkout $CELL_KN_MVP_ETL_ONTOLOGIES_VERSION
+
+    # Activate the Python environment, update ontologies downloaded
+    # from the OBO Foundry, then deactivate
+    . .venv/bin/activate
+    pushd src/main/python
+    python OntologyParserLoader.py --update
+    popd
+    deactivate
 
     # Make a clean package, then build the ontology graph
     mvn clean package -DskipTests
@@ -209,22 +224,22 @@ if [ ! -f ".built" ] && [ $run_results == 1 ] \
 fi
 popd
 
+# Name the ArangoDB archive
+archive="arangodb"
+archive+="-$CELL_KN_MVP_ETL_ONTOLOGIES_VERSION"
+archive+="-$CELL_KN_MVP_ETL_RESULTS_VERSION"
+archive+=".tar.gz"
+
 # Make ArangoDB archive, if specified
 pushd "../../../cell-kn-mvp-etl-results/cell-kn-mvp-etl-ontologies"
 if [ ! -f ".archived" ] && [ $make_archive == 1 ] \
        || [ $force_archive == 1 ]; then
 
-    # Make the archive, and copy it to cell-kn-mvp.org and
-    # cell-kn-stg.org
+    # Make the archive
     pushd data
-    archive="arangodb"
-    archive+="-$CELL_KN_MVP_ETL_ONTOLOGIES_VERSION"
-    archive+="-$CELL_KN_MVP_ETL_RESULTS_VERSION"
-    archive+=".tar.gz"
     tar -czvf $archive arangodb
-    scp $archive mvp:~
-    scp $archive stg:~
     popd
+
 
     # Log the archive
     log_message="Archived ArangoDB using"
@@ -234,3 +249,24 @@ if [ ! -f ".archived" ] && [ $make_archive == 1 ] \
     echo $log_message > ".archived"
 
 fi
+popd
+
+# Upload ArangoDB archive, if specified
+pushd "../../../cell-kn-mvp-etl-results/cell-kn-mvp-etl-ontologies"
+if [ $upload_archive == 1 ]; then
+
+    # Upload the archive to cell-kn-mvp.org and cell-kn-stg.org, if it exists
+    pushd data
+    if [ -f "$archive" ]; then
+        scp $archive mvp:~
+        scp $archive stg:~
+
+    else
+        echo "ArangoDB archive $archive does not exist"
+        exit 1
+
+    fi
+    popd
+
+fi
+popd
