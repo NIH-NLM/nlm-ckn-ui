@@ -891,54 +891,23 @@ const ForceGraph = ({
             )}
           {activeTab === "filters" && (
             <div id="tab-panel-collections" className="tab-panel active">
-              {/* collection filters */}
+              {/* Collection Filters */}
               <div className="option-group collection-picker">
                 <h3>Collection Filters:</h3>
-                <div className="checkboxes-container">
-                  {collections.map((collection) => (
-                    <div key={collection} className="checkbox-container">
-                      <button
-                        onClick={() => handleCollectionChange(collection)}
-                        className={
-                          settings.allowedCollections.includes(collection)
-                            ? "collection-button-selected"
-                            : "collection-button-deselected"
-                        }
-                      >
-                        {collectionMaps.has(collection)
-                          ? collectionMaps.get(collection)["display_name"]
-                          : collection}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <div className="checkboxes-container collection-controls">
-                  <button
-                    onClick={handleAllOn}
-                    className={
-                      settings.allowedCollections.length === collections.length
-                        ? "collection-button-selected collection-button-all"
-                        : "collection-button-deselected collection-button-all"
-                    }
-                    disabled={
-                      settings.allowedCollections.length === collections.length
-                    }
-                  >
-                    All On
-                  </button>
-                  <button
-                    onClick={handleAllOff}
-                    className={
-                      settings.allowedCollections.length === 0
-                        ? "collection-button-selected collection-button-all"
-                        : "collection-button-deselected collection-button-all"
-                    }
-                    disabled={settings.allowedCollections.length === 0}
-                  >
-                    All Off
-                  </button>
-                </div>
+                <FilterableDropdown
+                  key="collection-filter"
+                  label="Collections"
+                  options={collections}
+                  selectedOptions={settings.allowedCollections}
+                  onOptionToggle={handleCollectionChange}
+                  getOptionLabel={(collectionId) =>
+                    collectionMaps.has(collectionId)
+                      ? collectionMaps.get(collectionId)["display_name"]
+                      : collectionId
+                  }
+                />
               </div>
+              {/* Edge Filters */}
               {edgeFilterStatus === "loading" && (
                 <div className="option-group">Loading edge filters...</div>
               )}
