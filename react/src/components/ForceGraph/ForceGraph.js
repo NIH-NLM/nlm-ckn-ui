@@ -138,7 +138,7 @@ const ForceGraph = ({
     settings.graphType,
     settings.collapseOnStart,
     settings.edgeFilters,
-      settings.setOperation,
+    settings.setOperation,
     dispatch,
   ]);
 

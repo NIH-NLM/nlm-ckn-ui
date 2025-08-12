@@ -1,133 +1,92 @@
+/**
+ * Performs set operation on graph data from multiple origins.
+ * @param {object} data - Raw graph data from API.
+ * @param {string} operation - Name of operation: 'Intersection', 'Union', etc.
+ * @param {Array<string>} originNodeIds - List of origin node IDs.
+ * @returns {{nodes: Array, links: Array}} Processed graph data.
+ */
 export function performSetOperation(data, operation, originNodeIds) {
+  // Return early if data is invalid or lacks nodes.
   if (!data || !data.nodes) {
     console.warn("performSetOperation called with invalid data:", data);
     return { nodes: [], links: [] };
   }
 
-  const nodes = data.nodes;
-  const links = data.links || [];
+  // Extract raw nodes and links from data.
+  const nodesByOrigin = data.nodes;
+  const allLinks = data.links || [];
 
+  // Helper calculates final set of node IDs based on operation.
   const getAllNodeIdsFromOrigins = (operation) => {
-    if (typeof nodes !== "object" || nodes === null) return new Set();
-
-    const nodeIdsPerOrigin = Object.values(nodes).map((originGroup) => {
+    // Map each origin's subgraph to a set of node IDs.
+    const nodeIdsPerOrigin = Object.values(nodesByOrigin).map((originGroup) => {
       if (!Array.isArray(originGroup)) return new Set();
-      return new Set(
-        originGroup
-          .filter((item) => item && item.node && item.node._id)
-          .map((item) => item.node._id),
-      );
+      return new Set(originGroup.filter(item => item?.node?._id).map(item => item.node._id));
     });
 
     if (nodeIdsPerOrigin.length === 0) return new Set();
 
     if (operation === "Intersection") {
-      if (nodeIdsPerOrigin.length < 2)
-        return new Set(nodeIdsPerOrigin[0] || []);
+      if (nodeIdsPerOrigin.length < 2) return new Set(nodeIdsPerOrigin[0] || []);
 
+      // Find intersection between all node sets.
       let intersectionResult = new Set(nodeIdsPerOrigin[0]);
       for (let i = 1; i < nodeIdsPerOrigin.length; i++) {
         intersectionResult = new Set(
-          [...intersectionResult].filter((id) => nodeIdsPerOrigin[i].has(id)),
+          [...intersectionResult].filter((id) => nodeIdsPerOrigin[i].has(id))
         );
       }
-      return intersectionResult;
-    } else if (operation === "Union") {
-      return new Set(nodeIdsPerOrigin.flatMap((nodeIdsSet) => [...nodeIdsSet]));
-    } else if (operation === "Symmetric Difference") {
-      if (nodeIdsPerOrigin.length < 2)
-        return new Set(nodeIdsPerOrigin[0] || []);
 
-      let result = new Set(nodeIdsPerOrigin[0]);
-      for (let i = 1; i < nodeIdsPerOrigin.length; i++) {
-        const currentSet = nodeIdsPerOrigin[i];
-        const nextResult = new Set();
-        result.forEach((id) => {
-          if (!currentSet.has(id)) nextResult.add(id);
-        });
-        currentSet.forEach((id) => {
-          if (!result.has(id)) nextResult.add(id);
-        });
-        result = nextResult;
-      }
-      return result;
+      // Ensure origin nodes are always included in intersection result.
+      originNodeIds.forEach((id) => intersectionResult.add(id));
+      return intersectionResult;
+    }
+
+    if (operation === "Union") {
+      // Combine all node sets into single unique set.
+      return new Set(nodeIdsPerOrigin.flatMap((s) => [...s]));
+    }
+
+    if (operation === "Symmetric Difference") {
+       if (nodeIdsPerOrigin.length < 2) return new Set(nodeIdsPerOrigin[0] || []);
+
+       // Calculate symmetric difference between node sets.
+       let result = new Set(nodeIdsPerOrigin[0]);
+       for (let i = 1; i < nodeIdsPerOrigin.length; i++) {
+         const currentSet = nodeIdsPerOrigin[i];
+         const nextResult = new Set();
+         result.forEach((id) => { if (!currentSet.has(id)) nextResult.add(id); });
+         currentSet.forEach((id) => { if (!result.has(id)) nextResult.add(id); });
+         result = nextResult;
+       }
+       return result;
     }
 
     console.error("Unknown set operation:", operation);
     return new Set();
   };
 
-  const addNodesFromPathsToSet = (nodeIdsSet) => {
-    // This function needs to be adapted or removed if `findShortestPaths` logic changes
-    if (typeof nodes !== "object" || nodes === null) return;
+  // Get set of node IDs for final graph.
+  const finalNodeIdSet = getAllNodeIdsFromOrigins(operation);
 
-    Object.values(nodes).forEach((originGroup) => {
-      if (!Array.isArray(originGroup)) return;
+  // Filter master link list.
+  const filteredLinks = allLinks.filter(
+    (link) => finalNodeIdSet.has(link._from) && finalNodeIdSet.has(link._to)
+  );
 
-      originGroup.forEach((item) => {
-        if (
-          item?.node?._id &&
-          item?.path?.vertices &&
-          nodeIdsSet.has(item.node._id)
-        ) {
-          item.path.vertices.forEach((vertex) => {
-            if (vertex?._id) nodeIdsSet.add(vertex._id);
-          });
-        }
-      });
-    });
-  };
-
-  let finalNodeIdSet = getAllNodeIdsFromOrigins(operation);
-  // You might need to pass `findShortestPaths` in as an argument if you keep this logic
-  // if (!findShortestPaths) {
-  //   addNodesFromPathsToSet(finalNodeIdSet);
-  // }
-
-  const seenLinks = new Set();
-  const filteredLinks = links.filter((link) => {
-    if (!link?._from || !link?._to) return false;
-
-    if (finalNodeIdSet.has(link._from) && finalNodeIdSet.has(link._to)) {
-      const linkKey = `${link._from}-${link._to}`;
-      if (seenLinks.has(linkKey)) return false;
-
-      seenLinks.add(linkKey);
-      return true;
-    }
-    return false;
-  });
-
-  const nodeIdsInLinks = new Set();
-  filteredLinks.forEach((link) => {
-    nodeIdsInLinks.add(link._from);
-    nodeIdsInLinks.add(link._to);
-  });
-
-  // We must ensure the origin nodes are always included, even if they are isolates
-  originNodeIds.forEach((id) => nodeIdsInLinks.add(id));
-
-  const addedNodeIds = new Set();
-  const filteredNodes = [];
-  if (typeof nodes === "object" && nodes !== null) {
-    Object.values(nodes).forEach((originGroup) => {
-      if (Array.isArray(originGroup)) {
-        originGroup.forEach((item) => {
-          if (
-            item?.node?._id &&
-            nodeIdsInLinks.has(item.node._id) &&
-            !addedNodeIds.has(item.node._id)
-          ) {
-            filteredNodes.push(item.node);
-            addedNodeIds.add(item.node._id);
-          }
-        });
+  // Gather unique node objects corresponding to final IDs.
+  const finalNodeMap = new Map();
+  Object.values(nodesByOrigin).flat().forEach(item => {
+    if (item?.node?._id && finalNodeIdSet.has(item.node._id)) {
+      if (!finalNodeMap.has(item.node._id)) {
+        finalNodeMap.set(item.node._id, item.node);
       }
-    });
-  }
+    }
+  });
 
+  // Return graph structure.
   return {
-    nodes: filteredNodes,
+    nodes: Array.from(finalNodeMap.values()),
     links: filteredLinks,
   };
 }
