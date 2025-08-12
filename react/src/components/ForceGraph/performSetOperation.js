@@ -21,24 +21,19 @@ export function performSetOperation(data, operation, originNodeIds) {
     // Map each origin's subgraph to a set of node IDs.
     const nodeIdsPerOrigin = Object.values(nodesByOrigin).map((originGroup) => {
       if (!Array.isArray(originGroup)) return new Set();
-      return new Set(
-        originGroup
-          .filter((item) => item?.node?._id)
-          .map((item) => item.node._id),
-      );
+      return new Set(originGroup.filter(item => item?.node?._id).map(item => item.node._id));
     });
 
     if (nodeIdsPerOrigin.length === 0) return new Set();
 
     if (operation === "Intersection") {
-      if (nodeIdsPerOrigin.length < 2)
-        return new Set(nodeIdsPerOrigin[0] || []);
+      if (nodeIdsPerOrigin.length < 2) return new Set(nodeIdsPerOrigin[0] || []);
 
       // Find intersection between all node sets.
       let intersectionResult = new Set(nodeIdsPerOrigin[0]);
       for (let i = 1; i < nodeIdsPerOrigin.length; i++) {
         intersectionResult = new Set(
-          [...intersectionResult].filter((id) => nodeIdsPerOrigin[i].has(id)),
+          [...intersectionResult].filter((id) => nodeIdsPerOrigin[i].has(id))
         );
       }
 
@@ -53,23 +48,18 @@ export function performSetOperation(data, operation, originNodeIds) {
     }
 
     if (operation === "Symmetric Difference") {
-      if (nodeIdsPerOrigin.length < 2)
-        return new Set(nodeIdsPerOrigin[0] || []);
+       if (nodeIdsPerOrigin.length < 2) return new Set(nodeIdsPerOrigin[0] || []);
 
-      // Calculate symmetric difference between node sets.
-      let result = new Set(nodeIdsPerOrigin[0]);
-      for (let i = 1; i < nodeIdsPerOrigin.length; i++) {
-        const currentSet = nodeIdsPerOrigin[i];
-        const nextResult = new Set();
-        result.forEach((id) => {
-          if (!currentSet.has(id)) nextResult.add(id);
-        });
-        currentSet.forEach((id) => {
-          if (!result.has(id)) nextResult.add(id);
-        });
-        result = nextResult;
-      }
-      return result;
+       // Calculate symmetric difference between node sets.
+       let result = new Set(nodeIdsPerOrigin[0]);
+       for (let i = 1; i < nodeIdsPerOrigin.length; i++) {
+         const currentSet = nodeIdsPerOrigin[i];
+         const nextResult = new Set();
+         result.forEach((id) => { if (!currentSet.has(id)) nextResult.add(id); });
+         currentSet.forEach((id) => { if (!result.has(id)) nextResult.add(id); });
+         result = nextResult;
+       }
+       return result;
     }
 
     console.error("Unknown set operation:", operation);
@@ -81,20 +71,18 @@ export function performSetOperation(data, operation, originNodeIds) {
 
   // Filter master link list.
   const filteredLinks = allLinks.filter(
-    (link) => finalNodeIdSet.has(link._from) && finalNodeIdSet.has(link._to),
+    (link) => finalNodeIdSet.has(link._from) && finalNodeIdSet.has(link._to)
   );
 
   // Gather unique node objects corresponding to final IDs.
   const finalNodeMap = new Map();
-  Object.values(nodesByOrigin)
-    .flat()
-    .forEach((item) => {
-      if (item?.node?._id && finalNodeIdSet.has(item.node._id)) {
-        if (!finalNodeMap.has(item.node._id)) {
-          finalNodeMap.set(item.node._id, item.node);
-        }
+  Object.values(nodesByOrigin).flat().forEach(item => {
+    if (item?.node?._id && finalNodeIdSet.has(item.node._id)) {
+      if (!finalNodeMap.has(item.node._id)) {
+        finalNodeMap.set(item.node._id, item.node);
       }
-    });
+    }
+  });
 
   // Return graph structure.
   return {
