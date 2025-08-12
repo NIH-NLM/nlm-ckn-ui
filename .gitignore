@@ -12,6 +12,7 @@ react/coverage/
 # Environment
 *.DS_Store
 *.env
+.built
 .idea
 .venv
 .zshenv
