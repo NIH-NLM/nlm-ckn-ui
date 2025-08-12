@@ -1,5 +1,6 @@
 from django.http import JsonResponse, HttpResponseNotFound
 from rest_framework.decorators import api_view
+from rest_framework import status
 
 from arango_api import utils
 
@@ -7,8 +8,7 @@ from arango_api import utils
 @api_view(["POST"])
 def list_collection_names(request):
     graph = request.data.get("graph")
-    objects = utils.get_document_collections(graph)
-    collection_names = [collection["name"] for collection in objects]
+    collection_names = utils.get_collections(graph, "document")
     return JsonResponse(collection_names, safe=False)
 
 
@@ -54,9 +54,16 @@ def get_graph(request):
     allowed_collections = request.data.get("allowed_collections")
     node_limit = request.data.get("node_limit", 100)
     graph = request.data.get("graph")
+    edge_filters = request.data.get("edge_filters", {})
 
     search_results = utils.get_graph(
-        node_ids, depth, edge_direction, allowed_collections, node_limit, graph
+        node_ids,
+        depth,
+        edge_direction,
+        allowed_collections,
+        node_limit,
+        graph,
+        edge_filters,
     )
     return JsonResponse(search_results, safe=False)
 
@@ -104,3 +111,31 @@ def get_sunburst(request):
         return utils.get_phenotypes_sunburst(parent_id)
     else:
         return utils.get_ontologies_sunburst(parent_id)
+
+
+@api_view(["POST"])
+def get_edge_filter_options(request):
+    """
+    Handles POST request to fetch unique values for specified edge attributes.
+    Constructs an HTTP response from data returned by utility function.
+    """
+    try:
+        data = request.data
+        graph = data.get("graph")
+        fields_to_query = data.get("fields")
+
+        # Get data.
+        query_results = utils.query_edge_filter_options(graph, fields_to_query)
+
+        # Create Response.
+        return JsonResponse(query_results, status=status.HTTP_200_OK)
+
+    except ValueError as e:
+        # Handle specific input errors raised by the utility.
+        return JsonResponse({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        # Handle all other errors.
+        return JsonResponse(
+            {"error": "An internal server error occurred."},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )

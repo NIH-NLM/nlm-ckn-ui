@@ -30,10 +30,13 @@ import {
   collapseNode,
   clearNodeToCenter,
   updateNodePosition,
+  fetchEdgeFilterOptions,
+  updateEdgeFilter,
 } from "../../store/graphSlice";
 import { performSetOperation } from "./setOperation";
 import { useHotkeys } from "../../hooks/useHotkeys";
 import { useHotkeyHold } from "../../hooks/useHotkeyHold";
+import FilterableDropdown from "../FilterableDropdown/FilterableDropdown";
 
 // Main React component for D3 force-directed graph, wrapped in memo for performance.
 // Orchestrates Redux state, user interactions, and D3 instance.
@@ -60,13 +63,15 @@ const ForceGraph = ({
     lastActionType,
     nodeToCenter,
     collapsed,
+    availableEdgeFilters,
+    edgeFilterStatus,
   } = present;
   const canUndo = past.length > 0;
   const canRedo = future.length > 0;
 
   // Local component state for UI and temporary flags.
   const [collections, setCollections] = useState([]);
-  const collectionMaps = new Map(collMaps.maps);
+  const collectionMaps = useMemo(() => new Map(collMaps.maps), []); // Memoizing to avoid refetching.
   const [isRestoring, setIsRestoring] = useState(false);
   const [optionsVisible, setOptionsVisible] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
@@ -94,7 +99,12 @@ const ForceGraph = ({
       setCollections(parsed);
       dispatch(setAvailableCollections(parsed));
     });
-  }, [dispatch]);
+  }, [dispatch, settings.graphType]);
+
+  // Fetches available edge filter options when component mounts or graph type changes.
+  useEffect(() => {
+    dispatch(fetchEdgeFilterOptions());
+  }, [dispatch, settings.graphType]);
 
   // Applies collection filters passed via props.
   useEffect(() => {
@@ -127,6 +137,7 @@ const ForceGraph = ({
     settings.nodeLimit,
     settings.graphType,
     settings.collapseOnStart,
+    settings.edgeFilters,
     dispatch,
   ]);
 
@@ -317,6 +328,14 @@ const ForceGraph = ({
   const handleNodeDragEnd = useCallback(
     ({ nodeId, x, y }) => {
       dispatch(updateNodePosition({ nodeId, x, y }));
+    },
+    [dispatch],
+  );
+
+  // Handle filtering on edges.
+  const handleEdgeFilterChange = useCallback(
+    (field, value) => {
+      dispatch(updateEdgeFilter({ field, value }));
     },
     [dispatch],
   );
@@ -654,10 +673,10 @@ const ForceGraph = ({
             </button>
           )}
           <button
-            className={`tab-button ${activeTab === "collections" ? "active" : ""}`}
-            onClick={() => setActiveTab("collections")}
+            className={`tab-button ${activeTab === "filters" ? "active" : ""}`}
+            onClick={() => setActiveTab("filters")}
           >
-            Collections
+            Filters
           </button>
           <button
             className={`tab-button ${activeTab === "history" ? "active" : ""}`}
@@ -870,56 +889,57 @@ const ForceGraph = ({
                 </div>
               </div>
             )}
-
-          {activeTab === "collections" && (
+          {activeTab === "filters" && (
             <div id="tab-panel-collections" className="tab-panel active">
-              <div className="option-group collection-picker">
-                <label>Active Collections:</label>
-                <div className="checkboxes-container">
-                  {collections.map((collection) => (
-                    <div key={collection} className="checkbox-container">
-                      <button
-                        onClick={() => handleCollectionChange(collection)}
-                        className={
-                          settings.allowedCollections.includes(collection)
-                            ? "collection-button-selected"
-                            : "collection-button-deselected"
-                        }
-                      >
-                        {collectionMaps.has(collection)
-                          ? collectionMaps.get(collection)["display_name"]
-                          : collection}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <div className="checkboxes-container collection-controls">
-                  <button
-                    onClick={handleAllOn}
-                    className={
-                      settings.allowedCollections.length === collections.length
-                        ? "collection-button-selected collection-button-all"
-                        : "collection-button-deselected collection-button-all"
-                    }
-                    disabled={
-                      settings.allowedCollections.length === collections.length
-                    }
-                  >
-                    All On
-                  </button>
-                  <button
-                    onClick={handleAllOff}
-                    className={
-                      settings.allowedCollections.length === 0
-                        ? "collection-button-selected collection-button-all"
-                        : "collection-button-deselected collection-button-all"
-                    }
-                    disabled={settings.allowedCollections.length === 0}
-                  >
-                    All Off
-                  </button>
-                </div>
+              {/* Collection Filters */}
+              <div className="collection-picker">
+                <h3>Collection Filters:</h3>
+                <FilterableDropdown
+                  key="collection-filter"
+                  label="Collections"
+                  options={collections}
+                  selectedOptions={settings.allowedCollections}
+                  onOptionToggle={handleCollectionChange}
+                  getOptionLabel={(collectionId) =>
+                    collectionMaps.has(collectionId)
+                      ? collectionMaps.get(collectionId)["display_name"]
+                      : collectionId
+                  }
+                  getColorForOption={(collectionId) =>
+                    collectionMaps.has(collectionId)
+                      ? collectionMaps.get(collectionId)["color"]
+                      : null
+                  }
+                />
               </div>
+              {/* Edge Filters */}
+              {edgeFilterStatus === "loading" && (
+                <div className="option-group">Loading edge filters...</div>
+              )}
+              {edgeFilterStatus === "failed" && (
+                <div className="option-group error-message">
+                  Failed to load edge filters.
+                </div>
+              )}
+              {edgeFilterStatus === "succeeded" &&
+                Object.keys(availableEdgeFilters).length > 0 && (
+                  <div className="edge-filter-section">
+                    <h3>Edge Filters:</h3>
+                    {Object.entries(availableEdgeFilters).map(
+                      ([field, values]) => (
+                        <FilterableDropdown
+                          key={field}
+                          label={field}
+                          options={values}
+                          selectedOptions={settings.edgeFilters[field] || []}
+                          onOptionToggle={(value) =>
+                            handleEdgeFilterChange(field, value)
+                          }
+                        />
+                      ),
+                    )}
+                  </div>
+                )}
             </div>
           )}
 

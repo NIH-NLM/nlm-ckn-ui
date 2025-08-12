@@ -388,3 +388,29 @@ export const hasNodesInRawData = (data) => {
   }
   return false;
 };
+
+/**
+ * Extracts filterable edge attribute names from collection maps configuration.
+ * @returns {Array<string>} Sorted array of unique field names for filtering.
+ */
+export const getFilterableEdgeFields = () => {
+  try {
+    const collectionMaps = new Map(collMaps.maps);
+    const edgeConfig = collectionMaps.get("edges");
+
+    if (!edgeConfig || !Array.isArray(edgeConfig.individual_fields)) {
+      console.warn("No 'edges' configuration found in collection maps.");
+      return [];
+    }
+
+    const fields = edgeConfig.individual_fields
+      .map((field) => field.field_to_display)
+      .filter(Boolean); // Filters out null/undefined entries.
+
+    // Return unique, sorted list of fields.
+    return [...new Set(fields)].sort();
+  } catch (error) {
+    console.error("Failed to parse filterable edge fields:", error);
+    return [];
+  }
+};

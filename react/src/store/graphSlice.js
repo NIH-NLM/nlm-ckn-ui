@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import undoable from "redux-undo";
+import { getFilterableEdgeFields } from "../components/Utils/Utils";
 
 // API helper to fetch graph data from backend.
 // Chooses endpoint based on whether shortest path is requested.
@@ -12,6 +13,7 @@ const fetchGraphDataAPI = async (params) => {
     allowedCollections,
     nodeLimit,
     graphType,
+    edgeFilters,
   } = params;
 
   // Select endpoint for standard traversal or shortest path.
@@ -31,6 +33,7 @@ const fetchGraphDataAPI = async (params) => {
           allowed_collections: allowedCollections,
           node_limit: nodeLimit,
           graph: graphType,
+          edge_filters: edgeFilters,
         };
 
   const response = await fetch(endpoint, {
@@ -58,6 +61,7 @@ export const fetchAndProcessGraph = createAsyncThunk(
       allowedCollections: settings.allowedCollections,
       nodeLimit: settings.nodeLimit,
       graphType: settings.graphType,
+      edgeFilters: settings.edgeFilters,
     };
     try {
       const rawData = await fetchGraphDataAPI(params);
@@ -66,6 +70,37 @@ export const fetchAndProcessGraph = createAsyncThunk(
       console.error("Thunk fetch error:", error);
       throw error;
     }
+  },
+);
+
+/**
+ * Async thunk for fetching available edge filter options from backend.
+ * Queries configured edge fields for unique values.
+ */
+export const fetchEdgeFilterOptions = createAsyncThunk(
+  "graph/fetchEdgeFilterOptions",
+  async (_, { getState }) => {
+    // Get graphType from state for API request.
+    const { graphType } = getState().graph.present.settings;
+
+    // Get fields to query from util function.
+    const fieldsToQuery = getFilterableEdgeFields();
+    if (fieldsToQuery.length === 0) {
+      return {}; // No fields to fetch.
+    }
+
+    // Call backend API to get unique field values.
+    const response = await fetch(`/arango_api/edge_filter_options/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fields: fieldsToQuery, graph: graphType }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Edge filter options fetch failed.");
+    }
+
+    return await response.json();
   },
 );
 
@@ -85,6 +120,7 @@ export const expandNode = createAsyncThunk(
         allowed_collections: settings.allowedCollections,
         node_limit: settings.nodeLimit,
         graph: settings.graphType,
+        edge_filters: settings.edgeFilters,
       }),
     });
     if (!response.ok) throw new Error("Expansion fetch failed");
@@ -118,6 +154,7 @@ const initialState = {
     useFocusNodes: true,
     collapseOnStart: true,
     graphType: "phenotypes",
+    edgeFilters: {},
   },
   // Core graph data and state.
   originNodeIds: [], // Initial nodes for graph query.
@@ -138,6 +175,8 @@ const initialState = {
   status: "idle", // (idle | loading | processing | succeeded | failed)
   error: null,
   lastActionType: null, // Tracks last action for conditional logic in UI.
+  availableEdgeFilters: {}, // Stores all unique edge attribute values fetched from API.
+  edgeFilterStatus: "idle", // Status for edge filter options fetch.
 };
 
 // Redux slice for managing all graph-related state.
@@ -171,6 +210,49 @@ const graphSlice = createSlice({
     setAvailableCollections: (state, action) => {
       state.settings.allowedCollections = action.payload;
       state.lastActionType = "setAvailableCollections";
+    },
+    // Updates user-selected edge filter for a specific field.
+    updateEdgeFilter: (state, action) => {
+      const { field, value } = action.payload;
+      const currentFilters = state.settings.edgeFilters[field] || [];
+      let newFilters;
+
+      // Check if the incoming value is an array.
+      if (Array.isArray(value)) {
+        // Handle arrays
+        const valueAsString = JSON.stringify(value);
+        // Find index of existing array by comparing stringified values.
+        const existingIndex = currentFilters.findIndex(
+          (item) => JSON.stringify(item) === valueAsString,
+        );
+
+        if (existingIndex > -1) {
+          // It exists, remove it by filtering by index.
+          newFilters = currentFilters.filter(
+            (_, index) => index !== existingIndex,
+          );
+        } else {
+          // It does not exist, add it.
+          newFilters = [...currentFilters, value];
+        }
+      } else {
+        // Handle strings
+        if (currentFilters.includes(value)) {
+          // It exists, remove it.
+          newFilters = currentFilters.filter((v) => v !== value);
+        } else {
+          // It does not exist, add it.
+          newFilters = [...currentFilters, value];
+        }
+      }
+
+      // Create a new edgeFilters object to ensure Redux detects the change.
+      state.settings.edgeFilters = {
+        ...state.settings.edgeFilters,
+        [field]: newFilters,
+      };
+
+      state.lastActionType = "updateEdgeFilter";
     },
     // Updates a node's position, typically after user drag.
     updateNodePosition: (state, action) => {
@@ -240,6 +322,26 @@ const graphSlice = createSlice({
         state.error = action.error.message;
         state.lastActionType = "fetch/rejected";
       })
+      // Reducers for edge filter options fetch.
+      .addCase(fetchEdgeFilterOptions.pending, (state) => {
+        state.edgeFilterStatus = "loading";
+      })
+      .addCase(fetchEdgeFilterOptions.fulfilled, (state, action) => {
+        state.edgeFilterStatus = "succeeded";
+        state.availableEdgeFilters = action.payload;
+        // Initialize edgeFilters in settings with empty arrays for each new field.
+        // Prevents undefined errors when accessing filters later.
+        Object.keys(action.payload).forEach((field) => {
+          if (!state.settings.edgeFilters[field]) {
+            state.settings.edgeFilters[field] = [];
+          }
+        });
+      })
+      .addCase(fetchEdgeFilterOptions.rejected, (state, action) => {
+        state.edgeFilterStatus = "failed";
+        state.error = action.error.message; // Store error for UI feedback.
+        console.error("fetchEdgeFilterOptions rejected:", action.error.message);
+      })
       // Reducers for node expansion.
       .addCase(expandNode.pending, (state) => {
         state.lastActionType = "expand/pending";
@@ -295,6 +397,7 @@ export const {
   setInitialCollapseList,
   uncollapseNode,
   collapseNode,
+  updateEdgeFilter,
 } = graphSlice.actions;
 
 // Wrap base reducer with redux-undo.

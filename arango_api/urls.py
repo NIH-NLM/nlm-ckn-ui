@@ -11,6 +11,7 @@ from .views import (
     list_collection_names,
     get_sunburst,
     get_shortest_paths,
+    get_edge_filter_options,
 )
 
 urlpatterns = [
@@ -28,4 +29,7 @@ urlpatterns = [
     path("aql/", run_aql_query, name="run_aql_query"),
     path("get_all/", get_all, name="get_all"),
     path("sunburst/", get_sunburst, name="get_sunburst"),
+    path(
+        "edge_filter_options/", get_edge_filter_options, name="get_edge_filter_options"
+    ),
 ]

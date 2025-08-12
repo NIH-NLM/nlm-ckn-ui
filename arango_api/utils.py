@@ -10,7 +10,7 @@ from arango_api.db import (
 )
 
 
-def get_document_collections(graph):
+def get_collections(graph, collection_type):
     # Filter for document collections
     if graph == "phenotypes":
         all_collections = db_phenotypes.collections()
@@ -19,9 +19,10 @@ def get_document_collections(graph):
     collections = [
         collection
         for collection in all_collections
-        if collection["type"] == "document" and not collection["name"].startswith("_")
+        if collection["type"] == collection_type
+        and not collection["name"].startswith("_")
     ]
-    return collections
+    return [collection["name"] for collection in collections]
 
 
 def get_all_by_collection(coll, graph):
@@ -50,7 +51,28 @@ def get_graph(
     allowed_collections,
     node_limit,
     graph,
+    edge_filters=None,
 ):
+    filter_conditions = []
+    bind_vars = {}
+
+    # Create filter clause.
+    if edge_filters:
+        for field, values in edge_filters.items():
+            if values:
+                # Create a unique bind key for each field.
+                bind_key = f"allowed_{field}"
+                filter_conditions.append(f"e.`{field}` IN @{bind_key}")
+                bind_vars[bind_key] = values
+
+    # Join all conditions to create the final filter clause.
+    edge_filter_clause = ""
+    if filter_conditions:
+        all_conditions = " AND ".join(filter_conditions)
+        # e == null ensures the first node (the origin) is always selected.
+        edge_filter_clause = f"FILTER e == null OR ({all_conditions})"
+
+    # AQL query.
     query = f"""
             // Create temp variable for paths for each origin node
             LET temp = FLATTEN(
@@ -62,6 +84,7 @@ def get_graph(
                       vertexCollections: @allowed_collections,
                       order: "bfs"
                     }}
+                    {edge_filter_clause} // Edge property filter clause
                     LIMIT @node_limit
                     RETURN {{
                       node: v,
@@ -109,31 +132,30 @@ def get_graph(
             }}
     """
 
-    # Use correct graph name
+    # Use correct graph name.
     if graph == "phenotypes":
         graph_name = GRAPH_NAME_PHENOTYPES
+        db = db_phenotypes
     else:
         graph_name = GRAPH_NAME_ONTOLOGIES
-    # Depth is increased by one to find all edges that connect to final nodes
-    bind_vars = {
-        "node_ids": node_ids,
-        "graph_name": graph_name,
-        "depth": int(depth) + 1,
-        "allowed_collections": allowed_collections,
-        "node_limit": node_limit,
-    }
+        db = db_ontologies
 
-    # Execute the query
+    # Depth is increased by one to find all edges that connect to final nodes.
+    bind_vars.update(
+        {
+            "node_ids": node_ids,
+            "graph_name": graph_name,
+            "depth": int(depth) + 1,
+            "allowed_collections": allowed_collections,
+            "node_limit": node_limit,
+        }
+    )
+
+    # Execute the query.
     try:
-        if graph == "phenotypes":
-            cursor = db_phenotypes.aql.execute(query, bind_vars=bind_vars)
-        else:
-            cursor = db_ontologies.aql.execute(query, bind_vars=bind_vars)
-
-        results = list(cursor)[
-            0
-        ]  # Collect the results - one element should be guaranteed
-
+        cursor = db.aql.execute(query, bind_vars=bind_vars)
+        # One element should be guaranteed.
+        results = list(cursor)[0]
     except Exception as e:
         print(f"Error executing query: {e}")
         results = []
@@ -224,7 +246,7 @@ def get_shortest_paths(node_ids, edge_direction):
 
 
 def get_all():
-    collections = get_document_collections()
+    collections = get_collections("ontologies", "document")
 
     # Create the base query
     union_queries = []
@@ -715,3 +737,77 @@ def format_node_data(node_doc, has_children):
         "_hasChildren": has_children,
         "children": None,  # Always start with null children unless fetching them explicitly
     }
+
+
+def query_edge_filter_options(graph, fields_to_query):
+    """
+    Queries database for unique values for specified edge attributes.
+    Returns dictionary of results or raises an exception on error.
+    """
+    # Parameter Validation
+    if not graph or not isinstance(fields_to_query, list):
+        raise ValueError("Missing or invalid 'graph' or 'fields' parameter.")
+
+    if not fields_to_query:
+        return {}
+
+    # Database Selection
+    if graph == "phenotypes":
+        db = db_phenotypes
+    elif graph == "ontologies":
+        db = db_ontologies
+    else:
+        raise ValueError(f"Unknown graph type: {graph}")
+
+    try:
+        # Get list of all edge collection names for the specified graph.
+        edge_collections = get_collections(graph, "edge")
+
+        if not edge_collections:
+            return {}
+
+        # AQL Query Construction
+
+        # Create list of subquery strings, one for each edge collection.
+        union_subqueries = [
+            f" (FOR doc IN `{coll}` RETURN doc) " for coll in edge_collections
+        ]
+
+        # Join subqueries into a single AQL UNION clause.
+        all_edges_clause = "UNION(" + ", ".join(union_subqueries) + ")"
+
+        # Construct final query using an f-string.
+        # The `all_edges_clause` is injected directly into the query text.
+        # This lets AQL operate on a pre-aggregated stream of documents.
+        query = f"""
+            LET all_edges = ({all_edges_clause})
+
+            LET options_per_field = (
+                FOR field_name IN @fields_to_query
+                    LET values = (
+                        FOR edge IN all_edges
+                            FILTER HAS(edge, field_name) AND edge[field_name] != null AND edge[field_name] != ""
+                            COLLECT value = edge[field_name]
+                            RETURN value
+                    )
+                    RETURN {{ [field_name]: UNIQUE(values) }}
+            )
+
+            RETURN MERGE(options_per_field)
+        """
+
+        # Query Execution
+
+        bind_vars = {
+            "fields_to_query": fields_to_query,
+        }
+
+        cursor = db.aql.execute(query, bind_vars=bind_vars)
+        results = list(cursor)[0]
+
+        return results
+
+    except Exception as e:
+        print(f"Error executing edge_filter_options query: {e}")
+        # Re-raise exception to be handled by the view layer.
+        raise
