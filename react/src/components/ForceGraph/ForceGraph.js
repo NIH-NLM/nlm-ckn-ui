@@ -33,7 +33,7 @@ import {
   fetchEdgeFilterOptions,
   updateEdgeFilter,
 } from "../../store/graphSlice";
-import { performSetOperation } from "./setOperation";
+import { performSetOperation } from "./performSetOperation";
 import { useHotkeys } from "../../hooks/useHotkeys";
 import { useHotkeyHold } from "../../hooks/useHotkeyHold";
 import FilterableDropdown from "../FilterableDropdown/FilterableDropdown";
