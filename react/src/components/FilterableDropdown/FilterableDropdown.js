@@ -12,7 +12,7 @@ const useClickOutside = (ref, handler) => {
   }, [ref, handler]);
 };
 
-// Helper function gets consistent string representation for display.
+// Gets consistent string representation for display.
 const defaultGetOptionLabel = (value) => {
   if (Array.isArray(value)) return value.join(", ");
   return String(value);
@@ -35,31 +35,27 @@ const FilterableDropdown = ({
 
   useClickOutside(wrapperRef, () => setIsOpen(false));
 
-  // Memoized, processed list of flattened, unique, and sorted options.
+  // Memoized list of processed option objects.
   const processedOptions = useMemo(() => {
-    const optionMap = new Map();
-    options.forEach((originalOption) => {
-      if (Array.isArray(originalOption)) {
-        originalOption.forEach((subValue) => {
-          if (!optionMap.has(subValue)) optionMap.set(subValue, originalOption);
-        });
-      } else {
-        const displayString = getOptionLabel(originalOption);
-        if (!optionMap.has(displayString))
-          optionMap.set(displayString, originalOption);
-      }
-    });
-    return Array.from(optionMap.entries())
-      .map(([display, original]) => ({ display, original }))
-      .sort((a, b) =>
-        a.display.toLowerCase().localeCompare(b.display.toLowerCase()),
-      );
+    const flatUniqueValues = [...new Set(options.flat().map(String))];
+    const optionsWithLabels = flatUniqueValues.map((value) => ({
+      original: value,
+      display: getOptionLabel(value),
+    }));
+
+    optionsWithLabels.sort((a, b) =>
+      a.display.toLowerCase().localeCompare(b.display.toLowerCase()),
+    );
+
+    return optionsWithLabels;
   }, [options, getOptionLabel]);
 
   // Memoized list of options filtered by search term.
   const filteredOptions = useMemo(() => {
     if (!searchTerm) return processedOptions;
     const normalizedSearchTerm = searchTerm.toLowerCase();
+
+    // Filter based on display label.
     return processedOptions.filter((option) => {
       const normalizedOptionDisplay = option.display
         .toLowerCase()
@@ -67,18 +63,6 @@ const FilterableDropdown = ({
       return normalizedOptionDisplay.includes(normalizedSearchTerm);
     });
   }, [processedOptions, searchTerm]);
-
-  // Helper function checks if an option is currently selected.
-  const isSelected = (option) => {
-    const originalValue = option.original;
-    if (Array.isArray(originalValue)) {
-      const optAsString = JSON.stringify(originalValue);
-      return selectedOptions.some(
-        (item) => JSON.stringify(item) === optAsString,
-      );
-    }
-    return selectedOptions.includes(originalValue);
-  };
 
   return (
     <div className="filterable-dropdown" ref={wrapperRef}>
@@ -94,26 +78,24 @@ const FilterableDropdown = ({
       {isOpen && (
         <ul className="dropdown-list">
           {filteredOptions.length > 0 ? (
-            filteredOptions.map((option) => {
-              // Get color for this list item.
-              const color = getColorForOption(option.original);
-              return (
-                <li
-                  key={option.display}
-                  className={`dropdown-item ${isSelected(option) ? "selected" : ""}`}
-                  onClick={() => onOptionToggle(option.original)}
-                >
-                  {/* Render color swatch if color exists. */}
-                  {color && (
-                    <span
-                      className="color-swatch"
-                      style={{ backgroundColor: color }}
-                    />
-                  )}
-                  {option.display}
-                </li>
-              );
-            })
+            filteredOptions.map((option) => (
+              <li
+                key={option.original}
+                className={`dropdown-item ${selectedOptions.includes(option.original) ? "selected" : ""}`}
+                onClick={() => onOptionToggle(option.original)}
+              >
+                {getColorForOption(option.original) && (
+                  <span
+                    className="color-swatch"
+                    style={{
+                      backgroundColor: getColorForOption(option.original),
+                    }}
+                  />
+                )}
+                {/* Render display label. */}
+                {option.display}
+              </li>
+            ))
           ) : (
             <li className="dropdown-item-none">No matches found</li>
           )}
@@ -121,30 +103,24 @@ const FilterableDropdown = ({
       )}
 
       <div className="selected-options-pills">
-        {selectedOptions.map((originalOption) => {
-          // Get color for this pill item.
-          const color = getColorForOption(originalOption);
-          return (
-            <div key={getOptionLabel(originalOption)} className="pill">
-              {/* Render color swatch if color exists. */}
-              {color && (
-                <span
-                  className="color-swatch"
-                  style={{ backgroundColor: color }}
-                />
-              )}
-              <span className="pill-text">
-                {getOptionLabel(originalOption)}
-              </span>
-              <button
-                className="pill-remove"
-                onClick={() => onOptionToggle(originalOption)}
-              >
-                &times;
-              </button>
-            </div>
-          );
-        })}
+        {selectedOptions.map((selectedString) => (
+          <div key={selectedString} className="pill">
+            {getColorForOption(selectedString) && (
+              <span
+                className="color-swatch"
+                style={{ backgroundColor: getColorForOption(selectedString) }}
+              />
+            )}
+            {/* Use getOptionLabel to show correct pill text. */}
+            <span className="pill-text">{getOptionLabel(selectedString)}</span>
+            <button
+              className="pill-remove"
+              onClick={() => onOptionToggle(selectedString)}
+            >
+              &times;
+            </button>
+          </div>
+        ))}
       </div>
     </div>
   );
