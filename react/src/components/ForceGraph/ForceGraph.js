@@ -657,7 +657,7 @@ const ForceGraph = ({
       <div
         id="graph-options-panel"
         className="graph-options-side-panel"
-        style={{ display: optionsVisible ? "block" : "none" }}
+        style={{ display: optionsVisible ? "flex" : "none" }}
       >
         <div className="options-tabs-nav">
           {/* Tabs for navigating different settings categories. */}
