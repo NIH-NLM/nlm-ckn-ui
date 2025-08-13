@@ -491,7 +491,7 @@ function ForceGraphConstructor(
         .style("display", shouldShow ? "block" : "none");
     };
 
-    // A label is shown only if its user-toggle is on AND the zoom scale is above its threshold.
+    // A label is shown only if its user-toggle is on and the zoom scale is above its threshold.
     setVisibility(
       ".node-label",
       nodeContainer,
@@ -514,7 +514,7 @@ function ForceGraphConstructor(
     );
   }
 
-  // Setup zoom and pan behavior. This is now defined *after* its dependencies.
+  // Setup zoom and pan behavior.
   const zoomHandler = d3
     .zoom()
     .on("zoom", (event) => {
