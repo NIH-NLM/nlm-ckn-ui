@@ -215,38 +215,13 @@ const graphSlice = createSlice({
     updateEdgeFilter: (state, action) => {
       const { field, value } = action.payload;
       const currentFilters = state.settings.edgeFilters[field] || [];
-      let newFilters;
 
-      // Check if the incoming value is an array.
-      if (Array.isArray(value)) {
-        // Handle arrays
-        const valueAsString = JSON.stringify(value);
-        // Find index of existing array by comparing stringified values.
-        const existingIndex = currentFilters.findIndex(
-          (item) => JSON.stringify(item) === valueAsString,
-        );
+      // Toggle filter values
+      const newFilters = currentFilters.includes(value)
+        ? currentFilters.filter((v) => v !== value)
+        : [...currentFilters, value];
 
-        if (existingIndex > -1) {
-          // It exists, remove it by filtering by index.
-          newFilters = currentFilters.filter(
-            (_, index) => index !== existingIndex,
-          );
-        } else {
-          // It does not exist, add it.
-          newFilters = [...currentFilters, value];
-        }
-      } else {
-        // Handle strings
-        if (currentFilters.includes(value)) {
-          // It exists, remove it.
-          newFilters = currentFilters.filter((v) => v !== value);
-        } else {
-          // It does not exist, add it.
-          newFilters = [...currentFilters, value];
-        }
-      }
-
-      // Create a new edgeFilters object to ensure Redux detects the change.
+      // Save current state
       state.settings.edgeFilters = {
         ...state.settings.edgeFilters,
         [field]: newFilters,

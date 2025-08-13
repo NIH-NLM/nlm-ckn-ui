@@ -59,18 +59,27 @@ def get_graph(
     # Create filter clause.
     if edge_filters:
         for field, values in edge_filters.items():
+            # Only add filter if they exist.
             if values:
-                # Create a unique bind key for each field.
                 bind_key = f"allowed_{field}"
-                filter_conditions.append(f"e.`{field}` IN @{bind_key}")
                 bind_vars[bind_key] = values
 
-    # Join all conditions to create the final filter clause.
+                # AQL matches if field is a string OR if field is an array that intersects.
+                condition = f"""
+                  (
+                    (IS_STRING(e.`{field}`) AND e.`{field}` IN @{bind_key}) OR 
+                    (IS_ARRAY(e.`{field}`) AND LENGTH(INTERSECTION(e.`{field}`, @{bind_key})) > 0)
+                  )
+                """
+                filter_conditions.append(condition)
+
+    # Join filter conditions.
     edge_filter_clause = ""
     if filter_conditions:
-        all_conditions = " AND ".join(filter_conditions)
-        # e == null ensures the first node (the origin) is always selected.
-        edge_filter_clause = f"FILTER e == null OR ({all_conditions})"
+        # Join individual filter conditions with AND.
+        full_filter_logic = " AND ".join(filter_conditions)
+        # Always allow starting node (where e is null) OR apply full logic.
+        edge_filter_clause = f"FILTER e == null OR ({full_filter_logic})"
 
     # AQL query.
     query = f"""
@@ -84,14 +93,9 @@ def get_graph(
                       vertexCollections: @allowed_collections,
                       order: "bfs"
                     }}
-                    {edge_filter_clause} // Edge property filter clause
+                    {edge_filter_clause}
                     LIMIT @node_limit
-                    RETURN {{
-                      node: v,
-                      link: e,
-                      path: p,
-                      depth: LENGTH(p.vertices)
-                    }}
+                    RETURN {{ node: v, link: e, path: p, depth: LENGTH(p.vertices) }}
                 )
                 // Attach the origin node_id to each returned path
                 RETURN (
@@ -99,7 +103,6 @@ def get_graph(
                     RETURN MERGE(path, {{ origin: node_id }})
                 )
             )
-
             // Filter nodes to ensure uniqueness
             LET filteredNodes = UNIQUE(
               FOR obj IN temp
@@ -132,7 +135,7 @@ def get_graph(
             }}
     """
 
-    # Use correct graph name.
+    # Select Database
     if graph == "phenotypes":
         graph_name = GRAPH_NAME_PHENOTYPES
         db = db_phenotypes
@@ -140,21 +143,19 @@ def get_graph(
         graph_name = GRAPH_NAME_ONTOLOGIES
         db = db_ontologies
 
-    # Depth is increased by one to find all edges that connect to final nodes.
     bind_vars.update(
         {
             "node_ids": node_ids,
             "graph_name": graph_name,
-            "depth": int(depth) + 1,
+            "depth": int(depth)
+            + 1,  # Depth is increased by one to find all edges that connect to final nodes.
             "allowed_collections": allowed_collections,
             "node_limit": node_limit,
         }
     )
 
-    # Execute the query.
     try:
         cursor = db.aql.execute(query, bind_vars=bind_vars)
-        # One element should be guaranteed.
         results = list(cursor)[0]
     except Exception as e:
         print(f"Error executing query: {e}")
