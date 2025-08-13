@@ -634,6 +634,8 @@ function ForceGraphConstructor(
   // Internal data storage for nodes and links.
   let processedNodes = [];
   let processedLinks = [];
+  // Internal state to track if the simulation is in 'live' mode.
+  let isLiveSimulationRunning = false;
 
   // Initial render on construction.
   updateGraph({
@@ -1009,6 +1011,8 @@ function ForceGraphConstructor(
     waitForAlpha(simulation, newThreshold).then(() => {
       // Freeze graph once stable.
       runSimulation(false, simulation, forceNode, forceCenter, forceLink);
+      // Ensure the live simulation flag is reset after auto-stabilization.
+      isLiveSimulationRunning = false;
 
       // Perform post-simulation actions.
       if (centerNodeId) {
@@ -1048,6 +1052,13 @@ function ForceGraphConstructor(
     centerOnNode,
     resize,
     toggleSimulation: (on) => {
+      // Prevents re-running the simulation if it is already in the desired state.
+      if (on) {
+        if (isLiveSimulationRunning) return;
+        isLiveSimulationRunning = true;
+      } else {
+        isLiveSimulationRunning = false;
+      }
       runSimulation(
         on,
         simulation,
