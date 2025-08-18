@@ -812,3 +812,66 @@ def query_edge_filter_options(graph, fields_to_query):
         print(f"Error executing edge_filter_options query: {e}")
         # Re-raise exception to be handled by the view layer.
         raise
+
+def get_documents(document_ids, graph_name):
+    """
+    Fetches full document details for a list of document IDs, which may
+    belong to different collections.
+    """
+    # Input Validation
+    if not isinstance(document_ids, list) or not document_ids:
+        return []
+
+    # Group document keys by their collection name
+    collections_to_keys = {}
+    for doc_id in document_ids:
+        try:
+            # The _id format is "collection/key"
+            collection_name, key = doc_id.split('/')
+            # Use setdefault to initialize a list if the key is new, then append.
+            collections_to_keys.setdefault(collection_name, []).append(key)
+        except ValueError:
+            # Handle potentially malformed IDs
+            print(f"Warning: Skipping malformed document ID: {doc_id}")
+            continue
+
+    # If no valid IDs were found after parsing
+    if not collections_to_keys:
+        return []
+
+    # Select the correct database connection
+    try:
+        db_name_lower = graph_name.lower()
+        db_connection = db_phenotypes if db_name_lower == "phenotypes" else db_ontologies
+    except Exception as e:
+        print(f"Error selecting database connection: {e}")
+        return []
+
+    # Execute one query per collection and aggregate results
+    all_results = []
+
+    # Fetch all from single collection
+    query = """
+        FOR doc IN @@collection
+            FILTER doc._key IN @keys
+            RETURN doc
+    """
+
+    for collection, keys in collections_to_keys.items():
+        bind_vars = {
+            "@collection": collection,
+            "keys": keys
+        }
+        try:
+            cursor = db_connection.aql.execute(query, bind_vars=bind_vars)
+            # Get all results
+            results_for_collection = [doc for doc in cursor]
+            all_results.extend(results_for_collection)
+
+        except Exception as e:
+            print(f"Error executing query for collection '{collection}': {e}")
+            continue
+
+    print(all_results)
+    return all_results
+

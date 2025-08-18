@@ -139,3 +139,11 @@ def get_edge_filter_options(request):
             {"error": "An internal server error occurred."},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
+@api_view(["POST"])
+def get_documents(request):
+    graph = request.data.get("db")
+    document_ids = request.data.get("document_ids")
+    results = utils.get_documents(document_ids, graph)
+    return JsonResponse(results, safe=False)
+

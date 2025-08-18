@@ -1,12 +1,15 @@
-import { useContext, useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState, useCallback } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import SelectedItemsTable from "../SelectedItemsTable/SelectedItemsTable";
 import SearchResultsTable from "../SearchResultsTable/SearchResultsTable";
 import { GraphContext } from "../../contexts/GraphContext";
+import { addToCart, removeFromCart } from "../../store/cartSlice";
 
+// SVG Icon Component
 const SearchIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
+    viewBox="0 0 24"
     fill="currentColor"
     className="search-icon"
   >
@@ -18,109 +21,129 @@ const SearchIcon = () => (
   </svg>
 );
 
-const SearchBar = ({
-  generateGraph,
-  selectedItems,
-  removeSelectedItem,
-  addSelectedItem,
-}) => {
+// SearchBar Component
+const SearchBar = ({ onGenerateGraph }) => {
   const containerRef = useRef(null);
   const debounceTimeoutRef = useRef(null);
+  const dispatch = useDispatch();
+
+  // State
+  const cartNodeIds = useSelector((state) => state.cart.originNodeIds);
+  const [selectedItemObjects, setSelectedItemObjects] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [input, setInput] = useState(""); // Current value in the input field
+  const [input, setInput] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [showResults, setShowResults] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // For fetching node details
 
   const { graphType } = useContext(GraphContext);
 
-  const getSearchTerms = async (searchTerm, db) => {
+  // Text search
+  const getSearchTerms = useCallback(async (currentSearchTerm, db) => {
     try {
       const response = await fetch(`/arango_api/search/`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          search_term: searchTerm,
-          db: db,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ search_term: currentSearchTerm, db: db }),
       });
-      if (!response.ok) {
-        const errorBody = await response.text();
-        throw new Error(
-          `HTTP error! status: ${response.status}, message: ${errorBody}`,
-        );
-      }
-      return response.json();
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      return await response.json();
     } catch (error) {
       console.error("Error fetching search terms:", error);
-      throw error; // Re-throw to be caught by caller
+      return [];
     }
-  };
+  }, []);
 
+  // Get details for cart
+  const fetchNodeDetailsByIds = useCallback(async (ids, db) => {
+    if (!ids || ids.length === 0) return [];
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/arango_api/document/details`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ document_ids: ids, db: db }),
+      });
+      if (!response.ok) throw new Error(`Failed to fetch node details`);
+      return await response.json();
+    } catch (error) {
+      console.error("Error fetching node details:", error);
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Effect for fetching search results when debounced search term changes.
   useEffect(() => {
     const fetchSearchResults = async () => {
-      try {
+      if (searchTerm.trim() !== "") {
         const data = await getSearchTerms(searchTerm, graphType);
         setSearchResults(data);
-      } catch (error) {
-        setSearchResults([]); // Clear results on error
+      } else {
+        setSearchResults([]);
       }
     };
 
-    if (searchTerm.trim() !== "") {
-      fetchSearchResults();
-    } else {
-      setSearchResults([]);
-    }
-  }, [searchTerm, graphType]);
+    fetchSearchResults();
+  }, [searchTerm, graphType, getSearchTerms]);
+
+  // Effect to synchronize local item objects with global cart IDs.
+  useEffect(() => {
+    const syncObjectsWithCart = async () => {
+      const existingObjectIds = new Set(selectedItemObjects.map(item => item._id));
+      const missingIds = cartNodeIds.filter(id => !existingObjectIds.has(id));
+      const stillSelectedObjects = selectedItemObjects.filter(item => cartNodeIds.includes(item._id));
+
+      if (missingIds.length > 0) {
+        const newObjects = await fetchNodeDetailsByIds(missingIds, graphType);
+        setSelectedItemObjects([...stillSelectedObjects, ...newObjects]);
+      } else {
+        setSelectedItemObjects(stillSelectedObjects);
+      }
+    };
+
+    syncObjectsWithCart();
+  }, [cartNodeIds, fetchNodeDetailsByIds]);
+
+  // Effect for handling clicks outside the component.
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
+        setShowResults(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
+    };
+  }, []);
 
   const handleSearch = (event) => {
     const value = event.target.value;
     setInput(value);
-
-    if (debounceTimeoutRef.current) {
-      clearTimeout(debounceTimeoutRef.current);
-    }
-
+    if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
     debounceTimeoutRef.current = setTimeout(() => {
       setSearchTerm(value);
-      setShowResults(true);
+      if (value.trim() !== "") setShowResults(true);
     }, 250);
   };
 
-  const showR = () => {
-    setShowResults(true);
-  };
-
-  function handleSelectItem(item) {
-    addSelectedItem(item);
+  const handleSelectItem = (item) => {
+    if (!cartNodeIds.includes(item._id)) {
+      setSelectedItemObjects(prev => [...prev, item]);
+      dispatch(addToCart(item._id));
+    }
     setShowResults(false);
     setInput("");
     setSearchTerm("");
-  }
+  };
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target)
-      ) {
-        setShowResults(false);
-      }
-    };
+  const handleRemoveItem = (item) => {
+    dispatch(removeFromCart(item._id));
+  };
 
-    document.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  // Determine if the dropdown should actually be visible
   const shouldDropdownBeVisible = showResults && input.trim() !== "";
 
   return (
@@ -133,26 +156,25 @@ const SearchBar = ({
             placeholder="Search NCKN..."
             value={input}
             onChange={handleSearch}
-            onMouseEnter={showR}
+            onFocus={() => setShowResults(true)}
           />
           <SearchIcon />
         </div>
-        <div
-          className={`search-results-dropdown ${
-            shouldDropdownBeVisible ? "show" : ""
-          }`}
-        >
+        <div className={`search-results-dropdown ${shouldDropdownBeVisible ? "show" : ""}`}>
           <SearchResultsTable
             searchResults={searchResults}
             handleSelectItem={handleSelectItem}
           />
         </div>
       </div>
-      {selectedItems && selectedItems.length > 0 && (
+
+      {isLoading && <p>Loading selected items...</p>}
+
+      {!isLoading && selectedItemObjects.length > 0 && (
         <SelectedItemsTable
-          selectedItems={selectedItems}
-          generateGraph={generateGraph}
-          removeSelectedItem={removeSelectedItem}
+          selectedItems={selectedItemObjects}
+          generateGraph={onGenerateGraph}
+          removeSelectedItem={handleRemoveItem}
         />
       )}
     </div>

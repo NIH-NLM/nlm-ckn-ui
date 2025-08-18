@@ -1,63 +1,35 @@
-import SearchBar from "../../components/SearchBar/SearchBar";
 import { useContext, useState, useRef, useEffect } from "react";
+import { useSelector } from "react-redux";
+import { Link } from "react-router-dom";
+import SearchBar from "../../components/SearchBar/SearchBar";
 import ForceGraph from "../../components/ForceGraph/ForceGraph";
 import { PrunedCollectionsContext } from "../../contexts/PrunedCollectionsContext";
-import { Link } from "react-router-dom";
 
 const SearchPage = () => {
-  const [nodeIds, setNodeIds] = useState([]);
-  const [selectedItems, setSelectedItems] = useState([]);
+  // Read the origin node IDs directly from the Redux cart slice.
+  const cartNodeIds = useSelector((state) => state.cart.originNodeIds);
   const prunedCollections = useContext(PrunedCollectionsContext);
   const graphDisplayAreaRef = useRef(null);
-  const [graphJustGenerated, setGraphJustGenerated] = useState(false);
 
-  const generateGraph = (items) => {
-    const newNodeIds = items.map((item) => item._id);
-    setNodeIds(newNodeIds);
-    if (items && items.length > 0) {
-      setGraphJustGenerated(true);
-    } else {
-      setGraphJustGenerated(false);
-    }
-  };
+  // Local state to control the visibility of the graph component.
+  const [showGraph, setShowGraph] = useState(false);
 
-  const addSelectedItem = (item) => {
-    if (!selectedItems.find((selected) => selected._id === item._id)) {
-      setSelectedItems((prev) => [...prev, item]);
-    }
-  };
-
-  const removeSelectedItem = (item) => {
-    setSelectedItems((prev) => prev.filter((d) => d._id !== item._id));
-  };
-
+  // Effect to scroll to the graph area after the "Generate Graph" button is clicked.
   useEffect(() => {
-    if (
-      graphJustGenerated &&
-      nodeIds.length > 0 &&
-      graphDisplayAreaRef.current
-    ) {
+    if (showGraph && graphDisplayAreaRef.current) {
       graphDisplayAreaRef.current.scrollIntoView({
         behavior: "smooth",
         block: "start",
       });
-      setGraphJustGenerated(false);
     }
-  }, [graphJustGenerated, nodeIds]);
+  }, [showGraph]);
 
   return (
     <div className="search-page-layout">
       <div className="main-search-box">
         <h1 className="search-page-title">Search the Knowledge Network</h1>
         <div className="search-bar-wrapper">
-          {" "}
-          {/* Renamed from sunburst-search-container for clarity */}
-          <SearchBar
-            generateGraph={() => generateGraph(selectedItems)}
-            selectedItems={selectedItems}
-            addSelectedItem={addSelectedItem}
-            removeSelectedItem={removeSelectedItem}
-          />
+          <SearchBar onGenerateGraph={() => setShowGraph(true)} />
         </div>
       </div>
 
@@ -87,10 +59,9 @@ const SearchPage = () => {
         </p>
       </div>
 
-      {nodeIds.length > 0 && (
+      {showGraph && cartNodeIds.length > 0 && (
         <div className="graph-display-area" ref={graphDisplayAreaRef}>
           <ForceGraph
-            nodeIds={nodeIds}
             settings={{
               defaultDepth: 1,
               findShortestPaths: false,
