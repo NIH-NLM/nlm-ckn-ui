@@ -2282,3 +2282,14 @@ kbd {
 .pill-remove:hover {
   color: #000;
 }
+
+/* The group containing the node circle, text, and button */
+.node-group .cart-button-fo {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+/* On hover of the entire node group, make the button visible */
+.node-group:hover .cart-button-fo {
+  opacity: 1;
+}

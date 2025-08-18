@@ -1,17 +1,21 @@
 import React, { useEffect, useRef } from "react";
 import * as d3 from "d3";
+import { useDispatch, useSelector } from "react-redux";
 import { getLabel, truncateString } from "../Utils/Utils";
 import { getColorForCollection } from "../../services/ColorServices/ColorServices";
+import { toggleCartItem } from "../../store/cartSlice";
 
 const TreeConstructor = ({ data }) => {
   const svgRef = useRef(null);
+  const dispatch = useDispatch();
+  const cartNodeIds = useSelector((state) => state.cart.originNodeIds);
 
+  // Main effect for building and structuring the tree
   useEffect(() => {
     if (!data || !svgRef.current) {
-      return; // Do nothing if no data or ref is not available
+      return;
     }
 
-    // Clear any previous SVG content
     d3.select(svgRef.current).selectAll("*").remove();
 
     const width = 928;
@@ -32,11 +36,10 @@ const TreeConstructor = ({ data }) => {
       .x((d) => d.y)
       .y((d) => d.x);
 
-    // Create the SVG container using d3.create, then append it to ref
     const svg = d3
-      .create("svg")
+      .select(svgRef.current)
+      .append("svg")
       .attr("width", width)
-      // Initial height, will be adjusted by update function
       .attr("height", dx)
       .attr("viewBox", [-marginLeft, -marginTop, width, dx])
       .attr(
@@ -46,6 +49,7 @@ const TreeConstructor = ({ data }) => {
 
     const gLink = svg
       .append("g")
+      .attr("class", "link-group")
       .attr("fill", "none")
       .attr("stroke", "#555")
       .attr("stroke-opacity", 0.4)
@@ -53,6 +57,7 @@ const TreeConstructor = ({ data }) => {
 
     const gNode = svg
       .append("g")
+      .attr("class", "node-container-group")
       .attr("cursor", "pointer")
       .attr("pointer-events", "all");
 
@@ -82,44 +87,37 @@ const TreeConstructor = ({ data }) => {
           window.ResizeObserver ? null : () => () => svg.dispatch("toggle"),
         );
 
-      const node = gNode.selectAll("g").data(nodes, (d) => d.id);
+      const node = gNode.selectAll("g.node-group").data(nodes, (d) => d.id);
 
       const nodeEnter = node
         .enter()
         .append("g")
+        .attr("class", "node-group")
         .attr("transform", (d) => `translate(${source.y0},${source.x0})`)
         .attr("fill-opacity", 0)
         .attr("stroke-opacity", 0)
         .on("click", (event, d) => {
-          d.children = d.children ? null : d._children;
-          update(event, d);
+          if (event.target.tagName !== "BUTTON") {
+            d.children = d.children ? null : d._children;
+            update(event, d);
+          }
         });
 
       nodeEnter
         .append("circle")
         .attr("r", 2.5)
         .attr("fill", (d) => {
-          if (d.data && d.data._id) {
-            // Ensure _id exists in the original data
-            const parts = d.data._id.split("/");
-            if (parts.length > 0) {
-              const collectionName = parts[0];
-              return getColorForCollection(collectionName);
-            }
-          }
-          return getColorForCollection(null);
+          const collectionName = d.data._id.split("/")[0];
+          return getColorForCollection(collectionName);
         })
-        .attr("stroke-width", 10); // Stroke for circle itself is not set, this is more like padding
+        .attr("stroke-width", 10);
 
       nodeEnter
         .append("text")
         .attr("dy", "0.31em")
         .attr("x", (d) => (d._children ? -6 : 6))
         .attr("text-anchor", (d) => (d._children ? "end" : "start"))
-        .text((d) => {
-          const fullName = getLabel(d.data) || d.data._key || "Unknown";
-          return truncateString(fullName, maxLabelLength);
-        })
+        .text((d) => truncateString(getLabel(d.data) || d.data._key, maxLabelLength))
         .attr("stroke-linejoin", "round")
         .attr("stroke-width", 3)
         .attr("stroke", "white")
@@ -127,8 +125,35 @@ const TreeConstructor = ({ data }) => {
         .append("title")
         .text((d) => getLabel(d.data) || d.data._key || "Unknown");
 
-      node
-        .merge(nodeEnter)
+      const fo = nodeEnter
+        .append("foreignObject")
+        .attr("class", "cart-button-fo")
+        .attr("width", 90)
+        .attr("height", 20)
+        .attr("y", -10)
+        .attr("x", (d) => {
+          const textAnchorOffset = 10;
+          const textWidthEstimate = maxLabelLength * 6;
+          return d._children
+            ? -textAnchorOffset - textWidthEstimate - 90
+            : textAnchorOffset;
+        });
+
+      fo.append("xhtml:button")
+        .style("width", "85px")
+        .style("height", "18px")
+        .style("font-size", "10px")
+        .style("cursor", "pointer")
+        .text((d) =>
+          cartNodeIds.includes(d.data._id) ? "Remove" : "Add to Cart",
+        )
+        .on("click", (event, d) => {
+          event.stopPropagation();
+          dispatch(toggleCartItem(d.data._id));
+        });
+
+      const nodeUpdate = node.merge(nodeEnter);
+      nodeUpdate
         .transition(transition)
         .attr("transform", (d) => `translate(${d.y},${d.x})`)
         .attr("fill-opacity", 1)
@@ -143,7 +168,6 @@ const TreeConstructor = ({ data }) => {
         .attr("stroke-opacity", 0);
 
       const link = gLink.selectAll("path").data(links, (d) => d.target.id);
-
       const linkEnter = link
         .enter()
         .append("path")
@@ -151,9 +175,7 @@ const TreeConstructor = ({ data }) => {
           const o = { x: source.x0, y: source.y0 };
           return diagonal({ source: o, target: o });
         });
-
       link.merge(linkEnter).transition(transition).attr("d", diagonal);
-
       link
         .exit()
         .transition(transition)
@@ -174,27 +196,28 @@ const TreeConstructor = ({ data }) => {
     root.descendants().forEach((d, i) => {
       d.id = i;
       d._children = d.children;
-
-      // Collapse all nodes that have children by default
       if (d.children) {
         d.children = null;
       }
     });
 
     update(null, root);
+  }, [data, dispatch]);
 
-    // Append the D3-generated SVG to the host div.
-    svgRef.current.appendChild(svg.node());
+  // Effect for UI updates
+  useEffect(() => {
+    if (!svgRef.current) {
+      return;
+    }
 
-    // Cleanup function for when the component unmounts or data changes
-    return () => {
-      if (svgRef.current) {
-        d3.select(svgRef.current).selectAll("*").remove();
-      }
-    };
-  }, [data]);
+    d3.select(svgRef.current)
+      .selectAll("g.node-group")
+      .select(".cart-button-fo button")
+      .text((d) =>
+        cartNodeIds.includes(d.data._id) ? "Remove" : "Add to Cart",
+      );
+  }, [cartNodeIds]);
 
-  // This div will be the container for the D3-generated SVG
   return <div ref={svgRef} className="tree-constructor-container"></div>;
 };
 

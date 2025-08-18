@@ -41,7 +41,8 @@ import FilterableDropdown from "../FilterableDropdown/FilterableDropdown";
 // Main React component for D3 force-directed graph, wrapped in memo for performance.
 // Orchestrates Redux state, user interactions, and D3 instance.
 const ForceGraph = ({
-  nodeIds: originNodeIdsFromProps,
+  // Accept node IDs via props for direct linking (e.g., landing pages).
+  nodeIds: originNodeIdsFromProps = [],
   settings: settingsFromProps,
 }) => {
   // Redux dispatch for triggering state changes.
@@ -51,6 +52,9 @@ const ForceGraph = ({
   const wrapperRef = useRef();
   const svgRef = useRef();
   const graphInstanceRef = useRef(null);
+
+  // Selects origin node IDs from cart slice for cart-driven graphs.
+  const cartOriginNodeIds = useSelector((state) => state.cart.originNodeIds);
 
   // Selects state from Redux store, including graph data and history.
   const { present, past, future } = useSelector((state) => state.graph);
@@ -83,14 +87,19 @@ const ForceGraph = ({
     position: { x: 0, y: 0 },
   });
 
-  // Initializes or resets graph when origin nodes from props change.
+  // Initializes or resets graph based on props or cart.
   useEffect(() => {
-    if (
-      JSON.stringify(originNodeIdsFromProps) !== JSON.stringify(originNodeIds)
-    ) {
-      dispatch(initializeGraph({ nodeIds: originNodeIdsFromProps }));
+    // Determine which node IDs to use: props take precedence over cart.
+    const effectiveNodeIds =
+      originNodeIdsFromProps.length > 0
+        ? originNodeIdsFromProps
+        : cartOriginNodeIds;
+
+    // Trigger graph re-initialization if effective IDs differ from current graph's IDs.
+    if (JSON.stringify(effectiveNodeIds) !== JSON.stringify(originNodeIds)) {
+      dispatch(initializeGraph({ nodeIds: effectiveNodeIds }));
     }
-  }, [originNodeIdsFromProps, dispatch]);
+  }, [originNodeIdsFromProps, cartOriginNodeIds, originNodeIds, dispatch]);
 
   // Fetches list of available data collections on component mount.
   useEffect(() => {

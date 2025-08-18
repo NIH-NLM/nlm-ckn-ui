@@ -1,9 +1,11 @@
 import { configureStore } from "@reduxjs/toolkit";
 import graphReducer from "./graphSlice";
+import cartReducer from "./cartSlice";
 
 export const store = configureStore({
   reducer: {
     graph: graphReducer,
+    cart: cartReducer,
   },
   // redux-undo expected to be non-serializable
   middleware: (getDefaultMiddleware) =>
