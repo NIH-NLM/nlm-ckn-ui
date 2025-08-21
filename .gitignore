@@ -10,8 +10,10 @@ react/node_modules/
 react/coverage/
 
 # Environment
+*~
 *.DS_Store
 *.env
+*.txt
 .built
 .idea
 .venv
