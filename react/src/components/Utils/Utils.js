@@ -414,3 +414,22 @@ export const getFilterableEdgeFields = () => {
     return [];
   }
 };
+
+/**
+ * Get all searchable fields from collection maps configuration.
+ * @returns {Set<String>} Set of unique field names for searching.
+ */
+export const getAllSearchableFields = () => {
+  // Load collection configuration maps.
+  const collectionMaps = new Map(collMaps.maps);
+
+  let fieldsToDisplay = new Set();
+  collectionMaps.forEach((collectionMap, collection, collectionMaps) => {
+    console.log(collection, collectionMap, collectionMaps);
+    collectionMap.individual_fields.forEach((fieldMap, index) => {
+      fieldsToDisplay.add(fieldMap.field_to_display);
+    });
+  });
+
+  return fieldsToDisplay;
+};

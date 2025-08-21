@@ -10,6 +10,7 @@ import SelectedItemsTable from "../SelectedItemsTable/SelectedItemsTable";
 import SearchResultsTable from "../SearchResultsTable/SearchResultsTable";
 import { GraphContext } from "../../contexts/GraphContext";
 import { addToCart, removeFromCart } from "../../store/cartSlice";
+import { getAllSearchableFields } from "../Utils/Utils";
 
 // SVG Icon Component
 const SearchIcon = () => (
@@ -46,11 +47,16 @@ const SearchBar = ({ onGenerateGraph }) => {
 
   // Text search
   const getSearchTerms = useCallback(async (currentSearchTerm, db) => {
+    const searchableFields = getAllSearchableFields();
     try {
       const response = await fetch(`/arango_api/search/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ search_term: currentSearchTerm, db: db }),
+        body: JSON.stringify({
+          search_term: currentSearchTerm,
+          db: db,
+          search_fields: Array.from(searchableFields),
+        }),
       });
       if (!response.ok)
         throw new Error(`HTTP error! status: ${response.status}`);
