@@ -291,7 +291,7 @@ def search_by_term(search_term, search_fields, db):
     levenshtein_string = " ANALYZER("
     for field in search_fields:
         levenshtein_string += (
-            f"BOOST(LEVENSHTEIN_MATCH(doc.`{field}`, lower_search_term, 0), 10.0) OR "
+            f"BOOST(LEVENSHTEIN_MATCH(doc.`{field}`, lower_search_term, 0), 50.0) OR "
         )
     levenshtein_string_0 = levenshtein_string[0:-3] + ', "text_en_no_stem")'
 
@@ -299,9 +299,17 @@ def search_by_term(search_term, search_fields, db):
     levenshtein_string = " OR ANALYZER("
     for field in search_fields:
         levenshtein_string += (
-            f"LEVENSHTEIN_MATCH(doc.`{field}`, lower_search_term, 1) OR "
+            f"BOOST(LEVENSHTEIN_MATCH(doc.`{field}`, lower_search_term, 1), 5.0) OR "
         )
     levenshtein_string_1 = levenshtein_string[0:-3] + ', "text_en_no_stem")'
+
+    # n-gram search for phrases
+    n_gram_string = " OR "
+    for field in search_fields:
+        n_gram_string += (
+            f'ANALYZER(doc.`{field}` LIKE CONCAT("%", CONCAT(@search_term, "%")), "n-gram") OR '
+        )
+    n_gram_string = n_gram_string[0:-3]
 
     query_end = """
                     SORT BM25(doc) DESC
@@ -310,9 +318,10 @@ def search_by_term(search_term, search_fields, db):
 
             RETURN sortedDocs
             """
-    query = query_beginning + levenshtein_string_0 + levenshtein_string_1 + query_end
+    query = query_beginning + levenshtein_string_0 + levenshtein_string_1 + n_gram_string + query_end
 
     bind_vars = {"search_term": search_term}
+
     try:
         # db selection
         db_connection = (
