@@ -1240,7 +1240,7 @@
         "color": "#469990",
         "individual_labels": [
           {
-            "field_to_use": "Label",
+            "field_to_use": "label",
             "to_be_replaced": "",
             "replace_with": "",
             "make_lower_case": false
@@ -1257,7 +1257,7 @@
         ],
         "individual_fields": [
           {
-            "field_to_display": "Label",
+            "field_to_display": "label",
             "display_field_as": "Label",
             "field_url": "",
             "field_to_use": ""
