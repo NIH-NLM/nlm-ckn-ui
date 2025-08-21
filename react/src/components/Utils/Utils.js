@@ -425,7 +425,6 @@ export const getAllSearchableFields = () => {
 
   let fieldsToDisplay = new Set();
   collectionMaps.forEach((collectionMap, collection, collectionMaps) => {
-    console.log(collection, collectionMap, collectionMaps);
     collectionMap.individual_fields.forEach((fieldMap, index) => {
       fieldsToDisplay.add(fieldMap.field_to_display);
     });
