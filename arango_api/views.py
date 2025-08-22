@@ -42,7 +42,8 @@ def get_related_edges(request, edge_coll, dr, item_coll, pk):
 def get_search_items(request):
     graph = request.data.get("db")
     search_term = request.data.get("search_term")
-    search_results = utils.search_by_term(search_term, graph)
+    search_fields = request.data.get("search_fields")
+    search_results = utils.search_by_term(search_term, search_fields, graph)
     return JsonResponse(search_results, safe=False)
 
 

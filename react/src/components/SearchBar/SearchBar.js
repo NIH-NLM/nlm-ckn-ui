@@ -2,6 +2,7 @@ import { useContext, useEffect, useRef, useState } from "react";
 import SelectedItemsTable from "../SelectedItemsTable/SelectedItemsTable";
 import SearchResultsTable from "../SearchResultsTable/SearchResultsTable";
 import { GraphContext } from "../../contexts/GraphContext";
+import { getAllSearchableFields } from "../Utils/Utils";
 
 const SearchIcon = () => (
   <svg
@@ -34,6 +35,8 @@ const SearchBar = ({
   const { graphType } = useContext(GraphContext);
 
   const getSearchTerms = async (searchTerm, db) => {
+    const searchableFields = getAllSearchableFields();
+
     try {
       const response = await fetch(`/arango_api/search/`, {
         method: "POST",
@@ -43,6 +46,7 @@ const SearchBar = ({
         body: JSON.stringify({
           search_term: searchTerm,
           db: db,
+          search_fields: Array.from(searchableFields),
         }),
       });
       if (!response.ok) {

@@ -276,63 +276,65 @@ def get_all():
     return flat_results
 
 
-def search_by_term(search_term, db):
+def search_by_term(search_term, search_fields, db):
     db_name_lower = db.lower()
 
-    query = f"""
+    # Construct query from parameters
+    query_beginning = f"""
             LET lower_search_term = LOWER(@search_term)
-            // --- Subquery to Search, Sort, and Limit ---
             LET sortedDocs = (
                 FOR doc IN indexed
                     SEARCH
-                        // n-gram match
-                        ANALYZER(
-                          NGRAM_MATCH(doc.label, lower_search_term, 0.5, "n-gram") OR
-                          NGRAM_MATCH(doc.definition, lower_search_term, 0.5, "n-gram") OR
-                          NGRAM_MATCH(doc.Label, lower_search_term, 0.5, "n-gram") OR
-                          NGRAM_MATCH(doc.Name, lower_search_term, 0.5, "n-gram") OR
-                          NGRAM_MATCH(doc.Trade_names, lower_search_term, 0.5, "n-gram") OR
-                          NGRAM_MATCH(doc.Recommended_name, lower_search_term, 0.5, "n-gram") OR
-                          NGRAM_MATCH(doc.Author, lower_search_term, 0.5, "n-gram") OR
-                          NGRAM_MATCH(doc.Symbol, lower_search_term, 0.5, "n-gram")
-                        , "text_en")
-                        OR
-                        // Levenshtein match
-                        ANALYZER(
-                          BOOST(LEVENSHTEIN_MATCH(doc.label, lower_search_term, 3), 1.0) OR
-                          BOOST(LEVENSHTEIN_MATCH(doc.definition, lower_search_term, 3), 1.0) OR
-                          BOOST(LEVENSHTEIN_MATCH(doc.Label, lower_search_term, 3), 1.0) OR
-                          BOOST(LEVENSHTEIN_MATCH(doc.Name, lower_search_term, 3), 1.0) OR
-                          BOOST(LEVENSHTEIN_MATCH(doc.Trade_names, lower_search_term, 3), 1.0) OR
-                          BOOST(LEVENSHTEIN_MATCH(doc.Recommended_name, lower_search_term, 3), 1.0) OR
-                          BOOST(LEVENSHTEIN_MATCH(doc.Author, lower_search_term, 3), 1.0) OR
-                          BOOST(LEVENSHTEIN_MATCH(doc.Title, lower_search_term, 3), 1.0) OR
-                          BOOST(LEVENSHTEIN_MATCH(doc.Year, lower_search_term, 1), 1.0) OR
-                          BOOST(LEVENSHTEIN_MATCH(doc.PMID, lower_search_term, 1), 1.0) OR
-                          BOOST(LEVENSHTEIN_MATCH(doc.PMCID, lower_search_term, 1), 1.0) OR
-                          BOOST(LEVENSHTEIN_MATCH(doc.Phase, lower_search_term, 3), 1.0) OR
-                          BOOST(LEVENSHTEIN_MATCH(doc.Symbol, lower_search_term, 3), 1.0) OR
-                          BOOST(LEVENSHTEIN_MATCH(doc.Markers, lower_search_term, 3), 1.0) OR
-                          BOOST(LEVENSHTEIN_MATCH(doc._key, lower_search_term, 1), 1.0)
-                        , "text_en_no_stem")
+                    """
 
-                    // Exact match, sorted first
-                    LET isExactMatch = (
-                        (HAS(doc, 'label') AND IS_STRING(doc.label) AND LOWER(doc.label) == lower_search_term) OR
-                        (HAS(doc, 'Name') AND IS_STRING(doc.Name) AND LOWER(doc.Name) == lower_search_term) OR
-                        (HAS(doc, 'Symbol') AND IS_STRING(doc.Symbol) AND LOWER(doc.Symbol) == lower_search_term) OR
-                        (HAS(doc, 'Label') AND IS_STRING(doc.Label) AND LOWER(doc.Label) == lower_search_term) OR
-                        (HAS(doc, 'PMID') AND IS_STRING(doc.PMID) AND LOWER(doc.PMID) == lower_search_term) OR
-                        (HAS(doc, '_key') AND IS_STRING(doc._key) AND doc._key == @search_term)
-                    )
-                    SORT isExactMatch DESC, BM25(doc) DESC
+    # Levenshtein match with no substitutions, boosted
+    levenshtein_string = " ANALYZER("
+    for field in search_fields:
+        levenshtein_string += (
+            f"BOOST(LEVENSHTEIN_MATCH(doc.`{field}`, lower_search_term, 0), 100.0) OR "
+        )
+    levenshtein_string_0 = levenshtein_string[0:-3] + ', "text_en_no_stem")'
+
+    # Levenshtein match with substitutions, boosted less
+    levenshtein_string = " OR ANALYZER("
+    for field in search_fields:
+        levenshtein_string += (
+            f"BOOST(LEVENSHTEIN_MATCH(doc.`{field}`, lower_search_term, 1), 5.0) OR "
+        )
+    levenshtein_string_1 = levenshtein_string[0:-3] + ', "text_en_no_stem")'
+
+    # Exact match, boosted highest to appear first
+    exact_match_string = " OR "
+    for field in search_fields:
+        exact_match_string += (
+            f'BOOST(ANALYZER(doc.`{field}` == @search_term, "identity"), 1000.0) OR '
+        )
+    exact_match_string = exact_match_string[0:-3]
+
+    # n-gram search for phrases
+    n_gram_string = " OR "
+    for field in search_fields:
+        n_gram_string += f'ANALYZER(doc.`{field}` LIKE CONCAT("%", CONCAT(@search_term, "%")), "n-gram") OR '
+    n_gram_string = n_gram_string[0:-3]
+
+    query_end = """
+                    SORT BM25(doc) DESC
                     RETURN doc
             )
 
             RETURN sortedDocs
             """
+    query = (
+        query_beginning
+        + levenshtein_string_0
+        + levenshtein_string_1
+        + exact_match_string
+        + n_gram_string
+        + query_end
+    )
 
     bind_vars = {"search_term": search_term}
+
     try:
         # db selection
         db_connection = (

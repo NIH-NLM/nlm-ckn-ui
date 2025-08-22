@@ -10,10 +10,13 @@ react/node_modules/
 react/coverage/
 
 # Environment
+*~
 *.DS_Store
 *.env
+*.txt
 .built
 .idea
+.tern-port
 .venv
 .zshenv
 venv/
