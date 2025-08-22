@@ -8,7 +8,9 @@ import { toggleNodesSliceItem } from "../../store/nodesSlice";
 const TreeConstructor = ({ data }) => {
   const svgRef = useRef(null);
   const dispatch = useDispatch();
-  const nodesSliceNodeIds = useSelector((state) => state.nodesSlice.originNodeIds);
+  const nodesSliceNodeIds = useSelector(
+    (state) => state.nodesSlice.originNodeIds,
+  );
 
   // Main effect for building and structuring the tree
   useEffect(() => {

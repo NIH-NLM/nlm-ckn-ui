@@ -878,57 +878,6 @@ option {
   }
 }
 
-.node-popup {
-  background-color: var(--color-light-bg);
-  box-shadow: 0 2px 10px black;
-  z-index: 1000;
-  position: absolute;
-  flex-direction: column;
-  border-radius: 4px;
-  padding: 10px;
-  gap: 5px;
-  border: 1px solid var(--color-light);
-  padding: 10px;
-  borderradius: 4px;
-  boxshadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-  max-width: 15em;
-}
-
-.popup-button {
-  color: var(--color-text);
-  background-color: var(--color-light);
-  border-bottom: 1px solid var(--color-border);
-  text-align: center;
-  padding: 1rem;
-  border-radius: 0px;
-  display: block;
-  margin-bottom: 5px;
-  width: 100%;
-}
-
-.popup-close-button {
-  position: absolute;
-  top: 2px;
-  right: 5px;
-  background: none;
-  border: none;
-  font-size: 1.2em;
-  cursor: pointer;
-}
-
-.popup-button:hover {
-  color: var(--color-gray);
-}
-
-.x-button {
-  width: auto;
-  background-color: var(--color-secondary-red);
-  position: absolute;
-  top: 0px;
-  right: 0px;
-  padding: 0px;
-}
-
 /* Simulation Toggle */
 
 .simulation-toggle * {
@@ -1672,49 +1621,6 @@ button.collection-button-deselected:hover {
   font-style: italic;
 }
 
-/* Node Popup */
-.node-popup {
-  background-color: var(--color-white);
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
-  padding: 10px;
-
-  flex-direction: column;
-  gap: 8px;
-  z-index: 100;
-}
-.popup-button {
-  padding: 8px 12px;
-  font-size: 0.9em;
-  background-color: var(--color-light-bg);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  color: var(--color-text);
-  text-decoration: none;
-  text-align: center;
-  cursor: pointer;
-}
-.popup-button:hover {
-  background-color: var(--color-border);
-}
-.popup-close-button {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  background: none;
-  border: none;
-  font-size: 1.5em;
-  color: var(--color-gray);
-  cursor: pointer;
-  padding: 0;
-  line-height: 1;
-  margin: 0;
-}
-.popup-close-button:hover {
-  color: var(--color-dark);
-}
-
 .switch {
   position: relative;
   display: inline-block;
@@ -2414,13 +2320,15 @@ kbd {
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.3s, box-shadow 0.3s;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  transition:
+    background-color 0.3s,
+    box-shadow 0.3s;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .generate-graph-button:hover {
   background-color: var(--color-focus);
-  box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
 }
 
 .graph-display-area {
@@ -2429,7 +2337,7 @@ kbd {
   border: 1px solid var(--color-white);
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 .add-to-graph-button {
   display: inline-flex;
@@ -2451,7 +2359,7 @@ kbd {
   transition: all 0.2s ease-in-out;
 }
 .add-to-graph-button .icon-container::before {
-  content: '+';
+  content: "+";
   color: var(--color-main);
 }
 .add-to-graph-button:hover {
@@ -2466,7 +2374,7 @@ kbd {
   border-color: var(--color-green-light);
 }
 .add-to-graph-button.added .icon-container::before {
-  content: '✓';
+  content: "✓";
   color: var(--color-text-on-dark);
 }
 .add-to-graph-button.added:hover {
@@ -2475,7 +2383,7 @@ kbd {
 }
 /* Remove icon */
 .add-to-graph-button.added:hover .icon-container::before {
-  content: '−';
+  content: "−";
 }
 
 .add-to-graph-button.has-text {
@@ -2493,4 +2401,107 @@ kbd {
 .add-to-graph-button.has-text:hover .text-container,
 .add-to-graph-button.has-text.added .text-container {
   color: var(--color-text-on-dark);
+}
+
+/* Node Popup */
+.node-popup {
+  position: absolute;
+  z-index: 1000;
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 200px;
+}
+
+.node-popup-button {
+  margin: 0;
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-align: left;
+  color: var(--color-text);
+  background-color: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.node-popup-button:hover {
+  background-color: var(--color-light-bg);
+  color: var(--color-main);
+}
+
+a.node-popup-button {
+  text-decoration: none;
+}
+
+.node-popup-close-button {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--color-gray);
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+}
+
+.node-popup-close-button:hover {
+  color: var(--color-dark);
+}
+
+/* AddToGraphButton style overrides */
+.node-popup .add-to-graph-button {
+  width: 100%;
+  height: auto;
+  border-radius: 4px;
+  border: none;
+  background-color: transparent;
+  padding: 10px 12px;
+  justify-content: flex-start;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.node-popup .add-to-graph-button .icon-container {
+  margin-right: 8px;
+}
+
+.node-popup .add-to-graph-button .text-container {
+  color: var(--color-text);
+  transition: color 0.2s ease;
+}
+.node-popup .add-to-graph-button .icon-container::before {
+  color: var(--color-text);
+}
+.node-popup .add-to-graph-button:hover {
+  background-color: var(--color-light-bg);
+}
+.node-popup .add-to-graph-button:hover .icon-container::before,
+.node-popup .add-to-graph-button:hover .text-container {
+  color: var(--color-main);
+}
+.node-popup .add-to-graph-button.added .icon-container::before,
+.node-popup .add-to-graph-button.added .text-container {
+  color: var(--color-green-light);
+  font-weight: bold;
+}
+.node-popup .add-to-graph-button.added {
+  background-color: transparent;
+}
+.node-popup .add-to-graph-button.added:hover .icon-container::before,
+.node-popup .add-to-graph-button.added:hover .text-container {
+  color: var(--color-secondary-red);
 }

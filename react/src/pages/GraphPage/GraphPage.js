@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback, useContext } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useContext,
+} from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { GraphContext } from "../../contexts/GraphContext";
 import { removeNodeFromSlice } from "../../store/nodesSlice";
@@ -40,10 +46,12 @@ const GraphPage = () => {
   useEffect(() => {
     const syncObjectsWithNodeIds = async () => {
       // Logic to prevent re-fetching objects already existing
-      const existingObjectIds = new Set(selectedItemObjects.map((item) => item._id));
+      const existingObjectIds = new Set(
+        selectedItemObjects.map((item) => item._id),
+      );
       const missingIds = nodeIds.filter((id) => !existingObjectIds.has(id));
       const stillSelectedObjects = selectedItemObjects.filter((item) =>
-        nodeIds.includes(item._id)
+        nodeIds.includes(item._id),
       );
 
       if (missingIds.length > 0) {
@@ -56,12 +64,11 @@ const GraphPage = () => {
 
     // Initial load or when the list of IDs changes.
     if (nodeIds.length > 0) {
-        syncObjectsWithNodeIds();
+      syncObjectsWithNodeIds();
     } else {
-        setSelectedItemObjects([]);
+      setSelectedItemObjects([]);
     }
   }, [nodeIds, graphType, fetchNodeDetailsByIds, selectedItemObjects]);
-
 
   // Effect to scroll down to the graph once it's generated.
   useEffect(() => {
@@ -80,16 +87,19 @@ const GraphPage = () => {
 
   const handleGenerateGraph = () => {
     if (selectedItemObjects.length > 0) {
-        setShowGraph(true);
+      setShowGraph(true);
     }
-  }
+  };
 
   return (
     <div className="graph-page-layout">
       <div className="graph-page-header">
         <h1>Graph Builder</h1>
-        <br/>
-        <p>This is the workspace for building and exploring knowledge graphs. The selected nodes are listed below.</p>
+        <br />
+        <p>
+          This is the workspace for building and exploring knowledge graphs. The
+          selected nodes are listed below.
+        </p>
       </div>
 
       <div className="node-list-section">
@@ -102,7 +112,12 @@ const GraphPage = () => {
             removeSelectedItem={handleRemoveItem}
           />
         ) : (
-          !isLoading && <p>No nodes have been added to the graph yet. Add nodes from the rest of the site.</p>
+          !isLoading && (
+            <p>
+              No nodes have been added to the graph yet. Add nodes from the rest
+              of the site.
+            </p>
+          )
         )}
       </div>
 

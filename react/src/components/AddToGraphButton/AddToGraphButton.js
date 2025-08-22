@@ -1,5 +1,5 @@
-import React from 'react';
-import {useDispatch, useSelector} from "react-redux";
+import React from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { toggleNodesSliceItem } from "../../store/nodesSlice";
 
 /**
@@ -11,7 +11,9 @@ import { toggleNodesSliceItem } from "../../store/nodesSlice";
 const AddToGraphButton = ({ nodeId, text }) => {
   const dispatch = useDispatch();
   // Select the list of node IDs from slice.
-  const nodesSliceNodeIds = useSelector((state) => state.nodesSlice.originNodeIds);
+  const nodesSliceNodeIds = useSelector(
+    (state) => state.nodesSlice.originNodeIds,
+  );
   // Check if the specific node for this button is already in the list.
   const isAdded = nodesSliceNodeIds.includes(nodeId);
 
@@ -23,13 +25,13 @@ const AddToGraphButton = ({ nodeId, text }) => {
   };
 
   // Adjust class if text is present.
-  const buttonClass = `add-to-graph-button ${isAdded ? 'added' : ''} ${text ? 'has-text' : ''}`;
+  const buttonClass = `add-to-graph-button ${isAdded ? "added" : ""} ${text ? "has-text" : ""}`;
 
   return (
     <button
       className={buttonClass}
       onClick={handleToggle}
-      title={isAdded ? 'Remove from Graph' : 'Add to Graph'}
+      title={isAdded ? "Remove from Graph" : "Add to Graph"}
     >
       {/* Icon target */}
       <span className="icon-container"></span>

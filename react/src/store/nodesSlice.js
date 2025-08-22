@@ -60,6 +60,11 @@ const nodesSlice = createSlice({
 });
 
 // Export action creators and reducer
-export const { addNodesToSlice, removeNodeFromSlice, clearNodesSlice, setNodesSlice, toggleNodesSliceItem } =
-  nodesSlice.actions;
+export const {
+  addNodesToSlice,
+  removeNodeFromSlice,
+  clearNodesSlice,
+  setNodesSlice,
+  toggleNodesSliceItem,
+} = nodesSlice.actions;
 export default nodesSlice.reducer;

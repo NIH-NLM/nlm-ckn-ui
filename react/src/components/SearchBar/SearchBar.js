@@ -99,7 +99,6 @@ const SearchBar = () => {
     }, 250);
   };
 
-
   const shouldDropdownBeVisible = showResults && input.trim() !== "";
 
   return (
@@ -119,9 +118,7 @@ const SearchBar = () => {
         <div
           className={`search-results-dropdown ${shouldDropdownBeVisible ? "show" : ""}`}
         >
-          <SearchResultsTable
-            searchResults={searchResults}
-          />
+          <SearchResultsTable searchResults={searchResults} />
         </div>
       </div>
     </div>

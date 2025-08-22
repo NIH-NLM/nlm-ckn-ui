@@ -39,6 +39,7 @@ import { useHotkeyHold } from "../../hooks/useHotkeyHold";
 import FilterableDropdown from "../FilterableDropdown/FilterableDropdown";
 import { saveGraph } from "../../store/savedGraphsSlice";
 import LoadGraphModal from "../LoadGraphModal/LoadGraphModal";
+import AddToGraphButton from "../AddToGraphButton/AddToGraphButton";
 
 // Main React component for D3 force-directed graph, wrapped in memo for performance.
 // Orchestrates Redux state, user interactions, and D3 instance.
@@ -56,7 +57,9 @@ const ForceGraph = ({
   const graphInstanceRef = useRef(null);
 
   // Selects origin node IDs from nodesSlice for NodesSlice driven graphs.
-  const nodesSliceOriginNodeIds = useSelector((state) => state.nodesSlice.originNodeIds);
+  const nodesSliceOriginNodeIds = useSelector(
+    (state) => state.nodesSlice.originNodeIds,
+  );
 
   // Selects state from Redux store, including graph data and history.
   const { present, past, future } = useSelector((state) => state.graph);
@@ -102,7 +105,12 @@ const ForceGraph = ({
     if (JSON.stringify(effectiveNodeIds) !== JSON.stringify(originNodeIds)) {
       dispatch(initializeGraph({ nodeIds: effectiveNodeIds }));
     }
-  }, [originNodeIdsFromProps, nodesSliceOriginNodeIds, originNodeIds, dispatch]);
+  }, [
+    originNodeIdsFromProps,
+    nodesSliceOriginNodeIds,
+    originNodeIds,
+    dispatch,
+  ]);
 
   // Fetches list of available data collections on component mount.
   useEffect(() => {
@@ -645,35 +653,37 @@ const ForceGraph = ({
               : { display: "none" }
           }
         >
-          <button>
-            <a
-              href={`/#/collections/${popup.nodeId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Go To "{popup.nodeLabel}"
-            </a>
-          </button>
+          <a
+            href={`/#/collections/${popup.nodeId}`}
+            rel="noopener noreferrer"
+            className="node-popup-button"
+          >
+            Go To "{popup.nodeLabel}"
+          </a>
           <button
             onClick={handleExpand}
             style={{ display: !popup.isEdge ? "block" : "none" }}
+            className="node-popup-button"
           >
             Expand
           </button>
           <button
             onClick={handleCollapse}
             style={{ display: !popup.isEdge ? "block" : "none" }}
+            className="node-popup-button"
           >
             Collapse Leaves
           </button>
           <button
             onClick={handleRemove}
             style={{ display: !popup.isEdge ? "block" : "none" }}
+            className="node-popup-button"
           >
             Remove Node
           </button>
+          <AddToGraphButton nodeId={`${popup.nodeId}`} text="Add to Graph" />
           <button
-            className="popup-close-button"
+            className="node-popup-close-button"
             onClick={handlePopupClose}
             aria-label="Close popup"
           >

@@ -37,9 +37,7 @@ const Header = () => {
           </h4>
         </Link>
         <Link to="/graph">
-          <h4
-              className={activeNav.startsWith("/graph") ? "active-nav" : ""}
-          >
+          <h4 className={activeNav.startsWith("/graph") ? "active-nav" : ""}>
             Graph
           </h4>
         </Link>

@@ -30,7 +30,8 @@ const SearchPage = () => {
         </p>
         <p>
           Use the search bar above to find and explore entities within this
-          network. You can add items to your graph or navigate to their specific pages.
+          network. You can add items to your graph or navigate to their specific
+          pages.
           <Link to="/about" className="learn-more-link internal-learn-more">
             Learn more...
           </Link>
