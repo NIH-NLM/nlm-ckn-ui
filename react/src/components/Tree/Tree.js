@@ -1,74 +1,99 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import TreeConstructor from "../TreeConstructor/TreeConstructor";
+import ReactDOM from "react-dom";
+import TreeConstructor from "../../components/TreeConstructor/TreeConstructor";
+import AddToGraphButton from "../../components/AddToGraphButton/AddToGraphButton";
 import { LoadingBar } from "../Utils/Utils";
 
+/**
+ * Tree Page Component.
+ * Container that fetches hierarchical data and manages the
+ * integration between the D3-based TreeConstructor and the React application.
+ */
 const Tree = () => {
+  // Init states.
   const [treeData, setTreeData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-
   const isLoadingRef = useRef(false);
 
+  // State to manage the DOM elements provided by D3 for React Portals.
+  const [mountPoints, setMountPoints] = useState(new Map());
+
+  // Static configuration for the data source.
   const graphTypeForTree = "phenotypes";
 
-  // Fetch Data
+  /**
+   * Callback passed to the D3 constructor.
+   * D3 calls this function whenever it creates a new node in the visualization,
+   * providing the node's ID and a placeholder DOM element for React to render into.
+   */
+  const handleNodeEnter = useCallback((nodeId, element) => {
+    // Add the new placeholder element to map, triggering a re-render.
+    setMountPoints((prev) => new Map(prev).set(nodeId, element));
+  }, []);
+
+  /**
+   * Callback passed to the D3 constructor.
+   * D3 calls this function whenever it removes a node from the visualization,
+   * allowing React to clean up the corresponding portal and component.
+   */
+  const handleNodeExit = useCallback((nodeId) => {
+    // Remove the placeholder from our map.
+    setMountPoints((prev) => {
+      const newMap = new Map(prev);
+      newMap.delete(nodeId);
+      return newMap;
+    });
+  }, []);
+
+  /**
+   * Fetches the hierarchical tree data from the backend API.
+   */
   const fetchTreeData = useCallback(async () => {
     if (isLoadingRef.current) {
-      console.log("Fetch already in progress, skipping.");
       return;
     }
     setIsLoading(true);
     isLoadingRef.current = true;
     setError(null);
 
-    const fetchUrl = "/arango_api/sunburst/"; // Use sunburst endpoint
-
     try {
-      const response = await fetch(fetchUrl, {
+      const response = await fetch("/arango_api/sunburst/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          parent_id: null, // Fetch the whole structure
+          parent_id: null,
           graph: graphTypeForTree,
         }),
       });
 
       if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(
-          `Fetch failed: ${response.status} ${errText || response.statusText}`,
-        );
+        throw new Error(`API request failed: ${response.status}`);
       }
 
       const data = await response.json();
-
       if (typeof data !== "object" || data === null || Array.isArray(data)) {
-        console.error(
-          "API response for tree data is not a single root object:",
-          data,
-        );
-        throw new Error(
-          "Invalid data format received for the tree: Expected a single root object.",
-        );
+        throw new Error("Invalid data format: Expected a single root object.");
       }
 
-      // Use Homo sapiens as root instead of NLM root node
+      // Set the data to the specific subtree required by the application.
       setTreeData(data["children"][0]);
     } catch (fetchError) {
-      console.error("Fetch/Process Error for Tree Data:", fetchError);
+      console.error("Failed to fetch or process tree data:", fetchError);
       setError(fetchError.message);
-      setTreeData(null); // Clear data on error
+      setTreeData(null);
     } finally {
       setIsLoading(false);
       isLoadingRef.current = false;
     }
   }, [graphTypeForTree]);
 
-  // Effect to fetch data when the component mounts
+  // Trigger the initial data fetch when the component mounts.
   useEffect(() => {
     fetchTreeData();
   }, [fetchTreeData]);
 
+  // Render
   if (isLoading) {
     return <LoadingBar />;
   }
@@ -88,7 +113,15 @@ const Tree = () => {
 
   return (
     <div className="tree-container">
-      <TreeConstructor data={treeData} />
+      {/* Render d3 tree */}
+      <TreeConstructor
+        data={treeData}
+        onNodeEnter={handleNodeEnter}
+        onNodeExit={handleNodeExit}
+      />
+      {Array.from(mountPoints.entries()).map(([nodeId, element]) =>
+        ReactDOM.createPortal(<AddToGraphButton nodeId={nodeId} />, element),
+      )}
     </div>
   );
 };
