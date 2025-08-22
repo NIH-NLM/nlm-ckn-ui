@@ -61,7 +61,6 @@ const SelectedItemsTable = ({
                 <td data-label="Actions" className="selected-item-actions-cell">
                   <Link
                     to={`/collections/${item._id}`}
-                    target="_blank"
                     className="action-button view-button"
                     aria-label={`View details for ${getLabel(item)}`}
                   >
