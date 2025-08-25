@@ -5,9 +5,10 @@ const SelectedItemsTable = ({
   selectedItems,
   generateGraph,
   removeSelectedItem,
+  isStale,
 }) => {
   function handleGenerateGraph() {
-    generateGraph(selectedItems);
+    generateGraph();
   }
 
   function handleRemoveItem(item) {
@@ -23,7 +24,6 @@ const SelectedItemsTable = ({
         parsedUrl.hostname +
         (parsedUrl.pathname === "/" ? "" : parsedUrl.pathname);
       if (displayUrl.length > 40) {
-        // Truncate if too long
         return displayUrl.substring(0, 37) + "...";
       }
       return displayUrl;
@@ -79,11 +79,12 @@ const SelectedItemsTable = ({
           </tbody>
         </table>
         <div className="generate-graph-action-area">
+          {/* Conditionally add the 'stale' class */}
           <button
             onClick={handleGenerateGraph}
-            className="primary-action-button generate-graph-button"
+            className={`primary-action-button generate-graph-button ${isStale ? "stale" : ""}`}
           >
-            Generate Graph
+            {isStale ? "Update Graph" : "Generate Graph"}
           </button>
         </div>
       </fieldset>

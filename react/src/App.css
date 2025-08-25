@@ -2420,7 +2420,7 @@ kbd {
 }
 
 .document-popup-button,
-.document-popup .add-to-graph-button{
+.document-popup .add-to-graph-button {
   margin: 0;
   display: block;
   width: 100%;
@@ -2440,7 +2440,7 @@ kbd {
 }
 
 .document-popup-button:hover,
-.document-popup .add-to-graph-button:hover{
+.document-popup .add-to-graph-button:hover {
   background-color: var(--color-light-bg);
   color: var(--color-main);
 }
@@ -2525,4 +2525,34 @@ a.document-popup-button {
 .node-group:hover foreignObject,
 .node-group foreignObject:has(.add-to-graph-button.added) {
   opacity: 1;
+}
+
+.stale-graph-warning {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background-color: var(--color-focus);
+  color: var(--color-text-on-dark);
+  border-radius: 6px;
+  text-align: center;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.generate-graph-button.stale {
+  animation: pulse 1.5s 5;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
 }

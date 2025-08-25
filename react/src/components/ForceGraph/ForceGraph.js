@@ -94,25 +94,6 @@ const ForceGraph = ({
   });
   const [isLoadModalOpen, setIsLoadModalOpen] = useState(false);
 
-  // Initializes or resets graph based on props or nodesSlice.
-  useEffect(() => {
-    // Determine which node IDs to use: props take precedence over nodesSlice.
-    const effectiveNodeIds =
-      originNodeIdsFromProps.length > 0
-        ? originNodeIdsFromProps
-        : nodesSliceOriginNodeIds;
-
-    // Trigger graph re-initialization if effective IDs differ from current graph's IDs.
-    if (JSON.stringify(effectiveNodeIds) !== JSON.stringify(originNodeIds)) {
-      dispatch(initializeGraph({ nodeIds: effectiveNodeIds }));
-    }
-  }, [
-    originNodeIdsFromProps,
-    nodesSliceOriginNodeIds,
-    originNodeIds,
-    dispatch,
-  ]);
-
   // Fetches list of available data collections on component mount.
   useEffect(() => {
     fetchCollections(settings.graphType).then((data) => {

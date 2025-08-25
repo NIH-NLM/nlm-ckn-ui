@@ -155,6 +155,7 @@ const initialState = {
     collapseOnStart: true,
     graphType: "phenotypes",
     edgeFilters: {},
+    lastAppliedOriginNodeIds: [],
   },
   // Core graph data and state.
   originNodeIds: [], // Initial nodes for graph query.
@@ -202,6 +203,7 @@ const graphSlice = createSlice({
       state.originNodeIds = action.payload.nodeIds;
       state.status = "idle";
       state.lastActionType = "initializeGraph";
+      state.lastAppliedOriginNodeIds = action.payload.nodeIds;
       state.rawData = {};
       state.graphData = { nodes: [], links: [] };
       state.collapsed = { initial: [], userDefined: [], userIgnored: [] };
