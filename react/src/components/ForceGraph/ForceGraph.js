@@ -62,6 +62,15 @@ const ForceGraph = ({
     (state) => state.nodesSlice.originNodeIds,
   );
 
+  // This selector calculates if settings are stale.
+  const isSettingsStale = useSelector((state) => {
+    const { settings, lastAppliedSettings } = state.graph.present;
+    if (!lastAppliedSettings) {
+      return false;
+    }
+    return JSON.stringify(settings) !== JSON.stringify(lastAppliedSettings);
+  });
+
   // Selects state from Redux store, including graph data and history.
   const { present, past, future } = useSelector((state) => state.graph);
   const {
@@ -125,24 +134,12 @@ const ForceGraph = ({
     );
   }, [settingsFromProps, collections, dispatch]);
 
-  // Triggers new data fetch when core graph settings change.
+  // Triggers new data fetch when graph is explicitly initialized in the slice.
   useEffect(() => {
-    if (isRestoring === false && originNodeIds && originNodeIds.length > 0) {
+    if (lastActionType === "initializeGraph" && originNodeIds.length > 0) {
       dispatch(fetchAndProcessGraph());
     }
-  }, [
-    originNodeIds,
-    settings.depth,
-    settings.edgeDirection,
-    settings.allowedCollections,
-    settings.findShortestPaths,
-    settings.nodeLimit,
-    settings.graphType,
-    settings.collapseOnStart,
-    settings.edgeFilters,
-    settings.setOperation,
-    dispatch,
-  ]);
+  }, [lastActionType]);
 
   // Observes container size changes and resizes D3 graph accordingly.
   useEffect(() => {
@@ -205,6 +202,7 @@ const ForceGraph = ({
             const handleSimulationEnd = (finalNodes, finalLinks) => {
               dispatch(setGraphData({ nodes: finalNodes, links: finalLinks }));
             };
+            // Init empty.
             const newGraphInstance = ForceGraphConstructor(
               svgRef.current,
               { nodes: [], links: [] },
@@ -241,6 +239,8 @@ const ForceGraph = ({
                 settings.labelStates[labelClass],
                 labelClass,
               );
+              // Send signal that graph is ready.
+              dispatch(initializeGraph({ nodeIds: originNodeIds }));
             }
           } else {
             // Updates existing graph instance with new data.
@@ -703,6 +703,19 @@ const ForceGraph = ({
           </button>
         </div>
         <div className="options-tabs-content">
+          {isSettingsStale && (
+            <div className="settings-apply-container">
+              <p>Your settings have changed.</p>
+              <button
+                className="primary-action-button"
+                onClick={() =>
+                  dispatch(initializeGraph({ nodeIds: originNodeIds }))
+                }
+              >
+                Apply Changes
+              </button>
+            </div>
+          )}
           {activeTab === "general" && (
             <div id="tab-panel-general" className="tab-panel active">
               <div className="option-group">

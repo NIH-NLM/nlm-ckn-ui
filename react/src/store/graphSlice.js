@@ -157,6 +157,8 @@ const initialState = {
     edgeFilters: {},
     lastAppliedOriginNodeIds: [],
   },
+  // Stores a snapshot of the settings last used to generate the graph.
+  lastAppliedSettings: null,
   // Core graph data and state.
   originNodeIds: [], // Initial nodes for graph query.
   rawData: {}, // Unprocessed data directly from API.
@@ -204,6 +206,7 @@ const graphSlice = createSlice({
       state.status = "idle";
       state.lastActionType = "initializeGraph";
       state.lastAppliedOriginNodeIds = action.payload.nodeIds;
+      state.lastAppliedSettings = state.settings;
       state.rawData = {};
       state.graphData = { nodes: [], links: [] };
       state.collapsed = { initial: [], userDefined: [], userIgnored: [] };
