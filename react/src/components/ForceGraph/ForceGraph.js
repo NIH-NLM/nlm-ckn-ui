@@ -90,6 +90,7 @@ const ForceGraph = ({
 
   // Local component state for UI and temporary flags.
   const [collections, setCollections] = useState([]);
+  const [allCollections, setAllCollections] = useState([]);
   const collectionMaps = useMemo(() => new Map(collMaps.maps), []); // Memoizing to avoid refetching.
   const [isRestoring, setIsRestoring] = useState(false);
   const [optionsVisible, setOptionsVisible] = useState(false);
@@ -105,10 +106,15 @@ const ForceGraph = ({
 
   // Fetches list of available data collections on component mount.
   useEffect(() => {
+    // Get both collections for current subgraph and full list.
     fetchCollections(settings.graphType).then((data) => {
       const parsed = parseCollections(data);
       setCollections(parsed);
       dispatch(setAvailableCollections(parsed));
+    });
+    fetchCollections("ontologies").then((data) => {
+      const parsed = parseCollections(data);
+      setAllCollections(parsed);
     });
   }, [dispatch, settings.graphType]);
 
@@ -921,7 +927,7 @@ const ForceGraph = ({
                 <FilterableDropdown
                   key="collection-filter"
                   label="Collections"
-                  options={collections}
+                  options={allCollections}
                   selectedOptions={settings.allowedCollections}
                   onOptionToggle={handleCollectionChange}
                   getOptionLabel={(collectionId) =>

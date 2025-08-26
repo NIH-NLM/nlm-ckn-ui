@@ -8,7 +8,7 @@ from arango_api import utils
 @api_view(["POST"])
 def list_collection_names(request):
     graph = request.data.get("graph")
-    collection_names = utils.get_collections(graph, "document")
+    collection_names = utils.get_collections("document", graph)
     return JsonResponse(collection_names, safe=False)
 
 
@@ -122,11 +122,10 @@ def get_edge_filter_options(request):
     """
     try:
         data = request.data
-        graph = data.get("graph")
         fields_to_query = data.get("fields")
 
         # Get data.
-        query_results = utils.query_edge_filter_options(graph, fields_to_query)
+        query_results = utils.query_edge_filter_options(fields_to_query)
 
         # Create Response.
         return JsonResponse(query_results, status=status.HTTP_200_OK)

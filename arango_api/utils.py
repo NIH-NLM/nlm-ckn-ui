@@ -10,7 +10,7 @@ from arango_api.db import (
 )
 
 
-def get_collections(graph, collection_type):
+def get_collections(collection_type, graph="ontologies"):
     # Filter for document collections
     if graph == "phenotypes":
         all_collections = db_phenotypes.collections()
@@ -247,7 +247,7 @@ def get_shortest_paths(node_ids, edge_direction):
 
 
 def get_all():
-    collections = get_collections("ontologies", "document")
+    collections = get_collections("document")
 
     # Create the base query
     union_queries = []
@@ -742,29 +742,20 @@ def format_node_data(node_doc, has_children):
     }
 
 
-def query_edge_filter_options(graph, fields_to_query):
+def query_edge_filter_options(fields_to_query):
     """
     Queries database for unique values for specified edge attributes.
     Returns dictionary of results or raises an exception on error.
     """
-    # Parameter Validation
-    if not graph or not isinstance(fields_to_query, list):
-        raise ValueError("Missing or invalid 'graph' or 'fields' parameter.")
-
     if not fields_to_query:
         return {}
 
-    # Database Selection
-    if graph == "phenotypes":
-        db = db_phenotypes
-    elif graph == "ontologies":
-        db = db_ontologies
-    else:
-        raise ValueError(f"Unknown graph type: {graph}")
+    # Query only larger db to get all filter options
+    db = db_ontologies
 
     try:
         # Get list of all edge collection names for the specified graph.
-        edge_collections = get_collections(graph, "edge")
+        edge_collections = get_collections("edge")
 
         if not edge_collections:
             return {}
