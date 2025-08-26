@@ -6,7 +6,7 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
-import {useSelector, useDispatch, shallowEqual} from "react-redux";
+import { useSelector, useDispatch, shallowEqual } from "react-redux";
 import { ActionCreators } from "redux-undo";
 import ForceGraphConstructor from "../ForceGraphConstructor/ForceGraphConstructor";
 import collMaps from "../../assets/cell-kn-mvp-collection-maps.json";
@@ -23,7 +23,7 @@ import {
   updateSetting,
   setGraphData,
   initializeGraph,
-    saveLastGraphSettings,
+  saveLastGraphSettings,
   setAvailableCollections,
   expandNode,
   setInitialCollapseList,
@@ -77,10 +77,13 @@ const ForceGraph = ({
   } = useSelector((state) => state.graph.present, shallowEqual);
 
   // Select undo and redo state
-  const { canUndo, canRedo } = useSelector((state) => ({
-    canUndo: state.graph.past.length > 0,
-    canRedo: state.graph.future.length > 0,
-  }), shallowEqual);
+  const { canUndo, canRedo } = useSelector(
+    (state) => ({
+      canUndo: state.graph.past.length > 0,
+      canRedo: state.graph.future.length > 0,
+    }),
+    shallowEqual,
+  );
 
   // Select settings state
   const { settings, lastAppliedSettings } = useSelector(
@@ -88,7 +91,7 @@ const ForceGraph = ({
       settings: state.graph.present.settings,
       lastAppliedSettings: state.graph.present.lastAppliedSettings,
     }),
-    shallowEqual
+    shallowEqual,
   );
 
   // Calculate if settings are stale.
@@ -98,7 +101,6 @@ const ForceGraph = ({
     }
     return JSON.stringify(settings) !== JSON.stringify(lastAppliedSettings);
   }, [settings, lastAppliedSettings]);
-
 
   // Local component state for UI and temporary flags.
   const [collections, setCollections] = useState([]);
@@ -154,7 +156,7 @@ const ForceGraph = ({
 
   // Triggers new data fetch when graph is explicitly initialized in the slice.
   useEffect(() => {
-    if (lastActionType === "initializeGraph" && originNodeIds.length > 0) {
+    if (lastActionType === "initializeGraph") {
       dispatch(fetchAndProcessGraph());
     }
   }, [lastActionType]);
@@ -201,18 +203,23 @@ const ForceGraph = ({
         case "expand/fulfilled": {
           if (
             status !== "processing" ||
-            !rawData ||
-            Object.keys(rawData).length === 0
-          ) {
+            !rawData) {
             return;
           }
 
-          // Apply set operations for multi-node graphs.
-          const processedData = performSetOperation(
-            rawData,
-            settings.setOperation,
-            originNodeIds,
-          );
+          let processedData;
+          if (rawData && Object.keys(rawData).length > 0) {
+            // Apply set operations for multi-node graphs.
+            processedData = performSetOperation(
+              rawData,
+              settings.setOperation,
+              originNodeIds
+            );
+          } else {
+            // Init with an empty structure if there's no rawData.
+            processedData = { nodes: [], links: [] };
+          }
+
 
           // Creates D3 graph instance if it does not exist.
           if (!graphInstance) {
@@ -220,7 +227,6 @@ const ForceGraph = ({
             const handleSimulationEnd = (finalNodes, finalLinks) => {
               dispatch(setGraphData({ nodes: finalNodes, links: finalLinks }));
             };
-            // Init empty.
             const newGraphInstance = ForceGraphConstructor(
               svgRef.current,
               { nodes: processedData.nodes, links: processedData.links },
@@ -495,7 +501,7 @@ const ForceGraph = ({
   };
 
   // --- Local UI Handlers ---
-    const handleNodeClick = (e, nodeData) => {
+  const handleNodeClick = (e, nodeData) => {
     // Get the bounding box of the graph container.
     const chartRect = wrapperRef.current.getBoundingClientRect();
 

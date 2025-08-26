@@ -2576,3 +2576,28 @@ a.document-popup-button {
   border: none;
   cursor: pointer;
 }
+
+.graph-management-actions {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  justify-content: center;
+}
+
+.secondary-action-button {
+  background-color: var(--color-white);
+  color: var(--color-main);
+  border: 1px solid var(--color-main);
+  padding: 10px 20px;
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.secondary-action-button:hover {
+  background-color: var(--color-main);
+  color: var(--color-white);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}

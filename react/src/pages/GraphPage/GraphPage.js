@@ -12,6 +12,7 @@ import { initializeGraph } from "../../store/graphSlice";
 import { removeNodeFromSlice } from "../../store/nodesSlice";
 import SelectedItemsTable from "../../components/SelectedItemsTable/SelectedItemsTable";
 import ForceGraph from "../../components/ForceGraph/ForceGraph";
+import LoadGraphModal from "../../components/LoadGraphModal/LoadGraphModal";
 
 const GraphPage = () => {
   const dispatch = useDispatch();
@@ -27,6 +28,7 @@ const GraphPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showGraph, setShowGraph] = useState(false);
   const { graphType } = useContext(GraphContext);
+  const [isLoadModalOpen, setIsLoadModalOpen] = useState(false);
 
   // Add memoized calculation for stale state detection
   const isGraphStale = useMemo(() => {
@@ -97,6 +99,13 @@ const GraphPage = () => {
     dispatch(removeNodeFromSlice(item._id));
   };
 
+  const handleLoad = useCallback(() => {
+    // Init empty graph
+    dispatch(initializeGraph({}))
+    setIsLoadModalOpen(true);
+    setShowGraph(true);
+  }, []);
+
   // Update the generate graph handler
   const handleGenerateGraph = () => {
     if (nodeIds.length > 0) {
@@ -119,10 +128,15 @@ const GraphPage = () => {
         </p>
       </div>
 
+      <div className="graph-management-actions">
+        <button onClick={handleLoad} className="secondary-action-button">
+          Load Saved Graph
+        </button>
+      </div>
+
       {isGraphStale && (
         <div className="stale-graph-warning">
-          Node selection has changed. Click "Generate Graph" to update the
-          visualization.
+          Node selection below is different than in graph. Click "Generate Graph" if you would like to update the visualization.
         </div>
       )}
 
@@ -146,11 +160,15 @@ const GraphPage = () => {
         )}
       </div>
 
-      {showGraph && lastAppliedOriginNodeIds.length > 0 && (
+      {showGraph && (
         <div className="graph-display-area" ref={graphDisplayAreaRef}>
           <ForceGraph />
         </div>
       )}
+      <LoadGraphModal
+        isOpen={isLoadModalOpen}
+        onClose={() => setIsLoadModalOpen(false)}
+      />
     </div>
   );
 };

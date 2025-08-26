@@ -385,7 +385,7 @@ export const {
   updateSetting,
   setGraphData,
   initializeGraph,
-    saveLastGraphSettings,
+  saveLastGraphSettings,
   setAvailableCollections,
   clearNodeToCenter,
   updateNodePosition,
