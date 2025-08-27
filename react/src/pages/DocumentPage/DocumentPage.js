@@ -107,7 +107,11 @@ const DocumentPage = () => {
             )}
           </div>
           <div className="force-graph-panel">
-            <ForceGraph nodeIds={nodeIds} settings={forceGraphSettings} />
+            <ForceGraph
+              nodeIds={nodeIds}
+              settings={forceGraphSettings}
+              init_immediately={true}
+            />
           </div>
         </div>
       </div>

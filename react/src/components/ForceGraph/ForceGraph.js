@@ -23,7 +23,6 @@ import {
   updateSetting,
   setGraphData,
   initializeGraph,
-  saveLastGraphSettings,
   setAvailableCollections,
   expandNode,
   setInitialCollapseList,
@@ -49,6 +48,7 @@ const ForceGraph = ({
   // Accept node IDs via props for direct linking (e.g., landing pages).
   nodeIds: originNodeIdsFromProps = [],
   settings: settingsFromProps,
+  init_immediately,
 }) => {
   // Redux dispatch for triggering state changes.
   const dispatch = useDispatch();
@@ -117,6 +117,13 @@ const ForceGraph = ({
     position: { x: 0, y: 0 },
   });
   const [isLoadModalOpen, setIsLoadModalOpen] = useState(false);
+
+  // Immediately render graph on document pages
+  useEffect(() => {
+    if (init_immediately) {
+      dispatch(initializeGraph({ nodeIds: originNodeIds }));
+    }
+  }, [dispatch]);
 
   // Fetches list of available data collections on component mount.
   useEffect(() => {
@@ -201,9 +208,7 @@ const ForceGraph = ({
       switch (lastActionType) {
         case "fetch/fulfilled":
         case "expand/fulfilled": {
-          if (
-            status !== "processing" ||
-            !rawData) {
+          if (status !== "processing" || !rawData) {
             return;
           }
 
@@ -213,13 +218,12 @@ const ForceGraph = ({
             processedData = performSetOperation(
               rawData,
               settings.setOperation,
-              originNodeIds
+              originNodeIds,
             );
           } else {
             // Init with an empty structure if there's no rawData.
             processedData = { nodes: [], links: [] };
           }
-
 
           // Creates D3 graph instance if it does not exist.
           if (!graphInstance) {

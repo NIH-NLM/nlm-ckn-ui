@@ -296,6 +296,25 @@ const graphSlice = createSlice({
       state.lastActionType = "loadGraph";
       state.rawData = {};
     },
+    loadGraphFromJson: (state, action) => {
+      const graphDataFromFile = action.payload; // Expects { nodes: [], links: [] }
+
+      // Use the nodes from the file as the new graphData.
+      state.graphData = graphDataFromFile;
+
+      // Since the file doesn't specify origin nodes, assume no origin nodes
+      state.originNodeIds = [];
+      state.lastAppliedOriginNodeIds = [];
+
+      // Reset settings to a default state.
+      state.settings = initialState.settings;
+      state.lastAppliedSettings = initialState.settings;
+
+      // Set the state to signal a successful load.
+      state.status = "succeeded";
+      state.lastActionType = "loadGraph";
+      state.rawData = {};
+    },
   },
   // Reducers for handling async thunk lifecycle actions.
   extraReducers: (builder) => {
@@ -385,7 +404,6 @@ export const {
   updateSetting,
   setGraphData,
   initializeGraph,
-  saveLastGraphSettings,
   setAvailableCollections,
   clearNodeToCenter,
   updateNodePosition,
@@ -394,6 +412,7 @@ export const {
   collapseNode,
   updateEdgeFilter,
   loadGraph,
+  loadGraphFromJson,
 } = graphSlice.actions;
 
 // Wrap base reducer with redux-undo.

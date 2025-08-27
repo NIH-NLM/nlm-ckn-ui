@@ -8,7 +8,7 @@ import React, {
 } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { GraphContext } from "../../contexts/GraphContext";
-import { initializeGraph } from "../../store/graphSlice";
+import { initializeGraph, loadGraphFromJson } from "../../store/graphSlice";
 import { removeNodeFromSlice } from "../../store/nodesSlice";
 import SelectedItemsTable from "../../components/SelectedItemsTable/SelectedItemsTable";
 import ForceGraph from "../../components/ForceGraph/ForceGraph";
@@ -17,6 +17,7 @@ import LoadGraphModal from "../../components/LoadGraphModal/LoadGraphModal";
 const GraphPage = () => {
   const dispatch = useDispatch();
   const graphDisplayAreaRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   // State and Context
   const nodeIds = useSelector((state) => state.nodesSlice.originNodeIds);
@@ -55,6 +56,11 @@ const GraphPage = () => {
       setIsLoading(false);
     }
   }, []);
+
+    useEffect(() => {
+      dispatch(initializeGraph({}));
+  }, [dispatch]);
+
 
   // Effect to synchronize local objects with global node IDs.
   useEffect(() => {
@@ -99,17 +105,10 @@ const GraphPage = () => {
     dispatch(removeNodeFromSlice(item._id));
   };
 
-  const handleLoad = useCallback(() => {
-    // Init empty graph
-    dispatch(initializeGraph({}))
-    setIsLoadModalOpen(true);
-    setShowGraph(true);
-  }, []);
-
   // Update the generate graph handler
   const handleGenerateGraph = () => {
     if (nodeIds.length > 0) {
-      // This now dispatches the action to trigger a new graph build.
+      // This dispatches the action to trigger a new graph build.
       dispatch(initializeGraph({ nodeIds: nodeIds }));
       setShowGraph(true);
     } else {
@@ -117,8 +116,60 @@ const GraphPage = () => {
     }
   };
 
+  const handleLoad = useCallback(() => {
+    // Init empty graph
+    setIsLoadModalOpen(true);
+    setShowGraph(true);
+  }, [dispatch]);
+
+  const handleLoadFromJson = () => {
+    fileInputRef.current.click();
+  };
+
+  const handleFileSelected = (event) => {
+    const file = event.target.files[0];
+    if (!file) {
+      return;
+    }
+    setShowGraph(true); // Make the graph area visible.
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target.result;
+        const jsonData = JSON.parse(content);
+
+        // Basic validation to ensure it's a valid graph file
+        if (
+          jsonData &&
+          Array.isArray(jsonData.nodes) &&
+          Array.isArray(jsonData.links)
+        ) {
+          dispatch(loadGraphFromJson(jsonData));
+        } else {
+          alert(
+            "Error: The selected JSON file does not appear to be a valid graph export.",
+          );
+        }
+      } catch (error) {
+        console.error("Failed to parse JSON file:", error);
+        alert("Error: Could not read or parse the selected file.");
+      }
+    };
+    reader.readAsText(file);
+
+    // Reset the input value to allow loading the same file again
+    event.target.value = null;
+  };
+
   return (
     <div className="graph-page-layout">
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileSelected}
+        style={{ display: "none" }}
+        accept=".json"
+      />
       <div className="graph-page-header">
         <h1>Graph Builder</h1>
         <br />
@@ -132,11 +183,18 @@ const GraphPage = () => {
         <button onClick={handleLoad} className="secondary-action-button">
           Load Saved Graph
         </button>
+        <button
+          onClick={handleLoadFromJson}
+          className="secondary-action-button"
+        >
+          Load from File
+        </button>
       </div>
 
       {isGraphStale && (
         <div className="stale-graph-warning">
-          Node selection below is different than in graph. Click "Generate Graph" if you would like to update the visualization.
+          Node selection below is different than in graph. Click "Generate
+          Graph" if you would like create a visualization with the nodes below.
         </div>
       )}
 
@@ -160,11 +218,9 @@ const GraphPage = () => {
         )}
       </div>
 
-      {showGraph && (
-        <div className="graph-display-area" ref={graphDisplayAreaRef}>
+        <div className={!showGraph ? 'hidden' : 'graph-display-area'} ref={graphDisplayAreaRef}>
           <ForceGraph />
         </div>
-      )}
       <LoadGraphModal
         isOpen={isLoadModalOpen}
         onClose={() => setIsLoadModalOpen(false)}
