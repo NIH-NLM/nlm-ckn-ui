@@ -81,7 +81,6 @@ def get_graph(
         graph_name = GRAPH_NAME_ONTOLOGIES
         db = db_ontologies
 
-    # Initialize bind variables for the AQL query.
     bind_vars = {
         "node_ids": node_ids,
         "depth": depth,
@@ -89,72 +88,85 @@ def get_graph(
         "allowed_collections": allowed_collections,
     }
 
-    # Dynamically build the edge filter clauses.
-    edge_filter_clauses = []
-    print(edge_filters)
+    # Build the filtering and pruning logic
+    filter_string = ""
+    prune_string = ""
     if edge_filters:
+        positive_conditions = []
+        negative_conditions = []
+
         for key, values in edge_filters.items():
-            # Only generate a filter clause if the values list is not empty.
             if values:
-                # Sanitize the key to create a valid bind variable name.
                 bind_key = f"filter_value_{re.sub(r'[^a-zA-Z0-9_]', '', key)}"
 
-                # # Use INTERSECTION to check for overlap between the edge's attribute array and the filter values.
-                filter_logic = (
-                    f"FILTER ( "
+                # Positive condition for FILTER: Attribute must exist and match.
+                pos_cond = (
+                    f"(e.`{key}` != null AND ("
                     f"(IS_STRING(e.`{key}`) AND e.`{key}` IN @{bind_key}) OR "
                     f"(IS_ARRAY(e.`{key}`) AND LENGTH(INTERSECTION(e.`{key}`, @{bind_key})) > 0)"
-                    f" )"
+                    f"))"
                 )
-                edge_filter_clauses.append(filter_logic)
+                positive_conditions.append(pos_cond)
+
+                # Negative condition for PRUNE: Attribute must exist AND NOT match.
+                # Edges missing the attribute will evaluate to false and not be pruned.
+                neg_cond = (
+                    f"(e.`{key}` != null AND NOT ("
+                    f"(IS_STRING(e.`{key}`) AND e.`{key}` IN @{bind_key}) OR "
+                    f"(IS_ARRAY(e.`{key}`) AND LENGTH(INTERSECTION(e.`{key}`, @{bind_key})) > 0)"
+                    f"))"
+                )
+                negative_conditions.append(neg_cond)
+
                 bind_vars[bind_key] = values
 
-    # Join all filter clauses with 'AND'
-    edge_filter_string = " ".join(edge_filter_clauses)
+        if positive_conditions:
+            # All positive conditions must be true to keep an edge.
+            filter_string = f"FILTER {' AND '.join(positive_conditions)}"
 
-    # Construct the final AQL query.
+            # If any negative condition is true, the edge is invalid and pruned.
+            prune_string = f"PRUNE {' OR '.join(negative_conditions)}"
+
+    # Construct the final AQL query
     aql_query = f"""
-    FOR origin_node_id IN @node_ids
-        // Find the start node document once per loop
-        LET origin_node_doc = DOCUMENT(origin_node_id)
+     FOR start_node_id IN @node_ids
+         LET start_node_doc = DOCUMENT(start_node_id)
 
-        // Use a subquery to perform the traversal for the current origin_node
-        LET traversal = (
-            FOR v, e IN 1..@depth {edge_direction} origin_node_id GRAPH @graph
-                OPTIONS {{ vertexCollections: @allowed_collections }}
+         LET traversal = (
+             FOR v, e IN 1..@depth {edge_direction} start_node_id GRAPH @graph
 
-                {edge_filter_string}
+                 {prune_string}
 
-                // Return distinct vertices and edges found
-                RETURN DISTINCT {{ v: v, e: e }}
-        )
+                 OPTIONS {{ vertexCollections: @allowed_collections }}
 
-        // Combine the traversal vertices with the start node itself
-        LET all_nodes = UNION_DISTINCT(
-            traversal[*].v,
-            [origin_node_doc]
-        )
+                 {filter_string}
 
-        // Collect all non-null edges from the traversal
-        LET all_links = UNIQUE(traversal[*].e)
+                 RETURN DISTINCT {{ v: v, e: e }}
+         )
 
-        // Return the final structure for each start node
-        RETURN {{
-            "origin_node_id": origin_node_id,
-            "data": {{
-                "nodes": all_nodes,
-                "links": all_links
-            }}
-        }}
-    """
+         LET all_nodes = UNION_DISTINCT(
+             traversal[*].v,
+             [start_node_doc]
+         )
 
-    # Execute the query.
+         LET all_links = UNIQUE(traversal[*].e)
+
+         RETURN {{
+             "start_node_id": start_node_id,
+             "data": {{
+                 "nodes": all_nodes,
+                 "links": all_links
+             }}
+         }}
+     """
+
+    # Execute the query
     cursor = db.aql.execute(aql_query, bind_vars=bind_vars)
-    print(aql_query)
-    print(bind_vars)
 
-    # Format the result into origin node dictionary structure.
-    results = {item["origin_node_id"]: item["data"] for item in cursor}
+    print(aql_query)
+
+    # Format the result
+    results = {item["start_node_id"]: item["data"] for item in cursor}
 
     return results
 

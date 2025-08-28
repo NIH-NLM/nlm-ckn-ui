@@ -39,27 +39,27 @@ export function performSetOperation(data, operation, originNodeIds) {
   const allEntries = Array.from(nodeFrequencyMap.values());
 
   switch (operation) {
-    case 'Intersection':
+    case "Intersection":
       finalNodes = allEntries
-        .filter(entry => entry.count === originNodeIds.length)
-        .map(entry => entry.node);
+        .filter((entry) => entry.count === originNodeIds.length)
+        .map((entry) => entry.node);
       break;
 
-    case 'Symmetric Difference':
+    case "Symmetric Difference":
       finalNodes = allEntries
-        .filter(entry => entry.count === 1)
-        .map(entry => entry.node);
+        .filter((entry) => entry.count === 1)
+        .map((entry) => entry.node);
       break;
 
-    case 'Union':
+    case "Union":
     default:
       // Union is the default behavior.
-      finalNodes = allEntries.map(entry => entry.node);
+      finalNodes = allEntries.map((entry) => entry.node);
       break;
   }
 
   // Create a Set of final node IDs for efficient link filtering.
-  const finalNodeIdSet = new Set(finalNodes.map(node => node._id));
+  const finalNodeIdSet = new Set(finalNodes.map((node) => node._id));
 
   // Aggregate all unique links and filter them.
   const uniqueLinks = new Map();
@@ -72,8 +72,8 @@ export function performSetOperation(data, operation, originNodeIds) {
   }
 
   // A link is kept only if both its source and target nodes are in the final set.
-  const filteredLinks = Array.from(uniqueLinks.values()).filter(link =>
-    finalNodeIdSet.has(link._from) && finalNodeIdSet.has(link._to)
+  const filteredLinks = Array.from(uniqueLinks.values()).filter(
+    (link) => finalNodeIdSet.has(link._from) && finalNodeIdSet.has(link._to),
   );
 
   // Return the final, flat graph object.

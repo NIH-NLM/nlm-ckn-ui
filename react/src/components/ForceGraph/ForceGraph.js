@@ -754,17 +754,17 @@ const ForceGraph = ({
             Export
           </button>
           {isSettingsStale && (
-              <div className="settings-apply-container">
-                <p>Your settings have changed.</p>
-                <button
-                    className="primary-action-button"
-                    onClick={() =>
-                        dispatch(initializeGraph({ nodeIds: originNodeIds }))
-                    }
-                >
-                  Apply Changes
-                </button>
-              </div>
+            <div className="settings-apply-container">
+              <p>Your settings have changed.</p>
+              <button
+                className="primary-action-button"
+                onClick={() =>
+                  dispatch(initializeGraph({ nodeIds: originNodeIds }))
+                }
+              >
+                Apply Changes
+              </button>
+            </div>
           )}
         </div>
         <div className="options-tabs-content">
