@@ -191,7 +191,55 @@ const ForceGraph = ({
 
   // Main effect for synchronizing D3 instance with Redux state.
   useEffect(() => {
+
+    // Creates D3 graph instance if it does not exist.
     const graphInstance = graphInstanceRef.current;
+    if (!graphInstance) {
+      // Callback to save final node positions to Redux after simulation.
+      const handleSimulationEnd = (finalNodes, finalLinks) => {
+        dispatch(setGraphData({nodes: finalNodes, links: finalLinks}));
+      };
+      // Init graph instance.
+      const newGraphInstance = ForceGraphConstructor(
+          svgRef.current,
+          {nodes: [], links: []},
+          {
+            onSimulationEnd: handleSimulationEnd,
+            saveInitial: false,
+            useFocusNodes: settings.useFocusNodes,
+            originNodeIds: originNodeIds,
+            nodeFontSize: settings.nodeFontSize,
+            linkFontSize: settings.edgeFontSize,
+            initialLabelStates: settings.labelStates,
+            nodeGroups: collections,
+            collectionMaps: collectionMaps,
+            onNodeClick: handleNodeClick,
+            onNodeDragEnd: handleNodeDragEnd,
+            interactionCallback: handlePopupClose,
+            nodeGroup: (d) => d._id.split("/")[0],
+            nodeHover: (d) =>
+                d.label ? `${d._id}\n${d.label}` : `${d._id}`,
+            label: getLabel,
+            nodeStrength: -100,
+            width: svgRef.current.clientWidth,
+            height: svgRef.current.clientHeight,
+          },
+      );
+      // Save ref.
+      graphInstanceRef.current = newGraphInstance;
+      // Trigger resize to place legend correctly at graph creation.
+      newGraphInstance.resize(
+          wrapperRef.current.clientWidth,
+          wrapperRef.current.clientHeight,
+      );
+      // Syncs initial label visibility with D3 instance.
+      for (const labelClass in settings.labelStates) {
+        newGraphInstance.toggleLabels(
+            settings.labelStates[labelClass],
+            labelClass,
+        );
+      }
+    }
 
     // Handles state restoration for undo/redo actions.
     if (isRestoring === true || lastActionType == "loadGraph") {
@@ -213,6 +261,7 @@ const ForceGraph = ({
           }
 
           let processedData;
+          // Perform set operation is data exists.
           if (
             rawData &&
             Object.keys(rawData).length > 0 &&
@@ -226,58 +275,13 @@ const ForceGraph = ({
               graphsToProcess,
               settings.setOperation,
             );
+            // expand performs union before returning data.
           } else if (lastActionType === "expand/fulfilled") {
             processedData = graphData;
           } else {
             // Init with an empty structure if there's no rawData.
             processedData = { nodes: [], links: [] };
           }
-
-          // Creates D3 graph instance if it does not exist.
-          if (!graphInstance) {
-            // Callback to save final node positions to Redux after simulation.
-            const handleSimulationEnd = (finalNodes, finalLinks) => {
-              dispatch(setGraphData({ nodes: finalNodes, links: finalLinks }));
-            };
-            const newGraphInstance = ForceGraphConstructor(
-              svgRef.current,
-              { nodes: processedData.nodes, links: processedData.links },
-              {
-                onSimulationEnd: handleSimulationEnd,
-                saveInitial: true,
-                useFocusNodes: settings.useFocusNodes,
-                originNodeIds: originNodeIds,
-                nodeFontSize: settings.nodeFontSize,
-                linkFontSize: settings.edgeFontSize,
-                initialLabelStates: settings.labelStates,
-                nodeGroups: collections,
-                collectionMaps: collectionMaps,
-                onNodeClick: handleNodeClick,
-                onNodeDragEnd: handleNodeDragEnd,
-                interactionCallback: handlePopupClose,
-                nodeGroup: (d) => d._id.split("/")[0],
-                nodeHover: (d) =>
-                  d.label ? `${d._id}\n${d.label}` : `${d._id}`,
-                label: getLabel,
-                nodeStrength: -100,
-                width: svgRef.current.clientWidth,
-                height: svgRef.current.clientHeight,
-              },
-            );
-            graphInstanceRef.current = newGraphInstance;
-            // Trigger resize to place legend correctly at graph creation.
-            newGraphInstance.resize(
-              wrapperRef.current.clientWidth,
-              wrapperRef.current.clientHeight,
-            );
-            // Syncs initial label visibility with D3 instance.
-            for (const labelClass in settings.labelStates) {
-              newGraphInstance.toggleLabels(
-                settings.labelStates[labelClass],
-                labelClass,
-              );
-            }
-          } else {
             // Updates existing graph instance with new data.
             let collapseList = finalCollapseList;
             // Populates initial collapse list on first data fetch.
@@ -292,6 +296,7 @@ const ForceGraph = ({
               collapseList = initialCollapseList;
             }
 
+            // Update graph with data.
             graphInstance.updateGraph({
               newOriginNodeIds: originNodeIds,
               newNodes: processedData.nodes,
@@ -302,12 +307,11 @@ const ForceGraph = ({
               labelStates: settings.labelStates,
             });
 
+            // Clean up.
             if (nodeToCenter) {
               dispatch(clearNodeToCenter());
             }
           }
-          break;
-        }
         default: {
           break;
         }
