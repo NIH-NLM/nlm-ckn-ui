@@ -75,6 +75,12 @@
             "display_field_as": "Markers",
             "field_url": "",
             "field_to_use": ""
+          },
+          {
+            "field_to_display": "F_beta_confidence_score",
+            "display_field_as": "F_beta_confidence_score",
+            "field_url": "",
+            "field_to_use": ""
           }
         ],
         "more_info": "Minimum combinations of necessary and sufficient marker genes that capture cell type identity with maximum classification accuracy"
