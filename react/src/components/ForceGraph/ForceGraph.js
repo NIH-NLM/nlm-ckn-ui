@@ -288,7 +288,9 @@ const ForceGraph = ({
                 .filter((node) => !originNodeIds.includes(node._id))
                 .map((node) => node._id);
               dispatch(setInitialCollapseList(initialCollapseList));
-              collapseList = initialCollapseList;
+              if (settings.collapseOnStart){
+                collapseList = initialCollapseList;
+              }
             }
 
             // Update graph with data.
