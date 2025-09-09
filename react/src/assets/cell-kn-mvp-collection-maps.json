@@ -1,6 +1,46 @@
 {
   "maps": [
     [
+      "BGS",
+      {
+        "abbreviated_name": "BGS",
+        "display_name": "Binary gene set",
+        "color": "#e6194B",
+        "individual_labels": [
+          {
+            "field_to_use": "Binary_genes",
+            "to_be_replaced": " ",
+            "replace_with": "|",
+            "make_lower_case": false
+          },
+          {
+            "field_to_use": "_key",
+            "to_be_replaced": "",
+            "replace_with": "",
+            "make_lower_case": false
+          }
+        ],
+        "individual_urls": [
+          {
+            "individual_url": "http://cell-kn-mvp.org/#/collections/<FIELD_TO_USE>",
+            "field_to_use": "_id",
+            "to_be_replaced": "",
+            "replace_with": "",
+            "make_lower_case": false
+          }
+        ],
+        "individual_fields": [
+          {
+            "field_to_display": "Binary_genes",
+            "display_field_as": "Binary_genes",
+            "field_url": "",
+            "field_to_use": ""
+          }
+        ],
+        "more_info": "Genes characterized by having expression within a cell type while being expressed at low or negligible levels in other cell types"
+      }
+    ],
+    [
       "BMC",
       {
         "abbreviated_name": "BMC",
@@ -33,6 +73,12 @@
           {
             "field_to_display": "Markers",
             "display_field_as": "Markers",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "F_beta_confidence_score",
+            "display_field_as": "F_beta_confidence_score",
             "field_url": "",
             "field_to_use": ""
           }
