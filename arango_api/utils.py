@@ -168,6 +168,57 @@ def get_graph(
 
     return results
 
+def get_graph_advanced(
+    node_ids,
+    advanced_settings,
+    graph,
+):
+    """
+    Orchestrates multiple graph traversals based on per-node settings.
+
+    This function iterates through the settings for each specified node,
+    calling the `get_graph` worker function for each one and aggregating
+    the individual results into a single response object.
+
+    Args:
+        node_ids (list): A list of starting node _id strings.
+        advanced_settings (dict): A dictionary where keys are node_ids and
+                                  values are settings objects for that node.
+        graph (str): The name of the graph to traverse (a global setting).
+
+    Returns:
+        dict: A dictionary aggregating the results from all individual
+              traversals, keyed by the start node ID.
+    """
+    aggregated_results = {}
+
+    # Iterate over each node ID that has specific settings defined.
+    for node_id, settings in advanced_settings.items():
+        if node_id not in node_ids:
+            continue  # Only process nodes explicitly requested.
+
+        # Extract the specific settings for the current node from the payload.
+        depth = settings.get("depth", 2)
+        edge_direction = settings.get("edgeDirection", "ANY")
+        allowed_collections = settings.get("allowedCollections", [])
+        edge_filters = settings.get("edgeFilters", {})
+
+        # Call the original get_graph function with the settings for this single node.
+        result_for_node = get_graph(
+            node_ids=[node_id],
+            depth=depth,
+            edge_direction=edge_direction,
+            allowed_collections=allowed_collections,
+            graph=graph,
+            edge_filters=edge_filters,
+        )
+
+        # Merge the result into the final aggregated dictionary.
+        if result_for_node:
+            aggregated_results.update(result_for_node)
+
+    return aggregated_results
+
 
 def get_shortest_paths(node_ids, edge_direction='ANY'):
     """

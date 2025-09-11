@@ -4,7 +4,7 @@ import { getFilterableEdgeFields } from "../components/Utils/Utils";
 import { performSetOperation } from "../components/ForceGraph/performSetOperation";
 
 // API helper to fetch graph data from backend.
-// Chooses endpoint based on whether shortest path is requested.
+// Handles three types of requests: standard traversal, shortest path, and advanced per-node settings.
 const fetchGraphDataAPI = async (params) => {
   const {
     nodeIds,
@@ -15,27 +15,44 @@ const fetchGraphDataAPI = async (params) => {
     nodeLimit,
     graphType,
     edgeFilters,
+    advancedSettings,
   } = params;
 
-  // Select endpoint for standard traversal or shortest path.
-  const endpoint =
-    shortestPaths && nodeIds.length > 1
-      ? "/arango_api/shortest_paths/"
-      : "/arango_api/graph/";
+  // Determine if this is a shortest path query.
+  const useShortestPath =
+    shortestPaths && !advancedSettings && nodeIds.length > 1;
 
-  // Construct request body based on endpoint.
-  const body =
-    shortestPaths && nodeIds.length > 1
-      ? { node_ids: nodeIds, edge_direction: edgeDirection }
-      : {
-          node_ids: nodeIds,
-          depth,
-          edge_direction: edgeDirection,
-          allowed_collections: allowedCollections,
-          node_limit: nodeLimit,
-          graph: graphType,
-          edge_filters: edgeFilters,
-        };
+  const endpoint = useShortestPath
+    ? "/arango_api/shortest_paths/"
+    : "/arango_api/graph/";
+
+  let body;
+
+  if (useShortestPath) {
+    // Body for a shortest path query.
+    body = {
+      node_ids: nodeIds,
+      edge_direction: edgeDirection,
+    };
+  } else if (advancedSettings) {
+    // Body for an advanced per-node settings query.
+    body = {
+      node_ids: nodeIds,
+      advanced_settings: advancedSettings,
+      graph: graphType,
+    };
+  } else {
+    // Body for a standard traversal query.
+    body = {
+      node_ids: nodeIds,
+      depth,
+      edge_direction: edgeDirection,
+      allowed_collections: allowedCollections,
+      node_limit: nodeLimit,
+      graph: graphType,
+      edge_filters: edgeFilters,
+    };
+  }
 
   const response = await fetch(endpoint, {
     method: "POST",
@@ -49,21 +66,35 @@ const fetchGraphDataAPI = async (params) => {
 };
 
 // Async thunk for fetching graph data.
-// Gathers parameters from current Redux state to make API call.
 export const fetchAndProcessGraph = createAsyncThunk(
   "graph/fetchAndProcess",
   async (_, { getState }) => {
-    const { settings, originNodeIds } = getState().graph.present;
-    const params = {
-      nodeIds: originNodeIds,
-      shortestPaths: settings.findShortestPaths,
-      depth: settings.depth,
-      edgeDirection: settings.edgeDirection,
-      allowedCollections: settings.allowedCollections,
-      nodeLimit: settings.nodeLimit,
-      graphType: settings.graphType,
-      edgeFilters: settings.edgeFilters,
-    };
+    // Retrieve current settings and advanced mode state from Redux.
+    const { settings, originNodeIds, isAdvancedMode, perNodeSettings } =
+      getState().graph.present;
+    let params;
+
+    if (isAdvancedMode) {
+      // If in advanced mode, construct parameters with the per-node settings object.
+      params = {
+        nodeIds: originNodeIds,
+        advancedSettings: perNodeSettings,
+        graphType: settings.graphType,
+      };
+    } else {
+      // Otherwise, construct parameters using the global settings.
+      params = {
+        nodeIds: originNodeIds,
+        shortestPaths: settings.findShortestPaths,
+        depth: settings.depth,
+        edgeDirection: settings.edgeDirection,
+        allowedCollections: settings.allowedCollections,
+        nodeLimit: settings.nodeLimit,
+        graphType: settings.graphType,
+        edgeFilters: settings.edgeFilters,
+      };
+    }
+
     try {
       const rawData = await fetchGraphDataAPI(params);
       return rawData;
@@ -161,6 +192,7 @@ const initialState = {
       return acc;
     }, {}),
     lastAppliedOriginNodeIds: [],
+    lastAppliedPerNodeSettings: null,
   },
   // Stores a snapshot of the settings last used to generate the graph.
   lastAppliedSettings: null,
@@ -185,6 +217,10 @@ const initialState = {
   lastActionType: null, // Tracks last action for conditional logic in UI.
   availableEdgeFilters: {}, // Stores all unique edge attribute values fetched from API.
   edgeFilterStatus: "idle", // Status for edge filter options fetch.
+  // Flag indicating if advanced mode is active for the current query.
+  isAdvancedMode: false,
+  // Stores the settings for each origin node when in advanced mode.
+  perNodeSettings: {},
 };
 
 // Redux slice for managing all graph-related state.
@@ -197,7 +233,7 @@ const graphSlice = createSlice({
     updateSetting: (state, action) => {
       const { setting, value } = action.payload;
       state.settings[setting] = value;
-      console.log("Update setting:", value)
+      console.log("Update setting:", value);
       state.lastActionType = "updateSetting";
     },
     // Sets final, processed graph data, including node positions.
@@ -208,10 +244,17 @@ const graphSlice = createSlice({
     },
     // Resets graph state for new query.
     initializeGraph: (state, action) => {
-      state.originNodeIds = action.payload.nodeIds;
+      const { nodeIds, isAdvancedMode, perNodeSettings } = action.payload;
+      state.originNodeIds = nodeIds;
+      state.lastAppliedOriginNodeIds = nodeIds;
+
+      // Store the advanced mode configuration that will be used for the fetch.
+      state.isAdvancedMode = isAdvancedMode;
+      state.perNodeSettings = perNodeSettings;
+
+      // Reset graph data and status.
       state.status = "idle";
       state.lastActionType = "initializeGraph";
-      state.lastAppliedOriginNodeIds = action.payload.nodeIds;
       state.rawData = {};
       state.graphData = { nodes: [], links: [] };
       state.collapsed = { initial: [], userDefined: [], userIgnored: [] };
@@ -336,6 +379,12 @@ const graphSlice = createSlice({
       .addCase(fetchAndProcessGraph.fulfilled, (state, action) => {
         state.status = "processing";
         state.lastAppliedSettings = state.settings;
+        if (state.isAdvancedMode) {
+          state.lastAppliedPerNodeSettings = state.perNodeSettings;
+        } else {
+          // Clear the snapshot when not in advanced mode to prevent stale comparisons.
+          state.lastAppliedPerNodeSettings = null;
+        }
         state.rawData = action.payload;
         state.lastActionType = "fetch/fulfilled";
       })

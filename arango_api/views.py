@@ -49,22 +49,46 @@ def get_search_items(request):
 
 @api_view(["POST"])
 def get_graph(request):
-    node_ids = request.data.get("node_ids")
-    depth = request.data.get("depth")
-    edge_direction = request.data.get("edge_direction")
-    allowed_collections = request.data.get("allowed_collections")
-    graph = request.data.get("graph")
-    edge_filters = request.data.get("edge_filters", None)
+    """
+    API endpoint to fetch graph data.
 
-    search_results = utils.get_graph(
-        node_ids,
-        depth,
-        edge_direction,
-        allowed_collections,
-        graph,
-        edge_filters,
-    )
-    return JsonResponse(search_results, safe=False)
+    Acts as a dispatcher:
+    - If 'advanced_settings' is in the payload, it routes to the advanced
+      orchestrator which handles per-node settings.
+    - Otherwise, it performs a standard traversal with global settings.
+    """
+    # Route request based on payload structure
+    if "advanced_settings" in request.data:
+        # Handle advanced per-node settings request.
+        node_ids = request.data.get("node_ids")
+        advanced_settings = request.data.get("advanced_settings")
+        graph = request.data.get("graph")  # Graph type is a global setting.
+
+        # Call the new orchestrator utility function.
+        search_results = utils.get_graph_advanced(
+            node_ids,
+            advanced_settings,
+            graph,
+        )
+        return JsonResponse(search_results, safe=False)
+    else:
+        # Handle standard request with global settings
+        node_ids = request.data.get("node_ids")
+        depth = request.data.get("depth")
+        edge_direction = request.data.get("edge_direction")
+        allowed_collections = request.data.get("allowed_collections")
+        graph = request.data.get("graph")
+        edge_filters = request.data.get("edge_filters", None)
+
+        search_results = utils.get_graph(
+            node_ids,
+            depth,
+            edge_direction,
+            allowed_collections,
+            graph,
+            edge_filters,
+        )
+        return JsonResponse(search_results, safe=False)
 
 
 @api_view(["POST"])

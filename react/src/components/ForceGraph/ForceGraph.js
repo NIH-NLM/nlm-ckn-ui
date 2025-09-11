@@ -43,6 +43,18 @@ import LoadGraphModal from "../LoadGraphModal/LoadGraphModal";
 import AddToGraphButton from "../AddToGraphButton/AddToGraphButton";
 import DocumentPopup from "../DocumentPopup/DocumentPopup";
 
+// Whitelist of settings that can be configured on a per-node basis.
+const PER_NODE_SETTINGS = [
+  "depth",
+  "edgeDirection",
+  "allowedCollections",
+  "nodeFontSize",
+  "edgeFontSize",
+  "labelStates",
+  "collapseOnStart",
+  "edgeFilters",
+];
+
 // Main React component for D3 force-directed graph, wrapped in memo for performance.
 // Orchestrates Redux state, user interactions, and D3 instance.
 const ForceGraph = ({
@@ -86,28 +98,21 @@ const ForceGraph = ({
     shallowEqual,
   );
 
-  // Select settings state
-  const { settings, lastAppliedSettings } = useSelector(
-    (state) => ({
-      settings: state.graph.present.settings,
-      lastAppliedSettings: state.graph.present.lastAppliedSettings,
-    }),
-    shallowEqual,
-  );
-
-  // Calculate if settings are stale.
-  const isSettingsStale = useMemo(() => {
-    if (!lastAppliedSettings) {
-      return false;
-    }
-    return JSON.stringify(settings) !== JSON.stringify(lastAppliedSettings);
-  }, [settings, lastAppliedSettings]);
+  const { settings, lastAppliedSettings, lastAppliedPerNodeSettings } =
+    useSelector(
+      (state) => ({
+        settings: state.graph.present.settings,
+        lastAppliedSettings: state.graph.present.lastAppliedSettings,
+        lastAppliedPerNodeSettings:
+          state.graph.present.lastAppliedPerNodeSettings,
+      }),
+      shallowEqual,
+    );
 
   // Local component state for UI and temporary flags.
   const collectionMaps = useMemo(() => new Map(collMaps.maps), []); // Memoizing to avoid refetching.
   const [isRestoring, setIsRestoring] = useState(false);
   const [optionsVisible, setOptionsVisible] = useState(false);
-  const [activeTab, setActiveTab] = useState("general");
   const [popup, setPopup] = useState({
     visible: false,
     isEdge: false,
@@ -117,9 +122,27 @@ const ForceGraph = ({
   });
   const [isLoadModalOpen, setIsLoadModalOpen] = useState(false);
 
+  // State for two-tiered tab navigation.
+  const [activePrimaryTab, setActivePrimaryTab] = useState("settings");
+  const [activeSecondaryTab, setActiveSecondaryTab] = useState("general");
+
+  // State for advanced per-node settings.
+  const [isAdvancedMode, setIsAdvancedMode] = useState(false);
+  const [perNodeSettings, setPerNodeSettings] = useState({});
+  const [activeOriginNodeId, setActiveOriginNodeId] = useState(null);
+  const settingsRef = useRef(settings);
+  const perNodeSettingsRef = useRef(perNodeSettings);
+
+  // Keep the refs updated with the latest state on every render.
+  useEffect(() => {
+    settingsRef.current = settings;
+  });
+  useEffect(() => {
+    perNodeSettingsRef.current = perNodeSettings;
+  });
+
   // Fetches list of available data collections on component mount.
   useEffect(() => {
-    // Get both collections for current subgraph and full list.
     fetchCollections(settings.graphType).then((data) => {
       const parsed = parseCollections(data);
       dispatch(setAvailableCollections(parsed));
@@ -138,7 +161,10 @@ const ForceGraph = ({
   // Applies collection filters passed via props.
   useEffect(() => {
     const collectionsToPrune = settingsFromProps?.collectionsToPrune;
-    if (collectionsToPrune === undefined || settings.availableCollections.length === 0) {
+    if (
+      collectionsToPrune === undefined ||
+      settings.availableCollections.length === 0
+    ) {
       return;
     }
     const newAllowedCollections = settings.availableCollections.filter(
@@ -154,10 +180,13 @@ const ForceGraph = ({
 
   // Triggers new data fetch when graph is explicitly initialized in the slice.
   useEffect(() => {
-    // Load if called for it and collections are populated OR if settings update and has not yet populated
-    if (lastActionType === "initializeGraph" && settings.allowedCollections.length > 0 || !hasInitializedGraph.current && lastActionType === "updateSetting") {
+    if (
+      (lastActionType === "initializeGraph" &&
+        settings.allowedCollections.length > 0) ||
+      (!hasInitializedGraph.current && lastActionType === "updateSetting")
+    ) {
       dispatch(fetchAndProcessGraph());
-      hasInitializedGraph.current = true
+      hasInitializedGraph.current = true;
     }
   }, [dispatch, settings.allowedCollections, lastActionType]);
 
@@ -184,57 +213,48 @@ const ForceGraph = ({
 
   // Main effect for synchronizing D3 instance with Redux state.
   useEffect(() => {
-
-    // Creates D3 graph instance if it does not exist.
     const graphInstance = graphInstanceRef.current;
     if (!graphInstance && settings.availableCollections.length > 0) {
-      // Callback to save final node positions to Redux after simulation.
       const handleSimulationEnd = (finalNodes, finalLinks) => {
-        dispatch(setGraphData({nodes: finalNodes, links: finalLinks}));
+        dispatch(setGraphData({ nodes: finalNodes, links: finalLinks }));
       };
-      // Init graph instance.
       const newGraphInstance = ForceGraphConstructor(
-          svgRef.current,
-          {nodes: [], links: []},
-          {
-            onSimulationEnd: handleSimulationEnd,
-            saveInitial: false,
-            useFocusNodes: settings.useFocusNodes,
-            originNodeIds: originNodeIds,
-            nodeFontSize: settings.nodeFontSize,
-            linkFontSize: settings.edgeFontSize,
-            initialLabelStates: settings.labelStates,
-            nodeGroups: settings.availableCollections,
-            collectionMaps: collectionMaps,
-            onNodeClick: handleNodeClick,
-            onNodeDragEnd: handleNodeDragEnd,
-            interactionCallback: handlePopupClose,
-            nodeGroup: (d) => d._id.split("/")[0],
-            nodeHover: (d) =>
-                d.label ? `${d._id}\n${d.label}` : `${d._id}`,
-            label: getLabel,
-            nodeStrength: -100,
-            width: svgRef.current.clientWidth,
-            height: svgRef.current.clientHeight,
-          },
+        svgRef.current,
+        { nodes: [], links: [] },
+        {
+          onSimulationEnd: handleSimulationEnd,
+          saveInitial: false,
+          useFocusNodes: settings.useFocusNodes,
+          originNodeIds: originNodeIds,
+          nodeFontSize: settings.nodeFontSize,
+          linkFontSize: settings.edgeFontSize,
+          initialLabelStates: settings.labelStates,
+          nodeGroups: settings.availableCollections,
+          collectionMaps: collectionMaps,
+          onNodeClick: handleNodeClick,
+          onNodeDragEnd: handleNodeDragEnd,
+          interactionCallback: handlePopupClose,
+          nodeGroup: (d) => d._id.split("/")[0],
+          nodeHover: (d) => (d.label ? `${d._id}\n${d.label}` : `${d._id}`),
+          label: getLabel,
+          nodeStrength: -100,
+          width: svgRef.current.clientWidth,
+          height: svgRef.current.clientHeight,
+        },
       );
-      // Save ref.
       graphInstanceRef.current = newGraphInstance;
-      // Trigger resize to place legend correctly at graph creation.
       newGraphInstance.resize(
-          wrapperRef.current.clientWidth,
-          wrapperRef.current.clientHeight,
+        wrapperRef.current.clientWidth,
+        wrapperRef.current.clientHeight,
       );
-      // Syncs initial label visibility with D3 instance.
       for (const labelClass in settings.labelStates) {
         newGraphInstance.toggleLabels(
-            settings.labelStates[labelClass],
-            labelClass,
+          settings.labelStates[labelClass],
+          labelClass,
         );
       }
     }
 
-    // Handles state restoration for undo/redo actions.
     if (isRestoring === true || lastActionType == "loadGraph") {
       if (graphInstance) {
         graphInstance.restoreGraph({
@@ -245,7 +265,6 @@ const ForceGraph = ({
       }
       setIsRestoring(false);
     } else {
-      // Executes different logic based on last Redux action.
       switch (lastActionType) {
         case "fetch/fulfilled":
         case "expand/fulfilled": {
@@ -254,54 +273,47 @@ const ForceGraph = ({
           }
 
           let processedData;
-          // Expand performs set operation in slice
           if (lastActionType === "expand/fulfilled") {
             processedData = graphData;
-            // Shortest paths return processed data
           } else if (settings.findShortestPaths) {
             processedData = rawData;
           } else {
-            // Apply set operations for multi-node graphs.
             const graphsToProcess = originNodeIds.map(
-                (nodeId) => rawData[nodeId],
+              (nodeId) => rawData[nodeId],
             );
             processedData = performSetOperation(
-                graphsToProcess,
-                settings.setOperation,
+              graphsToProcess,
+              settings.setOperation,
             );
           }
-            // Updates existing graph instance with new data.
-            let collapseList = finalCollapseList;
-            // Populates initial collapse list on first data fetch.
-            if (
-              lastActionType === "fetch/fulfilled" &&
-              collapsed?.initial?.length === 0
-            ) {
-              const initialCollapseList = processedData.nodes
-                .filter((node) => !originNodeIds.includes(node._id))
-                .map((node) => node._id);
-              dispatch(setInitialCollapseList(initialCollapseList));
-              if (settings.collapseOnStart){
-                collapseList = initialCollapseList;
-              }
-            }
-
-            // Update graph with data.
-            graphInstance.updateGraph({
-              newOriginNodeIds: originNodeIds,
-              newNodes: processedData.nodes,
-              newLinks: processedData.links,
-              resetData: lastActionType === "fetch/fulfilled",
-              collapseNodes: collapseList,
-              centerNodeId: nodeToCenter,
-              labelStates: settings.labelStates,
-            });
-
-            // Clean up.
-            if (nodeToCenter) {
-              dispatch(clearNodeToCenter());
+          let collapseList = finalCollapseList;
+          if (
+            lastActionType === "fetch/fulfilled" &&
+            collapsed?.initial?.length === 0
+          ) {
+            const initialCollapseList = processedData.nodes
+              .filter((node) => !originNodeIds.includes(node._id))
+              .map((node) => node._id);
+            dispatch(setInitialCollapseList(initialCollapseList));
+            if (settings.collapseOnStart) {
+              collapseList = initialCollapseList;
             }
           }
+
+          graphInstance.updateGraph({
+            newOriginNodeIds: originNodeIds,
+            newNodes: processedData.nodes,
+            newLinks: processedData.links,
+            resetData: lastActionType === "fetch/fulfilled",
+            collapseNodes: collapseList,
+            centerNodeId: nodeToCenter,
+            labelStates: settings.labelStates,
+          });
+
+          if (nodeToCenter) {
+            dispatch(clearNodeToCenter());
+          }
+        }
         default: {
           break;
         }
@@ -333,8 +345,83 @@ const ForceGraph = ({
     }
   }, [settings.labelStates]);
 
+  // Effect to synchronize Redux state with local per-node settings.
+  useEffect(() => {
+    if (isAdvancedMode && activeOriginNodeId) {
+      // Use the refs to get the most up-to-date state without adding them as dependencies.
+      const currentSettings = settingsRef.current;
+      const currentPerNodeSettings = perNodeSettingsRef.current;
+
+      const newActiveSettings = currentPerNodeSettings[activeOriginNodeId];
+      if (!newActiveSettings) return; // Guard against race conditions
+
+      Object.entries(newActiveSettings).forEach(([settingKey, value]) => {
+        if (PER_NODE_SETTINGS.includes(settingKey)) {
+          if (
+            JSON.stringify(currentSettings[settingKey]) !==
+            JSON.stringify(value)
+          ) {
+            dispatch(updateSetting({ setting: settingKey, value: value }));
+          }
+        }
+      });
+    }
+  }, [isAdvancedMode, activeOriginNodeId, dispatch]);
+
+  // Effect to sync filter changes back to local per-node state.
+  useEffect(() => {
+    // Only run this logic if advanced mode is active and a node is selected.
+    if (isAdvancedMode && activeOriginNodeId) {
+      // Check if the edgeFilters in Redux are different from what's stored locally.
+      if (
+        JSON.stringify(settings.edgeFilters) !==
+        JSON.stringify(perNodeSettings[activeOriginNodeId]?.edgeFilters)
+      ) {
+        // If they are different, it means a filter was just changed.
+        // Update the local perNodeSettings to reflect this change.
+        setPerNodeSettings((prevSettings) => ({
+          ...prevSettings,
+          [activeOriginNodeId]: {
+            ...prevSettings[activeOriginNodeId],
+            edgeFilters: settings.edgeFilters,
+          },
+        }));
+      }
+    }
+  }, [
+    settings.edgeFilters,
+    isAdvancedMode,
+    activeOriginNodeId,
+    perNodeSettings,
+  ]);
+
+  // Calculate if settings are stale.
+  const isSettingsStale = useMemo(() => {
+    // On the very first run, lastAppliedSettings is null, so nothing is stale.
+    if (!lastAppliedSettings) {
+      return false;
+    }
+
+    // Compare based on mode.
+    if (isAdvancedMode) {
+      // Compare perNodeSettings against snapshot in Redux.
+      return (
+        JSON.stringify(perNodeSettings) !==
+        JSON.stringify(lastAppliedPerNodeSettings)
+      );
+    } else {
+      // Compare standard settings.
+      return JSON.stringify(settings) !== JSON.stringify(lastAppliedSettings);
+    }
+  }, [
+    isAdvancedMode,
+    settings,
+    perNodeSettings,
+    lastAppliedSettings,
+    lastAppliedPerNodeSettings,
+  ]);
+
   // Memoizes calculation of final list of nodes to collapse.
-  // Combines user actions with initial collapse setting.
   const finalCollapseList = useMemo(() => {
     const nodesToCollapse = new Set(collapsed.userDefined);
     if (settings.collapseOnStart) {
@@ -349,15 +436,33 @@ const ForceGraph = ({
 
   // --- Redux and Event Handlers ---
 
-  // Memoized handler for updating any graph setting in Redux.
+  // Memoized handler for updating per-node or global settings.
   const handleSettingChange = useCallback(
+    (setting, value) => {
+      // If in advanced mode, update the local state for the active node.
+      if (isAdvancedMode && activeOriginNodeId) {
+        setPerNodeSettings((prevSettings) => ({
+          ...prevSettings,
+          [activeOriginNodeId]: {
+            ...prevSettings[activeOriginNodeId],
+            [setting]: value,
+          },
+        }));
+      }
+      // Always dispatch to sync the UI.
+      dispatch(updateSetting({ setting, value }));
+    },
+    [dispatch, isAdvancedMode, activeOriginNodeId],
+  );
+
+  // Memoized handler for updating global Redux settings.
+  const handleGlobalSettingChange = useCallback(
     (setting, value) => {
       dispatch(updateSetting({ setting, value }));
     },
     [dispatch],
   );
 
-  // Dispatches action to save node position after drag ends.
   const handleNodeDragEnd = useCallback(
     ({ nodeId, x, y }) => {
       dispatch(updateNodePosition({ nodeId, x, y }));
@@ -365,22 +470,11 @@ const ForceGraph = ({
     [dispatch],
   );
 
-  // Handle filtering on edges.
-  const handleEdgeFilterChange = useCallback(
-    (field, value) => {
-      dispatch(updateEdgeFilter({ field, value }));
-    },
-    [dispatch],
-  );
-
-  // Triggers Redux undo action.
-  // Sets restore flag to prevent re-running fetch logic.
   const handleUndo = () => {
     setIsRestoring(true);
     dispatch(ActionCreators.undo());
   };
 
-  // Triggers Redux redo action.
   const handleRedo = () => {
     setIsRestoring(true);
     dispatch(ActionCreators.redo());
@@ -389,7 +483,6 @@ const ForceGraph = ({
   const handleSave = useCallback(() => {
     const graphName = window.prompt("Please enter a name for your graph:");
     if (graphName) {
-      // Dispatch the saveGraph action with the current state.
       dispatch(
         saveGraph({
           name: graphName,
@@ -406,7 +499,7 @@ const ForceGraph = ({
     setIsLoadModalOpen(true);
   }, []);
 
-  // Memoizes hotkey configuration for undo, redo, save, and load.
+  // Memoizes hotkey configuration.
   const hotkeyConfigs = useMemo(
     () => [
       { key: "z", ctrlKey: true, metaKey: true, handler: handleUndo },
@@ -420,14 +513,11 @@ const ForceGraph = ({
   );
   useHotkeys(hotkeyConfigs, [hotkeyConfigs]);
 
-  // Hold hotkey configuration for toggleSimulation
   const handleSimulationOn = useCallback(() => {
-    // Pass the current label states when turning the simulation on.
     graphInstanceRef.current?.toggleSimulation(true, settings.labelStates);
-  }, [settings.labelStates]); // Dependency added to ensure current state is used.
+  }, [settings.labelStates]);
 
   const handleSimulationOff = useCallback(() => {
-    // No need to pass state when turning off; the D3 instance will restore it.
     graphInstanceRef.current?.toggleSimulation(false);
   }, []);
 
@@ -438,16 +528,12 @@ const ForceGraph = ({
     handleSettingChange("depth", Number(e.target.value));
   const handleEdgeDirectionChange = (e) =>
     handleSettingChange("edgeDirection", e.target.value);
-  const handleOperationChange = (e) =>
-    handleSettingChange("setOperation", e.target.value);
   const handleNodeFontSizeChange = (e) =>
     handleSettingChange("nodeFontSize", parseInt(e.target.value, 10));
   const handleEdgeFontSizeChange = (e) =>
     handleSettingChange("edgeFontSize", parseInt(e.target.value, 10));
   const handleLeafToggle = (e) =>
     handleSettingChange("collapseOnStart", e.target.checked);
-  const handleShortestPathToggle = (e) =>
-    handleSettingChange("findShortestPaths", e.target.checked);
   const handleGraphToggle = () =>
     handleSettingChange(
       "graphType",
@@ -468,6 +554,38 @@ const ForceGraph = ({
       [labelClass]: !settings.labelStates[labelClass],
     };
     handleSettingChange("labelStates", newLabelStates);
+  };
+
+  // Global setting handlers use the global-only updater.
+  const handleOperationChange = (e) =>
+    handleGlobalSettingChange("setOperation", e.target.value);
+  const handleShortestPathToggle = (e) =>
+    handleGlobalSettingChange("findShortestPaths", e.target.checked);
+
+  const handleAdvancedModeToggle = () => {
+    const newMode = !isAdvancedMode;
+    setIsAdvancedMode(newMode);
+
+    if (newMode) {
+      const initialPerNodeSettings = {};
+      originNodeIds.forEach((nodeId) => {
+        initialPerNodeSettings[nodeId] = { ...settings };
+      });
+      setPerNodeSettings(initialPerNodeSettings);
+      setActiveOriginNodeId(originNodeIds[0]);
+      setActivePrimaryTab("settings");
+    } else {
+      const firstNodeId = originNodeIds[0];
+      if (perNodeSettings[firstNodeId]) {
+        const firstNodeSettings = perNodeSettings[firstNodeId];
+        // Only restore the per-node settings, leaving global settings intact.
+        Object.entries(firstNodeSettings).forEach(([settingKey, value]) => {
+          if (PER_NODE_SETTINGS.includes(settingKey)) {
+            dispatch(updateSetting({ setting: settingKey, value }));
+          }
+        });
+      }
+    }
   };
 
   // --- D3 Interaction Handlers ---
@@ -508,32 +626,17 @@ const ForceGraph = ({
 
   // --- Local UI Handlers ---
   const handleNodeClick = (e, nodeData) => {
-    // Get the bounding box of the graph container.
     const chartRect = wrapperRef.current.getBoundingClientRect();
-
-    // Set leeway
     const popupWidth = 200;
     const popupHeight = 300;
-
-    // Initial click position relative to the chart container.
     let x = e.clientX - chartRect.left;
     let y = e.clientY - chartRect.top;
 
-    // Check for horizontal overflow (right edge).
-    if (x + popupWidth > chartRect.width) {
-      x = x - popupWidth;
-    }
-
-    // Check for vertical overflow (bottom edge).
-    if (y + popupHeight > chartRect.height) {
-      y = y - popupHeight;
-    }
-
-    // Ensure the popup does not go off the top or left of the screen.
+    if (x + popupWidth > chartRect.width) x = x - popupWidth;
+    if (y + popupHeight > chartRect.height) y = y - popupHeight;
     x = Math.max(0, x);
     y = Math.max(0, y);
 
-    // Set the final adjusted position and show the popup.
     setPopup({
       visible: true,
       nodeId: nodeData._id,
@@ -548,63 +651,45 @@ const ForceGraph = ({
 
   // Exports the current view as an image file (SVG, PNG) or data file (JSON).
   const exportGraph = (format) => {
-    // Create string from originNodeIds, with default fallback.
     let nodeIdsString = "no-ids";
     if (Array.isArray(originNodeIds) && originNodeIds.length > 0) {
       nodeIdsString = originNodeIds
         .map((id) => id.replaceAll("/", "-"))
         .join("-");
     }
-    // Create filename stem.
     const filenameStem = `cell-kn-mvp-${nodeIdsString}-graph`;
 
-    // Handle JSON export
     if (format === "json") {
-      // Error handling
       if (!graphData) {
         console.error("graphData is not available for export.");
         return;
       }
-
-      // Convert JS object to JSON string.
       const jsonString = JSON.stringify(graphData, null, 2);
-
-      // Create a URL for the Blob.
       const blob = new Blob([jsonString], { type: "application/json" });
       const url = URL.createObjectURL(blob);
-
-      // Create a link element to trigger the download.
       const link = document.createElement("a");
       link.href = url;
       link.download = filenameStem + ".json";
-
-      // Append to the document, click, and then remove.
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
-      // Clean up.
       URL.revokeObjectURL(url);
-
       return;
     }
 
-    // Get svg element for image download.
     if (!wrapperRef.current) return;
     const svgElement = wrapperRef.current.querySelector("svg");
     if (!svgElement) return;
 
-    // Temporarily set white background for export.
     svgElement.style.backgroundColor = "white";
     const svgData = new XMLSerializer().serializeToString(svgElement);
     const svgBlob = new Blob([svgData], {
       type: "image/svg+xml;charset=utf-8",
     });
-    svgElement.style.backgroundColor = ""; // Reset style.
+    svgElement.style.backgroundColor = "";
 
     const url = URL.createObjectURL(svgBlob);
 
-    // For SVG format, download blob directly.
     if (format === "svg") {
       const link = document.createElement("a");
       link.href = url;
@@ -616,12 +701,11 @@ const ForceGraph = ({
       return;
     }
 
-    // For raster formats (PNG/JPEG), draw SVG onto canvas.
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
-      const scaleFactor = 4; // Increase scale for higher resolution output.
+      const scaleFactor = 4;
       const viewBox = svgElement.viewBox.baseVal;
       const svgWidth = viewBox?.width || svgElement.width.baseVal.value;
       const svgHeight = viewBox?.height || svgElement.height.baseVal.value;
@@ -660,12 +744,10 @@ const ForceGraph = ({
           {optionsVisible ? "> Hide Options" : "< Show Options"}
         </button>
 
-        {/* Shows loading bar during data fetch. */}
         {status === "loading" && <LoadingBar />}
 
         <div id="chart-container-wrapper" ref={wrapperRef}>
           <svg ref={svgRef}></svg>
-          {/* Displays message if no data is returned or if fetch fails. */}
           {(status === "processing" || status === "succeeded") &&
             !hasNodesInRawData(rawData) && (
               <div className="no-data-message">No data found.</div>
@@ -677,7 +759,6 @@ const ForceGraph = ({
           )}
         </div>
 
-        {/* Right-click context menu for node actions. */}
         <DocumentPopup
           isVisible={popup.visible}
           position={popup.position}
@@ -715,229 +796,302 @@ const ForceGraph = ({
         </DocumentPopup>
       </div>
 
-      {/* Main side panel for all user-configurable graph options. */}
       <div
         id="graph-options-panel"
         className="graph-options-side-panel"
         style={{ display: optionsVisible ? "flex" : "none" }}
       >
-        <div className="options-tabs-nav">
-          {/* Tabs for navigating different settings categories. */}
-          <button
-            className={`tab-button ${activeTab === "general" ? "active" : ""}`}
-            onClick={() => setActiveTab("general")}
-          >
-            General
-          </button>
-          {originNodeIds && originNodeIds.length >= 2 && (
-            <button
-              className={`tab-button ${activeTab === "multiNode" ? "active" : ""}`}
-              onClick={() => setActiveTab("multiNode")}
-            >
-              Multi-Node
-            </button>
-          )}
-          <button
-            className={`tab-button ${activeTab === "filters" ? "active" : ""}`}
-            onClick={() => setActiveTab("filters")}
-          >
-            Filters
-          </button>
-          <button
-            className={`tab-button ${activeTab === "history" ? "active" : ""}`}
-            onClick={() => setActiveTab("history")}
-          >
-            History
-          </button>
-          <button
-            className={`tab-button ${activeTab === "export" ? "active" : ""}`}
-            onClick={() => setActiveTab("export")}
-          >
-            Export
-          </button>
+        <div className="options-tabs-nav primary-tabs">
           {isSettingsStale && (
             <div className="settings-apply-container">
               <p>Your settings have changed.</p>
               <button
                 className="primary-action-button"
                 onClick={() =>
-                  dispatch(initializeGraph({ nodeIds: originNodeIds }))
+                  dispatch(
+                    initializeGraph({
+                      nodeIds: originNodeIds,
+                      isAdvancedMode: isAdvancedMode,
+                      perNodeSettings: perNodeSettings,
+                    }),
+                  )
                 }
               >
                 Apply Changes
               </button>
             </div>
           )}
+          <button
+            className={`tab-button ${activePrimaryTab === "settings" ? "active" : ""}`}
+            onClick={() => setActivePrimaryTab("settings")}
+          >
+            Settings
+          </button>
+          {originNodeIds && originNodeIds.length >= 2 && (
+            <button
+              className={`tab-button ${activePrimaryTab === "multiNode" ? "active" : ""}`}
+              onClick={() => setActivePrimaryTab("multiNode")}
+            >
+              Multi-Node
+            </button>
+          )}
+          <button
+            className={`tab-button ${activePrimaryTab === "history" ? "active" : ""}`}
+            onClick={() => setActivePrimaryTab("history")}
+          >
+            History
+          </button>
+          <button
+            className={`tab-button ${activePrimaryTab === "export" ? "active" : ""}`}
+            onClick={() => setActivePrimaryTab("export")}
+          >
+            Export
+          </button>
         </div>
+
         <div className="options-tabs-content">
-          {activeTab === "general" && (
-            <div id="tab-panel-general" className="tab-panel active">
-              <div className="option-group">
-                <label htmlFor="depth-select">Depth:</label>
-                <select
-                  id="depth-select"
-                  value={settings.depth}
-                  onChange={handleDepthChange}
-                >
-                  {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((value) => (
-                    <option key={value} value={value}>
-                      {value}
-                    </option>
+          {activePrimaryTab === "settings" && (
+            <>
+              {isAdvancedMode && (
+                <div className="options-tabs-nav super-tabs">
+                  {originNodeIds.map((nodeId) => (
+                    <button
+                      key={nodeId}
+                      className={`tab-button ${activeOriginNodeId === nodeId ? "active" : ""}`}
+                      onClick={() => setActiveOriginNodeId(nodeId)}
+                    >
+                      {getLabel({ _id: nodeId, label: nodeId })}
+                    </button>
                   ))}
-                </select>
-              </div>
-              <div className="option-group">
-                <label htmlFor="depth-select">Traversal Direction:</label>
-                <select
-                  id="edge-direction-select"
-                  value={settings.edgeDirection}
-                  onChange={handleEdgeDirectionChange}
+                </div>
+              )}
+              <div className="options-tabs-nav secondary-tabs">
+                <button
+                  className={`tab-button ${activeSecondaryTab === "general" ? "active" : ""}`}
+                  onClick={() => setActiveSecondaryTab("general")}
                 >
-                  {["ANY", "INBOUND", "OUTBOUND"].map((value) => (
-                    <option key={value} value={value}>
-                      {value}
-                    </option>
-                  ))}
-                </select>
+                  General
+                </button>
+                <button
+                  className={`tab-button ${activeSecondaryTab === "filters" ? "active" : ""}`}
+                  onClick={() => setActiveSecondaryTab("filters")}
+                >
+                  Filters
+                </button>
               </div>
-
-              <div className="option-group font-size-picker">
-                <div className="node-font-size-picker">
-                  <label htmlFor="node-font-size-select">Node font size:</label>
-                  <select
-                    id="node-font-size-select"
-                    value={settings.nodeFontSize}
-                    onChange={handleNodeFontSizeChange}
-                  >
-                    {[
-                      4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32,
-                    ].map((size) => (
-                      <option key={size} value={size}>
-                        {size}px
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="edge-font-size-picker">
-                  <label htmlFor="edge-font-size-select">Edge font size:</label>
-                  <select
-                    id="edge-font-size-select"
-                    value={settings.edgeFontSize}
-                    onChange={handleEdgeFontSizeChange}
-                  >
-                    {[2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28].map(
-                      (size) => (
-                        <option key={size} value={size}>
-                          {size}px
-                        </option>
-                      ),
-                    )}
-                  </select>
-                </div>
-              </div>
-
-              <div className="option-group labels-toggle-container">
-                <label>Toggle Labels:</label>
-                <div className="labels-toggle">
-                  {Object.entries(settings.labelStates).map(
-                    ([labelKey, isChecked]) => (
-                      <div className="label-toggle-item" key={labelKey}>
-                        {labelKey
-                          .replace(/-/g, " ")
-                          .replace("label", "")
-                          .trim()
-                          .replace(/^\w/, (c) => c.toUpperCase())}
+              <div className="tab-panel-content">
+                {activeSecondaryTab === "general" && (
+                  <div id="tab-panel-general" className="tab-panel active">
+                    <div className="option-group">
+                      <label htmlFor="depth-select">Depth:</label>
+                      <select
+                        id="depth-select"
+                        value={settings.depth}
+                        onChange={handleDepthChange}
+                      >
+                        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((value) => (
+                          <option key={value} value={value}>
+                            {value}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="option-group">
+                      <label htmlFor="edge-direction-select">
+                        Traversal Direction:
+                      </label>
+                      <select
+                        id="edge-direction-select"
+                        value={settings.edgeDirection}
+                        onChange={handleEdgeDirectionChange}
+                      >
+                        {["ANY", "INBOUND", "OUTBOUND"].map((value) => (
+                          <option key={value} value={value}>
+                            {value}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="option-group font-size-picker">
+                      <div className="node-font-size-picker">
+                        <label htmlFor="node-font-size-select">
+                          Node font size:
+                        </label>
+                        <select
+                          id="node-font-size-select"
+                          value={settings.nodeFontSize}
+                          onChange={handleNodeFontSizeChange}
+                        >
+                          {[
+                            4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30,
+                            32,
+                          ].map((size) => (
+                            <option key={size} value={size}>
+                              {size}px
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="edge-font-size-picker">
+                        <label htmlFor="edge-font-size-select">
+                          Edge font size:
+                        </label>
+                        <select
+                          id="edge-font-size-select"
+                          value={settings.edgeFontSize}
+                          onChange={handleEdgeFontSizeChange}
+                        >
+                          {[
+                            2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28,
+                          ].map((size) => (
+                            <option key={size} value={size}>
+                              {size}px
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="option-group labels-toggle-container">
+                      <label>Toggle Labels:</label>
+                      <div className="labels-toggle">
+                        {Object.entries(settings.labelStates).map(
+                          ([labelKey, isChecked]) => (
+                            <div className="label-toggle-item" key={labelKey}>
+                              {labelKey
+                                .replace(/-/g, " ")
+                                .replace("label", "")
+                                .trim()
+                                .replace(/^\w/, (c) => c.toUpperCase())}
+                              <label className="switch">
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => handleLabelToggle(labelKey)}
+                                />
+                                <span className="slider round"></span>
+                              </label>
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    </div>
+                    <div className="option-group labels-toggle-container">
+                      <label>Collapse Leaf Nodes:</label>
+                      <div className="labels-toggle graph-source-toggle">
                         <label className="switch">
                           <input
                             type="checkbox"
-                            checked={isChecked}
-                            onChange={() => handleLabelToggle(labelKey)}
+                            checked={settings.collapseOnStart}
+                            onChange={handleLeafToggle}
                           />
                           <span className="slider round"></span>
                         </label>
                       </div>
-                    ),
-                  )}
-                </div>
+                    </div>
+                    <div className="option-group labels-toggle-container">
+                      <label>Graph Source:</label>
+                      <div className="labels-toggle graph-source-toggle">
+                        Evidence
+                        <label className="switch">
+                          <input
+                            type="checkbox"
+                            checked={settings.graphType === "ontologies"}
+                            onChange={handleGraphToggle}
+                          />
+                          <span className="slider round"></span>
+                        </label>
+                        Knowledge
+                      </div>
+                    </div>
+                    <div className="option-group">
+                      <button
+                        className="simulation-toggle background-color-bg"
+                        onClick={handleSimulationRestart}
+                      >
+                        Restart Simulation
+                      </button>
+                      <p className="hotkey-hint">
+                        Hold<kbd>S</kbd> to run live
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {activeSecondaryTab === "filters" && (
+                  <div id="tab-panel-collections" className="tab-panel active">
+                    <div className="collection-picker">
+                      <h3>Collection Filters:</h3>
+                      <FilterableDropdown
+                        key="collection-filter"
+                        label="Collections"
+                        options={settings.allCollections}
+                        selectedOptions={settings.allowedCollections}
+                        onOptionToggle={handleCollectionChange}
+                        getOptionLabel={(collectionId) =>
+                          collectionMaps.has(collectionId)
+                            ? collectionMaps.get(collectionId)["display_name"]
+                            : collectionId
+                        }
+                        getColorForOption={(collectionId) =>
+                          collectionMaps.has(collectionId)
+                            ? collectionMaps.get(collectionId)["color"]
+                            : null
+                        }
+                      />
+                    </div>
+                    {edgeFilterStatus === "loading" && (
+                      <div className="option-group">
+                        Loading edge filters...
+                      </div>
+                    )}
+                    {edgeFilterStatus === "failed" && (
+                      <div className="option-group error-message">
+                        Failed to load edge filters.
+                      </div>
+                    )}
+                    {edgeFilterStatus === "succeeded" &&
+                      Object.keys(availableEdgeFilters).length > 0 && (
+                        <div className="edge-filter-section">
+                          <h3>Edge Filters:</h3>
+                          {Object.entries(availableEdgeFilters).map(
+                            ([field, values]) => (
+                              <FilterableDropdown
+                                key={field}
+                                label={field}
+                                options={values}
+                                selectedOptions={
+                                  settings.edgeFilters[field] || []
+                                }
+                                onOptionToggle={(value) =>
+                                  dispatch(updateEdgeFilter({ field, value }))
+                                }
+                              />
+                            ),
+                          )}
+                        </div>
+                      )}
+                  </div>
+                )}
               </div>
-
-              <div className="option-group labels-toggle-container">
-                <label>Collapse Leaf Nodes:</label>
-                <div className="labels-toggle graph-source-toggle">
-                  <label className="switch">
-                    <input
-                      type="checkbox"
-                      checked={settings.collapseOnStart}
-                      onChange={handleLeafToggle}
-                    />
-                    <span className="slider round"></span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="option-group labels-toggle-container">
-                <label>Graph Source:</label>
-                <div className="labels-toggle graph-source-toggle">
-                  Evidence
-                  <label className="switch">
-                    <input
-                      type="checkbox"
-                      checked={settings.graphType === "ontologies"}
-                      onChange={handleGraphToggle}
-                    />
-                    <span className="slider round"></span>
-                  </label>
-                  Knowledge
-                </div>
-              </div>
-
-              <div className="option-group">
-                <button
-                  className="simulation-toggle background-color-bg"
-                  onClick={handleSimulationRestart}
-                >
-                  Restart Simulation
-                </button>
-                <p className="hotkey-hint">
-                  Hold<kbd>S</kbd> to run live
-                </p>
-              </div>
-            </div>
+            </>
           )}
 
-          {activeTab === "history" && (
-            <div id="tab-panel-history" /* ... */>
-              <div className="option-group">
-                <label>Graph History</label>
-                <div className="history-controls">
-                  <button onClick={handleUndo} disabled={!canUndo}>
-                    <span className="history-icon">↶</span> Undo{" "}
-                    <kbd>{isMac ? "⌘Z" : "Ctrl+Z"}</kbd>
-                  </button>
-                  <button onClick={handleRedo} disabled={!canRedo}>
-                    Redo <kbd>{isMac ? "⇧⌘Z" : "Ctrl+Y"}</kbd>
-                  </button>
-                </div>
-              </div>
-
-              <div className="option-group">
-                <label>Saved Graphs</label>
-                <div className="save-load-controls">
-                  <button onClick={handleSave}>
-                    Save Current Graph <kbd>{isMac ? "⌘S" : "Ctrl+S"}</kbd>
-                  </button>
-                  <button onClick={handleLoad}>
-                    Load a Saved Graph <kbd>{isMac ? "⌘O" : "Ctrl+O"}</kbd>
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === "multiNode" &&
+          {activePrimaryTab === "multiNode" &&
             originNodeIds &&
             originNodeIds.length >= 2 && (
               <div id="tab-panel-multiNode" className="tab-panel active">
+                <div className="option-group labels-toggle-container">
+                  <label>Advanced Per-Node Settings:</label>
+                  <div className="labels-toggle graph-source-toggle">
+                    <label className="switch">
+                      <input
+                        type="checkbox"
+                        checked={isAdvancedMode}
+                        onChange={handleAdvancedModeToggle}
+                      />
+                      <span className="slider round"></span>
+                    </label>
+                  </div>
+                </div>
                 <div className="option-group multi-node">
                   <label htmlFor="set-operation-select">Graph operation:</label>
                   <select
@@ -967,61 +1121,36 @@ const ForceGraph = ({
                 </div>
               </div>
             )}
-          {activeTab === "filters" && (
-            <div id="tab-panel-collections" className="tab-panel active">
-              {/* Collection Filters */}
-              <div className="collection-picker">
-                <h3>Collection Filters:</h3>
-                <FilterableDropdown
-                  key="collection-filter"
-                  label="Collections"
-                  options={settings.allCollections}
-                  selectedOptions={settings.allowedCollections}
-                  onOptionToggle={handleCollectionChange}
-                  getOptionLabel={(collectionId) =>
-                    collectionMaps.has(collectionId)
-                      ? collectionMaps.get(collectionId)["display_name"]
-                      : collectionId
-                  }
-                  getColorForOption={(collectionId) =>
-                    collectionMaps.has(collectionId)
-                      ? collectionMaps.get(collectionId)["color"]
-                      : null
-                  }
-                />
-              </div>
-              {/* Edge Filters */}
-              {edgeFilterStatus === "loading" && (
-                <div className="option-group">Loading edge filters...</div>
-              )}
-              {edgeFilterStatus === "failed" && (
-                <div className="option-group error-message">
-                  Failed to load edge filters.
+
+          {activePrimaryTab === "history" && (
+            <div id="tab-panel-history" className="tab-panel active">
+              <div className="option-group">
+                <label>Graph History</label>
+                <div className="history-controls">
+                  <button onClick={handleUndo} disabled={!canUndo}>
+                    <span className="history-icon">↶</span> Undo{" "}
+                    <kbd>{isMac ? "⌘Z" : "Ctrl+Z"}</kbd>
+                  </button>
+                  <button onClick={handleRedo} disabled={!canRedo}>
+                    Redo <kbd>{isMac ? "⇧⌘Z" : "Ctrl+Y"}</kbd>
+                  </button>
                 </div>
-              )}
-              {edgeFilterStatus === "succeeded" &&
-                Object.keys(availableEdgeFilters).length > 0 && (
-                  <div className="edge-filter-section">
-                    <h3>Edge Filters:</h3>
-                    {Object.entries(availableEdgeFilters).map(
-                      ([field, values]) => (
-                        <FilterableDropdown
-                          key={field}
-                          label={field}
-                          options={values}
-                          selectedOptions={settings.edgeFilters[field] || []}
-                          onOptionToggle={(value) =>
-                            handleEdgeFilterChange(field, value)
-                          }
-                        />
-                      ),
-                    )}
-                  </div>
-                )}
+              </div>
+              <div className="option-group">
+                <label>Saved Graphs</label>
+                <div className="save-load-controls">
+                  <button onClick={handleSave}>
+                    Save Current Graph <kbd>{isMac ? "⌘S" : "Ctrl+S"}</kbd>
+                  </button>
+                  <button onClick={handleLoad}>
+                    Load a Saved Graph <kbd>{isMac ? "⌘O" : "Ctrl+O"}</kbd>
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
-          {activeTab === "export" && (
+          {activePrimaryTab === "export" && (
             <div id="tab-panel-export" className="tab-panel active">
               <div className="option-group export-buttons">
                 <label>Export Graph:</label>
@@ -1039,7 +1168,7 @@ const ForceGraph = ({
           )}
         </div>
       </div>
-      {/* Render the modal for loading graphs */}
+
       <LoadGraphModal
         isOpen={isLoadModalOpen}
         onClose={() => setIsLoadModalOpen(false)}
