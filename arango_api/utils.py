@@ -21,7 +21,7 @@ def get_collections(collection_type, graph="ontologies"):
         collection
         for collection in all_collections
         if collection["type"] == collection_type
-           and not collection["name"].startswith("_")
+        and not collection["name"].startswith("_")
     ]
     return [collection["name"] for collection in collections]
 
@@ -46,12 +46,12 @@ def get_edges_by_id(edge_coll, dr, item_coll, item_id):
 
 
 def get_graph(
-        node_ids,
-        depth,
-        edge_direction,
-        allowed_collections,
-        graph,
-        edge_filters,
+    node_ids,
+    depth,
+    edge_direction,
+    allowed_collections,
+    graph,
+    edge_filters,
 ):
     """
     Constructs and executes a graph traversal AQL query.
@@ -168,6 +168,7 @@ def get_graph(
 
     return results
 
+
 def get_graph_advanced(
     node_ids,
     advanced_settings,
@@ -220,32 +221,29 @@ def get_graph_advanced(
     return aggregated_results
 
 
-def get_shortest_paths(node_ids, edge_direction='ANY'):
+def get_shortest_paths(node_ids, edge_direction="ANY"):
     """
-        Finds all shortest paths between every unique pair of nodes in a list
-        and returns a single, de-duplicated graph of the results.
+    Finds all shortest paths between every unique pair of nodes in a list
+    and returns a single, de-duplicated graph of the results.
 
-        Args:
-            node_ids (list): A list of 2 or more node _id strings.
-            edge_direction (str, optional): Traversal direction.
-                Defaults to 'ANY'. Can be 'INBOUND' or 'OUTBOUND'.
+    Args:
+        node_ids (list): A list of 2 or more node _id strings.
+        edge_direction (str, optional): Traversal direction.
+            Defaults to 'ANY'. Can be 'INBOUND' or 'OUTBOUND'.
 
-        Returns:
-            dict: A dictionary with a flat list of unique 'nodes' and 'links'
-                  comprising all the found shortest paths.
-        """
+    Returns:
+        dict: A dictionary with a flat list of unique 'nodes' and 'links'
+              comprising all the found shortest paths.
+    """
     # Validate input.
     if not isinstance(node_ids, list) or len(node_ids) < 2:
-        return {'nodes': [], 'links': []}
+        return {"nodes": [], "links": []}
 
-    if edge_direction not in ['INBOUND', 'OUTBOUND', 'ANY']:
+    if edge_direction not in ["INBOUND", "OUTBOUND", "ANY"]:
         raise ValueError("edge_direction must be 'INBOUND', 'OUTBOUND', or 'ANY'")
 
     # Prepare bind variables.
-    bind_vars = {
-        'node_ids': node_ids,
-        'graph': GRAPH_NAME_ONTOLOGIES
-    }
+    bind_vars = {"node_ids": node_ids, "graph": GRAPH_NAME_ONTOLOGIES}
 
     # Construct AQL query.
     aql_query = f"""
@@ -368,12 +366,12 @@ def search_by_term(search_term, search_fields, db):
             RETURN sortedDocs
             """
     query = (
-            query_beginning
-            + levenshtein_string_0
-            + levenshtein_string_1
-            + exact_match_string
-            + n_gram_string
-            + query_end
+        query_beginning
+        + levenshtein_string_0
+        + levenshtein_string_1
+        + exact_match_string
+        + n_gram_string
+        + query_end
     )
 
     bind_vars = {"search_term": search_term}
