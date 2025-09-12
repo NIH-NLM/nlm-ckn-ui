@@ -18,6 +18,7 @@ const DocumentPage = () => {
   const { coll, id } = useParams();
   const [document, setDocument] = useState(null);
   const [nodeIds, setNodeIds] = useState(null);
+  const [isPanelVisible, setIsPanelVisible] = useState(true);
 
   const prunedCollections = useContext(PrunedCollectionsContext);
   const { ftuParts, ftuPartsIsLoading, ftuPartsError } = useFtuParts();
@@ -94,12 +95,20 @@ const DocumentPage = () => {
     <div className="content-page-layout document-details-page-layout">
       <div className="content-box document-details-content-box">
         <div className="document-item-header">
+          <button
+            onClick={() => setIsPanelVisible(!isPanelVisible)}
+            className={"toggle-options-button"}
+            style={{ position: "static" }}
+          >
+            {isPanelVisible ? "<" : ">"}
+          </button>
           <h1>{getTitle(document)}</h1>
           {document.term && <span>Term: {document.term}</span>}{" "}
         </div>
-
         <div className="document-page-main-content-area">
-          <div className="document-card-panel">
+          <div
+            className={`document-card-panel ${isPanelVisible ? "" : "hidden"}`}
+          >
             <DocumentCard document={document} />
             {ftuIllustrationUrl && (
               <FTUIllustration
@@ -110,12 +119,10 @@ const DocumentPage = () => {
               />
             )}
           </div>
-          <div className="force-graph-panel">
-            <ForceGraph
-              nodeIds={nodeIds}
-              settings={forceGraphSettings}
-              init_immediately={true}
-            />
+          <div
+            className={`force-graph-panel ${isPanelVisible ? "" : "flex-full"}`}
+          >
+            <ForceGraph nodeIds={nodeIds} settings={forceGraphSettings} />
           </div>
         </div>
       </div>

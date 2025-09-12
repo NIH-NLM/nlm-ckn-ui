@@ -20,7 +20,7 @@ urlpatterns = [
     path("collection/<str:coll>/", list_by_collection, name="list_by_collection"),
     path("collection/<str:coll>/<str:pk>/", get_object, name="get_object"),
     path("graph/", get_graph, name="get_graph"),
-    path('document/details', get_documents, name='document-details'),
+    path("document/details", get_documents, name="document-details"),
     path("shortest_paths/", get_shortest_paths, name="get_shortest_paths"),
     path(
         "edges/<str:edge_coll>/<str:dr>/<str:item_coll>/<str:pk>/",

@@ -1,3 +1,4 @@
+import re
 from itertools import chain
 from rest_framework.response import Response
 from rest_framework import status
@@ -49,93 +50,30 @@ def get_graph(
     depth,
     edge_direction,
     allowed_collections,
-    node_limit,
     graph,
-    edge_filters=None,
+    edge_filters,
 ):
-    filter_conditions = []
-    bind_vars = {}
-
-    # Create filter clause.
-    if edge_filters:
-        for field, values in edge_filters.items():
-            # Only add filter if they exist.
-            if values:
-                bind_key = f"allowed_{field}"
-                bind_vars[bind_key] = values
-
-                # AQL matches if field is a string OR if field is an array that intersects.
-                condition = f"""
-                  (
-                    (IS_STRING(e.`{field}`) AND e.`{field}` IN @{bind_key}) OR 
-                    (IS_ARRAY(e.`{field}`) AND LENGTH(INTERSECTION(e.`{field}`, @{bind_key})) > 0)
-                  )
-                """
-                filter_conditions.append(condition)
-
-    # Join filter conditions.
-    edge_filter_clause = ""
-    if filter_conditions:
-        # Join individual filter conditions with AND.
-        full_filter_logic = " AND ".join(filter_conditions)
-        # Always allow starting node (where e is null) OR apply full logic.
-        edge_filter_clause = f"FILTER e == null OR ({full_filter_logic})"
-
-    # AQL query.
-    query = f"""
-            // Create temp variable for paths for each origin node
-            LET temp = FLATTEN(
-              FOR node_id IN @node_ids
-                // For each origin, collect up to @node_limit paths
-                LET paths = (
-                  FOR v, e, p IN 0..@depth {edge_direction} node_id GRAPH @graph_name
-                    OPTIONS {{ 
-                      vertexCollections: @allowed_collections,
-                      order: "bfs"
-                    }}
-                    {edge_filter_clause}
-                    LIMIT @node_limit
-                    RETURN {{ node: v, link: e, path: p, depth: LENGTH(p.vertices) }}
-                )
-                // Attach the origin node_id to each returned path
-                RETURN (
-                  FOR path IN paths
-                    RETURN MERGE(path, {{ origin: node_id }})
-                )
-            )
-            // Filter nodes to ensure uniqueness
-            LET filteredNodes = UNIQUE(
-              FOR obj IN temp
-                FILTER obj.depth != (@depth + 1)
-                RETURN {{ node: obj.node, path: obj.path, origin: obj.origin }}
-            )
-
-            // Filter links to ensure uniqueness
-            LET uniqueLinks = UNIQUE(
-              FOR t IN temp
-                FILTER t.link != null
-                RETURN t.link
-            )
-
-            // Organize nodes in object, sorting by origin node id
-            LET nodesGrouped = MERGE(
-              FOR node_id IN @node_ids
-                RETURN {{
-                  [node_id]: (
-                    FOR obj IN filteredNodes
-                      FILTER obj.origin == node_id
-                      RETURN {{ node: obj.node, path: obj.path }}
-                  )
-                }}
-            )
-
-            RETURN {{
-              nodes: nodesGrouped,
-              links: uniqueLinks
-            }}
     """
+    Constructs and executes a graph traversal AQL query.
 
-    # Select Database
+    Args:
+        node_ids (list): A list of starting node _id strings.
+        depth (int): The maximum depth for the graph traversal.
+        edge_direction (str): 'INBOUND', 'OUTBOUND', or 'ANY'.
+        allowed_collections (list): A list of vertex collection names to include.
+        graph (str): The name of the graph to traverse.
+        edge_filters (dict): A dictionary for filtering edges.
+            Example: {'Label': ['IS_A'], 'Source': ['X']}
+
+    Returns:
+        dict: A dictionary with start node IDs as keys, each containing
+              'nodes' and 'links' from the traversal.
+    """
+    # Input validation and sanitation.
+    if edge_direction not in ["INBOUND", "OUTBOUND", "ANY"]:
+        raise ValueError("edge_direction must be 'INBOUND', 'OUTBOUND', or 'ANY'")
+
+    # Select Database.
     if graph == "phenotypes":
         graph_name = GRAPH_NAME_PHENOTYPES
         db = db_phenotypes
@@ -143,107 +81,210 @@ def get_graph(
         graph_name = GRAPH_NAME_ONTOLOGIES
         db = db_ontologies
 
-    bind_vars.update(
-        {
-            "node_ids": node_ids,
-            "graph_name": graph_name,
-            "depth": int(depth)
-            + 1,  # Depth is increased by one to find all edges that connect to final nodes.
-            "allowed_collections": allowed_collections,
-            "node_limit": node_limit,
-        }
-    )
+    bind_vars = {
+        "node_ids": node_ids,
+        "depth": depth,
+        "graph": graph_name,
+        "allowed_collections": allowed_collections,
+    }
 
-    try:
-        cursor = db.aql.execute(query, bind_vars=bind_vars)
-        results = list(cursor)[0]
-    except Exception as e:
-        print(f"Error executing query: {e}")
-        results = []
+    # Build the filtering and pruning logic
+    filter_string = ""
+    prune_string = ""
+    if edge_filters:
+        positive_conditions = []
+        negative_conditions = []
+
+        for key, values in edge_filters.items():
+            if values:
+                bind_key = f"filter_value_{re.sub(r'[^a-zA-Z0-9_]', '', key)}"
+
+                # Positive condition for FILTER: Attribute must exist and match.
+                pos_cond = (
+                    f"(e.`{key}` != null AND ("
+                    f"(IS_STRING(e.`{key}`) AND e.`{key}` IN @{bind_key}) OR "
+                    f"(IS_ARRAY(e.`{key}`) AND LENGTH(INTERSECTION(e.`{key}`, @{bind_key})) > 0)"
+                    f"))"
+                )
+                positive_conditions.append(pos_cond)
+
+                # Negative condition for PRUNE: Attribute must exist AND NOT match.
+                # Edges missing the attribute will evaluate to false and not be pruned.
+                neg_cond = (
+                    f"(e.`{key}` != null AND NOT ("
+                    f"(IS_STRING(e.`{key}`) AND e.`{key}` IN @{bind_key}) OR "
+                    f"(IS_ARRAY(e.`{key}`) AND LENGTH(INTERSECTION(e.`{key}`, @{bind_key})) > 0)"
+                    f"))"
+                )
+                negative_conditions.append(neg_cond)
+
+                bind_vars[bind_key] = values
+
+        if positive_conditions:
+            # All positive conditions must be true to keep an edge.
+            filter_string = f"FILTER {' AND '.join(positive_conditions)}"
+
+            # If any negative condition is true, the edge is invalid and pruned.
+            prune_string = f"PRUNE {' OR '.join(negative_conditions)}"
+
+    # Construct the final AQL query
+    aql_query = f"""
+     FOR start_node_id IN @node_ids
+         LET start_node_doc = DOCUMENT(start_node_id)
+
+         LET traversal = (
+             FOR v, e IN 1..@depth {edge_direction} start_node_id GRAPH @graph
+
+                 {prune_string}
+
+                 OPTIONS {{ vertexCollections: @allowed_collections }}
+
+                 {filter_string}
+
+                 RETURN DISTINCT {{ v: v, e: e }}
+         )
+
+         LET all_nodes = UNION_DISTINCT(
+             traversal[*].v,
+             [start_node_doc]
+         )
+
+         LET all_links = UNIQUE(traversal[*].e)
+
+         RETURN {{
+             "start_node_id": start_node_id,
+             "data": {{
+                 "nodes": all_nodes,
+                 "links": all_links
+             }}
+         }}
+     """
+
+    # Execute the query
+    cursor = db.aql.execute(aql_query, bind_vars=bind_vars)
+
+    # Format the result
+    results = {item["start_node_id"]: item["data"] for item in cursor}
 
     return results
 
 
-def get_shortest_paths(node_ids, edge_direction):
-    combined_result = {"nodes": {}, "links": []}
-    link_ids = set()
+def get_graph_advanced(
+    node_ids,
+    advanced_settings,
+    graph,
+):
+    """
+    Orchestrates multiple graph traversals based on per-node settings.
 
-    # Loop over each unique pair (i, j) with i < j to avoid duplicate paths.
-    for i in range(len(node_ids) - 1):
-        for j in range(i + 1, len(node_ids)):
-            start_node = node_ids[i]
-            target_node = node_ids[j]
+    This function iterates through the settings for each specified node,
+    calling the `get_graph` worker function for each one and aggregating
+    the individual results into a single response object.
 
-            query = f"""
-                LET paths = (
-                  FOR p IN {edge_direction} ALL_SHORTEST_PATHS @start_node TO @target_node
-                    GRAPH @graph_name
-                    RETURN p
-                )
+    Args:
+        node_ids (list): A list of starting node _id strings.
+        advanced_settings (dict): A dictionary where keys are node_ids and
+                                  values are settings objects for that node.
+        graph (str): The name of the graph to traverse (a global setting).
 
-                LET nodesArray = UNIQUE(
-                  FOR p IN paths
-                    FOR v IN p.vertices
-                      RETURN v
-                )
+    Returns:
+        dict: A dictionary aggregating the results from all individual
+              traversals, keyed by the start node ID.
+    """
+    aggregated_results = {}
 
-                LET linksArray = UNIQUE(
-                  FOR p IN paths
-                    FOR e IN p.edges
-                      RETURN e
-                )
+    # Iterate over each node ID that has specific settings defined.
+    for node_id, settings in advanced_settings.items():
+        if node_id not in node_ids:
+            continue  # Only process nodes explicitly requested.
 
-                RETURN {{
-                  nodes: {{
-                    [@target_node]: (
-                      FOR v IN nodesArray 
-                        RETURN {{ node: v }}
+        # Extract the specific settings for the current node from the payload.
+        depth = settings.get("depth", 2)
+        edge_direction = settings.get("edgeDirection", "ANY")
+        allowed_collections = settings.get("allowedCollections", [])
+        edge_filters = settings.get("edgeFilters", {})
+
+        # Call the original get_graph function with the settings for this single node.
+        result_for_node = get_graph(
+            node_ids=[node_id],
+            depth=depth,
+            edge_direction=edge_direction,
+            allowed_collections=allowed_collections,
+            graph=graph,
+            edge_filters=edge_filters,
+        )
+
+        # Merge the result into the final aggregated dictionary.
+        if result_for_node:
+            aggregated_results.update(result_for_node)
+
+    return aggregated_results
+
+
+def get_shortest_paths(node_ids, edge_direction="ANY"):
+    """
+    Finds all shortest paths between every unique pair of nodes in a list
+    and returns a single, de-duplicated graph of the results.
+
+    Args:
+        node_ids (list): A list of 2 or more node _id strings.
+        edge_direction (str, optional): Traversal direction.
+            Defaults to 'ANY'. Can be 'INBOUND' or 'OUTBOUND'.
+
+    Returns:
+        dict: A dictionary with a flat list of unique 'nodes' and 'links'
+              comprising all the found shortest paths.
+    """
+    # Validate input.
+    if not isinstance(node_ids, list) or len(node_ids) < 2:
+        return {"nodes": [], "links": []}
+
+    if edge_direction not in ["INBOUND", "OUTBOUND", "ANY"]:
+        raise ValueError("edge_direction must be 'INBOUND', 'OUTBOUND', or 'ANY'")
+
+    # Prepare bind variables.
+    bind_vars = {"node_ids": node_ids, "graph": GRAPH_NAME_ONTOLOGIES}
+
+    # Construct AQL query.
+    aql_query = f"""
+        // Find all paths between all unique pairs.
+        LET all_paths = (
+            FOR start_node IN @node_ids
+                FOR end_node IN @node_ids
+                    // Process each unique pair only once.
+                    FILTER start_node < end_node
+
+                    // Find all shortest paths for the current pair.
+                    LET p = FIRST(
+                        FOR path IN {edge_direction} ALL_SHORTEST_PATHS start_node TO end_node GRAPH @graph
+                        RETURN path
                     )
-                  }},
-                  links: linksArray
-                }}
-            """
 
-            bind_vars = {
-                "start_node": start_node,
-                "target_node": target_node,
-                "graph_name": GRAPH_NAME_ONTOLOGIES,
-            }
+                    // Ignore pairs with no connecting path found.
+                    FILTER p != null 
+                    RETURN p
+        )
 
-            try:
-                cursor = db_ontologies.aql.execute(query, bind_vars=bind_vars)
-                result = list(cursor)[0]
+        // Aggregate and de-duplicate all vertices from all found paths.
+        LET all_nodes = UNIQUE(FLATTEN(all_paths[*].vertices))
 
-                # Merge node results: result["nodes"] is like { target_node: [ { node: v }, ... ] }
-                for node_id, node_list in result["nodes"].items():
-                    if node_id not in combined_result["nodes"]:
-                        combined_result["nodes"][node_id] = node_list
-                    else:
-                        # Optionally merge node lists without duplicates
-                        existing_ids = {
-                            n["node"]["_id"] for n in combined_result["nodes"][node_id]
-                        }
-                        for node_obj in node_list:
-                            if node_obj["node"]["_id"] not in existing_ids:
-                                combined_result["nodes"][node_id].append(node_obj)
+        // Aggregate and de-duplicate all edges from all found paths.
+        LET all_links = UNIQUE(FLATTEN(all_paths[*].edges))
 
-                # Merge links without duplicates
-                for link in result["links"]:
-                    link_id = link.get("_id")
-                    if link_id:
-                        if link_id not in link_ids:
-                            combined_result["links"].append(link)
-                            link_ids.add(link_id)
-                    else:
-                        if link not in combined_result["links"]:
-                            combined_result["links"].append(link)
+        // Return flat graph object.
+        RETURN {{
+            "nodes": all_nodes,
+            "links": all_links
+        }}
+        """
 
-            except Exception as e:
-                print(
-                    f"Error executing query for pair {start_node} to {target_node}: {e}"
-                )
+    # Execute the query.
+    cursor = db_ontologies.aql.execute(aql_query, bind_vars=bind_vars)
 
-    return combined_result
+    # The query returns a single document.
+    result = cursor.next()
+
+    return result
 
 
 def get_all():
@@ -806,6 +847,7 @@ def query_edge_filter_options(fields_to_query):
         # Re-raise exception to be handled by the view layer.
         raise
 
+
 def get_documents(document_ids, graph_name):
     """
     Fetches full document details for a list of document IDs, which may
@@ -820,7 +862,7 @@ def get_documents(document_ids, graph_name):
     for doc_id in document_ids:
         try:
             # The _id format is "collection/key"
-            collection_name, key = doc_id.split('/')
+            collection_name, key = doc_id.split("/")
             # Use setdefault to initialize a list if the key is new, then append.
             collections_to_keys.setdefault(collection_name, []).append(key)
         except ValueError:
@@ -835,7 +877,9 @@ def get_documents(document_ids, graph_name):
     # Select the correct database connection
     try:
         db_name_lower = graph_name.lower()
-        db_connection = db_phenotypes if db_name_lower == "phenotypes" else db_ontologies
+        db_connection = (
+            db_phenotypes if db_name_lower == "phenotypes" else db_ontologies
+        )
     except Exception as e:
         print(f"Error selecting database connection: {e}")
         return []
@@ -851,10 +895,7 @@ def get_documents(document_ids, graph_name):
     """
 
     for collection, keys in collections_to_keys.items():
-        bind_vars = {
-            "@collection": collection,
-            "keys": keys
-        }
+        bind_vars = {"@collection": collection, "keys": keys}
         try:
             cursor = db_connection.aql.execute(query, bind_vars=bind_vars)
             # Get all results
@@ -867,4 +908,3 @@ def get_documents(document_ids, graph_name):
 
     print(all_results)
     return all_results
-

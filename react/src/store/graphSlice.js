@@ -1,9 +1,10 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, current } from "@reduxjs/toolkit";
 import undoable from "redux-undo";
 import { getFilterableEdgeFields } from "../components/Utils/Utils";
+import { performSetOperation } from "../components/ForceGraph/performSetOperation";
 
 // API helper to fetch graph data from backend.
-// Chooses endpoint based on whether shortest path is requested.
+// Handles three types of requests: standard traversal, shortest path, and advanced per-node settings.
 const fetchGraphDataAPI = async (params) => {
   const {
     nodeIds,
@@ -14,27 +15,44 @@ const fetchGraphDataAPI = async (params) => {
     nodeLimit,
     graphType,
     edgeFilters,
+    advancedSettings,
   } = params;
 
-  // Select endpoint for standard traversal or shortest path.
-  const endpoint =
-    shortestPaths && nodeIds.length > 1
-      ? "/arango_api/shortest_paths/"
-      : "/arango_api/graph/";
+  // Determine if this is a shortest path query.
+  const useShortestPath =
+    shortestPaths && !advancedSettings && nodeIds.length > 1;
 
-  // Construct request body based on endpoint.
-  const body =
-    shortestPaths && nodeIds.length > 1
-      ? { node_ids: nodeIds, edge_direction: edgeDirection }
-      : {
-          node_ids: nodeIds,
-          depth,
-          edge_direction: edgeDirection,
-          allowed_collections: allowedCollections,
-          node_limit: nodeLimit,
-          graph: graphType,
-          edge_filters: edgeFilters,
-        };
+  const endpoint = useShortestPath
+    ? "/arango_api/shortest_paths/"
+    : "/arango_api/graph/";
+
+  let body;
+
+  if (useShortestPath) {
+    // Body for a shortest path query.
+    body = {
+      node_ids: nodeIds,
+      edge_direction: edgeDirection,
+    };
+  } else if (advancedSettings) {
+    // Body for an advanced per-node settings query.
+    body = {
+      node_ids: nodeIds,
+      advanced_settings: advancedSettings,
+      graph: graphType,
+    };
+  } else {
+    // Body for a standard traversal query.
+    body = {
+      node_ids: nodeIds,
+      depth,
+      edge_direction: edgeDirection,
+      allowed_collections: allowedCollections,
+      node_limit: nodeLimit,
+      graph: graphType,
+      edge_filters: edgeFilters,
+    };
+  }
 
   const response = await fetch(endpoint, {
     method: "POST",
@@ -48,21 +66,35 @@ const fetchGraphDataAPI = async (params) => {
 };
 
 // Async thunk for fetching graph data.
-// Gathers parameters from current Redux state to make API call.
 export const fetchAndProcessGraph = createAsyncThunk(
   "graph/fetchAndProcess",
   async (_, { getState }) => {
-    const { settings, originNodeIds } = getState().graph.present;
-    const params = {
-      nodeIds: originNodeIds,
-      shortestPaths: settings.findShortestPaths,
-      depth: settings.depth,
-      edgeDirection: settings.edgeDirection,
-      allowedCollections: settings.allowedCollections,
-      nodeLimit: settings.nodeLimit,
-      graphType: settings.graphType,
-      edgeFilters: settings.edgeFilters,
-    };
+    // Retrieve current settings and advanced mode state from Redux.
+    const { settings, originNodeIds, isAdvancedMode, perNodeSettings } =
+      getState().graph.present;
+    let params;
+
+    if (isAdvancedMode) {
+      // If in advanced mode, construct parameters with the per-node settings object.
+      params = {
+        nodeIds: originNodeIds,
+        advancedSettings: perNodeSettings,
+        graphType: settings.graphType,
+      };
+    } else {
+      // Otherwise, construct parameters using the global settings.
+      params = {
+        nodeIds: originNodeIds,
+        shortestPaths: settings.findShortestPaths,
+        depth: settings.depth,
+        edgeDirection: settings.edgeDirection,
+        allowedCollections: settings.allowedCollections,
+        nodeLimit: settings.nodeLimit,
+        graphType: settings.graphType,
+        edgeFilters: settings.edgeFilters,
+      };
+    }
+
     try {
       const rawData = await fetchGraphDataAPI(params);
       return rawData;
@@ -117,17 +149,16 @@ export const expandNode = createAsyncThunk(
         node_ids: [nodeIdToExpand],
         depth: 1,
         edge_direction: "ANY",
-        allowed_collections: settings.allowedCollections,
-        node_limit: settings.nodeLimit,
+        allowed_collections: [],
         graph: settings.graphType,
-        edge_filters: settings.edgeFilters,
+        edge_filters: [],
       }),
     });
     if (!response.ok) throw new Error("Expansion fetch failed");
     const expansionData = await response.json();
     return {
-      newNodes: expansionData.nodes?.[nodeIdToExpand]?.map((d) => d.node) || [],
-      newLinks: expansionData.links || [],
+      newNodes: expansionData?.[nodeIdToExpand].nodes || [],
+      newLinks: expansionData?.[nodeIdToExpand].links || [],
       centerNodeId: nodeIdToExpand,
     };
   },
@@ -140,7 +171,9 @@ const initialState = {
     depth: 2,
     edgeDirection: "ANY",
     setOperation: "Union",
-    allowedCollections: [],
+    allowedCollections: [], // Collections currently allowed in query
+    availableCollections: [], // Collections currently in DB
+    allCollections: [], // Collections in all DB
     nodeFontSize: 12,
     edgeFontSize: 8,
     nodeLimit: 5000,
@@ -159,6 +192,7 @@ const initialState = {
       return acc;
     }, {}),
     lastAppliedOriginNodeIds: [],
+    lastAppliedPerNodeSettings: null,
   },
   // Stores a snapshot of the settings last used to generate the graph.
   lastAppliedSettings: null,
@@ -183,6 +217,10 @@ const initialState = {
   lastActionType: null, // Tracks last action for conditional logic in UI.
   availableEdgeFilters: {}, // Stores all unique edge attribute values fetched from API.
   edgeFilterStatus: "idle", // Status for edge filter options fetch.
+  // Flag indicating if advanced mode is active for the current query.
+  isAdvancedMode: false,
+  // Stores the settings for each origin node when in advanced mode.
+  perNodeSettings: {},
 };
 
 // Redux slice for managing all graph-related state.
@@ -195,6 +233,7 @@ const graphSlice = createSlice({
     updateSetting: (state, action) => {
       const { setting, value } = action.payload;
       state.settings[setting] = value;
+      console.log("Update setting:", value);
       state.lastActionType = "updateSetting";
     },
     // Sets final, processed graph data, including node positions.
@@ -205,19 +244,32 @@ const graphSlice = createSlice({
     },
     // Resets graph state for new query.
     initializeGraph: (state, action) => {
-      state.originNodeIds = action.payload.nodeIds;
+      const { nodeIds, isAdvancedMode, perNodeSettings } = action.payload;
+      state.originNodeIds = nodeIds;
+      state.lastAppliedOriginNodeIds = nodeIds;
+
+      // Store the advanced mode configuration that will be used for the fetch.
+      state.isAdvancedMode = isAdvancedMode;
+      state.perNodeSettings = perNodeSettings;
+
+      // Reset graph data and status.
       state.status = "idle";
       state.lastActionType = "initializeGraph";
-      state.lastAppliedOriginNodeIds = action.payload.nodeIds;
-      // state.lastAppliedSettings = state.settings;
       state.rawData = {};
       state.graphData = { nodes: [], links: [] };
       state.collapsed = { initial: [], userDefined: [], userIgnored: [] };
     },
-    // Populates allowed collections after initial fetch.
+    // Populates available collections after initial fetch.
     setAvailableCollections: (state, action) => {
+      state.settings.availableCollections = action.payload;
+      // Default value.
       state.settings.allowedCollections = action.payload;
       state.lastActionType = "setAvailableCollections";
+    },
+    // Populates all collections after initial fetch.
+    setAllCollections: (state, action) => {
+      state.settings.allCollections = action.payload;
+      state.lastActionType = "setAllCollections";
     },
     // Updates user-selected edge filter for a specific field.
     updateEdgeFilter: (state, action) => {
@@ -327,6 +379,12 @@ const graphSlice = createSlice({
       .addCase(fetchAndProcessGraph.fulfilled, (state, action) => {
         state.status = "processing";
         state.lastAppliedSettings = state.settings;
+        if (state.isAdvancedMode) {
+          state.lastAppliedPerNodeSettings = state.perNodeSettings;
+        } else {
+          // Clear the snapshot when not in advanced mode to prevent stale comparisons.
+          state.lastAppliedPerNodeSettings = null;
+        }
         state.rawData = action.payload;
         state.lastActionType = "fetch/fulfilled";
       })
@@ -360,36 +418,20 @@ const graphSlice = createSlice({
         state.lastActionType = "expand/pending";
       })
       .addCase(expandNode.fulfilled, (state, action) => {
+        // Get states
         const { newNodes, newLinks, centerNodeId } = action.payload;
+        const existingGraph = current(state.graphData);
+        const newGraph = { nodes: newNodes, links: newLinks };
 
-        // Merge new data from expansion into existing rawData.
-        const firstOrigin = state.originNodeIds[0];
-        const currentNodes =
-          firstOrigin && state.rawData.nodes[firstOrigin]
-            ? [...state.rawData.nodes[firstOrigin]]
-            : [];
-        const currentLinks = [...(state.rawData.links || [])];
-        const existingNodeIds = new Set(currentNodes.map((n) => n.node._id));
-        const existingLinkIds = new Set(currentLinks.map((l) => l._id));
+        // Perform a union operation to merge the graphs and remove duplicates.
+        const mergedGraph = performSetOperation(
+          [existingGraph, newGraph],
+          "Union",
+        );
 
-        newNodes.forEach((node) => {
-          if (!existingNodeIds.has(node._id)) {
-            currentNodes.push({ node: node, path: null });
-          }
-        });
-        newLinks.forEach((link) => {
-          if (!existingLinkIds.has(link._id)) {
-            currentLinks.push(link);
-          }
-        });
-
-        // Update state with merged data.
-        if (firstOrigin) {
-          state.rawData.nodes[firstOrigin] = currentNodes;
-        }
-        state.rawData.links = currentLinks;
+        // Update the state.
+        state.graphData = mergedGraph;
         state.nodeToCenter = centerNodeId;
-        state.status = "processing";
         state.lastActionType = "expand/fulfilled";
       })
       .addCase(expandNode.rejected, (state, action) => {
@@ -405,6 +447,7 @@ export const {
   setGraphData,
   initializeGraph,
   setAvailableCollections,
+  setAllCollections,
   clearNodeToCenter,
   updateNodePosition,
   setInitialCollapseList,
