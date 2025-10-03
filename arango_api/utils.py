@@ -135,18 +135,15 @@ def get_graph(
     inter_node_edges_query = ""
     if include_inter_node_edges:
         inter_node_edges_query = f"""
+         LET all_node_ids = all_nodes[*]._id
+
+         // For each node in the result set, traverse 1 hop and keep edges to other result nodes only
          LET inter_node_edges = (
-             FOR node1 IN all_nodes
-                 FOR node2 IN all_nodes
-                     // Process each unique pair once
-                     FILTER node1._id < node2._id
-
-                     FOR v, e IN 1..1 ANY node1._id GRAPH @graph
-                         OPTIONS {{ vertexCollections: @allowed_collections }}
-
-                         // Keep only edges where the neighbor is node2 (no extra node expansion)
-                         FILTER v._id == node2._id
-                         RETURN DISTINCT e
+             FOR v IN all_nodes
+                 FOR neighbor, e IN 1..1 ANY v._id GRAPH @graph
+                     OPTIONS {{ vertexCollections: @allowed_collections }}
+                     FILTER neighbor._id IN all_node_ids
+                     RETURN DISTINCT e
          )
 
          LET combined_links = UNION_DISTINCT(all_links, inter_node_edges)
