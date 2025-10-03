@@ -315,7 +315,7 @@ const ForceGraph = ({
         settings.allowedCollections.length > 0) ||
       (!hasInitializedGraph.current && lastActionType === "updateSetting")
     ) {
-      // Skip auto-fetch if in the middle of applying defaults; we'll fetch explicitly.
+      // Skip auto-fetch if in the middle of applying defaults.
       if (isApplyingPropDefaultsRef.current) return;
       dispatch(fetchAndProcessGraph());
       hasInitializedGraph.current = true;
