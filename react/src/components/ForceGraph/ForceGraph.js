@@ -212,6 +212,10 @@ const ForceGraph = ({
   const [activeOriginNodeId, setActiveOriginNodeId] = useState(null);
   const settingsRef = useRef(settings);
   const perNodeSettingsRef = useRef(perNodeSettings);
+  // Ensure settings from props are applied only once on initial load
+  const hasAppliedPropDefaultsRef = useRef(false);
+  // Gate fetch while applying defaults, and trigger fetch explicitly when done
+  const isApplyingPropDefaultsRef = useRef(false);
 
   // Keep the refs updated with the latest state on every render.
   useEffect(() => {
@@ -238,25 +242,71 @@ const ForceGraph = ({
     dispatch(fetchEdgeFilterOptions());
   }, [dispatch, settings.graphType]);
 
-  // Applies collection filters passed via props.
+  // Apply defaults from settingsFromProps exactly once on initial load.
   useEffect(() => {
-    const collectionsToPrune = settingsFromProps?.collectionsToPrune;
-    if (
-      collectionsToPrune === undefined ||
-      settings.availableCollections.length === 0
-    ) {
+    if (!settingsFromProps || hasAppliedPropDefaultsRef.current) return;
+    // Enter defaults application mode
+    isApplyingPropDefaultsRef.current = true;
+
+    // Ensure graphType matches incoming before loading collections.
+    const incomingGraphType = settingsFromProps.graphType;
+    if (incomingGraphType && settings.graphType !== incomingGraphType) {
+      dispatch(updateSetting({ setting: "graphType", value: incomingGraphType }));
+      // Wait for collections to refresh for the new graphType
       return;
     }
-    const newAllowedCollections = settings.availableCollections.filter(
-      (coll) => !collectionsToPrune.includes(coll),
-    );
-    dispatch(
-      updateSetting({
-        setting: "allowedCollections",
-        value: newAllowedCollections,
-      }),
-    );
-  }, [settingsFromProps, settings.availableCollections, dispatch]);
+
+    // Wait for availableCollections to be present before applying list-based settings.
+    if (!settings.availableCollections || settings.availableCollections.length === 0) {
+      return;
+    }
+
+    // Collections: prefer explicit allowedCollections, otherwise apply prune list if provided.
+    const explicitAllowed = settingsFromProps.allowedCollections;
+    if (Array.isArray(explicitAllowed)) {
+      const intersected = explicitAllowed.filter((c) =>
+        settings.availableCollections.includes(c),
+      );
+      if (JSON.stringify(intersected) !== JSON.stringify(settings.allowedCollections)) {
+        dispatch(updateSetting({ setting: "allowedCollections", value: intersected }));
+      }
+    } else if (Array.isArray(settingsFromProps.collectionsToPrune)) {
+      const newAllowed = settings.availableCollections.filter(
+        (coll) => !settingsFromProps.collectionsToPrune.includes(coll),
+      );
+      if (JSON.stringify(newAllowed) !== JSON.stringify(settings.allowedCollections)) {
+        dispatch(updateSetting({ setting: "allowedCollections", value: newAllowed }));
+      }
+    }
+
+    // Other settings: depth, edgeDirection, collapseOnStart, preferredPredicates → edgeFilters.Label
+    const { depth, edgeDirection, collapseOnStart, preferredPredicates } = settingsFromProps;
+    if (typeof depth === "number" && depth !== settings.depth) {
+      dispatch(updateSetting({ setting: "depth", value: depth }));
+    }
+    if (typeof edgeDirection === "string" && edgeDirection && edgeDirection !== settings.edgeDirection) {
+      dispatch(updateSetting({ setting: "edgeDirection", value: edgeDirection }));
+    }
+    if (
+      typeof collapseOnStart === "boolean" &&
+      collapseOnStart !== settings.collapseOnStart
+    ) {
+      dispatch(updateSetting({ setting: "collapseOnStart", value: collapseOnStart }));
+    }
+    if (Array.isArray(preferredPredicates)) {
+      const nextFilters = { ...settings.edgeFilters, Label: preferredPredicates };
+      if (JSON.stringify(nextFilters) !== JSON.stringify(settings.edgeFilters)) {
+        dispatch(updateSetting({ setting: "edgeFilters", value: nextFilters }));
+      }
+    }
+
+    // Mark as applied so future user tweaks are preserved, and run initial fetch.
+    hasAppliedPropDefaultsRef.current = true;
+    // Trigger the initial fetch explicitly now that defaults are set.
+    dispatch(fetchAndProcessGraph());
+    hasInitializedGraph.current = true;
+    isApplyingPropDefaultsRef.current = false;
+  }, [settingsFromProps, settings.graphType, settings.availableCollections, settings.allowedCollections, settings.depth, settings.edgeDirection, settings.collapseOnStart, settings.edgeFilters, dispatch]);
 
   // Triggers new data fetch when graph is explicitly initialized in the slice.
   useEffect(() => {
@@ -265,6 +315,8 @@ const ForceGraph = ({
         settings.allowedCollections.length > 0) ||
       (!hasInitializedGraph.current && lastActionType === "updateSetting")
     ) {
+      // Skip auto-fetch if in the middle of applying defaults; we'll fetch explicitly.
+      if (isApplyingPropDefaultsRef.current) return;
       dispatch(fetchAndProcessGraph());
       hasInitializedGraph.current = true;
     }

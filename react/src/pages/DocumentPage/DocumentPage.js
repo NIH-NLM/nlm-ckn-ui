@@ -12,6 +12,7 @@ import FTUIllustration from "../../components/FTUIllustration/FTUIllustration";
 import { useFtuParts } from "../../contexts/FTUPartsContext";
 import { initializeGraph } from "../../store/graphSlice";
 import { useDispatch } from "react-redux";
+import collectionDefaults from "../../assets/collection-defaults.json";
 
 const DocumentPage = () => {
   const dispatch = useDispatch();
@@ -60,13 +61,22 @@ const DocumentPage = () => {
     return ftuUrl;
   }, [document, ftuParts, id]);
 
-  const forceGraphSettings = useMemo(
-    () => ({
-      collectionsToPrune: filteredPrunedCollections,
-      defaultDepth: nodeIds ? (nodeIds.length > 1 ? 0 : 2) : 2,
-    }),
-    [filteredPrunedCollections, nodeIds],
-  );
+  const forceGraphSettings = useMemo(() => {
+    const defaultsForCollection = collectionDefaults[coll] || {};
+
+    // Start with per-collection JSON defaults (graphType, depth, edgeDirection, collapseOnStart, allowedCollections, preferredPredicates)
+    const base = { ...defaultsForCollection };
+
+    // Preserve existing prune behavior as an alternative when explicit allowedCollections not set
+    base.collectionsToPrune = filteredPrunedCollections;
+
+    // If multiple origin nodes, prefer shallower depth unless explicitly set to 0/1 in defaults
+    if (nodeIds && nodeIds.length > 1 && typeof base.depth !== "number") {
+      base.depth = 0;
+    }
+
+    return base;
+  }, [coll, filteredPrunedCollections, nodeIds]);
 
   const isLoading = !document && id && coll;
 
