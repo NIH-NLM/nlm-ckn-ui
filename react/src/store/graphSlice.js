@@ -40,6 +40,7 @@ const fetchGraphDataAPI = async (params) => {
       node_ids: nodeIds,
       advanced_settings: advancedSettings,
       graph: graphType,
+      include_inter_node_edges: params.includeInterNodeEdges ?? true,
     };
   } else {
     // Body for a standard traversal query.
@@ -51,6 +52,7 @@ const fetchGraphDataAPI = async (params) => {
       node_limit: nodeLimit,
       graph: graphType,
       edge_filters: edgeFilters,
+      include_inter_node_edges: params.includeInterNodeEdges ?? true,
     };
   }
 
@@ -80,6 +82,7 @@ export const fetchAndProcessGraph = createAsyncThunk(
         nodeIds: originNodeIds,
         advancedSettings: perNodeSettings,
         graphType: settings.graphType,
+        includeInterNodeEdges: settings.includeInterNodeEdges,
       };
     } else {
       // Otherwise, construct parameters using the global settings.
@@ -92,6 +95,7 @@ export const fetchAndProcessGraph = createAsyncThunk(
         nodeLimit: settings.nodeLimit,
         graphType: settings.graphType,
         edgeFilters: settings.edgeFilters,
+        includeInterNodeEdges: settings.includeInterNodeEdges,
       };
     }
 
@@ -152,6 +156,7 @@ export const expandNode = createAsyncThunk(
         allowed_collections: [],
         graph: settings.graphType,
         edge_filters: [],
+        include_inter_node_edges: settings.includeInterNodeEdges ?? true,
       }),
     });
     if (!response.ok) throw new Error("Expansion fetch failed");
@@ -187,6 +192,7 @@ const initialState = {
     useFocusNodes: true,
     collapseOnStart: true,
     graphType: "phenotypes",
+    includeInterNodeEdges: true, // Query for edges between result nodes
     edgeFilters: getFilterableEdgeFields().reduce((acc, field) => {
       acc[field] = [];
       return acc;
