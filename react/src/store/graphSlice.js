@@ -345,6 +345,12 @@ const graphSlice = createSlice({
       state.settings = settings;
       state.graphData = graphData;
       state.status = "succeeded";
+      // Ensure lastAppliedSettings reflects the settings that produced this graph.
+      try {
+        state.lastAppliedSettings = JSON.parse(JSON.stringify(settings));
+      } catch (err) {
+        state.lastAppliedSettings = { ...settings };
+      }
       state.lastActionType = "loadGraph";
       state.rawData = {};
     },
@@ -364,6 +370,12 @@ const graphSlice = createSlice({
 
       // Set the state to signal a successful load.
       state.status = "succeeded";
+      // lastAppliedSettings already set to initial defaults above, ensure deep clone
+      try {
+        state.lastAppliedSettings = JSON.parse(JSON.stringify(state.settings));
+      } catch (err) {
+        state.lastAppliedSettings = { ...state.settings };
+      }
       state.lastActionType = "loadGraph";
       state.rawData = {};
     },
@@ -378,13 +390,27 @@ const graphSlice = createSlice({
       })
       .addCase(fetchAndProcessGraph.fulfilled, (state, action) => {
         state.status = "processing";
-        state.lastAppliedSettings = state.settings;
+        // Store deep-cloned snapshots so later comparisons are by-value, not by reference.
+        try {
+          state.lastAppliedSettings = JSON.parse(JSON.stringify(state.settings));
+        } catch (err) {
+          // Fallback to shallow copy if cloning fails for some reason.
+          state.lastAppliedSettings = { ...state.settings };
+        }
+
         if (state.isAdvancedMode) {
-          state.lastAppliedPerNodeSettings = state.perNodeSettings;
+          try {
+            state.lastAppliedPerNodeSettings = JSON.parse(
+              JSON.stringify(state.perNodeSettings),
+            );
+          } catch (err) {
+            state.lastAppliedPerNodeSettings = { ...state.perNodeSettings };
+          }
         } else {
           // Clear the snapshot when not in advanced mode to prevent stale comparisons.
           state.lastAppliedPerNodeSettings = null;
         }
+
         state.rawData = action.payload;
         state.lastActionType = "fetch/fulfilled";
       })
