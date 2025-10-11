@@ -80,8 +80,9 @@ const FilterableDropdown = ({
               <li key={option.original} className="dropdown-item">
                 <button
                   type="button"
-                  className={`dropdown-item-btn ${selectedOptions.includes(option.original) ? "selected" : ""
-                    }`}
+                  className={`dropdown-item-btn ${
+                    selectedOptions.includes(option.original) ? "selected" : ""
+                  }`}
                   onClick={() => onOptionToggle(option.original)}
                 >
                   {getColorForOption(option.original) && (

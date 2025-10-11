@@ -24,11 +24,6 @@
     "useIgnoreFile": true
   },
   "files": {
-    "ignore": [
-      "node_modules",
-      "build",
-      "coverage",
-      "dist"
-    ]
+    "ignore": ["node_modules", "build", "coverage", "dist"]
   }
 }
