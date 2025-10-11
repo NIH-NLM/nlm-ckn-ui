@@ -870,7 +870,7 @@ function ForceGraphConstructor(
     const leafNodes = [];
     for (const node of processedNodes) {
       // Origin nodes cannot be leaves.
-      if (mergedOptions.originNodeIds.includes(node.id)) return;
+      if (mergedOptions.originNodeIds.includes(node.id)) continue;
       // Filter for links connected to current node.
       const nodeLinks = processedLinks.filter(
         (l) => (l.source.id || l.source) === node.id || (l.target.id || l.target) === node.id,
