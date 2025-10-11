@@ -5,16 +5,13 @@ const AboutPage = () => {
   return (
     <div className="content-page-layout about-page-specific-layout">
       <div className="content-box about-content-box">
-        <h1 className="content-page-title">
-          About the NLM Cell Knowledge Network
-        </h1>
+        <h1 className="content-page-title">About the NLM Cell Knowledge Network</h1>
 
         <div className="about-text-section">
           <p>
-            The National Library of Medicine (NLM) Cell Knowledge Network is a
-            knowledgebase about cell characteristics (phenotypes) emerging from
-            single cell technologies, integrated with other sources of trusted
-            knowledge, sourced from:
+            The National Library of Medicine (NLM) Cell Knowledge Network is a knowledgebase about
+            cell characteristics (phenotypes) emerging from single cell technologies, integrated
+            with other sources of trusted knowledge, sourced from:
           </p>
           <ul className="about-sources-list">
             <li>Validated data processing and analysis pipelines</li>
@@ -23,13 +20,11 @@ const AboutPage = () => {
             <li>LLM-based text mining</li>
           </ul>
           <p>
-            A knowledge graph is produced from triple assertions
-            (subject-predicate-object) corresponding to biomedical entities
-            (nodes) and their relations (edges), and links experimental data to
-            the reference Cell Ontology as evidence in support of assertions.
-            The graph integrates single cell genomics experimental data with
-            other information sources about cells, tissues, biomarkers,
-            pathways, drugs, diseases.
+            A knowledge graph is produced from triple assertions (subject-predicate-object)
+            corresponding to biomedical entities (nodes) and their relations (edges), and links
+            experimental data to the reference Cell Ontology as evidence in support of assertions.
+            The graph integrates single cell genomics experimental data with other information
+            sources about cells, tissues, biomarkers, pathways, drugs, diseases.
           </p>
         </div>
 
@@ -45,8 +40,8 @@ const AboutPage = () => {
             />
           </div>
           <p className="image-caption">
-            This diagram illustrates the relationships between different data
-            collections and entities within this database.
+            This diagram illustrates the relationships between different data collections and
+            entities within this database.
           </p>
         </div>
       </div>

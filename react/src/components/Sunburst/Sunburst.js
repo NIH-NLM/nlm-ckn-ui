@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
+import AddToGraphButton from "../AddToGraphButton/AddToGraphButton";
+import DocumentPopup from "../DocumentPopup/DocumentPopup";
 import SunburstConstructor from "../SunburstConstructor/SunburstConstructor";
 import { LoadingBar, getLabel, mergeChildren } from "../Utils/Utils";
-import DocumentPopup from "../DocumentPopup/DocumentPopup";
-import AddToGraphButton from "../AddToGraphButton/AddToGraphButton";
 
 const Sunburst = ({ addSelectedItem }) => {
   // --- State ---
@@ -50,8 +50,7 @@ const Sunburst = ({ addSelectedItem }) => {
         }
         const data = await response.json();
         if (parentId) {
-          if (!Array.isArray(data))
-            throw new Error(`API error for parent ${parentId}`);
+          if (!Array.isArray(data)) throw new Error(`API error for parent ${parentId}`);
           setGraphData((prevData) => {
             if (!prevData) return null;
             return mergeChildren(prevData, parentId, data);
@@ -152,9 +151,7 @@ const Sunburst = ({ addSelectedItem }) => {
   );
 
   const latestHandleCenterClick = useCallback(() => {
-    console.log(
-      `[latestHandleCenterClick EXECUTION] Current state zoomedNodeId: ${zoomedNodeId}`,
-    );
+    console.log(`[latestHandleCenterClick EXECUTION] Current state zoomedNodeId: ${zoomedNodeId}`);
     const currentHierarchy = currentHierarchyRootRef.current;
     const currentCenterId = zoomedNodeId;
     const currentIsLoading = isLoadingRef.current;
@@ -166,9 +163,7 @@ const Sunburst = ({ addSelectedItem }) => {
 
     let centeredNode;
     if (currentCenterId) {
-      centeredNode = currentHierarchy.find(
-        (node) => node.data._id === currentCenterId,
-      );
+      centeredNode = currentHierarchy.find((node) => node.data._id === currentCenterId);
     } else {
       centeredNode = currentHierarchy.find((node) => node.depth === 0);
     }
@@ -190,8 +185,7 @@ const Sunburst = ({ addSelectedItem }) => {
     const parentNode = centeredNode.parent;
 
     if (parentNode) {
-      const newZoomTargetId =
-        parentNode.depth === 0 ? null : parentNode.data._id;
+      const newZoomTargetId = parentNode.depth === 0 ? null : parentNode.data._id;
       if (zoomedNodeId !== newZoomTargetId) setZoomedNodeId(newZoomTargetId);
 
       if (d3ClickedRef.current) {
@@ -199,12 +193,7 @@ const Sunburst = ({ addSelectedItem }) => {
       }
 
       const needsLoadForParent = checkNeedsLoad(parentNode);
-      if (
-        needsLoadForParent &&
-        !currentIsLoading &&
-        parentNode.data &&
-        parentNode.data._id
-      ) {
+      if (needsLoadForParent && !currentIsLoading && parentNode.data && parentNode.data._id) {
         if (parentNode.depth !== 0) {
           fetchSunburstData(parentNode.data._id, false);
         }
@@ -236,11 +225,7 @@ const Sunburst = ({ addSelectedItem }) => {
     handleNodeClickRef.current = latestHandleNodeClick;
     handleCenterClickRef.current = latestHandleCenterClick;
     handleSunburstClickRef.current = latestHandleSunburstClick;
-  }, [
-    latestHandleNodeClick,
-    latestHandleCenterClick,
-    latestHandleSunburstClick,
-  ]);
+  }, [latestHandleNodeClick, latestHandleCenterClick, latestHandleSunburstClick]);
 
   // --- D3 Graph Rendering/Updating useEffect ---
   useEffect(() => {
@@ -341,11 +326,7 @@ const Sunburst = ({ addSelectedItem }) => {
 
       {/* Popup */}
       {popupVisible && clickedItem && (
-        <DocumentPopup
-          isVisible={popupVisible}
-          position={popupPosition}
-          onClose={handlePopupClose}
-        >
+        <DocumentPopup isVisible={popupVisible} position={popupPosition} onClose={handlePopupClose}>
           {clickedItem && (
             <>
               <p

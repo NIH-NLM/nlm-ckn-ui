@@ -1,8 +1,7 @@
-import { createContext, useState, useEffect, useContext, useMemo } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 // URL from HRA
-const FTU_ILLUSTRATIONS_URL =
-  "https://apps.humanatlas.io/api/v1/ftu-illustrations";
+const FTU_ILLUSTRATIONS_URL = "https://apps.humanatlas.io/api/v1/ftu-illustrations";
 
 // Define context
 const FtuPartsContext = createContext({
@@ -13,18 +12,16 @@ const FtuPartsContext = createContext({
 
 function getFtuPartsFromIllustrationsJsonLd(jsonld) {
   if (jsonld["@graph"]?.length > 0) {
-    const partsArray = jsonld["@graph"]
-      .map((illustration) =>
-        illustration.mapping.map((part) => ({
-          ftu_digital_object: illustration["@id"],
-          ftu_iri: illustration.representation_of.replace(
-            "UBERON:",
-            "http://purl.obolibrary.org/obo/UBERON_",
-          ),
-          ftu_part_iri: part.representation_of,
-        })),
-      )
-      .flat();
+    const partsArray = jsonld["@graph"].flatMap((illustration) =>
+      illustration.mapping.map((part) => ({
+        ftu_digital_object: illustration["@id"],
+        ftu_iri: illustration.representation_of.replace(
+          "UBERON:",
+          "http://purl.obolibrary.org/obo/UBERON_",
+        ),
+        ftu_part_iri: part.representation_of,
+      })),
+    );
 
     return partsArray;
   } else {
@@ -70,11 +67,7 @@ export const FtuPartsProvider = ({ children }) => {
     [ftuParts, isLoading, error],
   );
 
-  return (
-    <FtuPartsContext.Provider value={value}>
-      {children}
-    </FtuPartsContext.Provider>
-  );
+  return <FtuPartsContext.Provider value={value}>{children}</FtuPartsContext.Provider>;
 };
 
 // Create hook

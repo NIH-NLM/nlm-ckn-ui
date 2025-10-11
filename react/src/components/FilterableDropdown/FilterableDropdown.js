@@ -57,9 +57,7 @@ const FilterableDropdown = ({
 
     // Filter based on display label.
     return processedOptions.filter((option) => {
-      const normalizedOptionDisplay = option.display
-        .toLowerCase()
-        .replaceAll("_", " ");
+      const normalizedOptionDisplay = option.display.toLowerCase().replaceAll("_", " ");
       return normalizedOptionDisplay.includes(normalizedSearchTerm);
     });
   }, [processedOptions, searchTerm]);
@@ -113,10 +111,7 @@ const FilterableDropdown = ({
             )}
             {/* Use getOptionLabel to show correct pill text. */}
             <span className="pill-text">{getOptionLabel(selectedString)}</span>
-            <button
-              className="pill-remove"
-              onClick={() => onOptionToggle(selectedString)}
-            >
+            <button className="pill-remove" onClick={() => onOptionToggle(selectedString)}>
               &times;
             </button>
           </div>

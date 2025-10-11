@@ -23,9 +23,7 @@ describe("Contexts", () => {
   it("should provide updated values when context values change", () => {
     const Wrapper = ({ children }) => {
       return (
-        <PrunedCollections.Provider value={["UpdatedTaxon"]}>
-          {children}
-        </PrunedCollections.Provider>
+        <PrunedCollections.Provider value={["UpdatedTaxon"]}>{children}</PrunedCollections.Provider>
       );
     };
 

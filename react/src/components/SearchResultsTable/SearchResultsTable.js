@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import collMaps from "../../assets/cell-kn-mvp-collection-maps.json";
-import { getLabel } from "../Utils/Utils";
 import { getColorForCollection } from "../../services/ColorServices/ColorServices";
 import AddToGraphButton from "../AddToGraphButton/AddToGraphButton";
+import { getLabel } from "../Utils/Utils";
 
 /**
  * SearchResultsTable component.
@@ -22,16 +22,9 @@ const SearchResultsTable = ({ searchResults }) => {
     const { scrollTop, scrollHeight, clientHeight } = e.target;
     const threshold = 20;
 
-    if (
-      searchResults &&
-      searchResults.length > 0 &&
-      displayLimit < searchResults.length
-    ) {
+    if (searchResults && searchResults.length > 0 && displayLimit < searchResults.length) {
       if (scrollHeight - scrollTop - clientHeight < threshold) {
-        const newLimit = Math.min(
-          displayLimit + expandAmount,
-          searchResults.length,
-        );
+        const newLimit = Math.min(displayLimit + expandAmount, searchResults.length);
         setDisplayLimit(newLimit);
       }
     }
@@ -62,22 +55,16 @@ const SearchResultsTable = ({ searchResults }) => {
           if (!color) return false;
           const hex = color.replace("#", "");
           if (hex.length !== 3 && hex.length !== 6) return false;
-          const r = parseInt(
-            hex.length === 3
-              ? hex.substring(0, 1).repeat(2)
-              : hex.substring(0, 2),
+          const r = Number.parseInt(
+            hex.length === 3 ? hex.substring(0, 1).repeat(2) : hex.substring(0, 2),
             16,
           );
-          const g = parseInt(
-            hex.length === 3
-              ? hex.substring(1, 2).repeat(2)
-              : hex.substring(2, 4),
+          const g = Number.parseInt(
+            hex.length === 3 ? hex.substring(1, 2).repeat(2) : hex.substring(2, 4),
             16,
           );
-          const b = parseInt(
-            hex.length === 3
-              ? hex.substring(2, 3).repeat(2)
-              : hex.substring(4, 6),
+          const b = Number.parseInt(
+            hex.length === 3 ? hex.substring(2, 3).repeat(2) : hex.substring(4, 6),
             16,
           );
           return r * 0.299 + g * 0.587 + b * 0.114 < 140;

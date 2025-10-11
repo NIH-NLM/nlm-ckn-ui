@@ -29,10 +29,7 @@ const Pagination = ({ currentPage, totalPages, paginate }) => {
 
   return (
     <div className="pagination">
-      <button
-        onClick={() => paginate(currentPage - 1)}
-        disabled={currentPage === 1}
-      >
+      <button onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1}>
         Prev
       </button>
       {pageNumbers.map((item, index) =>
@@ -50,10 +47,7 @@ const Pagination = ({ currentPage, totalPages, paginate }) => {
           </button>
         ),
       )}
-      <button
-        onClick={() => paginate(currentPage + 1)}
-        disabled={currentPage === totalPages}
-      >
+      <button onClick={() => paginate(currentPage + 1)} disabled={currentPage === totalPages}>
         Next
       </button>
     </div>

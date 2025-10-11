@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { removeNodeFromSlice } from "../../store/nodesSlice";
 import { LoadingBar } from "../Utils/Utils";
 
 // Fetch details for the nodes in the global state and displays them.
 const NodeListTable = () => {
   const dispatch = useDispatch();
-  const nodesSliceNodeIds = useSelector(
-    (state) => state.nodesSlice.originNodeIds,
-  );
+  const nodesSliceNodeIds = useSelector((state) => state.nodesSlice.originNodeIds);
   const [nodeObjects, setNodeObjects] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -49,12 +47,7 @@ const NodeListTable = () => {
   }
 
   if (nodeObjects.length === 0) {
-    return (
-      <p>
-        No nodes have been added to the graph yet. Add nodes from other pages to
-        begin.
-      </p>
-    );
+    return <p>No nodes have been added to the graph yet. Add nodes from other pages to begin.</p>;
   }
 
   return (

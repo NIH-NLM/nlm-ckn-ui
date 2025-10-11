@@ -1,21 +1,21 @@
-import { HashRouter as Router, Route, Routes } from "react-router-dom";
+import { Route, HashRouter as Router, Routes } from "react-router-dom";
 
 import "./App.css";
-import Header from "./components/Header/Header";
-import DocumentPage from "./pages/DocumentPage/DocumentPage";
-import CollectionsPage from "./pages/CollectionsPage/CollectionsPage";
-import AQLQueryPage from "./pages/AQLQueryPage/AQLQueryPage";
-import SearchPage from "./pages/SearchPage/SearchPage";
 import { ActiveNavProvider } from "./components/ActiveNavContext/ActiveNavContext";
 import Footer from "./components/Footer/Footer";
-import { GraphProvider } from "./contexts/GraphContext";
-import SunburstPage from "./pages/SunburstPage/SunburstPage";
-import TreePage from "./pages/TreePage/TreePage";
-import AboutPage from "./pages/AboutPage/AboutPage";
-import FTUExplorerPage from "./pages/FTUExplorerPage/FTUExplorerPage";
+import Header from "./components/Header/Header";
 import { FtuPartsProvider } from "./contexts/FTUPartsContext";
+import { GraphProvider } from "./contexts/GraphContext";
+import AQLQueryPage from "./pages/AQLQueryPage/AQLQueryPage";
+import AboutPage from "./pages/AboutPage/AboutPage";
+import CollectionsPage from "./pages/CollectionsPage/CollectionsPage";
+import DocumentPage from "./pages/DocumentPage/DocumentPage";
+import FTUExplorerPage from "./pages/FTUExplorerPage/FTUExplorerPage";
 import GraphPage from "./pages/GraphPage/GraphPage";
 import NotFoundPage from "./pages/NotFoundPage/NotFoundPage";
+import SearchPage from "./pages/SearchPage/SearchPage";
+import SunburstPage from "./pages/SunburstPage/SunburstPage";
+import TreePage from "./pages/TreePage/TreePage";
 
 function App() {
   return (
@@ -27,14 +27,8 @@ function App() {
               <Header />
               <div className="app">
                 <Routes>
-                  <Route
-                    path="/collections/:coll/:id"
-                    element={<DocumentPage />}
-                  />
-                  <Route
-                    path="/collections/:coll"
-                    element={<CollectionsPage />}
-                  />
+                  <Route path="/collections/:coll/:id" element={<DocumentPage />} />
+                  <Route path="/collections/:coll" element={<CollectionsPage />} />
                   <Route path="/collections" element={<CollectionsPage />} />
                   <Route path="/graph" element={<GraphPage />} />
                   <Route path="/ftu" element={<FTUExplorerPage />} />

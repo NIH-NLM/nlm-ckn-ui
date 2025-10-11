@@ -1,7 +1,7 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
-import SelectedItemsTable from "./SelectedItemsTable";
 import { MemoryRouter } from "react-router-dom";
+import SelectedItemsTable from "./SelectedItemsTable";
 
 describe("SelectedItemsTable", () => {
   const selectedItems = [
@@ -96,8 +96,6 @@ describe("SelectedItemsTable", () => {
 
     // Find all view links and check the href for the first item
     const viewLinks = screen.getAllByText("View");
-    expect(viewLinks[0].getAttribute("href")).toBe(
-      `/collections/${selectedItems[0]._id}`,
-    );
+    expect(viewLinks[0].getAttribute("href")).toBe(`/collections/${selectedItems[0]._id}`);
   });
 });

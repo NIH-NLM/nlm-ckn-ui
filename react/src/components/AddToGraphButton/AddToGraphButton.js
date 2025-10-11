@@ -11,9 +11,7 @@ import { toggleNodesSliceItem } from "../../store/nodesSlice";
 const AddToGraphButton = ({ nodeId, text }) => {
   const dispatch = useDispatch();
   // Select the list of node IDs from slice.
-  const nodesSliceNodeIds = useSelector(
-    (state) => state.nodesSlice.originNodeIds,
-  );
+  const nodesSliceNodeIds = useSelector((state) => state.nodesSlice.originNodeIds);
   // Check if the specific node for this button is already in the list.
   const isAdded = nodesSliceNodeIds.includes(nodeId);
 

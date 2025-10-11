@@ -1,7 +1,7 @@
-import { createSlice, createAsyncThunk, current } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, current } from "@reduxjs/toolkit";
 import undoable from "redux-undo";
-import { getFilterableEdgeFields } from "../components/Utils/Utils";
 import { performSetOperation } from "../components/ForceGraph/performSetOperation";
+import { getFilterableEdgeFields } from "../components/Utils/Utils";
 
 // API helper to fetch graph data from backend.
 // Handles three types of requests: standard traversal, shortest path, and advanced per-node settings.
@@ -19,12 +19,9 @@ const fetchGraphDataAPI = async (params) => {
   } = params;
 
   // Determine if this is a shortest path query.
-  const useShortestPath =
-    shortestPaths && !advancedSettings && nodeIds.length > 1;
+  const useShortestPath = shortestPaths && !advancedSettings && nodeIds.length > 1;
 
-  const endpoint = useShortestPath
-    ? "/arango_api/shortest_paths/"
-    : "/arango_api/graph/";
+  const endpoint = useShortestPath ? "/arango_api/shortest_paths/" : "/arango_api/graph/";
 
   let body;
 
@@ -72,8 +69,7 @@ export const fetchAndProcessGraph = createAsyncThunk(
   "graph/fetchAndProcess",
   async (_, { getState }) => {
     // Retrieve current settings and advanced mode state from Redux.
-    const { settings, originNodeIds, isAdvancedMode, perNodeSettings } =
-      getState().graph.present;
+    const { settings, originNodeIds, isAdvancedMode, perNodeSettings } = getState().graph.present;
     let params;
 
     if (isAdvancedMode) {
@@ -314,9 +310,7 @@ const graphSlice = createSlice({
     uncollapseNode: (state, action) => {
       const nodeId = action.payload;
       // Remove from user-defined collapse list.
-      state.collapsed.userDefined = state.collapsed.userDefined.filter(
-        (id) => id !== nodeId,
-      );
+      state.collapsed.userDefined = state.collapsed.userDefined.filter((id) => id !== nodeId);
       // Add to ignore list if it was initially collapsed.
       if (
         state.collapsed.initial.includes(nodeId) &&
@@ -334,9 +328,7 @@ const graphSlice = createSlice({
         state.collapsed.userDefined.push(nodeId);
       }
       // Remove from ignore list.
-      state.collapsed.userIgnored = state.collapsed.userIgnored.filter(
-        (id) => id !== nodeId,
-      );
+      state.collapsed.userIgnored = state.collapsed.userIgnored.filter((id) => id !== nodeId);
       state.lastActionType = "collapseNode";
     },
     // Clears node centering state.
@@ -406,9 +398,7 @@ const graphSlice = createSlice({
 
         if (state.isAdvancedMode) {
           try {
-            state.lastAppliedPerNodeSettings = JSON.parse(
-              JSON.stringify(state.perNodeSettings),
-            );
+            state.lastAppliedPerNodeSettings = JSON.parse(JSON.stringify(state.perNodeSettings));
           } catch (err) {
             state.lastAppliedPerNodeSettings = { ...state.perNodeSettings };
           }
@@ -456,10 +446,7 @@ const graphSlice = createSlice({
         const newGraph = { nodes: newNodes, links: newLinks };
 
         // Perform a union operation to merge the graphs and remove duplicates.
-        const mergedGraph = performSetOperation(
-          [existingGraph, newGraph],
-          "Union",
-        );
+        const mergedGraph = performSetOperation([existingGraph, newGraph], "Union");
 
         // Update the state.
         state.graphData = mergedGraph;
@@ -494,10 +481,7 @@ export const {
 const undoableGraphReducer = undoable(graphSlice.reducer, {
   // Only create new history states on these specific actions.
   filter: (action, currentState, previousHistory) => {
-    return (
-      action.type === setGraphData.type ||
-      action.type === updateNodePosition.type
-    );
+    return action.type === setGraphData.type || action.type === updateNodePosition.type;
   },
   ignoreInitialState: true,
 });

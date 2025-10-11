@@ -1,11 +1,5 @@
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import {
-  render,
-  screen,
-  fireEvent,
-  waitFor,
-  act,
-} from "@testing-library/react";
 import SearchBar from "./SearchBar";
 
 // Use fake timers for debounce and timeout testing
@@ -83,9 +77,7 @@ describe("SearchBar Component", () => {
 
     // Wait for the fetch call to occur and verify it
     await waitFor(() =>
-      expect(global.fetch).toHaveBeenCalledWith(
-        "/arango_api/search/test?limit=100",
-      ),
+      expect(global.fetch).toHaveBeenCalledWith("/arango_api/search/test?limit=100"),
     );
   });
 
@@ -101,9 +93,7 @@ describe("SearchBar Component", () => {
     const input = screen.getByPlaceholderText("Search...");
 
     // The results container is the parent of the search results table
-    const resultsContainer = screen.getByTestId(
-      "search-results-table",
-    ).parentElement;
+    const resultsContainer = screen.getByTestId("search-results-table").parentElement;
 
     // Initially, the container should not have the "show" class
     expect(resultsContainer).not.toHaveClass("show");

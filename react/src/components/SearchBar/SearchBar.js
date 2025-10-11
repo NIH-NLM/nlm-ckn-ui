@@ -1,12 +1,6 @@
-import React, {
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-  useCallback,
-} from "react";
-import SearchResultsTable from "../SearchResultsTable/SearchResultsTable";
+import React, { useContext, useEffect, useRef, useState, useCallback } from "react";
 import { GraphContext } from "../../contexts/GraphContext";
+import SearchResultsTable from "../SearchResultsTable/SearchResultsTable";
 import { getAllSearchableFields } from "../Utils/Utils";
 
 // SVG Icon Component
@@ -48,8 +42,7 @@ const SearchBar = () => {
           search_fields: Array.from(searchableFields),
         }),
       });
-      if (!response.ok)
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       return await response.json();
     } catch (error) {
       console.error("Error fetching search terms:", error);
@@ -74,10 +67,7 @@ const SearchBar = () => {
   // Effect for handling clicks outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target)
-      ) {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
         setShowResults(false);
       }
     };
@@ -115,9 +105,7 @@ const SearchBar = () => {
           />
           <SearchIcon />
         </div>
-        <div
-          className={`search-results-dropdown ${shouldDropdownBeVisible ? "show" : ""}`}
-        >
+        <div className={`search-results-dropdown ${shouldDropdownBeVisible ? "show" : ""}`}>
           <SearchResultsTable searchResults={searchResults} />
         </div>
       </div>

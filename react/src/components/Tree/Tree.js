@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import ReactDOM from "react-dom";
-import TreeConstructor from "../../components/TreeConstructor/TreeConstructor";
 import AddToGraphButton from "../../components/AddToGraphButton/AddToGraphButton";
+import TreeConstructor from "../../components/TreeConstructor/TreeConstructor";
 import { LoadingBar } from "../Utils/Utils";
 
 /**
@@ -114,11 +114,7 @@ const Tree = () => {
   return (
     <div className="tree-container">
       {/* Render d3 tree */}
-      <TreeConstructor
-        data={treeData}
-        onNodeEnter={handleNodeEnter}
-        onNodeExit={handleNodeExit}
-      />
+      <TreeConstructor data={treeData} onNodeEnter={handleNodeEnter} onNodeExit={handleNodeExit} />
       {Array.from(mountPoints.entries()).map(([nodeId, element]) =>
         ReactDOM.createPortal(<AddToGraphButton nodeId={nodeId} />, element),
       )}

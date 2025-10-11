@@ -9,9 +9,9 @@ const SunburstPage = () => {
           <Sunburst />
         </div>
         <p className="visualization-description">
-          This sunburst chart visualizes the structure and distribution of data
-          entities within this database. Each arc represents a vertex with its
-          size proportional to the number of downstream vertices.
+          This sunburst chart visualizes the structure and distribution of data entities within this
+          database. Each arc represents a vertex with its size proportional to the number of
+          downstream vertices.
         </p>
       </div>
     </div>

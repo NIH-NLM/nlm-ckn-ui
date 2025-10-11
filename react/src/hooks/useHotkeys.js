@@ -19,8 +19,7 @@ export function useHotkeys(hotkeys, deps = []) {
 
         // Check if one of the main modifiers (Ctrl or Cmd) is pressed
         const modifierMatch =
-          (hotkey.ctrlKey && event.ctrlKey) ||
-          (hotkey.metaKey && event.metaKey);
+          (hotkey.ctrlKey && event.ctrlKey) || (hotkey.metaKey && event.metaKey);
 
         if (shiftMatch && modifierMatch) {
           event.preventDefault();

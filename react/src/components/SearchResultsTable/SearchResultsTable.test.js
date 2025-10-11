@@ -1,7 +1,7 @@
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import React from "react";
-import { render, screen, fireEvent, within } from "@testing-library/react";
-import SearchResultsTable from "./SearchResultsTable";
 import { MemoryRouter } from "react-router-dom";
+import SearchResultsTable from "./SearchResultsTable";
 
 describe("SearchResultsTable", () => {
   const sampleResults = {
@@ -23,10 +23,7 @@ describe("SearchResultsTable", () => {
   test("renders headers and toggles expansion to show items", () => {
     render(
       <MemoryRouter>
-        <SearchResultsTable
-          searchResults={sampleResults}
-          handleSelectItem={handleSelectItem}
-        />
+        <SearchResultsTable searchResults={sampleResults} handleSelectItem={handleSelectItem} />
       </MemoryRouter>,
     );
 
@@ -58,10 +55,7 @@ describe("SearchResultsTable", () => {
   test("calls handleSelectItem when plus sign is clicked", () => {
     render(
       <MemoryRouter>
-        <SearchResultsTable
-          searchResults={sampleResults}
-          handleSelectItem={handleSelectItem}
-        />
+        <SearchResultsTable searchResults={sampleResults} handleSelectItem={handleSelectItem} />
       </MemoryRouter>,
     );
 

@@ -15,11 +15,7 @@ export const GraphProvider = ({ children }) => {
     graphType,
     setGraphType,
   };
-  return (
-    <GraphContext.Provider value={providerValue}>
-      {children}
-    </GraphContext.Provider>
-  );
+  return <GraphContext.Provider value={providerValue}>{children}</GraphContext.Provider>;
 };
 
 // Create context

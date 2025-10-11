@@ -1,48 +1,41 @@
-import React, {
-  useEffect,
-  useState,
-  useRef,
-  memo,
-  useCallback,
-  useMemo,
-} from "react";
-import { useSelector, useDispatch, shallowEqual } from "react-redux";
+import React, { useEffect, useState, useRef, memo, useCallback, useMemo } from "react";
+import { shallowEqual, useDispatch, useSelector } from "react-redux";
 import { ActionCreators } from "redux-undo";
-import ForceGraphConstructor from "../ForceGraphConstructor/ForceGraphConstructor";
 import collMaps from "../../assets/cell-kn-mvp-collection-maps.json";
+import { useHotkeyHold } from "../../hooks/useHotkeyHold";
+import { useHotkeys } from "../../hooks/useHotkeys";
 import {
-  LoadingBar,
-  getLabel,
-  parseCollections,
-  fetchCollections,
-  hasNodesInRawData,
-  isMac,
-  fetchNodeDetailsByIds as fetchNodeDetailsByIdsHelper,
-} from "../Utils/Utils";
-import {
-  fetchAndProcessGraph,
-  updateSetting,
-  setGraphData,
-  initializeGraph,
-  setAvailableCollections,
-  setAllCollections,
+  clearNodeToCenter,
+  collapseNode,
   expandNode,
+  fetchAndProcessGraph,
+  fetchEdgeFilterOptions,
+  initializeGraph,
+  setAllCollections,
+  setAvailableCollections,
+  setGraphData,
   setInitialCollapseList,
   uncollapseNode,
-  collapseNode,
-  clearNodeToCenter,
-  updateNodePosition,
-  fetchEdgeFilterOptions,
   updateEdgeFilter,
+  updateNodePosition,
+  updateSetting,
 } from "../../store/graphSlice";
-import { performSetOperation } from "./performSetOperation";
-import { useHotkeys } from "../../hooks/useHotkeys";
-import { useHotkeyHold } from "../../hooks/useHotkeyHold";
-import FilterableDropdown from "../FilterableDropdown/FilterableDropdown";
 import { saveGraph } from "../../store/savedGraphsSlice";
-import LoadGraphModal from "../LoadGraphModal/LoadGraphModal";
 import AddToGraphButton from "../AddToGraphButton/AddToGraphButton";
 import DocumentPopup from "../DocumentPopup/DocumentPopup";
+import FilterableDropdown from "../FilterableDropdown/FilterableDropdown";
+import ForceGraphConstructor from "../ForceGraphConstructor/ForceGraphConstructor";
+import LoadGraphModal from "../LoadGraphModal/LoadGraphModal";
+import {
+  LoadingBar,
+  fetchCollections,
+  fetchNodeDetailsByIds as fetchNodeDetailsByIdsHelper,
+  getLabel,
+  hasNodesInRawData,
+  isMac,
+  parseCollections,
+} from "../Utils/Utils";
+import { performSetOperation } from "./performSetOperation";
 
 // Whitelist of settings that can be configured on a per-node basis.
 const PER_NODE_SETTINGS = [
@@ -73,9 +66,7 @@ const ForceGraph = ({
   const hasInitializedGraph = useRef(false);
 
   // Selects origin node IDs from nodesSlice for NodesSlice driven graphs.
-  const nodesSliceOriginNodeIds = useSelector(
-    (state) => state.nodesSlice.originNodeIds,
-  );
+  const nodesSliceOriginNodeIds = useSelector((state) => state.nodesSlice.originNodeIds);
 
   // Selects state from Redux store, including graph data and history.
   const {
@@ -99,16 +90,14 @@ const ForceGraph = ({
     shallowEqual,
   );
 
-  const { settings, lastAppliedSettings, lastAppliedPerNodeSettings } =
-    useSelector(
-      (state) => ({
-        settings: state.graph.present.settings,
-        lastAppliedSettings: state.graph.present.lastAppliedSettings,
-        lastAppliedPerNodeSettings:
-          state.graph.present.lastAppliedPerNodeSettings,
-      }),
-      shallowEqual,
-    );
+  const { settings, lastAppliedSettings, lastAppliedPerNodeSettings } = useSelector(
+    (state) => ({
+      settings: state.graph.present.settings,
+      lastAppliedSettings: state.graph.present.lastAppliedSettings,
+      lastAppliedPerNodeSettings: state.graph.present.lastAppliedPerNodeSettings,
+    }),
+    shallowEqual,
+  );
 
   // Memoized map from nodeId -> display label (uses getLabel fallback).
   const nodeNameMap = useMemo(() => {
@@ -264,9 +253,7 @@ const ForceGraph = ({
     // Collections: prefer explicit allowedCollections, otherwise apply prune list if provided.
     const explicitAllowed = settingsFromProps.allowedCollections;
     if (Array.isArray(explicitAllowed)) {
-      const intersected = explicitAllowed.filter((c) =>
-        settings.availableCollections.includes(c),
-      );
+      const intersected = explicitAllowed.filter((c) => settings.availableCollections.includes(c));
       if (JSON.stringify(intersected) !== JSON.stringify(settings.allowedCollections)) {
         dispatch(updateSetting({ setting: "allowedCollections", value: intersected }));
       }
@@ -284,13 +271,14 @@ const ForceGraph = ({
     if (typeof depth === "number" && depth !== settings.depth) {
       dispatch(updateSetting({ setting: "depth", value: depth }));
     }
-    if (typeof edgeDirection === "string" && edgeDirection && edgeDirection !== settings.edgeDirection) {
+    if (
+      typeof edgeDirection === "string" &&
+      edgeDirection &&
+      edgeDirection !== settings.edgeDirection
+    ) {
       dispatch(updateSetting({ setting: "edgeDirection", value: edgeDirection }));
     }
-    if (
-      typeof collapseOnStart === "boolean" &&
-      collapseOnStart !== settings.collapseOnStart
-    ) {
+    if (typeof collapseOnStart === "boolean" && collapseOnStart !== settings.collapseOnStart) {
       dispatch(updateSetting({ setting: "collapseOnStart", value: collapseOnStart }));
     }
     if (Array.isArray(preferredPredicates)) {
@@ -306,13 +294,22 @@ const ForceGraph = ({
     dispatch(fetchAndProcessGraph());
     hasInitializedGraph.current = true;
     isApplyingPropDefaultsRef.current = false;
-  }, [settingsFromProps, settings.graphType, settings.availableCollections, settings.allowedCollections, settings.depth, settings.edgeDirection, settings.collapseOnStart, settings.edgeFilters, dispatch]);
+  }, [
+    settingsFromProps,
+    settings.graphType,
+    settings.availableCollections,
+    settings.allowedCollections,
+    settings.depth,
+    settings.edgeDirection,
+    settings.collapseOnStart,
+    settings.edgeFilters,
+    dispatch,
+  ]);
 
   // Triggers new data fetch when graph is explicitly initialized in the slice.
   useEffect(() => {
     if (
-      (lastActionType === "initializeGraph" &&
-        settings.allowedCollections.length > 0) ||
+      (lastActionType === "initializeGraph" && settings.allowedCollections.length > 0) ||
       (!hasInitializedGraph.current && lastActionType === "updateSetting")
     ) {
       // Skip auto-fetch if in the middle of applying defaults.
@@ -331,7 +328,7 @@ const ForceGraph = ({
       const graphInstance = graphInstanceRef.current;
       if (!graphInstance) return;
 
-      for (let entry of entries) {
+      for (const entry of entries) {
         if (entry.target === wrapperElement) {
           const { width, height } = entry.contentRect;
           graphInstance.resize(width, height);
@@ -372,15 +369,9 @@ const ForceGraph = ({
         },
       );
       graphInstanceRef.current = newGraphInstance;
-      newGraphInstance.resize(
-        wrapperRef.current.clientWidth,
-        wrapperRef.current.clientHeight,
-      );
+      newGraphInstance.resize(wrapperRef.current.clientWidth, wrapperRef.current.clientHeight);
       for (const labelClass in settings.labelStates) {
-        newGraphInstance.toggleLabels(
-          settings.labelStates[labelClass],
-          labelClass,
-        );
+        newGraphInstance.toggleLabels(settings.labelStates[labelClass], labelClass);
       }
     }
 
@@ -407,19 +398,11 @@ const ForceGraph = ({
           } else if (settings.findShortestPaths) {
             processedData = rawData;
           } else {
-            const graphsToProcess = originNodeIds.map(
-              (nodeId) => rawData[nodeId],
-            );
-            processedData = performSetOperation(
-              graphsToProcess,
-              settings.setOperation,
-            );
+            const graphsToProcess = originNodeIds.map((nodeId) => rawData[nodeId]);
+            processedData = performSetOperation(graphsToProcess, settings.setOperation);
           }
           let collapseList = finalCollapseList;
-          if (
-            lastActionType === "fetch/fulfilled" &&
-            collapsed?.initial?.length === 0
-          ) {
+          if (lastActionType === "fetch/fulfilled" && collapsed?.initial?.length === 0) {
             const initialCollapseList = processedData.nodes
               .filter((node) => !originNodeIds.includes(node._id))
               .map((node) => node._id);
@@ -486,10 +469,7 @@ const ForceGraph = ({
 
       Object.entries(newActiveSettings).forEach(([settingKey, value]) => {
         if (PER_NODE_SETTINGS.includes(settingKey)) {
-          if (
-            JSON.stringify(currentSettings[settingKey]) !==
-            JSON.stringify(value)
-          ) {
+          if (JSON.stringify(currentSettings[settingKey]) !== JSON.stringify(value)) {
             dispatch(updateSetting({ setting: settingKey, value: value }));
           }
         }
@@ -517,12 +497,7 @@ const ForceGraph = ({
         }));
       }
     }
-  }, [
-    settings.edgeFilters,
-    isAdvancedMode,
-    activeOriginNodeId,
-    perNodeSettings,
-  ]);
+  }, [settings.edgeFilters, isAdvancedMode, activeOriginNodeId, perNodeSettings]);
 
   // Calculate if settings are stale.
   const isSettingsStale = useMemo(() => {
@@ -534,21 +509,12 @@ const ForceGraph = ({
     // Compare based on mode.
     if (isAdvancedMode) {
       // Compare perNodeSettings against snapshot in Redux.
-      return (
-        JSON.stringify(perNodeSettings) !==
-        JSON.stringify(lastAppliedPerNodeSettings)
-      );
+      return JSON.stringify(perNodeSettings) !== JSON.stringify(lastAppliedPerNodeSettings);
     } else {
       // Compare standard settings.
       return JSON.stringify(settings) !== JSON.stringify(lastAppliedSettings);
     }
-  }, [
-    isAdvancedMode,
-    settings,
-    perNodeSettings,
-    lastAppliedSettings,
-    lastAppliedPerNodeSettings,
-  ]);
+  }, [isAdvancedMode, settings, perNodeSettings, lastAppliedSettings, lastAppliedPerNodeSettings]);
 
   // Memoizes calculation of final list of nodes to collapse.
   const finalCollapseList = useMemo(() => {
@@ -671,16 +637,13 @@ const ForceGraph = ({
   useHotkeyHold("s", handleSimulationOn, handleSimulationOff);
 
   // --- Settings Panel Handlers ---
-  const handleDepthChange = (e) =>
-    handleSettingChange("depth", Number(e.target.value));
-  const handleEdgeDirectionChange = (e) =>
-    handleSettingChange("edgeDirection", e.target.value);
+  const handleDepthChange = (e) => handleSettingChange("depth", Number(e.target.value));
+  const handleEdgeDirectionChange = (e) => handleSettingChange("edgeDirection", e.target.value);
   const handleNodeFontSizeChange = (e) =>
-    handleSettingChange("nodeFontSize", parseInt(e.target.value, 10));
+    handleSettingChange("nodeFontSize", Number.parseInt(e.target.value, 10));
   const handleEdgeFontSizeChange = (e) =>
-    handleSettingChange("edgeFontSize", parseInt(e.target.value, 10));
-  const handleLeafToggle = (e) =>
-    handleSettingChange("collapseOnStart", e.target.checked);
+    handleSettingChange("edgeFontSize", Number.parseInt(e.target.value, 10));
+  const handleLeafToggle = (e) => handleSettingChange("collapseOnStart", e.target.checked);
   const handleGraphToggle = () =>
     handleSettingChange(
       "graphType",
@@ -704,8 +667,7 @@ const ForceGraph = ({
   };
 
   // Global setting handlers use the global-only updater.
-  const handleOperationChange = (e) =>
-    handleGlobalSettingChange("setOperation", e.target.value);
+  const handleOperationChange = (e) => handleGlobalSettingChange("setOperation", e.target.value);
   const handleShortestPathToggle = (e) =>
     handleGlobalSettingChange("findShortestPaths", e.target.checked);
 
@@ -800,9 +762,7 @@ const ForceGraph = ({
   const exportGraph = (format) => {
     let nodeIdsString = "no-ids";
     if (Array.isArray(originNodeIds) && originNodeIds.length > 0) {
-      nodeIdsString = originNodeIds
-        .map((id) => id.replaceAll("/", "-"))
-        .join("-");
+      nodeIdsString = originNodeIds.map((id) => id.replaceAll("/", "-")).join("-");
     }
     const filenameStem = `cell-kn-mvp-${nodeIdsString}-graph`;
 
@@ -864,8 +824,8 @@ const ForceGraph = ({
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-      let downloadUrl = canvas.toDataURL(`image/${format}`);
-      let filename = `${filenameStem}.${format}`;
+      const downloadUrl = canvas.toDataURL(`image/${format}`);
+      const filename = `${filenameStem}.${format}`;
 
       const link = document.createElement("a");
       link.href = downloadUrl;
@@ -884,10 +844,7 @@ const ForceGraph = ({
       className={`graph-component-wrapper ${optionsVisible ? "options-open" : "options-closed"}`}
     >
       <div className="graph-main-area">
-        <button
-          onClick={toggleOptionsVisibility}
-          className="toggle-options-button"
-        >
+        <button onClick={toggleOptionsVisibility} className="toggle-options-button">
           {optionsVisible ? "> Hide Options" : "< Show Options"}
         </button>
 
@@ -895,14 +852,11 @@ const ForceGraph = ({
 
         <div id="chart-container-wrapper" ref={wrapperRef}>
           <svg ref={svgRef}></svg>
-          {(status === "processing" || status === "succeeded") &&
-            !hasNodesInRawData(rawData) && (
-              <div className="no-data-message">No data found.</div>
-            )}
+          {(status === "processing" || status === "succeeded") && !hasNodesInRawData(rawData) && (
+            <div className="no-data-message">No data found.</div>
+          )}
           {status === "failed" && (
-            <div className="no-data-message error-message">
-              Failed to fetch data.
-            </div>
+            <div className="no-data-message error-message">Failed to fetch data.</div>
           )}
         </div>
 
@@ -1031,11 +985,7 @@ const ForceGraph = ({
                   <div id="tab-panel-general" className="tab-panel active">
                     <div className="option-group">
                       <label htmlFor="depth-select">Depth:</label>
-                      <select
-                        id="depth-select"
-                        value={settings.depth}
-                        onChange={handleDepthChange}
-                      >
+                      <select id="depth-select" value={settings.depth} onChange={handleDepthChange}>
                         {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((value) => (
                           <option key={value} value={value}>
                             {value}
@@ -1044,9 +994,7 @@ const ForceGraph = ({
                       </select>
                     </div>
                     <div className="option-group">
-                      <label htmlFor="edge-direction-select">
-                        Traversal Direction:
-                      </label>
+                      <label htmlFor="edge-direction-select">Traversal Direction:</label>
                       <select
                         id="edge-direction-select"
                         value={settings.edgeDirection}
@@ -1061,18 +1009,13 @@ const ForceGraph = ({
                     </div>
                     <div className="option-group font-size-picker">
                       <div className="node-font-size-picker">
-                        <label htmlFor="node-font-size-select">
-                          Node font size:
-                        </label>
+                        <label htmlFor="node-font-size-select">Node font size:</label>
                         <select
                           id="node-font-size-select"
                           value={settings.nodeFontSize}
                           onChange={handleNodeFontSizeChange}
                         >
-                          {[
-                            4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30,
-                            32,
-                          ].map((size) => (
+                          {[4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32].map((size) => (
                             <option key={size} value={size}>
                               {size}px
                             </option>
@@ -1080,17 +1023,13 @@ const ForceGraph = ({
                         </select>
                       </div>
                       <div className="edge-font-size-picker">
-                        <label htmlFor="edge-font-size-select">
-                          Edge font size:
-                        </label>
+                        <label htmlFor="edge-font-size-select">Edge font size:</label>
                         <select
                           id="edge-font-size-select"
                           value={settings.edgeFontSize}
                           onChange={handleEdgeFontSizeChange}
                         >
-                          {[
-                            2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28,
-                          ].map((size) => (
+                          {[2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28].map((size) => (
                             <option key={size} value={size}>
                               {size}px
                             </option>
@@ -1101,25 +1040,23 @@ const ForceGraph = ({
                     <div className="option-group labels-toggle-container">
                       <label>Toggle Labels:</label>
                       <div className="labels-toggle">
-                        {Object.entries(settings.labelStates).map(
-                          ([labelKey, isChecked]) => (
-                            <div className="label-toggle-item" key={labelKey}>
-                              {labelKey
-                                .replace(/-/g, " ")
-                                .replace("label", "")
-                                .trim()
-                                .replace(/^\w/, (c) => c.toUpperCase())}
-                              <label className="switch">
-                                <input
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  onChange={() => handleLabelToggle(labelKey)}
-                                />
-                                <span className="slider round"></span>
-                              </label>
-                            </div>
-                          ),
-                        )}
+                        {Object.entries(settings.labelStates).map(([labelKey, isChecked]) => (
+                          <div className="label-toggle-item" key={labelKey}>
+                            {labelKey
+                              .replace(/-/g, " ")
+                              .replace("label", "")
+                              .trim()
+                              .replace(/^\w/, (c) => c.toUpperCase())}
+                            <label className="switch">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => handleLabelToggle(labelKey)}
+                              />
+                              <span className="slider round"></span>
+                            </label>
+                          </div>
+                        ))}
                       </div>
                     </div>
                     <div className="option-group labels-toggle-container">
@@ -1186,34 +1123,26 @@ const ForceGraph = ({
                       />
                     </div>
                     {edgeFilterStatus === "loading" && (
-                      <div className="option-group">
-                        Loading edge filters...
-                      </div>
+                      <div className="option-group">Loading edge filters...</div>
                     )}
                     {edgeFilterStatus === "failed" && (
-                      <div className="option-group error-message">
-                        Failed to load edge filters.
-                      </div>
+                      <div className="option-group error-message">Failed to load edge filters.</div>
                     )}
                     {edgeFilterStatus === "succeeded" &&
                       Object.keys(availableEdgeFilters).length > 0 && (
                         <div className="edge-filter-section">
                           <h3>Edge Filters:</h3>
-                          {Object.entries(availableEdgeFilters).map(
-                            ([field, values]) => (
-                              <FilterableDropdown
-                                key={field}
-                                label={field}
-                                options={values}
-                                selectedOptions={
-                                  settings.edgeFilters[field] || []
-                                }
-                                onOptionToggle={(value) =>
-                                  dispatch(updateEdgeFilter({ field, value }))
-                                }
-                              />
-                            ),
-                          )}
+                          {Object.entries(availableEdgeFilters).map(([field, values]) => (
+                            <FilterableDropdown
+                              key={field}
+                              label={field}
+                              options={values}
+                              selectedOptions={settings.edgeFilters[field] || []}
+                              onOptionToggle={(value) =>
+                                dispatch(updateEdgeFilter({ field, value }))
+                              }
+                            />
+                          ))}
                         </div>
                       )}
                   </div>
@@ -1222,52 +1151,48 @@ const ForceGraph = ({
             </>
           )}
 
-          {activePrimaryTab === "multiNode" &&
-            originNodeIds &&
-            originNodeIds.length >= 2 && (
-              <div id="tab-panel-multiNode" className="tab-panel active">
-                <div className="option-group labels-toggle-container">
-                  <label>Advanced Per-Node Settings:</label>
-                  <div className="labels-toggle graph-source-toggle">
-                    <label className="switch">
-                      <input
-                        type="checkbox"
-                        checked={isAdvancedMode}
-                        onChange={handleAdvancedModeToggle}
-                      />
-                      <span className="slider round"></span>
-                    </label>
-                  </div>
-                </div>
-                <div className="option-group multi-node">
-                  <label htmlFor="set-operation-select">Graph operation:</label>
-                  <select
-                    id="set-operation-select"
-                    value={settings.setOperation}
-                    onChange={handleOperationChange}
-                  >
-                    {["Intersection", "Union", "Symmetric Difference"].map(
-                      (value) => (
-                        <option key={value} value={value}>
-                          {value}
-                        </option>
-                      ),
-                    )}
-                  </select>
-                </div>
-                <div className="option-group multi-node">
-                  Shortest Path
+          {activePrimaryTab === "multiNode" && originNodeIds && originNodeIds.length >= 2 && (
+            <div id="tab-panel-multiNode" className="tab-panel active">
+              <div className="option-group labels-toggle-container">
+                <label>Advanced Per-Node Settings:</label>
+                <div className="labels-toggle graph-source-toggle">
                   <label className="switch">
                     <input
                       type="checkbox"
-                      checked={settings.findShortestPaths}
-                      onChange={handleShortestPathToggle}
+                      checked={isAdvancedMode}
+                      onChange={handleAdvancedModeToggle}
                     />
                     <span className="slider round"></span>
                   </label>
                 </div>
               </div>
-            )}
+              <div className="option-group multi-node">
+                <label htmlFor="set-operation-select">Graph operation:</label>
+                <select
+                  id="set-operation-select"
+                  value={settings.setOperation}
+                  onChange={handleOperationChange}
+                >
+                  {["Intersection", "Union", "Symmetric Difference"].map((value) => (
+                    <option key={value} value={value}>
+                      {value}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="option-group multi-node">
+                Shortest Path
+                <label className="switch">
+                  <input
+                    type="checkbox"
+                    checked={settings.findShortestPaths}
+                    onChange={handleShortestPathToggle}
+                  />
+                  <span className="slider round"></span>
+                </label>
+              </div>
+            </div>
+          )}
 
           {activePrimaryTab === "history" && (
             <div id="tab-panel-history" className="tab-panel active">
@@ -1301,25 +1226,16 @@ const ForceGraph = ({
             <div id="tab-panel-export" className="tab-panel active">
               <div className="option-group export-buttons">
                 <label>Export Graph:</label>
-                <button onClick={() => exportGraph("svg")}>
-                  Download as SVG
-                </button>
-                <button onClick={() => exportGraph("png")}>
-                  Download as PNG
-                </button>
-                <button onClick={() => exportGraph("json")}>
-                  Download as JSON
-                </button>
+                <button onClick={() => exportGraph("svg")}>Download as SVG</button>
+                <button onClick={() => exportGraph("png")}>Download as PNG</button>
+                <button onClick={() => exportGraph("json")}>Download as JSON</button>
               </div>
             </div>
           )}
         </div>
       </div>
 
-      <LoadGraphModal
-        isOpen={isLoadModalOpen}
-        onClose={() => setIsLoadModalOpen(false)}
-      />
+      <LoadGraphModal isOpen={isLoadModalOpen} onClose={() => setIsLoadModalOpen(false)} />
     </div>
   );
 };

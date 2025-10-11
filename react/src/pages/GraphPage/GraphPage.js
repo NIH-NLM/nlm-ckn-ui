@@ -1,19 +1,12 @@
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  useCallback,
-  useContext,
-  useMemo,
-} from "react";
-import { useSelector, useDispatch } from "react-redux";
+import React, { useState, useEffect, useRef, useCallback, useContext, useMemo } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import ForceGraph from "../../components/ForceGraph/ForceGraph";
+import LoadGraphModal from "../../components/LoadGraphModal/LoadGraphModal";
+import SelectedItemsTable from "../../components/SelectedItemsTable/SelectedItemsTable";
+import { fetchNodeDetailsByIds } from "../../components/Utils/Utils";
 import { GraphContext } from "../../contexts/GraphContext";
 import { initializeGraph, loadGraphFromJson } from "../../store/graphSlice";
 import { removeNodeFromSlice } from "../../store/nodesSlice";
-import SelectedItemsTable from "../../components/SelectedItemsTable/SelectedItemsTable";
-import ForceGraph from "../../components/ForceGraph/ForceGraph";
-import { fetchNodeDetailsByIds } from "../../components/Utils/Utils";
-import LoadGraphModal from "../../components/LoadGraphModal/LoadGraphModal";
 
 const GraphPage = () => {
   const dispatch = useDispatch();
@@ -22,9 +15,7 @@ const GraphPage = () => {
 
   // State and Context
   const nodeIds = useSelector((state) => state.nodesSlice.originNodeIds);
-  const { lastAppliedOriginNodeIds } = useSelector(
-    (state) => state.graph.present,
-  );
+  const { lastAppliedOriginNodeIds } = useSelector((state) => state.graph.present);
 
   const [selectedItemObjects, setSelectedItemObjects] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -38,7 +29,6 @@ const GraphPage = () => {
     return JSON.stringify(nodeIds) !== JSON.stringify(lastAppliedOriginNodeIds);
   }, [nodeIds, lastAppliedOriginNodeIds, showGraph]);
 
-
   // Init graph on component load.
   useEffect(() => {
     dispatch(initializeGraph({}));
@@ -48,13 +38,9 @@ const GraphPage = () => {
   useEffect(() => {
     const syncObjectsWithNodeIds = async () => {
       // Logic to prevent re-fetching objects already existing
-      const existingObjectIds = new Set(
-        selectedItemObjects.map((item) => item._id),
-      );
+      const existingObjectIds = new Set(selectedItemObjects.map((item) => item._id));
       const missingIds = nodeIds.filter((id) => !existingObjectIds.has(id));
-      const stillSelectedObjects = selectedItemObjects.filter((item) =>
-        nodeIds.includes(item._id),
-      );
+      const stillSelectedObjects = selectedItemObjects.filter((item) => nodeIds.includes(item._id));
 
       if (missingIds.length > 0) {
         setIsLoading(true);
@@ -123,16 +109,10 @@ const GraphPage = () => {
         const jsonData = JSON.parse(content);
 
         // Basic validation to ensure it's a valid graph file
-        if (
-          jsonData &&
-          Array.isArray(jsonData.nodes) &&
-          Array.isArray(jsonData.links)
-        ) {
+        if (jsonData && Array.isArray(jsonData.nodes) && Array.isArray(jsonData.links)) {
           dispatch(loadGraphFromJson(jsonData));
         } else {
-          alert(
-            "Error: The selected JSON file does not appear to be a valid graph export.",
-          );
+          alert("Error: The selected JSON file does not appear to be a valid graph export.");
         }
       } catch (error) {
         console.error("Failed to parse JSON file:", error);
@@ -158,8 +138,8 @@ const GraphPage = () => {
         <h1>Graph Builder</h1>
         <br />
         <p>
-          This is the workspace for building and exploring knowledge graphs. The
-          selected nodes are listed below.
+          This is the workspace for building and exploring knowledge graphs. The selected nodes are
+          listed below.
         </p>
       </div>
 
@@ -167,18 +147,15 @@ const GraphPage = () => {
         <button onClick={handleLoad} className="secondary-action-button">
           Load Saved Graph
         </button>
-        <button
-          onClick={handleLoadFromJson}
-          className="secondary-action-button"
-        >
+        <button onClick={handleLoadFromJson} className="secondary-action-button">
           Load from File
         </button>
       </div>
 
       {isGraphStale && (
         <div className="stale-graph-warning">
-          Node selection below is different than in graph. Click "Generate
-          Graph" if you would like create a visualization with the nodes below.
+          Node selection below is different than in graph. Click "Generate Graph" if you would like
+          create a visualization with the nodes below.
         </div>
       )}
 
@@ -194,24 +171,15 @@ const GraphPage = () => {
           />
         ) : (
           !isLoading && (
-            <p>
-              No nodes have been added to the graph yet. Add nodes from the rest
-              of the site.
-            </p>
+            <p>No nodes have been added to the graph yet. Add nodes from the rest of the site.</p>
           )
         )}
       </div>
 
-      <div
-        className={!showGraph ? "hidden" : "graph-display-area"}
-        ref={graphDisplayAreaRef}
-      >
+      <div className={!showGraph ? "hidden" : "graph-display-area"} ref={graphDisplayAreaRef}>
         <ForceGraph />
       </div>
-      <LoadGraphModal
-        isOpen={isLoadModalOpen}
-        onClose={() => setIsLoadModalOpen(false)}
-      />
+      <LoadGraphModal isOpen={isLoadModalOpen} onClose={() => setIsLoadModalOpen(false)} />
     </div>
   );
 };

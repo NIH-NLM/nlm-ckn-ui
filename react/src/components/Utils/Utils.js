@@ -1,9 +1,9 @@
-import collMaps from "../../assets/cell-kn-mvp-collection-maps.json";
 import React, { useEffect, useMemo, useState } from "react";
+import collMaps from "../../assets/cell-kn-mvp-collection-maps.json";
 
 export const fetchCollections = async (graphType) => {
   // Accept graphType argument
-  let response = await fetch("/arango_api/collections/", {
+  const response = await fetch("/arango_api/collections/", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -13,11 +13,7 @@ export const fetchCollections = async (graphType) => {
     }),
   });
   if (!response.ok) {
-    console.error(
-      "Fetch collections failed:",
-      response.status,
-      await response.text(),
-    );
+    console.error("Fetch collections failed:", response.status, await response.text());
     throw new Error(`Network response was not ok (${response.status})`);
   }
   return response.json();
@@ -202,10 +198,7 @@ export const getUrl = (item) => {
             }
 
             // Build final URL by replacing placeholder in template.
-            const url = config.individual_url.replace(
-              "<FIELD_TO_USE>",
-              replacement,
-            );
+            const url = config.individual_url.replace("<FIELD_TO_USE>", replacement);
 
             // Return successfully generated URL immediately.
             return url;
@@ -338,10 +331,7 @@ export function mergeChildren(graphData, parentId, childrenWithGrandchildren) {
   const parentNode = findNodeById(newData, parentId);
 
   if (parentNode) {
-    console.log(
-      `Found parent ${parentId}, merging children:`,
-      childrenWithGrandchildren,
-    );
+    console.log(`Found parent ${parentId}, merging children:`, childrenWithGrandchildren);
     parentNode.children = childrenWithGrandchildren;
     parentNode._childrenLoaded = true;
   } else {
@@ -385,9 +375,7 @@ export const findFtuUrlById = (ftuPartsArray, searchId) => {
 
   // Find match
   const foundMatch = ftuPartsArray.find(
-    (ftuPart) =>
-      ftuPart.ftu_iri.includes(searchId) ||
-      ftuPart.ftu_part_iri.includes(searchId),
+    (ftuPart) => ftuPart.ftu_iri.includes(searchId) || ftuPart.ftu_part_iri.includes(searchId),
   );
 
   // Return match digital object URL
@@ -445,7 +433,7 @@ export const getAllSearchableFields = () => {
   // Load collection configuration maps.
   const collectionMaps = new Map(collMaps.maps);
 
-  let fieldsToDisplay = new Set();
+  const fieldsToDisplay = new Set();
   collectionMaps.forEach((collectionMap, collection, collectionMaps) => {
     collectionMap.individual_fields.forEach((fieldMap, index) => {
       fieldsToDisplay.add(fieldMap.field_to_display);

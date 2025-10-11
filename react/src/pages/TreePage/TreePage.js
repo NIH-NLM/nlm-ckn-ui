@@ -9,9 +9,8 @@ const TreePage = () => {
           <Tree />
         </div>
         <p className="visualization-description">
-          This interactive tree visualizes the structure and distribution of
-          data entities within this database. Click on a vertex to expand or
-          collapse connections.
+          This interactive tree visualizes the structure and distribution of data entities within
+          this database. Click on a vertex to expand or collapse connections.
         </p>
       </div>
     </div>

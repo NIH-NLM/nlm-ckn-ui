@@ -50,10 +50,7 @@ const FTUIllustration = ({ selectedIllustration, illustrations }) => {
       }
 
       // Get event data details
-      const id = event.detail.representation_of
-        .split("/")
-        .pop()
-        .replace("_", "/");
+      const id = event.detail.representation_of.split("/").pop().replace("_", "/");
       const label = event.detail.label;
       setPopupData({ id, label });
 
@@ -98,11 +95,7 @@ const FTUIllustration = ({ selectedIllustration, illustrations }) => {
         ref={ftuRef}
       ></hra-medical-illustration>
 
-      <InfoPopup
-        data={popupData}
-        position={popupPosition}
-        onClose={handleClosePopup}
-      />
+      <InfoPopup data={popupData} position={popupPosition} onClose={handleClosePopup} />
     </div>
   );
 };

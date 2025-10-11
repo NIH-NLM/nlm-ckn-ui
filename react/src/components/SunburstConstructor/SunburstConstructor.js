@@ -1,6 +1,6 @@
 import * as d3 from "d3";
-import { getLabel } from "../Utils/Utils";
 import { getColorForCollection } from "../../services/ColorServices/ColorServices";
+import { getLabel } from "../Utils/Utils";
 
 /**
  * Creates or updates a D3 Sunburst chart.
@@ -60,14 +60,8 @@ function SunburstConstructor(
 
     root.each((d) => {
       const ref = initialCenterReferenceNode;
-      const targetX0 =
-        Math.max(0, Math.min(1, (d.x0 - ref.x0) / (ref.x1 - ref.x0))) *
-        2 *
-        Math.PI;
-      const targetX1 =
-        Math.max(0, Math.min(1, (d.x1 - ref.x0) / (ref.x1 - ref.x0))) *
-        2 *
-        Math.PI;
+      const targetX0 = Math.max(0, Math.min(1, (d.x0 - ref.x0) / (ref.x1 - ref.x0))) * 2 * Math.PI;
+      const targetX1 = Math.max(0, Math.min(1, (d.x1 - ref.x0) / (ref.x1 - ref.x0))) * 2 * Math.PI;
       const targetY0 = Math.max(0, d.y0 - ref.depth);
       const targetY1 = Math.max(0, d.y1 - ref.depth);
       d.current = {
@@ -78,10 +72,7 @@ function SunburstConstructor(
       };
     });
   } catch (error) {
-    console.error(
-      "Constructor Error: Failed during D3 hierarchy/partition/position setup:",
-      error,
-    );
+    console.error("Constructor Error: Failed during D3 hierarchy/partition/position setup:", error);
     return { svgNode: null, hierarchyRoot: null, d3Clicked: () => {} };
   }
 
@@ -90,15 +81,11 @@ function SunburstConstructor(
     .arc()
     .startAngle((d) => (d.current ? d.current.x0 : 0))
     .endAngle((d) => (d.current ? d.current.x1 : 0))
-    .padAngle((d) =>
-      d.current ? Math.min((d.current.x1 - d.current.x0) / 2, 0.005) : 0,
-    )
+    .padAngle((d) => (d.current ? Math.min((d.current.x1 - d.current.x0) / 2, 0.005) : 0))
     .padRadius(radius * 1.5)
     .innerRadius((d) => (d.current ? d.current.y0 * radius : 0))
     .outerRadius((d) =>
-      d.current
-        ? Math.max(d.current.y0 * radius, d.current.y1 * radius - 1)
-        : 0,
+      d.current ? Math.max(d.current.y0 * radius, d.current.y1 * radius - 1) : 0,
     );
 
   // --- SVG Setup ---
@@ -131,8 +118,7 @@ function SunburstConstructor(
       .append("path")
       .attr("fill", (d) => {
         if (d.depth === 0 && !pNode) return "none";
-        const collectionId =
-          d.data?._id?.split("/")[0] || d.data?._key || "unknown";
+        const collectionId = d.data?._id?.split("/")[0] || d.data?._key || "unknown";
         return getColorForCollection(collectionId);
       })
       .attr("fill-opacity", 0)
@@ -140,14 +126,12 @@ function SunburstConstructor(
       .style("cursor", (d) => (d.children ? "pointer" : "default"))
       .attr("d", (d) => arc(d)); // Use arc with d.current for initial state
 
-    pathEnter
-      .append("title")
-      .text((d) => getLabel(d.data) || d.data._key || "Unknown");
+    pathEnter.append("title").text((d) => getLabel(d.data) || d.data._key || "Unknown");
 
     pathUpdate = path.merge(pathEnter);
 
     pathUpdate
-      .on("contextmenu", function (event, d_node) {
+      .on("contextmenu", (event, d_node) => {
         event.preventDefault();
         if (handleSunburstClickRef.current) {
           handleSunburstClickRef.current(event, d_node);
@@ -155,10 +139,7 @@ function SunburstConstructor(
       })
       .on("click", (event, d_node) => {
         if (handleNodeClickRef.current) {
-          const shouldCallD3Animation = handleNodeClickRef.current(
-            event,
-            d_node,
-          );
+          const shouldCallD3Animation = handleNodeClickRef.current(event, d_node);
           if (shouldCallD3Animation) {
             clicked(event, d_node);
           }
@@ -183,9 +164,7 @@ function SunburstConstructor(
       .style("user-select", "none");
 
     const labelData = root.descendants();
-    const label = labelGroup
-      .selectAll("text")
-      .data(labelData, (d) => d.data._id);
+    const label = labelGroup.selectAll("text").data(labelData, (d) => d.data._id);
 
     label.exit().remove();
 
@@ -253,23 +232,11 @@ function SunburstConstructor(
     root.each((d_node) => {
       d_node.target = {
         x0:
-          Math.max(
-            0,
-            Math.min(
-              1,
-              (d_node.x0 - pClicked.x0) / (pClicked.x1 - pClicked.x0),
-            ),
-          ) *
+          Math.max(0, Math.min(1, (d_node.x0 - pClicked.x0) / (pClicked.x1 - pClicked.x0))) *
           2 *
           Math.PI,
         x1:
-          Math.max(
-            0,
-            Math.min(
-              1,
-              (d_node.x1 - pClicked.x0) / (pClicked.x1 - pClicked.x0),
-            ),
-          ) *
+          Math.max(0, Math.min(1, (d_node.x1 - pClicked.x0) / (pClicked.x1 - pClicked.x0))) *
           2 *
           Math.PI,
         y0: Math.max(0, d_node.y0 - pClicked.depth),
@@ -279,9 +246,7 @@ function SunburstConstructor(
       if (isNaN(d_node.target.x1)) d_node.target.x1 = 0;
     });
 
-    const t = svg
-      .transition()
-      .duration(event && event.altKey ? 7500 : zoomDuration);
+    const t = svg.transition().duration(event && event.altKey ? 7500 : zoomDuration);
 
     pathUpdate
       .transition(t)
@@ -301,24 +266,18 @@ function SunburstConstructor(
             : 0,
       )
       .attr("pointer-events", (d_node) =>
-        d_node.data._id === pClicked.data._id || !arcVisible(d_node.target)
-          ? "none"
-          : "auto",
+        d_node.data._id === pClicked.data._id || !arcVisible(d_node.target) ? "none" : "auto",
       )
       .attrTween("d", (d_node) => () => arc(d_node));
 
     labelUpdate
       .transition(t)
       .attr("fill-opacity", (d_node) =>
-        d_node.data._id === pClicked.data._id
-          ? 0
-          : +labelVisible(d_node.target),
+        d_node.data._id === pClicked.data._id ? 0 : +labelVisible(d_node.target),
       )
       .attrTween("transform", (d_node) => () => labelTransform(d_node.current));
 
-    centerText
-      .transition(t)
-      .text(getLabel(pClicked.data) || pClicked.data._key || "Unknown");
+    centerText.transition(t).text(getLabel(pClicked.data) || pClicked.data._key || "Unknown");
     updateCursor(pClicked);
   }
 
@@ -370,11 +329,7 @@ function SunburstConstructor(
     pathUpdate // Use pathUpdate which includes entered elements
       .attr("d", (d) => arc(d))
       .attr("fill-opacity", (d) => {
-        if (
-          d.data._id === zoomedNodeId ||
-          (d === root && !zoomedNodeId && d.depth === 0)
-        )
-          return 0;
+        if (d.data._id === zoomedNodeId || (d === root && !zoomedNodeId && d.depth === 0)) return 0;
         return arcVisible(d.current) ? (d.children ? 0.6 : 0.4) : 0;
       })
       .attr("pointer-events", (d) =>
@@ -392,10 +347,7 @@ function SunburstConstructor(
         .delay(fadeInDelay)
         .duration(fadeInDuration)
         .attr("fill-opacity", (d) => {
-          if (
-            d.data._id === zoomedNodeId ||
-            (d === root && !zoomedNodeId && d.depth === 0)
-          )
+          if (d.data._id === zoomedNodeId || (d === root && !zoomedNodeId && d.depth === 0))
             return 0;
           return arcVisible(d.current) ? (d.children ? 0.6 : 0.4) : 0;
         })
@@ -411,39 +363,25 @@ function SunburstConstructor(
     labelUpdate
       .attr("transform", (d) => labelTransform(d.current))
       .attr("fill-opacity", (d) => {
-        if (
-          d.data._id === zoomedNodeId ||
-          (d === root && !zoomedNodeId && d.depth === 0)
-        )
-          return 0;
+        if (d.data._id === zoomedNodeId || (d === root && !zoomedNodeId && d.depth === 0)) return 0;
         return +labelVisible(d.current);
       });
 
-    if (
-      fadeInDuration > 0 &&
-      labelUpdate.enter &&
-      !labelUpdate.enter().empty()
-    ) {
+    if (fadeInDuration > 0 && labelUpdate.enter && !labelUpdate.enter().empty()) {
       labelUpdate
         .enter()
         .transition("fadein_label_explicit")
         .delay(fadeInDelay)
         .duration(fadeInDuration)
         .attr("fill-opacity", (d) => {
-          if (
-            d.data._id === zoomedNodeId ||
-            (d === root && !zoomedNodeId && d.depth === 0)
-          )
+          if (d.data._id === zoomedNodeId || (d === root && !zoomedNodeId && d.depth === 0))
             return 0;
           return +labelVisible(d.current);
         });
     }
     updateCursor(pNode || root);
   } catch (error) {
-    console.error(
-      "Constructor Error: Failed applying final state/fade-in:",
-      error,
-    );
+    console.error("Constructor Error: Failed applying final state/fade-in:", error);
   }
 
   // --- Return ---

@@ -1,5 +1,5 @@
 import React from "react";
-import { getUrl, getDisplayFields } from "../Utils/Utils";
+import { getDisplayFields, getUrl } from "../Utils/Utils";
 
 /**
  * Renders structured card for single document.

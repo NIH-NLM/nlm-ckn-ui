@@ -30,7 +30,7 @@ const AQLQueryPage = () => {
 
   const handleQueryChange = (event) => {
     const selectedId = event.target.value;
-    const sq = predefinedQueries.find((q) => q.id === parseInt(selectedId));
+    const sq = predefinedQueries.find((q) => q.id === Number.parseInt(selectedId));
     setSelectedQuery(sq);
     setQueryTemplate(sq ? sq.query : "");
   };
@@ -72,9 +72,7 @@ const AQLQueryPage = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          query: queryTemplate
-            .replace(/@value1/g, `${value1}`)
-            .replace(/@value2/g, `${value2}`),
+          query: queryTemplate.replace(/@value1/g, `${value1}`).replace(/@value2/g, `${value2}`),
         }),
       });
 

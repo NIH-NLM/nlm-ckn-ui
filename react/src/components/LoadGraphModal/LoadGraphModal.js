@@ -1,7 +1,7 @@
 import React from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { deleteGraph } from "../../store/savedGraphsSlice";
+import { useDispatch, useSelector } from "react-redux";
 import { loadGraph } from "../../store/graphSlice";
+import { deleteGraph } from "../../store/savedGraphsSlice";
 
 const LoadGraphModal = ({ isOpen, onClose }) => {
   const dispatch = useDispatch();
@@ -49,10 +49,7 @@ const LoadGraphModal = ({ isOpen, onClose }) => {
                     <td>{new Date(graph.timestamp).toLocaleString()}</td>
                     <td className="actions-cell">
                       <button onClick={() => handleLoad(graph)}>Load</button>
-                      <button
-                        className="delete-button"
-                        onClick={() => handleDelete(graph.id)}
-                      >
+                      <button className="delete-button" onClick={() => handleDelete(graph.id)}>
                         Delete
                       </button>
                     </td>
