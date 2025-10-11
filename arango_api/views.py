@@ -57,6 +57,9 @@ def get_graph(request):
       orchestrator which handles per-node settings.
     - Otherwise, it performs a standard traversal with global settings.
     """
+    # Extract the inter-node edges parameter (default to True)
+    include_inter_node_edges = request.data.get("include_inter_node_edges", True)
+    
     # Route request based on payload structure
     if "advanced_settings" in request.data:
         # Handle advanced per-node settings request.
@@ -69,6 +72,7 @@ def get_graph(request):
             node_ids,
             advanced_settings,
             graph,
+            include_inter_node_edges,
         )
         return JsonResponse(search_results, safe=False)
     else:
@@ -87,6 +91,7 @@ def get_graph(request):
             allowed_collections,
             graph,
             edge_filters,
+            include_inter_node_edges,
         )
         return JsonResponse(search_results, safe=False)
 

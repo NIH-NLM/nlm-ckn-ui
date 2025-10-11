@@ -52,6 +52,7 @@ def get_graph(
     allowed_collections,
     graph,
     edge_filters,
+    include_inter_node_edges=True,
 ):
     """
     Constructs and executes a graph traversal AQL query.
@@ -64,6 +65,9 @@ def get_graph(
         graph (str): The name of the graph to traverse.
         edge_filters (dict): A dictionary for filtering edges.
             Example: {'Label': ['IS_A'], 'Source': ['X']}
+        include_inter_node_edges (bool): If True, includes edges between nodes
+            in the result set, even if they weren't discovered during traversal.
+            Defaults to True.
 
     Returns:
         dict: A dictionary with start node IDs as keys, each containing
@@ -127,6 +131,27 @@ def get_graph(
             # If any negative condition is true, the edge is invalid and pruned.
             prune_string = f"PRUNE {' OR '.join(negative_conditions)}"
 
+    # Build inter-node edges query section if enabled
+    inter_node_edges_query = ""
+    if include_inter_node_edges:
+        inter_node_edges_query = f"""
+         LET all_node_ids = all_nodes[*]._id
+
+         // For each node in the result set, traverse 1 hop and keep edges to other result nodes only
+         LET inter_node_edges = (
+             FOR v IN all_nodes
+                 FOR neighbor, e IN 1..1 ANY v._id GRAPH @graph
+                     OPTIONS {{ vertexCollections: @allowed_collections }}
+                     FILTER neighbor._id IN all_node_ids
+                     RETURN DISTINCT e
+         )
+
+         LET combined_links = UNION_DISTINCT(all_links, inter_node_edges)
+        """
+        links_field = "combined_links"
+    else:
+        links_field = "all_links"
+
     # Construct the final AQL query
     aql_query = f"""
      FOR start_node_id IN @node_ids
@@ -151,11 +176,13 @@ def get_graph(
 
          LET all_links = UNIQUE(traversal[*].e)
 
+         {inter_node_edges_query}
+
          RETURN {{
              "start_node_id": start_node_id,
              "data": {{
                  "nodes": all_nodes,
-                 "links": all_links
+                 "links": {links_field}
              }}
          }}
      """
@@ -173,6 +200,7 @@ def get_graph_advanced(
     node_ids,
     advanced_settings,
     graph,
+    include_inter_node_edges=True,
 ):
     """
     Orchestrates multiple graph traversals based on per-node settings.
@@ -186,6 +214,8 @@ def get_graph_advanced(
         advanced_settings (dict): A dictionary where keys are node_ids and
                                   values are settings objects for that node.
         graph (str): The name of the graph to traverse (a global setting).
+        include_inter_node_edges (bool): If True, includes edges between nodes
+            in the result set. Defaults to True.
 
     Returns:
         dict: A dictionary aggregating the results from all individual
@@ -212,6 +242,7 @@ def get_graph_advanced(
             allowed_collections=allowed_collections,
             graph=graph,
             edge_filters=edge_filters,
+            include_inter_node_edges=include_inter_node_edges,
         )
 
         # Merge the result into the final aggregated dictionary.
