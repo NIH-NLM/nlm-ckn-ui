@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useContext, useMemo } from "react";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import ForceGraph from "../../components/ForceGraph/ForceGraph";
 import LoadGraphModal from "../../components/LoadGraphModal/LoadGraphModal";
@@ -144,10 +144,10 @@ const GraphPage = () => {
       </div>
 
       <div className="graph-management-actions">
-        <button onClick={handleLoad} className="secondary-action-button">
+        <button type="button" onClick={handleLoad} className="secondary-action-button">
           Load Saved Graph
         </button>
-        <button onClick={handleLoadFromJson} className="secondary-action-button">
+        <button type="button" onClick={handleLoadFromJson} className="secondary-action-button">
           Load from File
         </button>
       </div>

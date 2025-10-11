@@ -9,9 +9,9 @@ import { truncateString } from "../Utils/Utils";
 export function processGraphData(
   existingNodes,
   newNodes,
+  nodeHover,
   nodeId = (d) => d._id,
   labelFn = (d) => d.label,
-  nodeHover,
 ) {
   // Filter out any new nodes that already exist in the graph.
   const filteredNewNodes = newNodes.filter(
@@ -46,7 +46,7 @@ export function processGraphLinks(
 ) {
   const updatedExistingLinks = [...existingLinks]; // Work on a mutable copy
 
-  newLinks.forEach((newLink) => {
+  for (const newLink of newLinks) {
     const sourceNodeId = linkSource(newLink);
     const targetNodeId = linkTarget(newLink);
 
@@ -92,7 +92,7 @@ export function processGraphLinks(
       }
     }
     updatedExistingLinks.push(processedNewLink);
-  });
+  }
 
   return updatedExistingLinks;
 }
@@ -152,7 +152,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
       .attr("class", "node-label")
       .attr("text-anchor", "middle")
       .attr("y", options.nodeRadius + options.nodeFontSize)
-      .style("font-size", options.nodeFontSize + "px")
+      .style("font-size", `${options.nodeFontSize}px`)
       .style("display", "none")
       .text((d) => truncateString(d.nodeLabel, 15));
     nodeG
@@ -160,11 +160,11 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
       .attr("class", "collection-label")
       .attr("text-anchor", "middle")
       .attr("y", -(options.nodeRadius + options.nodeFontSize))
-      .style("font-size", options.nodeFontSize + "px")
+      .style("font-size", `${options.nodeFontSize}px`)
       .style("display", "none")
       .text((d) =>
         options.collectionMaps.has(d._id.split("/")[0])
-          ? options.collectionMaps.get(d._id.split("/")[0])["abbreviated_name"]
+          ? options.collectionMaps.get(d._id.split("/")[0]).abbreviated_name
           : d._id.split("/")[0],
       );
   });
@@ -214,7 +214,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
     .append("text")
     .attr("class", "link-label")
     .text((d) => (d.name ? d.name : d.label))
-    .style("font-size", options.linkFontSize + "px")
+    .style("font-size", `${options.linkFontSize}px`)
     .style("fill", "black")
     .style("display", "none")
     .attr("text-anchor", "middle")
@@ -223,7 +223,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
     .append("text")
     .attr("class", "link-source")
     .text((d) => `${d.sourceText}` || "Source Unknown")
-    .style("font-size", options.linkFontSize + "px")
+    .style("font-size", `${options.linkFontSize}px`)
     .style("fill", "black")
     .style("display", "none")
     .attr("text-anchor", "middle")
@@ -265,7 +265,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
     .append("text")
     .attr("class", "link-label")
     .text((d) => (d.name ? d.name : d.label))
-    .style("font-size", options.linkFontSize + "px")
+    .style("font-size", `${options.linkFontSize}px`)
     .style("fill", "black")
     .style("display", "none")
     .attr("text-anchor", "middle")
@@ -274,7 +274,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
     .append("text")
     .attr("class", "link-source")
     .text((d) => `${d.sourceText}` || "Source Unknown")
-    .style("font-size", options.linkFontSize + "px")
+    .style("font-size", `${options.linkFontSize}px`)
     .style("fill", "black")
     .style("display", "none")
     .attr("text-anchor", "middle")
@@ -357,9 +357,9 @@ function ForceGraphConstructor(
     nodeFontSize: 10,
     linkFontSize: 10,
     minVisibleFontSize: 7,
-    onNodeClick: () => {},
-    onNodeDragEnd: () => {},
-    interactionCallback: () => {},
+    onNodeClick: () => { },
+    onNodeDragEnd: () => { },
+    interactionCallback: () => { },
     nodeRadius: 16,
     linkSource: ({ _from }) => _from,
     linkTarget: ({ _to }) => _to,
@@ -621,7 +621,7 @@ function ForceGraphConstructor(
       .select("text")
       .text(
         (d) =>
-          `${mergedOptions.collectionMaps.get(d)?.["display_name"]} (${mergedOptions.collectionMaps.get(d)?.["abbreviated_name"]})` ||
+          `${mergedOptions.collectionMaps.get(d)?.display_name} (${mergedOptions.collectionMaps.get(d)?.abbreviated_name})` ||
           d,
       );
   }

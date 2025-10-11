@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext, useMemo } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import { useDispatch } from "react-redux";
 import { useParams } from "react-router-dom";
 import collectionDefaults from "../../assets/collection-defaults.json";
@@ -52,7 +52,7 @@ const DocumentPage = () => {
     if (!document || !ftuParts || ftuParts.length === 0) {
       return null;
     }
-    const ftuUrl = findFtuUrlById(ftuParts, coll + "_" + id);
+    const ftuUrl = findFtuUrlById(ftuParts, `${coll}_${id}`);
     console.log(ftuUrl);
     return ftuUrl;
   }, [document, ftuParts, id]);
@@ -101,6 +101,7 @@ const DocumentPage = () => {
       <div className="content-box document-details-content-box">
         <div className="document-item-header">
           <button
+            type="button"
             onClick={() => setIsPanelVisible(!isPanelVisible)}
             className={"toggle-options-button"}
             style={{ position: "static" }}

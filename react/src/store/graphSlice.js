@@ -122,7 +122,7 @@ export const fetchEdgeFilterOptions = createAsyncThunk(
     }
 
     // Call backend API to get unique field values.
-    const response = await fetch(`/arango_api/edge_filter_options/`, {
+    const response = await fetch("/arango_api/edge_filter_options/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ fields: fieldsToQuery, graph: graphType }),
@@ -424,11 +424,11 @@ const graphSlice = createSlice({
         state.availableEdgeFilters = action.payload;
         // Initialize edgeFilters in settings with empty arrays for each new field.
         // Prevents undefined errors when accessing filters later.
-        Object.keys(action.payload).forEach((field) => {
+        for (const field of Object.keys(action.payload)) {
           if (!state.settings.edgeFilters[field]) {
             state.settings.edgeFilters[field] = [];
           }
-        });
+        }
       })
       .addCase(fetchEdgeFilterOptions.rejected, (state, action) => {
         state.edgeFilterStatus = "failed";

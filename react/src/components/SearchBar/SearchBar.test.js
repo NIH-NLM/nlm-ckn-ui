@@ -1,5 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import React from "react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import SearchBar from "./SearchBar";
 
 // Use fake timers for debounce and timeout testing
@@ -18,14 +17,15 @@ jest.mock("../SelectedItemsTable/SelectedItemsTable", () => (props) => (
 
 jest.mock("../SearchResultsTable/SearchResultsTable", () => (props) => (
   <div data-testid="search-results-table">
-    {props.searchResults.map((item, index) => (
-      <div
-        key={index}
+    {props.searchResults.map((item) => (
+      <button
+        key={item._id || item.label}
         data-testid="search-result-item"
+        type="button"
         onClick={() => props.handleSelectItem(item)}
       >
         {item.label || item._id}
-      </div>
+      </button>
     ))}
   </div>
 ));

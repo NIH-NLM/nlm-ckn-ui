@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { getColorForCollection } from "../../services/ColorServices/ColorServices";
 import { getLabel, truncateString } from "../Utils/Utils";
 
@@ -104,11 +104,10 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit }) => {
           // React handles adding to graph
           if (event.target.closest(".add-to-graph-button")) {
             return;
-          } else {
-            // Toggle children
-            d.children = d.children ? null : d._children;
-            update(event, d);
           }
+          // Toggle children
+          d.children = d.children ? null : d._children;
+          update(event, d);
         });
 
       // Append circle
@@ -145,9 +144,8 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit }) => {
           if (d._children) {
             const textEndX = -6;
             return textEndX - textWidthEstimate - gap;
-          } else {
-            return textWidthEstimate + gap;
           }
+          return textWidthEstimate + gap;
         })
         .attr("pointer-events", "all")
         .each(function (d) {

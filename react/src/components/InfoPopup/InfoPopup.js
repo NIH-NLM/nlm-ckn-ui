@@ -1,4 +1,3 @@
-import React from "react";
 import { Link } from "react-router-dom";
 
 const InfoPopup = ({ data, position, onClose }) => {
@@ -15,7 +14,7 @@ const InfoPopup = ({ data, position, onClose }) => {
 
   return (
     <div className="cell-info-popup" style={popupStyle}>
-      <button className="popup-close-btn" onClick={onClose}>
+      <button type="button" className="popup-close-btn" onClick={onClose}>
         x
       </button>
       <div className="popup-header">Cell Information</div>

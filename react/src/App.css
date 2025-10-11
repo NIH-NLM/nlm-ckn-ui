@@ -125,7 +125,7 @@ a {
   text-decoration: underline;
 }
 
-.navbar button > svg {
+.navbar button>svg {
   fill: var(--color-dark);
   height: 25px;
   width: 25px;
@@ -193,9 +193,6 @@ td {
 
 tr:nth-of-type(even) {
   background-color: var(--color-light-bg);
-}
-
-tr:nth-of-type(odd) {
 }
 
 /*Search Bar*/
@@ -363,6 +360,7 @@ tr:nth-of-type(odd) {
   text-decoration: none;
   font-weight: 500;
 }
+
 .about-section-container .internal-learn-more:hover {
   text-decoration: underline;
   color: var(--color-main);
@@ -374,6 +372,7 @@ tr:nth-of-type(odd) {
   color: var(--color-text);
   margin-bottom: 15px;
 }
+
 .about-section-container p:last-child {
   margin-bottom: 0;
 }
@@ -693,7 +692,7 @@ tr:nth-of-type(odd) {
   padding: 8px 12px;
   border-bottom: 1px solid var(--color-light-bg);
   cursor: pointer;
-  borderbottom: 1px solid var(--color-white);
+  border-bottom: 1px solid var(--color-white);
 }
 
 /*Hover color changes*/
@@ -813,11 +812,13 @@ option {
   border-radius: 4px;
   border: 1px solid #ccc;
   width: 100%;
-  max-width: 300px; /* Adjust width as needed */
+  max-width: 300px;
+  /* Adjust width as needed */
 }
 
 .collection-picker label {
-  margin-right: 10px; /* Space between checkboxes */
+  margin-right: 10px;
+  /* Space between checkboxes */
 }
 
 .checkboxes-container {
@@ -852,7 +853,8 @@ option {
   }
 
   select {
-    max-width: 100%; /* Full width on smaller screens */
+    max-width: 100%;
+    /* Full width on smaller screens */
   }
 }
 
@@ -874,11 +876,11 @@ option {
   gap: 20px;
 }
 
-.sunburst-search-container > :first-child {
+.sunburst-search-container> :first-child {
   flex: 3;
 }
 
-.sunburst-search-container > :last-child {
+.sunburst-search-container> :last-child {
   flex: 2;
 }
 
@@ -933,15 +935,15 @@ option {
   transition: 0.4s;
 }
 
-input:checked + .slider {
+input:checked+.slider {
   background-color: var(--color-main);
 }
 
-input:focus + .slider {
+input:focus+.slider {
   box-shadow: 0 0 1px var(--color-main);
 }
 
-input:checked + .slider:before {
+input:checked+.slider:before {
   -webkit-transform: translateX(30px);
   -ms-transform: translateX(30px);
   transform: translateX(30px);
@@ -1019,18 +1021,23 @@ button.active {
   0% {
     width: 0%;
   }
+
   10% {
     width: 10%;
   }
+
   25% {
     width: 25%;
   }
+
   60% {
     width: 60%;
   }
+
   80% {
     width: 80%;
   }
+
   95% {
     width: 95%;
   }
@@ -1056,9 +1063,9 @@ button.active {
 }
 
 .external-link:hover {
+  text-decoration: none;
   color: var(--color-focus);
   text-decoration-color: var(--color-focus);
-  text-decoration: none;
   cursor: pointer;
 }
 
@@ -1106,6 +1113,7 @@ button.active {
 .browse-box-description p {
   margin-bottom: 8px;
 }
+
 .browse-box-description p:last-child {
   margin-bottom: 0;
 }
@@ -1160,6 +1168,7 @@ button.active {
   border-color: var(--color-main);
   font-weight: 600;
 }
+
 .collection-link.active .collection-abbreviation {
   color: var(--color-light);
 }
@@ -1169,6 +1178,7 @@ button.active {
   margin: 0 0 2px 0;
   font-weight: 500;
 }
+
 .collection-link.active h3.collection-name {
   font-weight: 600;
 }
@@ -1204,6 +1214,7 @@ button.active {
   flex-grow: 1;
   margin-right: 15px;
 }
+
 .document-filter-input:focus {
   border-color: var(--color-focus);
   outline: none;
@@ -1322,7 +1333,8 @@ button.active {
   padding-left: 0;
   padding-right: 0;
 }
-.graph-component-wrapper.options-closed .graph-options-side-panel > * {
+
+.graph-component-wrapper.options-closed .graph-options-side-panel>* {
   visibility: hidden;
 }
 
@@ -1348,9 +1360,11 @@ button.active {
   border-radius: 0;
   transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
+
 .tab-button:hover {
   color: var(--color-main);
 }
+
 .tab-button.active {
   color: var(--color-main);
   font-weight: 600;
@@ -1360,7 +1374,8 @@ button.active {
 .options-tabs-content {
   flex-grow: 1;
   flex-shrink: 1;
-  height: 100px; /* Giving concrete height to allow to grow and shrink */
+  height: 100px;
+  /* Giving concrete height to allow to grow and shrink */
   display: flex;
   flex-direction: column;
 }
@@ -1380,11 +1395,13 @@ button.active {
   border-bottom: 1px dashed var(--color-light);
   text-align: center;
 }
+
 .option-group:last-child {
   border-bottom: none;
   margin-bottom: 0;
   padding-bottom: 0;
 }
+
 .option-group label:not(.switch) {
   display: block;
   font-weight: 500;
@@ -1392,12 +1409,10 @@ button.active {
   margin-bottom: 8px;
   font-size: 0.95em;
 }
+
 .option-group select,
 .option-group input[type="text"],
-.option-group
-  button:not(.tab-button):not(.popup-button):not(.collection-button-selected):not(
-    .collection-button-deselected
-  ) {
+.option-group button:not(.tab-button):not(.popup-button):not(.collection-button-selected):not(.collection-button-deselected) {
   width: 100%;
   padding: 8px 10px;
   margin: 0;
@@ -1421,21 +1436,18 @@ button.active {
   background-size: 1em;
   padding-right: 2.5em;
 }
-.option-group
-  button:not(.tab-button):not(.popup-button):not(.collection-button-selected):not(
-    .collection-button-deselected
-  ) {
+
+.option-group button:not(.tab-button):not(.popup-button):not(.collection-button-selected):not(.collection-button-deselected) {
   background-color: var(--color-light-bg);
   color: var(--color-text);
   cursor: pointer;
   margin-top: 5px;
 }
-.option-group
-  button:not(.tab-button):not(.popup-button):not(.collection-button-selected):not(
-    .collection-button-deselected
-  ):hover {
+
+.option-group button:not(.tab-button):not(.popup-button):not(.collection-button-selected):not(.collection-button-deselected):hover {
   background-color: var(--color-border);
 }
+
 .option-group button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -1446,7 +1458,8 @@ button.active {
   gap: 15px;
   align-items: center;
 }
-.font-size-picker > div {
+
+.font-size-picker>div {
   flex: 1;
 }
 
@@ -1484,6 +1497,7 @@ button.active {
   margin-top: 15px;
   gap: 12px;
 }
+
 .checkboxes-container.collection-controls button {
   width: 100%;
   box-sizing: border-box;
@@ -1509,11 +1523,13 @@ button.collection-button-selected {
   color: var(--color-text-on-dark);
   border-color: var(--color-main);
 }
+
 button.collection-button-deselected {
   background-color: var(--color-light-bg);
   color: var(--color-text);
   border-color: var(--color-border);
 }
+
 button.collection-button-deselected:hover {
   background-color: var(--color-light);
   border-color: var(--color-gray);
@@ -1564,6 +1580,7 @@ button.collection-button-deselected:hover {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   z-index: 30;
 }
+
 .progress-bar {
   width: 100px;
   height: 8px;
@@ -1572,6 +1589,7 @@ button.collection-button-deselected:hover {
   overflow: hidden;
   margin-bottom: 10px;
 }
+
 .progress-bar::before {
   content: "";
   display: block;
@@ -1581,13 +1599,16 @@ button.collection-button-deselected:hover {
   border-radius: 4px;
   animation: progress-indeterminate 1.5s infinite ease-in-out;
 }
+
 @keyframes progress-indeterminate {
   0% {
     transform: translateX(-100%);
   }
+
   50% {
     transform: translateX(150%);
   }
+
   100% {
     transform: translateX(-100%);
   }
@@ -1605,11 +1626,13 @@ button.collection-button-deselected:hover {
   height: 24px;
   margin-left: 8px;
 }
+
 .switch input {
   opacity: 0;
   width: 0;
   height: 0;
 }
+
 .slider {
   position: absolute;
   cursor: pointer;
@@ -1620,6 +1643,7 @@ button.collection-button-deselected:hover {
   background-color: var(--color-light);
   transition: 0.4s;
 }
+
 .slider:before {
   position: absolute;
   content: "";
@@ -1630,18 +1654,23 @@ button.collection-button-deselected:hover {
   background-color: white;
   transition: 0.4s;
 }
-input:checked + .slider {
+
+input:checked+.slider {
   background-color: var(--color-main);
 }
-input:focus + .slider {
+
+input:focus+.slider {
   box-shadow: 0 0 1px var(--color-main);
 }
-input:checked + .slider:before {
+
+input:checked+.slider:before {
   transform: translateX(20px);
 }
+
 .slider.round {
   border-radius: 24px;
 }
+
 .slider.round:before {
   border-radius: 50%;
 }
@@ -1720,10 +1749,12 @@ input:checked + .slider:before {
   color: var(--color-dark);
   padding: 0 8px;
 }
+
 .document-info-legend .document-id-link {
   color: var(--color-focus);
   text-decoration: none;
 }
+
 .document-info-legend .document-id-link:hover {
   text-decoration: underline;
 }
@@ -1740,6 +1771,7 @@ input:checked + .slider:before {
   border-bottom: 1px solid var(--color-light);
   vertical-align: top;
 }
+
 .document-attributes-table tr:last-child td {
   border-bottom: none;
 }
@@ -1772,7 +1804,7 @@ input:checked + .slider:before {
   align-items: flex-start;
 }
 
-.about-content-box > .content-page-title {
+.about-content-box>.content-page-title {
   width: 100%;
   text-align: center;
   margin-bottom: 30px;
@@ -1924,7 +1956,7 @@ input:checked + .slider:before {
   position: relative;
 }
 
-.ftu-container > hra-medical-illustration {
+.ftu-container>hra-medical-illustration {
   width: 100%;
   height: 100%;
 }
@@ -1966,7 +1998,7 @@ input:checked + .slider:before {
   box-sizing: border-box;
 }
 
-.ftu-container.fullscreen > hra-medical-illustration {
+.ftu-container.fullscreen>hra-medical-illustration {
   width: 100%;
   height: 100%;
   max-width: 90vw;
@@ -2157,6 +2189,7 @@ kbd {
   padding: 0 2px;
   flex-shrink: 0;
 }
+
 .pill-remove:hover {
   color: var(--color-text);
 }
@@ -2327,34 +2360,42 @@ kbd {
   padding: 0;
   line-height: 0;
 }
+
 .add-to-graph-button .icon-container::before {
   font-size: 1.2rem;
   font-weight: bold;
   transition: all 0.2s ease-in-out;
 }
+
 .add-to-graph-button .icon-container::before {
   content: "+";
   color: var(--color-main);
 }
+
 .add-to-graph-button:hover {
   background-color: var(--color-main);
   border-color: var(--color-main);
 }
+
 .add-to-graph-button:hover .icon-container::before {
   color: var(--color-text-on-dark);
 }
+
 .add-to-graph-button.added {
   background-color: var(--color-green-light);
   border-color: var(--color-green-light);
 }
+
 .add-to-graph-button.added .icon-container::before {
   content: "✓";
   color: var(--color-text-on-dark);
 }
+
 .add-to-graph-button.added:hover {
   background-color: var(--color-secondary-red);
   border-color: var(--color-secondary-red);
 }
+
 /* Remove icon */
 .add-to-graph-button.added:hover .icon-container::before {
   content: "−";
@@ -2365,6 +2406,7 @@ kbd {
   border-radius: 20px;
   padding: 6px 16px 6px 12px;
 }
+
 .add-to-graph-button.has-text .text-container {
   margin-left: 8px;
   font-size: 0.9rem;
@@ -2372,6 +2414,7 @@ kbd {
   color: var(--color-text);
   transition: color 0.2s ease-in-out;
 }
+
 .add-to-graph-button.has-text:hover .text-container,
 .add-to-graph-button.has-text.added .text-container {
   color: var(--color-text-on-dark);
@@ -2458,41 +2501,51 @@ a.document-popup-button {
   color: var(--color-text);
   transition: color 0.2s ease;
 }
+
 .document-popup .add-to-graph-button .icon-container::before {
   color: var(--color-text);
 }
+
 .document-popup .add-to-graph-button:hover {
   background-color: var(--color-light-bg);
 }
+
 .document-popup .add-to-graph-button:hover .icon-container::before,
 .document-popup .add-to-graph-button:hover .text-container {
   color: var(--color-main);
 }
+
 .document-popup .add-to-graph-button.added .icon-container::before,
 .document-popup .add-to-graph-button.added .text-container {
   color: var(--color-green-light);
   font-weight: bold;
 }
+
 .document-popup .add-to-graph-button.added {
   background-color: transparent;
 }
+
 .document-popup .add-to-graph-button.added:hover .icon-container::before,
 .document-popup .add-to-graph-button.added:hover .text-container {
   color: var(--color-secondary-red);
 }
+
 .tree-constructor-container .add-to-graph-button {
   width: 1rem;
   height: 1rem;
   margin: 0;
   border: none;
 }
+
 .tree-constructor-container .add-to-graph-button .icon-container::before {
   font-size: 0.5rem;
 }
+
 .node-group foreignObject {
   opacity: 0;
   transition: opacity 0.4s ease-in-out;
 }
+
 .node-group:hover foreignObject,
 .node-group foreignObject:has(.add-to-graph-button.added) {
   opacity: 1;
@@ -2518,10 +2571,12 @@ a.document-popup-button {
     transform: scale(1);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   }
+
   50% {
     transform: scale(1.05);
     box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
   }
+
   100% {
     transform: scale(1);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);

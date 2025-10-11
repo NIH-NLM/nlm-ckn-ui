@@ -38,11 +38,12 @@ const AQLQueryPage = () => {
   function replaceAll(obj, replacements) {
     if (typeof obj === "string") {
       // Replace placeholders in strings
-      Object.keys(replacements).forEach((key) => {
+      let mutated = obj;
+      for (const key of Object.keys(replacements)) {
         const regex = new RegExp(`@${key}`, "g");
-        obj = obj.replace(regex, replacements[key]);
-      });
-      return obj;
+        mutated = mutated.replace(regex, replacements[key]);
+      }
+      return mutated;
     }
 
     if (Array.isArray(obj)) {
@@ -53,9 +54,9 @@ const AQLQueryPage = () => {
     if (typeof obj === "object" && obj !== null) {
       // Recurse through each key in the object
       const newObj = {};
-      Object.keys(obj).forEach((key) => {
+      for (const key of Object.keys(obj)) {
         newObj[key] = replaceAll(obj[key], replacements);
-      });
+      }
       return newObj;
     }
 
@@ -66,7 +67,7 @@ const AQLQueryPage = () => {
   const executeQuery = async () => {
     setError(null); // Reset any previous error
     try {
-      const response = await fetch(`/arango_api/aql/`, {
+      const response = await fetch("/arango_api/aql/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -83,9 +84,9 @@ const AQLQueryPage = () => {
       const data = await response.json();
 
       // Check if response has information
-      if (data && data["nodes"] && data["nodes"][0]) {
+      if (data?.nodes?.[0]) {
         //TODO: avoid hard-coding expected results?
-        setNodeIds(data["nodes"].map((obj) => obj._id));
+        setNodeIds(data.nodes.map((obj) => obj._id));
       } else {
         setError("Nothing found. Please refine your search and try again");
       }
@@ -122,7 +123,9 @@ const AQLQueryPage = () => {
           value={value2}
           onChange={(e) => setValue2(e.target.value)}
         />
-        <button onClick={executeQuery}>Execute</button>
+        <button type="button" onClick={executeQuery}>
+          Execute
+        </button>
       </div>
       {error && <div className="error-message">{error}</div>}
       {Object.keys(nodeIds).length > 0 && (

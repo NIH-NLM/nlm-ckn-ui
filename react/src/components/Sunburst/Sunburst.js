@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import AddToGraphButton from "../AddToGraphButton/AddToGraphButton";
 import DocumentPopup from "../DocumentPopup/DocumentPopup";
 import SunburstConstructor from "../SunburstConstructor/SunburstConstructor";
@@ -138,11 +138,13 @@ const Sunburst = ({ addSelectedItem }) => {
         if (zoomedNodeId !== d3Node.data._id) setZoomedNodeId(d3Node.data._id);
         fetchSunburstData(d3Node.data._id, false);
         return true; // Tell D3 to animate
-      } else if (!needsLoad && d3Node.children) {
+      }
+      if (!needsLoad && d3Node.children) {
         // Has children, no load needed
         if (zoomedNodeId !== d3Node.data._id) setZoomedNodeId(d3Node.data._id);
         return true; // Tell D3 to animate
-      } else if (currentIsLoading) {
+      }
+      if (currentIsLoading) {
         return false; // Do not animate if already loading new data
       }
       return false; // Default: do not animate

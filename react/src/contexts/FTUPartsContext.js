@@ -24,9 +24,8 @@ function getFtuPartsFromIllustrationsJsonLd(jsonld) {
     );
 
     return partsArray;
-  } else {
-    return [];
   }
+  return [];
 }
 
 // Create Provider

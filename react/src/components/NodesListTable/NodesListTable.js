@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { removeNodeFromSlice } from "../../store/nodesSlice";
 import { LoadingBar } from "../Utils/Utils";
@@ -15,12 +15,12 @@ const NodeListTable = () => {
     if (!ids || ids.length === 0) return [];
     setIsLoading(true);
     try {
-      const response = await fetch(`/arango_api/nodes/details`, {
+      const response = await fetch("/arango_api/nodes/details", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ node_ids: ids }),
       });
-      if (!response.ok) throw new Error(`Failed to fetch node details`);
+      if (!response.ok) throw new Error("Failed to fetch node details");
       return await response.json();
     } catch (error) {
       console.error("Error fetching node details:", error);
@@ -68,6 +68,7 @@ const NodeListTable = () => {
               <td>{item._id.split("/")[0]}</td>
               <td>
                 <button
+                  type="button"
                   className="remove-button"
                   onClick={() => dispatch(removeNodeFromSlice(item._id))}
                 >

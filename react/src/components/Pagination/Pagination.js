@@ -29,17 +29,18 @@ const Pagination = ({ currentPage, totalPages, paginate }) => {
 
   return (
     <div className="pagination">
-      <button onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1}>
+      <button type="button" onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1}>
         Prev
       </button>
       {pageNumbers.map((item, index) =>
         item.toString().includes("ellipsis") ? (
-          <span key={index} className="pagination-ellipsis">
+          <span key={item} className="pagination-ellipsis">
             ...
           </span>
         ) : (
           <button
-            key={index}
+            type="button"
+            key={`page-${item}`}
             onClick={() => paginate(item)}
             className={currentPage === item ? "active" : ""}
           >
@@ -47,7 +48,11 @@ const Pagination = ({ currentPage, totalPages, paginate }) => {
           </button>
         ),
       )}
-      <button onClick={() => paginate(currentPage + 1)} disabled={currentPage === totalPages}>
+      <button
+        type="button"
+        onClick={() => paginate(currentPage + 1)}
+        disabled={currentPage === totalPages}
+      >
         Next
       </button>
     </div>

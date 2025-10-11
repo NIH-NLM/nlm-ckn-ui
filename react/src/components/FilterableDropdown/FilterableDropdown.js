@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 // Hook detects clicks outside a referenced element.
 const useClickOutside = (ref, handler) => {
@@ -77,21 +77,22 @@ const FilterableDropdown = ({
         <ul className="dropdown-list">
           {filteredOptions.length > 0 ? (
             filteredOptions.map((option) => (
-              <li
-                key={option.original}
-                className={`dropdown-item ${selectedOptions.includes(option.original) ? "selected" : ""}`}
-                onClick={() => onOptionToggle(option.original)}
-              >
-                {getColorForOption(option.original) && (
-                  <span
-                    className="color-swatch"
-                    style={{
-                      backgroundColor: getColorForOption(option.original),
-                    }}
-                  />
-                )}
-                {/* Render display label. */}
-                {option.display}
+              <li key={option.original} className="dropdown-item">
+                <button
+                  type="button"
+                  className={`dropdown-item-btn ${selectedOptions.includes(option.original) ? "selected" : ""
+                    }`}
+                  onClick={() => onOptionToggle(option.original)}
+                >
+                  {getColorForOption(option.original) && (
+                    <span
+                      className="color-swatch"
+                      style={{ backgroundColor: getColorForOption(option.original) }}
+                    />
+                  )}
+                  {/* Render display label. */}
+                  {option.display}
+                </button>
               </li>
             ))
           ) : (
@@ -111,7 +112,11 @@ const FilterableDropdown = ({
             )}
             {/* Use getOptionLabel to show correct pill text. */}
             <span className="pill-text">{getOptionLabel(selectedString)}</span>
-            <button className="pill-remove" onClick={() => onOptionToggle(selectedString)}>
+            <button
+              type="button"
+              className="pill-remove"
+              onClick={() => onOptionToggle(selectedString)}
+            >
               &times;
             </button>
           </div>

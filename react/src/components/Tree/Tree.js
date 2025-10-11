@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom";
 import AddToGraphButton from "../../components/AddToGraphButton/AddToGraphButton";
 import TreeConstructor from "../../components/TreeConstructor/TreeConstructor";
@@ -77,7 +77,7 @@ const Tree = () => {
       }
 
       // Set the data to the specific subtree required by the application.
-      setTreeData(data["children"][0]);
+      setTreeData(data.children[0]);
     } catch (fetchError) {
       console.error("Failed to fetch or process tree data:", fetchError);
       setError(fetchError.message);
@@ -102,7 +102,9 @@ const Tree = () => {
     return (
       <div>
         <p>Error loading tree data: {error}</p>
-        <button onClick={fetchTreeData}>Try Again</button>
+        <button type="button" onClick={fetchTreeData}>
+          Try Again
+        </button>
       </div>
     );
   }
