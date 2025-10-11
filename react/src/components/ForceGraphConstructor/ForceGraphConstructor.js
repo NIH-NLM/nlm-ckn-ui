@@ -11,7 +11,7 @@ export function processGraphData(
   newNodes,
   nodeId = (d) => d._id,
   labelFn = (d) => d.label,
-  nodeHover,
+  nodeHover = undefined,
 ) {
   // Filter out any new nodes that already exist in the graph.
   const filteredNewNodes = newNodes.filter(
@@ -358,9 +358,9 @@ function ForceGraphConstructor(
     nodeFontSize: 10,
     linkFontSize: 10,
     minVisibleFontSize: 7,
-    onNodeClick: () => { },
-    onNodeDragEnd: () => { },
-    interactionCallback: () => { },
+    onNodeClick: () => {},
+    onNodeDragEnd: () => {},
+    interactionCallback: () => {},
     nodeRadius: 16,
     linkSource: ({ _from }) => _from,
     linkTarget: ({ _to }) => _to,
@@ -672,10 +672,9 @@ function ForceGraphConstructor(
         const dy = ty - sy;
         const dr = Math.sqrt(dx * dx + dy * dy) * (1 / mergedOptions.parallelLinkCurvature);
         return `M${sx},${sy}A${dr},${dr} 0 0,1 ${tx},${ty}`;
-      } else {
-        // Use straight line for non-parallel links.
-        return `M${sx},${sy}L${tx},${ty}`;
       }
+      // Use straight line for non-parallel links.
+      return `M${sx},${sy}L${tx},${ty}`;
     });
 
     // Apply new positions to all node groups.
@@ -700,7 +699,9 @@ function ForceGraphConstructor(
         const sy = d.source.y;
         const tx = d.target.x;
         const ty = d.target.y;
-        let midX, midY, angle;
+        let midX;
+        let midY;
+        let angle;
 
         if (d.isParallelPair) {
           // Calculate midpoint of curved arc.
@@ -763,7 +764,7 @@ function ForceGraphConstructor(
     mergedOptions.nodeFontSize = newFontSize;
     nodeContainer
       .selectAll("text.node-label, text.collection-label")
-      .style("font-size", newFontSize + "px");
+      .style("font-size", `${newFontSize}px`);
 
     // Re-evaluate label visibility since the threshold has changed.
     updateLabelVisibilityOnZoom(d3.zoomTransform(svg.node()).k);
@@ -774,7 +775,7 @@ function ForceGraphConstructor(
     mergedOptions.linkFontSize = newFontSize;
     linkContainer
       .selectAll("text.link-label", "text.link-source")
-      .style("font-size", newFontSize + "px");
+      .style("font-size", `${newFontSize}px`);
 
     // Re-evaluate label visibility since the threshold has changed.
     updateLabelVisibilityOnZoom(d3.zoomTransform(svg.node()).k);
@@ -789,7 +790,7 @@ function ForceGraphConstructor(
     simulation.force("link").links([]);
     nodeContainer.selectAll("*").remove();
     linkContainer.selectAll("*").remove();
-    if (resetZoom == true) {
+    if (resetZoom === true) {
       svg.call(zoomHandler.transform, d3.zoomIdentity);
     }
   }
@@ -818,10 +819,10 @@ function ForceGraphConstructor(
     );
 
     // Fix nodes to their saved positions.
-    processedNodes.forEach((node) => {
+    for (const node of processedNodes) {
       node.fx = node.x;
       node.fy = node.y;
-    });
+    }
 
     simulation.nodes(processedNodes);
     forceLink.links(processedLinks);
@@ -855,10 +856,10 @@ function ForceGraphConstructor(
     ticked();
 
     // Unfix node positions to allow interaction.
-    processedNodes.forEach((node) => {
+    for (const node of processedNodes) {
       node.fx = null;
       node.fy = null;
-    });
+    }
 
     // Use the zoom-aware function to set initial label visibility.
     updateLabelVisibilityOnZoom(d3.zoomTransform(svg.node()).k);
@@ -867,7 +868,7 @@ function ForceGraphConstructor(
   // Identifies leaf nodes connected only to a single neighbor from collapse list.
   function findLeafNodes(collapseNodes) {
     const leafNodes = [];
-    processedNodes.forEach((node) => {
+    for (const node of processedNodes) {
       // Origin nodes cannot be leaves.
       if (mergedOptions.originNodeIds.includes(node.id)) return;
       // Filter for links connected to current node.
@@ -892,7 +893,7 @@ function ForceGraphConstructor(
           leafNodes.push(node.id);
         }
       }
-    });
+    }
     return leafNodes;
   }
 
@@ -1060,10 +1061,10 @@ function ForceGraphConstructor(
         labelStatesBeforeLiveSim = { ...incomingLabelStates };
 
         // Hide all labels for performance by directly manipulating the DOM.
-        Object.keys(labelStatesBeforeLiveSim).forEach((labelClass) => {
+        for (const labelClass of Object.keys(labelStatesBeforeLiveSim)) {
           const container = labelClass.includes("node") ? nodeContainer : linkContainer;
           container.selectAll(`.${labelClass}`).style("display", "none");
-        });
+        }
 
         // Start the simulation.
         runSimulation(

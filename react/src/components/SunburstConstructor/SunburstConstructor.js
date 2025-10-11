@@ -39,9 +39,9 @@ function SunburstConstructor(
   }
 
   // --- D3 Setup ---
-  let hierarchy,
-    root,
-    pNode = null; // pNode is the node to be initially at the center
+  let hierarchy;
+  let root;
+  let pNode = null; // pNode is the node to be initially at the center
 
   try {
     hierarchy = d3
@@ -65,10 +65,10 @@ function SunburstConstructor(
       const targetY0 = Math.max(0, d.y0 - ref.depth);
       const targetY1 = Math.max(0, d.y1 - ref.depth);
       d.current = {
-        x0: isNaN(targetX0) ? 0 : targetX0,
-        x1: isNaN(targetX1) ? 0 : targetX1,
-        y0: isNaN(targetY0) ? 0 : targetY0,
-        y1: isNaN(targetY1) ? 0 : targetY1,
+        x0: Number.isNaN(targetX0) ? 0 : targetX0,
+        x1: Number.isNaN(targetX1) ? 0 : targetX1,
+        y0: Number.isNaN(targetY0) ? 0 : targetY0,
+        y1: Number.isNaN(targetY1) ? 0 : targetY1,
       };
     });
   } catch (error) {
@@ -177,7 +177,7 @@ function SunburstConstructor(
       .text((d) => {
         if (d.depth === 0 && !pNode) return "";
         const lbl = getLabel(d.data) || "";
-        return lbl.length > 10 ? lbl.slice(0, 9) + "..." : lbl;
+        return lbl.length > 10 ? `${lbl.slice(0, 9)}...` : lbl;
       });
 
     labelUpdate = label.merge(labelEnter);
@@ -192,7 +192,8 @@ function SunburstConstructor(
 
   // --- Center Elements ---
   const currentVisualCenterNode = pNode || root;
-  let parentCircle, centerText;
+  let parentCircle;
+  let centerText;
   try {
     parentCircle = svg // Assign to parentCircle
       .append("circle")
@@ -242,11 +243,11 @@ function SunburstConstructor(
         y0: Math.max(0, d_node.y0 - pClicked.depth),
         y1: Math.max(0, d_node.y1 - pClicked.depth),
       };
-      if (isNaN(d_node.target.x0)) d_node.target.x0 = 0;
-      if (isNaN(d_node.target.x1)) d_node.target.x1 = 0;
+      if (Number.isNaN(d_node.target.x0)) d_node.target.x0 = 0;
+      if (Number.isNaN(d_node.target.x1)) d_node.target.x1 = 0;
     });
 
-    const t = svg.transition().duration(event && event.altKey ? 7500 : zoomDuration);
+    const t = svg.transition().duration(event?.altKey ? 7500 : zoomDuration);
 
     pathUpdate
       .transition(t)
@@ -312,14 +313,14 @@ function SunburstConstructor(
       typeof pos.y0 === "undefined" ||
       typeof pos.y1 === "undefined"
     )
-      return `translate(0,0)`;
+      return "translate(0,0)";
     const xAngle = (((pos.x0 + pos.x1) / 2) * 180) / Math.PI;
     const yRadius = ((pos.y0 + pos.y1) / 2) * radius;
-    if (isNaN(xAngle) || isNaN(yRadius)) return `translate(0,0)`;
+    if (Number.isNaN(xAngle) || Number.isNaN(yRadius)) return "translate(0,0)";
     return `rotate(${xAngle - 90}) translate(${yRadius},0) rotate(${xAngle < 180 ? 0 : 180})`;
   }
   function updateCursor(pCenter) {
-    const cursorStyle = pCenter && pCenter.parent ? "pointer" : "default";
+    const cursorStyle = pCenter?.parent ? "pointer" : "default";
     if (parentCircle) parentCircle.style("cursor", cursorStyle);
     if (centerText) centerText.style("cursor", cursorStyle);
   }
