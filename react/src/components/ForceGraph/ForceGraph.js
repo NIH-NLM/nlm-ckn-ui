@@ -173,7 +173,7 @@ const ForceGraph = ({
     const missing = originNodeIds.filter((id) => !nodeNameMap?.get(id) && !cachedNames[id]);
     if (missing.length === 0) return;
     // fire-and-forget
-    fetchNodeDetailsByIds(missing).catch(() => {});
+    fetchNodeDetailsByIds(missing).catch(() => { });
   }, [originNodeIds, nodeNameMap, cachedNames, fetchNodeDetailsByIds]);
 
   // Local component state for UI and temporary flags.
@@ -842,7 +842,13 @@ const ForceGraph = ({
       className={`graph-component-wrapper ${optionsVisible ? "options-open" : "options-closed"}`}
     >
       <div className="graph-main-area">
-        <button type="button" onClick={toggleOptionsVisibility} className="toggle-options-button">
+        <button
+          type="button"
+          onClick={toggleOptionsVisibility}
+          className="toggle-options-button"
+          aria-expanded={optionsVisible}
+          aria-controls="graph-options-panel"
+        >
           {optionsVisible ? "> Hide Options" : "< Show Options"}
         </button>
 
@@ -853,10 +859,14 @@ const ForceGraph = ({
             <title>Graph visualization</title>
           </svg>
           {(status === "processing" || status === "succeeded") && !hasNodesInRawData(rawData) && (
-            <div className="no-data-message">No data found.</div>
+            <output className="no-data-message" aria-live="polite">
+              No data found.
+            </output>
           )}
           {status === "failed" && (
-            <div className="no-data-message error-message">Failed to fetch data.</div>
+            <div className="no-data-message error-message" role="alert">
+              Failed to fetch data.
+            </div>
           )}
         </div>
 
@@ -1049,7 +1059,7 @@ const ForceGraph = ({
                       </div>
                     </div>
                     <div className="option-group labels-toggle-container">
-                      <span className="group-label">Toggle Labels:</span>
+                      <h3 className="group-label">Toggle Labels:</h3>
                       <div className="labels-toggle">
                         {Object.entries(settings.labelStates).map(([labelKey, isChecked]) => (
                           <div className="label-toggle-item" key={labelKey}>
@@ -1071,7 +1081,7 @@ const ForceGraph = ({
                       </div>
                     </div>
                     <div className="option-group labels-toggle-container">
-                      <span className="group-label">Collapse Leaf Nodes:</span>
+                      <h3 className="group-label">Collapse Leaf Nodes:</h3>
                       <div className="labels-toggle graph-source-toggle">
                         <label className="switch">
                           <input
@@ -1084,7 +1094,7 @@ const ForceGraph = ({
                       </div>
                     </div>
                     <div className="option-group labels-toggle-container">
-                      <span className="group-label">Graph Source:</span>
+                      <h3 className="group-label">Graph Source:</h3>
                       <div className="labels-toggle graph-source-toggle">
                         Evidence
                         <label className="switch">
@@ -1135,10 +1145,14 @@ const ForceGraph = ({
                       />
                     </div>
                     {edgeFilterStatus === "loading" && (
-                      <div className="option-group">Loading edge filters...</div>
+                      <output className="option-group" aria-live="polite">
+                        Loading edge filters...
+                      </output>
                     )}
                     {edgeFilterStatus === "failed" && (
-                      <div className="option-group error-message">Failed to load edge filters.</div>
+                      <div className="option-group error-message" role="alert">
+                        Failed to load edge filters.
+                      </div>
                     )}
                     {edgeFilterStatus === "succeeded" &&
                       Object.keys(availableEdgeFilters).length > 0 && (
@@ -1166,7 +1180,7 @@ const ForceGraph = ({
           {activePrimaryTab === "multiNode" && originNodeIds && originNodeIds.length >= 2 && (
             <div id="tab-panel-multiNode" className="tab-panel active">
               <div className="option-group labels-toggle-container">
-                <span className="group-label">Advanced Per-Node Settings:</span>
+                <h3 className="group-label">Advanced Per-Node Settings:</h3>
                 <div className="labels-toggle graph-source-toggle">
                   <label className="switch">
                     <input
@@ -1209,7 +1223,7 @@ const ForceGraph = ({
           {activePrimaryTab === "history" && (
             <div id="tab-panel-history" className="tab-panel active">
               <div className="option-group">
-                <span className="group-label">Graph History</span>
+                <h3 className="group-label">Graph History</h3>
                 <div className="history-controls">
                   <button type="button" onClick={handleUndo} disabled={!canUndo}>
                     <span className="history-icon">↶</span> Undo{" "}
@@ -1221,7 +1235,7 @@ const ForceGraph = ({
                 </div>
               </div>
               <div className="option-group">
-                <span className="group-label">Saved Graphs</span>
+                <h3 className="group-label">Saved Graphs</h3>
                 <div className="save-load-controls">
                   <button type="button" onClick={handleSave}>
                     Save Current Graph <kbd>{isMac ? "⌘S" : "Ctrl+S"}</kbd>
@@ -1237,7 +1251,7 @@ const ForceGraph = ({
           {activePrimaryTab === "export" && (
             <div id="tab-panel-export" className="tab-panel active">
               <div className="option-group export-buttons">
-                <span className="group-label">Export Graph:</span>
+                <h3 className="group-label">Export Graph:</h3>
                 <button type="button" onClick={() => exportGraph("svg")}>
                   Download as SVG
                 </button>
