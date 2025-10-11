@@ -9,9 +9,9 @@ import { truncateString } from "../Utils/Utils";
 export function processGraphData(
   existingNodes,
   newNodes,
-  nodeHover,
   nodeId = (d) => d._id,
   labelFn = (d) => d.label,
+  nodeHover,
 ) {
   // Filter out any new nodes that already exist in the graph.
   const filteredNewNodes = newNodes.filter(
@@ -25,7 +25,8 @@ export function processGraphData(
     return {
       ...newNode,
       id: nodeId(newNode),
-      nodeHover: labelFn(newNode),
+      // Prefer provided nodeHover generator; fallback to labelFn for reasonable default
+      nodeHover: typeof nodeHover === "function" ? nodeHover(newNode) : labelFn(newNode),
       color: getColorForCollection(collection),
       nodeLabel: labelFn(newNode),
     };
@@ -56,12 +57,12 @@ export function processGraphLinks(
 
     // Skip link if either node is not found.
     if (!sourceNode || !targetNode) {
-      return;
+      continue;
     }
 
     // Skip if link with same _id already exists.
     if (updatedExistingLinks.some((existing) => existing._id === newLink._id)) {
-      return;
+      continue;
     }
 
     // Prepare new link object with resolved nodes.
@@ -357,9 +358,9 @@ function ForceGraphConstructor(
     nodeFontSize: 10,
     linkFontSize: 10,
     minVisibleFontSize: 7,
-    onNodeClick: () => {},
-    onNodeDragEnd: () => {},
-    interactionCallback: () => {},
+    onNodeClick: () => { },
+    onNodeDragEnd: () => { },
+    interactionCallback: () => { },
     nodeRadius: 16,
     linkSource: ({ _from }) => _from,
     linkTarget: ({ _to }) => _to,
