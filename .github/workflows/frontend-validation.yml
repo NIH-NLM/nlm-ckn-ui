@@ -1,4 +1,4 @@
-name: Biome
+name: frontend-validation
 
 on:
   pull_request:
