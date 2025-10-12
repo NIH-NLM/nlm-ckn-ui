@@ -24,7 +24,10 @@
   },
   "watch": {
     "build": {
-      "patterns": ["src", "public"],
+      "patterns": [
+        "src",
+        "public"
+      ],
       "extensions": "js,jsx,json,html,css",
       "legacyWatch": true,
       "delay": 500
@@ -44,8 +47,16 @@
     "lint": "biome lint ."
   },
   "browserslist": {
-    "production": [">0.2%", "not dead", "not op_mini all"],
-    "development": ["last 1 chrome version", "last 1 firefox version", "last 1 safari version"]
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   },
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
@@ -58,9 +69,11 @@
     "@testing-library/user-event": "^14.6.1",
     "babel-jest": "^29.7.0",
     "jest": "^29.7.0",
-    "@biomejs/biome": "^1.9.4"
+    "@biomejs/biome": "^2.2.5"
   },
   "jest": {
-    "transformIgnorePatterns": ["/node_modules/(?!d3)/"]
+    "transformIgnorePatterns": [
+      "/node_modules/(?!d3)/"
+    ]
   }
 }
