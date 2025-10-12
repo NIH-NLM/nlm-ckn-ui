@@ -9,6 +9,12 @@ react/build/
 react/node_modules/
 react/coverage/
 
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
 # Environment
 *~
 *.DS_Store

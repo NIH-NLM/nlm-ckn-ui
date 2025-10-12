@@ -1,6 +1,89 @@
 {
   "maps": [
     [
+      "TEST_DOCUMENT_COLLECTION",
+      {
+        "abbreviated_name": "TEST_DOCUMENT_COLLECTION",
+        "display_name": "Test document collection",
+        "color": "#777777",
+        "individual_labels": [
+          {
+            "field_to_use": "label",
+            "to_be_replaced": "",
+            "replace_with": "",
+            "make_lower_case": false
+          },
+          {
+            "field_to_use": "_key",
+            "to_be_replaced": "",
+            "replace_with": "",
+            "make_lower_case": false
+          }
+        ],
+        "individual_urls": [
+          {
+            "individual_url": "http://cell-kn-mvp.org/#/collections/<FIELD_TO_USE>",
+            "field_to_use": "_id",
+            "to_be_replaced": "",
+            "replace_with": "",
+            "make_lower_case": false
+          }
+        ],
+        "individual_fields": [
+          {
+            "field_to_display": "label",
+            "display_field_as": "Label",
+            "field_url": "",
+            "field_to_use": ""
+          }
+        ],
+        "more_info": "Synthetic document collection used for automated e2e tests."
+      }
+    ],
+    [
+      "TEST_EDGE_COLLECTION",
+      {
+        "abbreviated_name": "TEST_EDGE_COLLECTION",
+        "display_name": "Test edge collection",
+        "color": "#999999",
+        "individual_labels": [
+          {
+            "field_to_use": "Label",
+            "to_be_replaced": "",
+            "replace_with": "",
+            "make_lower_case": false
+          },
+          {
+            "field_to_use": "_key",
+            "to_be_replaced": "",
+            "replace_with": "",
+            "make_lower_case": false
+          }
+        ],
+        "individual_fields": [
+          {
+            "field_to_display": "Label",
+            "display_field_as": "Label",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "_from",
+            "display_field_as": "From",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "_to",
+            "display_field_as": "To",
+            "field_url": "",
+            "field_to_use": ""
+          }
+        ],
+        "more_info": "Synthetic edge collection used for automated e2e tests."
+      }
+    ],
+    [
       "BGS",
       {
         "abbreviated_name": "BGS",

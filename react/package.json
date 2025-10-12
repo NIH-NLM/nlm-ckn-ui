@@ -39,6 +39,10 @@
     "collectstatic-django": "(cd .. && python manage.py collectstatic --noinput)",
     "build": "npm run build-react && npm run collectstatic-django",
     "test": "react-scripts test",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:artifacts": "playwright test --config=playwright.artifacts.config.ts",
+    "e2e:report": "playwright show-report",
     "eject": "react-scripts eject",
     "watch": "npm-watch",
     "check": "biome ci .",
@@ -67,6 +71,7 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",
     "@testing-library/user-event": "^14.6.1",
+    "@playwright/test": "^1.56.0",
     "babel-jest": "^29.7.0",
     "jest": "^29.7.0",
     "@biomejs/biome": "^2.2.5"
