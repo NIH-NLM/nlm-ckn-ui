@@ -1,48 +1,41 @@
-import React, {
-  useEffect,
-  useState,
-  useRef,
-  memo,
-  useCallback,
-  useMemo,
-} from "react";
-import { useSelector, useDispatch, shallowEqual } from "react-redux";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { shallowEqual, useDispatch, useSelector } from "react-redux";
 import { ActionCreators } from "redux-undo";
-import ForceGraphConstructor from "../ForceGraphConstructor/ForceGraphConstructor";
 import collMaps from "../../assets/cell-kn-mvp-collection-maps.json";
+import { useHotkeyHold } from "../../hooks/useHotkeyHold";
+import { useHotkeys } from "../../hooks/useHotkeys";
 import {
-  LoadingBar,
-  getLabel,
-  parseCollections,
-  fetchCollections,
-  hasNodesInRawData,
-  isMac,
-  fetchNodeDetailsByIds as fetchNodeDetailsByIdsHelper,
-} from "../Utils/Utils";
-import {
-  fetchAndProcessGraph,
-  updateSetting,
-  setGraphData,
-  initializeGraph,
-  setAvailableCollections,
-  setAllCollections,
+  clearNodeToCenter,
+  collapseNode,
   expandNode,
+  fetchAndProcessGraph,
+  fetchEdgeFilterOptions,
+  initializeGraph,
+  setAllCollections,
+  setAvailableCollections,
+  setGraphData,
   setInitialCollapseList,
   uncollapseNode,
-  collapseNode,
-  clearNodeToCenter,
-  updateNodePosition,
-  fetchEdgeFilterOptions,
   updateEdgeFilter,
+  updateNodePosition,
+  updateSetting,
 } from "../../store/graphSlice";
-import { performSetOperation } from "./performSetOperation";
-import { useHotkeys } from "../../hooks/useHotkeys";
-import { useHotkeyHold } from "../../hooks/useHotkeyHold";
-import FilterableDropdown from "../FilterableDropdown/FilterableDropdown";
 import { saveGraph } from "../../store/savedGraphsSlice";
-import LoadGraphModal from "../LoadGraphModal/LoadGraphModal";
 import AddToGraphButton from "../AddToGraphButton/AddToGraphButton";
 import DocumentPopup from "../DocumentPopup/DocumentPopup";
+import FilterableDropdown from "../FilterableDropdown/FilterableDropdown";
+import ForceGraphConstructor from "../ForceGraphConstructor/ForceGraphConstructor";
+import LoadGraphModal from "../LoadGraphModal/LoadGraphModal";
+import {
+  LoadingBar,
+  fetchCollections,
+  fetchNodeDetailsByIds as fetchNodeDetailsByIdsHelper,
+  getLabel,
+  hasNodesInRawData,
+  isMac,
+  parseCollections,
+} from "../Utils/Utils";
+import { performSetOperation } from "./performSetOperation";
 
 // Whitelist of settings that can be configured on a per-node basis.
 const PER_NODE_SETTINGS = [
@@ -73,9 +66,7 @@ const ForceGraph = ({
   const hasInitializedGraph = useRef(false);
 
   // Selects origin node IDs from nodesSlice for NodesSlice driven graphs.
-  const nodesSliceOriginNodeIds = useSelector(
-    (state) => state.nodesSlice.originNodeIds,
-  );
+  const nodesSliceOriginNodeIds = useSelector((state) => state.nodesSlice.originNodeIds);
 
   // Selects state from Redux store, including graph data and history.
   const {
@@ -99,22 +90,20 @@ const ForceGraph = ({
     shallowEqual,
   );
 
-  const { settings, lastAppliedSettings, lastAppliedPerNodeSettings } =
-    useSelector(
-      (state) => ({
-        settings: state.graph.present.settings,
-        lastAppliedSettings: state.graph.present.lastAppliedSettings,
-        lastAppliedPerNodeSettings:
-          state.graph.present.lastAppliedPerNodeSettings,
-      }),
-      shallowEqual,
-    );
+  const { settings, lastAppliedSettings, lastAppliedPerNodeSettings } = useSelector(
+    (state) => ({
+      settings: state.graph.present.settings,
+      lastAppliedSettings: state.graph.present.lastAppliedSettings,
+      lastAppliedPerNodeSettings: state.graph.present.lastAppliedPerNodeSettings,
+    }),
+    shallowEqual,
+  );
 
   // Memoized map from nodeId -> display label (uses getLabel fallback).
   const nodeNameMap = useMemo(() => {
     const map = new Map();
     if (graphData && Array.isArray(graphData.nodes)) {
-      graphData.nodes.forEach((n) => {
+      for (const n of graphData.nodes) {
         const id = n._id || n.id;
         if (id) {
           try {
@@ -123,7 +112,7 @@ const ForceGraph = ({
             map.set(id, id);
           }
         }
-      });
+      }
     }
     return map;
   }, [graphData]);
@@ -167,10 +156,10 @@ const ForceGraph = ({
       const results = await fetchNodeDetailsByIdsHelper(ids, settings.graphType);
       const mapped = {};
       if (Array.isArray(results)) {
-        results.forEach((item) => {
+        for (const item of results) {
           const id = item._id || item.id;
           if (id) mapped[id] = getLabel(item) || id;
-        });
+        }
       }
       persistCachedNames(mapped);
       return mapped;
@@ -181,9 +170,7 @@ const ForceGraph = ({
   // Ensure origin node labels are available: prefer graphData labels, then cached, otherwise fetch and cache them.
   useEffect(() => {
     if (!originNodeIds || originNodeIds.length === 0) return;
-    const missing = originNodeIds.filter(
-      (id) => !(nodeNameMap && nodeNameMap.get(id)) && !cachedNames[id],
-    );
+    const missing = originNodeIds.filter((id) => !nodeNameMap?.get(id) && !cachedNames[id]);
     if (missing.length === 0) return;
     // fire-and-forget
     fetchNodeDetailsByIds(missing).catch(() => {});
@@ -264,9 +251,7 @@ const ForceGraph = ({
     // Collections: prefer explicit allowedCollections, otherwise apply prune list if provided.
     const explicitAllowed = settingsFromProps.allowedCollections;
     if (Array.isArray(explicitAllowed)) {
-      const intersected = explicitAllowed.filter((c) =>
-        settings.availableCollections.includes(c),
-      );
+      const intersected = explicitAllowed.filter((c) => settings.availableCollections.includes(c));
       if (JSON.stringify(intersected) !== JSON.stringify(settings.allowedCollections)) {
         dispatch(updateSetting({ setting: "allowedCollections", value: intersected }));
       }
@@ -284,13 +269,14 @@ const ForceGraph = ({
     if (typeof depth === "number" && depth !== settings.depth) {
       dispatch(updateSetting({ setting: "depth", value: depth }));
     }
-    if (typeof edgeDirection === "string" && edgeDirection && edgeDirection !== settings.edgeDirection) {
+    if (
+      typeof edgeDirection === "string" &&
+      edgeDirection &&
+      edgeDirection !== settings.edgeDirection
+    ) {
       dispatch(updateSetting({ setting: "edgeDirection", value: edgeDirection }));
     }
-    if (
-      typeof collapseOnStart === "boolean" &&
-      collapseOnStart !== settings.collapseOnStart
-    ) {
+    if (typeof collapseOnStart === "boolean" && collapseOnStart !== settings.collapseOnStart) {
       dispatch(updateSetting({ setting: "collapseOnStart", value: collapseOnStart }));
     }
     if (Array.isArray(preferredPredicates)) {
@@ -306,13 +292,22 @@ const ForceGraph = ({
     dispatch(fetchAndProcessGraph());
     hasInitializedGraph.current = true;
     isApplyingPropDefaultsRef.current = false;
-  }, [settingsFromProps, settings.graphType, settings.availableCollections, settings.allowedCollections, settings.depth, settings.edgeDirection, settings.collapseOnStart, settings.edgeFilters, dispatch]);
+  }, [
+    settingsFromProps,
+    settings.graphType,
+    settings.availableCollections,
+    settings.allowedCollections,
+    settings.depth,
+    settings.edgeDirection,
+    settings.collapseOnStart,
+    settings.edgeFilters,
+    dispatch,
+  ]);
 
   // Triggers new data fetch when graph is explicitly initialized in the slice.
   useEffect(() => {
     if (
-      (lastActionType === "initializeGraph" &&
-        settings.allowedCollections.length > 0) ||
+      (lastActionType === "initializeGraph" && settings.allowedCollections.length > 0) ||
       (!hasInitializedGraph.current && lastActionType === "updateSetting")
     ) {
       // Skip auto-fetch if in the middle of applying defaults.
@@ -331,7 +326,7 @@ const ForceGraph = ({
       const graphInstance = graphInstanceRef.current;
       if (!graphInstance) return;
 
-      for (let entry of entries) {
+      for (const entry of entries) {
         if (entry.target === wrapperElement) {
           const { width, height } = entry.contentRect;
           graphInstance.resize(width, height);
@@ -372,19 +367,13 @@ const ForceGraph = ({
         },
       );
       graphInstanceRef.current = newGraphInstance;
-      newGraphInstance.resize(
-        wrapperRef.current.clientWidth,
-        wrapperRef.current.clientHeight,
-      );
+      newGraphInstance.resize(wrapperRef.current.clientWidth, wrapperRef.current.clientHeight);
       for (const labelClass in settings.labelStates) {
-        newGraphInstance.toggleLabels(
-          settings.labelStates[labelClass],
-          labelClass,
-        );
+        newGraphInstance.toggleLabels(settings.labelStates[labelClass], labelClass);
       }
     }
 
-    if (isRestoring === true || lastActionType == "loadGraph") {
+    if (isRestoring === true || lastActionType === "loadGraph") {
       if (graphInstance) {
         graphInstance.restoreGraph({
           nodes: graphData.nodes,
@@ -407,19 +396,11 @@ const ForceGraph = ({
           } else if (settings.findShortestPaths) {
             processedData = rawData;
           } else {
-            const graphsToProcess = originNodeIds.map(
-              (nodeId) => rawData[nodeId],
-            );
-            processedData = performSetOperation(
-              graphsToProcess,
-              settings.setOperation,
-            );
+            const graphsToProcess = originNodeIds.map((nodeId) => rawData[nodeId]);
+            processedData = performSetOperation(graphsToProcess, settings.setOperation);
           }
           let collapseList = finalCollapseList;
-          if (
-            lastActionType === "fetch/fulfilled" &&
-            collapsed?.initial?.length === 0
-          ) {
+          if (lastActionType === "fetch/fulfilled" && collapsed?.initial?.length === 0) {
             const initialCollapseList = processedData.nodes
               .filter((node) => !originNodeIds.includes(node._id))
               .map((node) => node._id);
@@ -442,6 +423,7 @@ const ForceGraph = ({
           if (nodeToCenter) {
             dispatch(clearNodeToCenter());
           }
+          break;
         }
         default: {
           break;
@@ -484,16 +466,13 @@ const ForceGraph = ({
       const newActiveSettings = currentPerNodeSettings[activeOriginNodeId];
       if (!newActiveSettings) return; // Guard against race conditions
 
-      Object.entries(newActiveSettings).forEach(([settingKey, value]) => {
+      for (const [settingKey, value] of Object.entries(newActiveSettings)) {
         if (PER_NODE_SETTINGS.includes(settingKey)) {
-          if (
-            JSON.stringify(currentSettings[settingKey]) !==
-            JSON.stringify(value)
-          ) {
+          if (JSON.stringify(currentSettings[settingKey]) !== JSON.stringify(value)) {
             dispatch(updateSetting({ setting: settingKey, value: value }));
           }
         }
-      });
+      }
     }
   }, [isAdvancedMode, activeOriginNodeId, dispatch]);
 
@@ -517,12 +496,7 @@ const ForceGraph = ({
         }));
       }
     }
-  }, [
-    settings.edgeFilters,
-    isAdvancedMode,
-    activeOriginNodeId,
-    perNodeSettings,
-  ]);
+  }, [settings.edgeFilters, isAdvancedMode, activeOriginNodeId, perNodeSettings]);
 
   // Calculate if settings are stale.
   const isSettingsStale = useMemo(() => {
@@ -534,31 +508,21 @@ const ForceGraph = ({
     // Compare based on mode.
     if (isAdvancedMode) {
       // Compare perNodeSettings against snapshot in Redux.
-      return (
-        JSON.stringify(perNodeSettings) !==
-        JSON.stringify(lastAppliedPerNodeSettings)
-      );
-    } else {
-      // Compare standard settings.
-      return JSON.stringify(settings) !== JSON.stringify(lastAppliedSettings);
+      return JSON.stringify(perNodeSettings) !== JSON.stringify(lastAppliedPerNodeSettings);
     }
-  }, [
-    isAdvancedMode,
-    settings,
-    perNodeSettings,
-    lastAppliedSettings,
-    lastAppliedPerNodeSettings,
-  ]);
+    // Compare standard settings.
+    return JSON.stringify(settings) !== JSON.stringify(lastAppliedSettings);
+  }, [isAdvancedMode, settings, perNodeSettings, lastAppliedSettings, lastAppliedPerNodeSettings]);
 
   // Memoizes calculation of final list of nodes to collapse.
   const finalCollapseList = useMemo(() => {
     const nodesToCollapse = new Set(collapsed.userDefined);
     if (settings.collapseOnStart) {
-      collapsed.initial.forEach((nodeId) => {
+      for (const nodeId of collapsed.initial) {
         if (!collapsed.userIgnored.includes(nodeId)) {
           nodesToCollapse.add(nodeId);
         }
-      });
+      }
     }
     return Array.from(nodesToCollapse);
   }, [settings.collapseOnStart, collapsed]);
@@ -671,16 +635,13 @@ const ForceGraph = ({
   useHotkeyHold("s", handleSimulationOn, handleSimulationOff);
 
   // --- Settings Panel Handlers ---
-  const handleDepthChange = (e) =>
-    handleSettingChange("depth", Number(e.target.value));
-  const handleEdgeDirectionChange = (e) =>
-    handleSettingChange("edgeDirection", e.target.value);
+  const handleDepthChange = (e) => handleSettingChange("depth", Number(e.target.value));
+  const handleEdgeDirectionChange = (e) => handleSettingChange("edgeDirection", e.target.value);
   const handleNodeFontSizeChange = (e) =>
-    handleSettingChange("nodeFontSize", parseInt(e.target.value, 10));
+    handleSettingChange("nodeFontSize", Number.parseInt(e.target.value, 10));
   const handleEdgeFontSizeChange = (e) =>
-    handleSettingChange("edgeFontSize", parseInt(e.target.value, 10));
-  const handleLeafToggle = (e) =>
-    handleSettingChange("collapseOnStart", e.target.checked);
+    handleSettingChange("edgeFontSize", Number.parseInt(e.target.value, 10));
+  const handleLeafToggle = (e) => handleSettingChange("collapseOnStart", e.target.checked);
   const handleGraphToggle = () =>
     handleSettingChange(
       "graphType",
@@ -704,8 +665,7 @@ const ForceGraph = ({
   };
 
   // Global setting handlers use the global-only updater.
-  const handleOperationChange = (e) =>
-    handleGlobalSettingChange("setOperation", e.target.value);
+  const handleOperationChange = (e) => handleGlobalSettingChange("setOperation", e.target.value);
   const handleShortestPathToggle = (e) =>
     handleGlobalSettingChange("findShortestPaths", e.target.checked);
 
@@ -715,9 +675,9 @@ const ForceGraph = ({
 
     if (newMode) {
       const initialPerNodeSettings = {};
-      originNodeIds.forEach((nodeId) => {
+      for (const nodeId of originNodeIds) {
         initialPerNodeSettings[nodeId] = { ...settings };
-      });
+      }
       setPerNodeSettings(initialPerNodeSettings);
       setActiveOriginNodeId(originNodeIds[0]);
       setActivePrimaryTab("settings");
@@ -726,11 +686,11 @@ const ForceGraph = ({
       if (perNodeSettings[firstNodeId]) {
         const firstNodeSettings = perNodeSettings[firstNodeId];
         // Only restore the per-node settings, leaving global settings intact.
-        Object.entries(firstNodeSettings).forEach(([settingKey, value]) => {
+        for (const [settingKey, value] of Object.entries(firstNodeSettings)) {
           if (PER_NODE_SETTINGS.includes(settingKey)) {
             dispatch(updateSetting({ setting: settingKey, value }));
           }
-        });
+        }
       }
     }
   };
@@ -800,9 +760,7 @@ const ForceGraph = ({
   const exportGraph = (format) => {
     let nodeIdsString = "no-ids";
     if (Array.isArray(originNodeIds) && originNodeIds.length > 0) {
-      nodeIdsString = originNodeIds
-        .map((id) => id.replaceAll("/", "-"))
-        .join("-");
+      nodeIdsString = originNodeIds.map((id) => id.replaceAll("/", "-")).join("-");
     }
     const filenameStem = `cell-kn-mvp-${nodeIdsString}-graph`;
 
@@ -816,7 +774,7 @@ const ForceGraph = ({
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = filenameStem + ".json";
+      link.download = `${filenameStem}.json`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -840,7 +798,7 @@ const ForceGraph = ({
     if (format === "svg") {
       const link = document.createElement("a");
       link.href = url;
-      link.download = filenameStem + ".svg";
+      link.download = `${filenameStem}.svg`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -864,8 +822,8 @@ const ForceGraph = ({
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-      let downloadUrl = canvas.toDataURL(`image/${format}`);
-      let filename = `${filenameStem}.${format}`;
+      const downloadUrl = canvas.toDataURL(`image/${format}`);
+      const filename = `${filenameStem}.${format}`;
 
       const link = document.createElement("a");
       link.href = downloadUrl;
@@ -885,8 +843,11 @@ const ForceGraph = ({
     >
       <div className="graph-main-area">
         <button
+          type="button"
           onClick={toggleOptionsVisibility}
           className="toggle-options-button"
+          aria-expanded={optionsVisible}
+          aria-controls="graph-options-panel"
         >
           {optionsVisible ? "> Hide Options" : "< Show Options"}
         </button>
@@ -894,13 +855,16 @@ const ForceGraph = ({
         {status === "loading" && <LoadingBar />}
 
         <div id="chart-container-wrapper" ref={wrapperRef}>
-          <svg ref={svgRef}></svg>
-          {(status === "processing" || status === "succeeded") &&
-            !hasNodesInRawData(rawData) && (
-              <div className="no-data-message">No data found.</div>
-            )}
+          <svg ref={svgRef} role="img" aria-label="Graph visualization">
+            <title>Graph visualization</title>
+          </svg>
+          {(status === "processing" || status === "succeeded") && !hasNodesInRawData(rawData) && (
+            <output className="no-data-message" aria-live="polite">
+              No data found.
+            </output>
+          )}
           {status === "failed" && (
-            <div className="no-data-message error-message">
+            <div className="no-data-message error-message" role="alert">
               Failed to fetch data.
             </div>
           )}
@@ -919,6 +883,7 @@ const ForceGraph = ({
             Go To "{popup.nodeLabel}"
           </a>
           <button
+            type="button"
             className="document-popup-button"
             onClick={handleExpand}
             style={{ display: !popup.isEdge ? "block" : "none" }}
@@ -926,6 +891,7 @@ const ForceGraph = ({
             Expand
           </button>
           <button
+            type="button"
             className="document-popup-button"
             onClick={handleCollapse}
             style={{ display: !popup.isEdge ? "block" : "none" }}
@@ -933,6 +899,7 @@ const ForceGraph = ({
             Collapse Leaves
           </button>
           <button
+            type="button"
             className="document-popup-button"
             onClick={handleRemove}
             style={{ display: !popup.isEdge ? "block" : "none" }}
@@ -953,6 +920,7 @@ const ForceGraph = ({
             <div className="settings-apply-container">
               <p>Your settings have changed.</p>
               <button
+                type="button"
                 className="primary-action-button"
                 onClick={() =>
                   dispatch(
@@ -969,6 +937,7 @@ const ForceGraph = ({
             </div>
           )}
           <button
+            type="button"
             className={`tab-button ${activePrimaryTab === "settings" ? "active" : ""}`}
             onClick={() => setActivePrimaryTab("settings")}
           >
@@ -976,6 +945,7 @@ const ForceGraph = ({
           </button>
           {originNodeIds && originNodeIds.length >= 2 && (
             <button
+              type="button"
               className={`tab-button ${activePrimaryTab === "multiNode" ? "active" : ""}`}
               onClick={() => setActivePrimaryTab("multiNode")}
             >
@@ -983,12 +953,14 @@ const ForceGraph = ({
             </button>
           )}
           <button
+            type="button"
             className={`tab-button ${activePrimaryTab === "history" ? "active" : ""}`}
             onClick={() => setActivePrimaryTab("history")}
           >
             History
           </button>
           <button
+            type="button"
             className={`tab-button ${activePrimaryTab === "export" ? "active" : ""}`}
             onClick={() => setActivePrimaryTab("export")}
           >
@@ -1003,6 +975,7 @@ const ForceGraph = ({
                 <div className="options-tabs-nav super-tabs">
                   {originNodeIds.map((nodeId) => (
                     <button
+                      type="button"
                       key={nodeId}
                       className={`tab-button ${activeOriginNodeId === nodeId ? "active" : ""}`}
                       onClick={() => setActiveOriginNodeId(nodeId)}
@@ -1014,12 +987,14 @@ const ForceGraph = ({
               )}
               <div className="options-tabs-nav secondary-tabs">
                 <button
+                  type="button"
                   className={`tab-button ${activeSecondaryTab === "general" ? "active" : ""}`}
                   onClick={() => setActiveSecondaryTab("general")}
                 >
                   General
                 </button>
                 <button
+                  type="button"
                   className={`tab-button ${activeSecondaryTab === "filters" ? "active" : ""}`}
                   onClick={() => setActiveSecondaryTab("filters")}
                 >
@@ -1031,11 +1006,7 @@ const ForceGraph = ({
                   <div id="tab-panel-general" className="tab-panel active">
                     <div className="option-group">
                       <label htmlFor="depth-select">Depth:</label>
-                      <select
-                        id="depth-select"
-                        value={settings.depth}
-                        onChange={handleDepthChange}
-                      >
+                      <select id="depth-select" value={settings.depth} onChange={handleDepthChange}>
                         {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((value) => (
                           <option key={value} value={value}>
                             {value}
@@ -1044,9 +1015,7 @@ const ForceGraph = ({
                       </select>
                     </div>
                     <div className="option-group">
-                      <label htmlFor="edge-direction-select">
-                        Traversal Direction:
-                      </label>
+                      <label htmlFor="edge-direction-select">Traversal Direction:</label>
                       <select
                         id="edge-direction-select"
                         value={settings.edgeDirection}
@@ -1061,18 +1030,13 @@ const ForceGraph = ({
                     </div>
                     <div className="option-group font-size-picker">
                       <div className="node-font-size-picker">
-                        <label htmlFor="node-font-size-select">
-                          Node font size:
-                        </label>
+                        <label htmlFor="node-font-size-select">Node font size:</label>
                         <select
                           id="node-font-size-select"
                           value={settings.nodeFontSize}
                           onChange={handleNodeFontSizeChange}
                         >
-                          {[
-                            4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30,
-                            32,
-                          ].map((size) => (
+                          {[4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32].map((size) => (
                             <option key={size} value={size}>
                               {size}px
                             </option>
@@ -1080,17 +1044,13 @@ const ForceGraph = ({
                         </select>
                       </div>
                       <div className="edge-font-size-picker">
-                        <label htmlFor="edge-font-size-select">
-                          Edge font size:
-                        </label>
+                        <label htmlFor="edge-font-size-select">Edge font size:</label>
                         <select
                           id="edge-font-size-select"
                           value={settings.edgeFontSize}
                           onChange={handleEdgeFontSizeChange}
                         >
-                          {[
-                            2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28,
-                          ].map((size) => (
+                          {[2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28].map((size) => (
                             <option key={size} value={size}>
                               {size}px
                             </option>
@@ -1099,31 +1059,29 @@ const ForceGraph = ({
                       </div>
                     </div>
                     <div className="option-group labels-toggle-container">
-                      <label>Toggle Labels:</label>
+                      <h3 className="group-label">Toggle Labels:</h3>
                       <div className="labels-toggle">
-                        {Object.entries(settings.labelStates).map(
-                          ([labelKey, isChecked]) => (
-                            <div className="label-toggle-item" key={labelKey}>
-                              {labelKey
-                                .replace(/-/g, " ")
-                                .replace("label", "")
-                                .trim()
-                                .replace(/^\w/, (c) => c.toUpperCase())}
-                              <label className="switch">
-                                <input
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  onChange={() => handleLabelToggle(labelKey)}
-                                />
-                                <span className="slider round"></span>
-                              </label>
-                            </div>
-                          ),
-                        )}
+                        {Object.entries(settings.labelStates).map(([labelKey, isChecked]) => (
+                          <div className="label-toggle-item" key={labelKey}>
+                            {labelKey
+                              .replace(/-/g, " ")
+                              .replace("label", "")
+                              .trim()
+                              .replace(/^\w/, (c) => c.toUpperCase())}
+                            <label className="switch">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => handleLabelToggle(labelKey)}
+                              />
+                              <span className="slider round" />
+                            </label>
+                          </div>
+                        ))}
                       </div>
                     </div>
                     <div className="option-group labels-toggle-container">
-                      <label>Collapse Leaf Nodes:</label>
+                      <h3 className="group-label">Collapse Leaf Nodes:</h3>
                       <div className="labels-toggle graph-source-toggle">
                         <label className="switch">
                           <input
@@ -1131,12 +1089,12 @@ const ForceGraph = ({
                             checked={settings.collapseOnStart}
                             onChange={handleLeafToggle}
                           />
-                          <span className="slider round"></span>
+                          <span className="slider round" />
                         </label>
                       </div>
                     </div>
                     <div className="option-group labels-toggle-container">
-                      <label>Graph Source:</label>
+                      <h3 className="group-label">Graph Source:</h3>
                       <div className="labels-toggle graph-source-toggle">
                         Evidence
                         <label className="switch">
@@ -1145,13 +1103,14 @@ const ForceGraph = ({
                             checked={settings.graphType === "ontologies"}
                             onChange={handleGraphToggle}
                           />
-                          <span className="slider round"></span>
+                          <span className="slider round" />
                         </label>
                         Knowledge
                       </div>
                     </div>
                     <div className="option-group">
                       <button
+                        type="button"
                         className="simulation-toggle background-color-bg"
                         onClick={handleSimulationRestart}
                       >
@@ -1175,23 +1134,23 @@ const ForceGraph = ({
                         onOptionToggle={handleCollectionChange}
                         getOptionLabel={(collectionId) =>
                           collectionMaps.has(collectionId)
-                            ? collectionMaps.get(collectionId)["display_name"]
+                            ? collectionMaps.get(collectionId).display_name
                             : collectionId
                         }
                         getColorForOption={(collectionId) =>
                           collectionMaps.has(collectionId)
-                            ? collectionMaps.get(collectionId)["color"]
+                            ? collectionMaps.get(collectionId).color
                             : null
                         }
                       />
                     </div>
                     {edgeFilterStatus === "loading" && (
-                      <div className="option-group">
+                      <output className="option-group" aria-live="polite">
                         Loading edge filters...
-                      </div>
+                      </output>
                     )}
                     {edgeFilterStatus === "failed" && (
-                      <div className="option-group error-message">
+                      <div className="option-group error-message" role="alert">
                         Failed to load edge filters.
                       </div>
                     )}
@@ -1199,21 +1158,17 @@ const ForceGraph = ({
                       Object.keys(availableEdgeFilters).length > 0 && (
                         <div className="edge-filter-section">
                           <h3>Edge Filters:</h3>
-                          {Object.entries(availableEdgeFilters).map(
-                            ([field, values]) => (
-                              <FilterableDropdown
-                                key={field}
-                                label={field}
-                                options={values}
-                                selectedOptions={
-                                  settings.edgeFilters[field] || []
-                                }
-                                onOptionToggle={(value) =>
-                                  dispatch(updateEdgeFilter({ field, value }))
-                                }
-                              />
-                            ),
-                          )}
+                          {Object.entries(availableEdgeFilters).map(([field, values]) => (
+                            <FilterableDropdown
+                              key={field}
+                              label={field}
+                              options={values}
+                              selectedOptions={settings.edgeFilters[field] || []}
+                              onOptionToggle={(value) =>
+                                dispatch(updateEdgeFilter({ field, value }))
+                              }
+                            />
+                          ))}
                         </div>
                       )}
                   </div>
@@ -1222,74 +1177,70 @@ const ForceGraph = ({
             </>
           )}
 
-          {activePrimaryTab === "multiNode" &&
-            originNodeIds &&
-            originNodeIds.length >= 2 && (
-              <div id="tab-panel-multiNode" className="tab-panel active">
-                <div className="option-group labels-toggle-container">
-                  <label>Advanced Per-Node Settings:</label>
-                  <div className="labels-toggle graph-source-toggle">
-                    <label className="switch">
-                      <input
-                        type="checkbox"
-                        checked={isAdvancedMode}
-                        onChange={handleAdvancedModeToggle}
-                      />
-                      <span className="slider round"></span>
-                    </label>
-                  </div>
-                </div>
-                <div className="option-group multi-node">
-                  <label htmlFor="set-operation-select">Graph operation:</label>
-                  <select
-                    id="set-operation-select"
-                    value={settings.setOperation}
-                    onChange={handleOperationChange}
-                  >
-                    {["Intersection", "Union", "Symmetric Difference"].map(
-                      (value) => (
-                        <option key={value} value={value}>
-                          {value}
-                        </option>
-                      ),
-                    )}
-                  </select>
-                </div>
-                <div className="option-group multi-node">
-                  Shortest Path
+          {activePrimaryTab === "multiNode" && originNodeIds && originNodeIds.length >= 2 && (
+            <div id="tab-panel-multiNode" className="tab-panel active">
+              <div className="option-group labels-toggle-container">
+                <h3 className="group-label">Advanced Per-Node Settings:</h3>
+                <div className="labels-toggle graph-source-toggle">
                   <label className="switch">
                     <input
                       type="checkbox"
-                      checked={settings.findShortestPaths}
-                      onChange={handleShortestPathToggle}
+                      checked={isAdvancedMode}
+                      onChange={handleAdvancedModeToggle}
                     />
-                    <span className="slider round"></span>
+                    <span className="slider round" />
                   </label>
                 </div>
               </div>
-            )}
+              <div className="option-group multi-node">
+                <label htmlFor="set-operation-select">Graph operation:</label>
+                <select
+                  id="set-operation-select"
+                  value={settings.setOperation}
+                  onChange={handleOperationChange}
+                >
+                  {["Intersection", "Union", "Symmetric Difference"].map((value) => (
+                    <option key={value} value={value}>
+                      {value}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="option-group multi-node">
+                Shortest Path
+                <label className="switch">
+                  <input
+                    type="checkbox"
+                    checked={settings.findShortestPaths}
+                    onChange={handleShortestPathToggle}
+                  />
+                  <span className="slider round" />
+                </label>
+              </div>
+            </div>
+          )}
 
           {activePrimaryTab === "history" && (
             <div id="tab-panel-history" className="tab-panel active">
               <div className="option-group">
-                <label>Graph History</label>
+                <h3 className="group-label">Graph History</h3>
                 <div className="history-controls">
-                  <button onClick={handleUndo} disabled={!canUndo}>
+                  <button type="button" onClick={handleUndo} disabled={!canUndo}>
                     <span className="history-icon">↶</span> Undo{" "}
                     <kbd>{isMac ? "⌘Z" : "Ctrl+Z"}</kbd>
                   </button>
-                  <button onClick={handleRedo} disabled={!canRedo}>
+                  <button type="button" onClick={handleRedo} disabled={!canRedo}>
                     Redo <kbd>{isMac ? "⇧⌘Z" : "Ctrl+Y"}</kbd>
                   </button>
                 </div>
               </div>
               <div className="option-group">
-                <label>Saved Graphs</label>
+                <h3 className="group-label">Saved Graphs</h3>
                 <div className="save-load-controls">
-                  <button onClick={handleSave}>
+                  <button type="button" onClick={handleSave}>
                     Save Current Graph <kbd>{isMac ? "⌘S" : "Ctrl+S"}</kbd>
                   </button>
-                  <button onClick={handleLoad}>
+                  <button type="button" onClick={handleLoad}>
                     Load a Saved Graph <kbd>{isMac ? "⌘O" : "Ctrl+O"}</kbd>
                   </button>
                 </div>
@@ -1300,14 +1251,14 @@ const ForceGraph = ({
           {activePrimaryTab === "export" && (
             <div id="tab-panel-export" className="tab-panel active">
               <div className="option-group export-buttons">
-                <label>Export Graph:</label>
-                <button onClick={() => exportGraph("svg")}>
+                <h3 className="group-label">Export Graph:</h3>
+                <button type="button" onClick={() => exportGraph("svg")}>
                   Download as SVG
                 </button>
-                <button onClick={() => exportGraph("png")}>
+                <button type="button" onClick={() => exportGraph("png")}>
                   Download as PNG
                 </button>
-                <button onClick={() => exportGraph("json")}>
+                <button type="button" onClick={() => exportGraph("json")}>
                   Download as JSON
                 </button>
               </div>
@@ -1316,10 +1267,7 @@ const ForceGraph = ({
         </div>
       </div>
 
-      <LoadGraphModal
-        isOpen={isLoadModalOpen}
-        onClose={() => setIsLoadModalOpen(false)}
-      />
+      <LoadGraphModal isOpen={isLoadModalOpen} onClose={() => setIsLoadModalOpen(false)} />
     </div>
   );
 };

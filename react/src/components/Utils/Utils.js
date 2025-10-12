@@ -1,9 +1,8 @@
 import collMaps from "../../assets/cell-kn-mvp-collection-maps.json";
-import React, { useEffect, useMemo, useState } from "react";
 
 export const fetchCollections = async (graphType) => {
   // Accept graphType argument
-  let response = await fetch("/arango_api/collections/", {
+  const response = await fetch("/arango_api/collections/", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -13,11 +12,7 @@ export const fetchCollections = async (graphType) => {
     }),
   });
   if (!response.ok) {
-    console.error(
-      "Fetch collections failed:",
-      response.status,
-      await response.text(),
-    );
+    console.error("Fetch collections failed:", response.status, await response.text());
     throw new Error(`Network response was not ok (${response.status})`);
   }
   return response.json();
@@ -29,15 +24,15 @@ export const fetchCollections = async (graphType) => {
  * @param {Array<string>} ids
  * @param {string} db - database identifier (graph type)
  */
-export const fetchNodeDetailsByIds = async (ids = [], db) => {
+export const fetchNodeDetailsByIds = async (ids, db) => {
   if (!ids || ids.length === 0) return [];
   try {
-    const response = await fetch(`/arango_api/document/details`, {
+    const response = await fetch("/arango_api/document/details", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ document_ids: ids, db }),
     });
-    if (!response.ok) throw new Error(`Failed to fetch node details`);
+    if (!response.ok) throw new Error("Failed to fetch node details");
     return await response.json();
   } catch (error) {
     console.error("Error fetching node details:", error);
@@ -52,7 +47,7 @@ export const hasAnyNodes = (data, nodeId) => {
     typeof data !== "object" ||
     !data.nodes ||
     typeof data.nodes !== "object" ||
-    !data.nodes.hasOwnProperty(nodeId) // Check if the specific nodeId key exists
+    !Object.hasOwn(data.nodes, nodeId) // Check if the specific nodeId key exists
   ) {
     // Return false if basic structure or the specific key is missing
     return false;
@@ -72,7 +67,7 @@ export const hasAnyNodes = (data, nodeId) => {
     return (
       entry && // Check if entry is truthy
       typeof entry === "object" && // Check if entry is an object
-      entry.hasOwnProperty("node") && // Check if entry has the 'node' property
+      Object.hasOwn(entry, "node") && // Check if entry has the 'node' property
       entry.node !== null
     ); // Check if the 'node' property's value is not null
   });
@@ -84,22 +79,15 @@ export const hasAnyNodes = (data, nodeId) => {
 export const parseCollections = (collections, collectionMaps = null) => {
   if (collectionMaps) {
     return collections.sort((a, b) => {
-      const aDisplay =
-        collectionMaps.get(a) && collectionMaps.get(a)["display_name"]
-          ? collectionMaps.get(a)["display_name"]
-          : a;
-      const bDisplay =
-        collectionMaps.get(b) && collectionMaps.get(b)["display_name"]
-          ? collectionMaps.get(b)["display_name"]
-          : b;
+      const aDisplay = collectionMaps.get(a)?.display_name ? collectionMaps.get(a).display_name : a;
+      const bDisplay = collectionMaps.get(b)?.display_name ? collectionMaps.get(b).display_name : b;
 
       return aDisplay.toLowerCase().localeCompare(bDisplay.toLowerCase());
     });
-  } else {
-    return collections.sort((a, b) => {
-      return a.toLowerCase().localeCompare(b.toLowerCase());
-    });
   }
+  return collections.sort((a, b) => {
+    return a.toLowerCase().localeCompare(b.toLowerCase());
+  });
 };
 
 /**
@@ -116,8 +104,8 @@ export const getLabel = (item) => {
 
     // Get label rules for item's collection, fallback for edges
     const labelOptions =
-      collectionMaps.get(itemCollection)?.["individual_labels"] ??
-      collectionMaps.get("edges")?.["individual_labels"];
+      collectionMaps.get(itemCollection)?.individual_labels ??
+      collectionMaps.get("edges")?.individual_labels;
 
     let label;
 
@@ -175,7 +163,7 @@ export const getUrl = (item) => {
 
     if (collectionMap) {
       // Get URL generation rules from configuration.
-      const urlOptions = collectionMap["individual_urls"];
+      const urlOptions = collectionMap.individual_urls;
 
       if (Array.isArray(urlOptions)) {
         // Iterate URL configurations to find first valid option.
@@ -202,10 +190,7 @@ export const getUrl = (item) => {
             }
 
             // Build final URL by replacing placeholder in template.
-            const url = config.individual_url.replace(
-              "<FIELD_TO_USE>",
-              replacement,
-            );
+            const url = config.individual_url.replace("<FIELD_TO_USE>", replacement);
 
             // Return successfully generated URL immediately.
             return url;
@@ -237,8 +222,8 @@ export const getDisplayFields = (item) => {
 
     // Get field display rules from configuration, with fallback for edges.
     const fieldConfigs =
-      collectionMaps.get(itemCollection)?.["individual_fields"] ??
-      collectionMaps.get("edges")?.["individual_fields"];
+      collectionMaps.get(itemCollection)?.individual_fields ??
+      collectionMaps.get("edges")?.individual_fields;
 
     // Return empty array if no specific field configuration exists.
     if (!Array.isArray(fieldConfigs)) {
@@ -283,14 +268,12 @@ export const getTitle = (item) => {
 
   // Collection exists in map
   if (collectionMap) {
-    const title = `${collectionMap["display_name"]}: ${getLabel(item)}`;
+    const title = `${collectionMap.display_name}: ${getLabel(item)}`;
     return capitalCase(title);
   }
   // Default (expected for edges)
-  else {
-    const title = `${itemCollection}: ${item.label ? item.label : item._id}`;
-    return capitalCase(title);
-  }
+  const title = `${itemCollection}: ${item.label ? item.label : item._id}`;
+  return capitalCase(title);
 };
 
 export const capitalCase = (input) => {
@@ -306,16 +289,16 @@ export const capitalCase = (input) => {
           : str,
       )
       .join("|");
-  } else if (typeof input === "string") {
+  }
+  if (typeof input === "string") {
     // If the input is a single string, capitalize each word
     return input
       .split(" ")
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(" ");
-  } else {
-    // If the input is neither a string nor an array of strings, return as is
-    return input;
   }
+  // If the input is neither a string nor an array of strings, return as is
+  return input;
 };
 
 export function findNodeById(node, id) {
@@ -338,10 +321,7 @@ export function mergeChildren(graphData, parentId, childrenWithGrandchildren) {
   const parentNode = findNodeById(newData, parentId);
 
   if (parentNode) {
-    console.log(
-      `Found parent ${parentId}, merging children:`,
-      childrenWithGrandchildren,
-    );
+    console.log(`Found parent ${parentId}, merging children:`, childrenWithGrandchildren);
     parentNode.children = childrenWithGrandchildren;
     parentNode._childrenLoaded = true;
   } else {
@@ -354,7 +334,7 @@ export function truncateString(text, maxLength) {
   if (!text || text.length <= maxLength) {
     return text;
   }
-  return text.slice(0, maxLength) + "...";
+  return `${text.slice(0, maxLength)}...`;
 }
 
 // Parse id. If edge id, return both edges.
@@ -364,15 +344,13 @@ export function parseId(document) {
     return [document._from, document._to];
   }
   // Return its own id if vertex
-  else {
-    return [document._id];
-  }
+  return [document._id];
 }
 
 export const LoadingBar = () => {
   return (
     <div className="loading-indicator">
-      <div className="progress-bar"></div>
+      <div className="progress-bar" />
       <span>Loading...</span>
     </div>
   );
@@ -385,9 +363,7 @@ export const findFtuUrlById = (ftuPartsArray, searchId) => {
 
   // Find match
   const foundMatch = ftuPartsArray.find(
-    (ftuPart) =>
-      ftuPart.ftu_iri.includes(searchId) ||
-      ftuPart.ftu_part_iri.includes(searchId),
+    (ftuPart) => ftuPart.ftu_iri.includes(searchId) || ftuPart.ftu_part_iri.includes(searchId),
   );
 
   // Return match digital object URL
@@ -445,7 +421,7 @@ export const getAllSearchableFields = () => {
   // Load collection configuration maps.
   const collectionMaps = new Map(collMaps.maps);
 
-  let fieldsToDisplay = new Set();
+  const fieldsToDisplay = new Set();
   collectionMaps.forEach((collectionMap, collection, collectionMaps) => {
     collectionMap.individual_fields.forEach((fieldMap, index) => {
       fieldsToDisplay.add(fieldMap.field_to_display);

@@ -26,9 +26,7 @@ const nodesSlice = createSlice({
      */
     removeNodeFromSlice: (state, action) => {
       const nodeIdToRemove = action.payload;
-      state.originNodeIds = state.originNodeIds.filter(
-        (id) => id !== nodeIdToRemove,
-      );
+      state.originNodeIds = state.originNodeIds.filter((id) => id !== nodeIdToRemove);
     },
     /**
      * Clears all node IDs from nodesSlice.

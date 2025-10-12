@@ -34,9 +34,7 @@ const savedGraphsSlice = createSlice({
      */
     deleteGraph: (state, action) => {
       const idToDelete = action.payload;
-      state.savedGraphs = state.savedGraphs.filter(
-        (graph) => graph.id !== idToDelete,
-      );
+      state.savedGraphs = state.savedGraphs.filter((graph) => graph.id !== idToDelete);
     },
   },
 });

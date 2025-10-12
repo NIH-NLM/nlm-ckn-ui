@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useCallback, useEffect } from "react";
 
 /**
  * Custom hook to handle press-and-hold hotkey actions.

@@ -1,12 +1,6 @@
-import React, {
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-  useCallback,
-} from "react";
-import SearchResultsTable from "../SearchResultsTable/SearchResultsTable";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { GraphContext } from "../../contexts/GraphContext";
+import SearchResultsTable from "../SearchResultsTable/SearchResultsTable";
 import { getAllSearchableFields } from "../Utils/Utils";
 
 // SVG Icon Component
@@ -17,6 +11,7 @@ const SearchIcon = () => (
     fill="currentColor"
     className="search-icon"
   >
+    <title>Search</title>
     <path
       fillRule="evenodd"
       d="M10.5 3.75a6.75 6.75 0 100 13.5 6.75 6.75 0 000-13.5zM2.25 10.5a8.25 8.25 0 1114.59 5.28l4.69 4.69a.75.75 0 11-1.06 1.06l-4.69-4.69A8.25 8.25 0 012.25 10.5z"
@@ -39,7 +34,7 @@ const SearchBar = () => {
   const getSearchTerms = useCallback(async (currentSearchTerm, db) => {
     const searchableFields = getAllSearchableFields();
     try {
-      const response = await fetch(`/arango_api/search/`, {
+      const response = await fetch("/arango_api/search/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -48,8 +43,7 @@ const SearchBar = () => {
           search_fields: Array.from(searchableFields),
         }),
       });
-      if (!response.ok)
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       return await response.json();
     } catch (error) {
       console.error("Error fetching search terms:", error);
@@ -74,10 +68,7 @@ const SearchBar = () => {
   // Effect for handling clicks outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target)
-      ) {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
         setShowResults(false);
       }
     };
@@ -115,9 +106,7 @@ const SearchBar = () => {
           />
           <SearchIcon />
         </div>
-        <div
-          className={`search-results-dropdown ${shouldDropdownBeVisible ? "show" : ""}`}
-        >
+        <div className={`search-results-dropdown ${shouldDropdownBeVisible ? "show" : ""}`}>
           <SearchResultsTable searchResults={searchResults} />
         </div>
       </div>

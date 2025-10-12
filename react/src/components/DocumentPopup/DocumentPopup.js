@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 
 /**
  * A DocumentPopup component for context menus.
@@ -47,6 +47,7 @@ const DocumentPopup = ({ isVisible, position, onClose, children }) => {
       {children}
 
       <button
+        type="button"
         className="document-popup-close-button"
         onClick={onClose}
         aria-label="Close popup"

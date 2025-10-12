@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom";
-import TreeConstructor from "../../components/TreeConstructor/TreeConstructor";
 import AddToGraphButton from "../../components/AddToGraphButton/AddToGraphButton";
+import TreeConstructor from "../../components/TreeConstructor/TreeConstructor";
 import { LoadingBar } from "../Utils/Utils";
 
 /**
@@ -77,7 +77,7 @@ const Tree = () => {
       }
 
       // Set the data to the specific subtree required by the application.
-      setTreeData(data["children"][0]);
+      setTreeData(data.children[0]);
     } catch (fetchError) {
       console.error("Failed to fetch or process tree data:", fetchError);
       setError(fetchError.message);
@@ -102,7 +102,9 @@ const Tree = () => {
     return (
       <div>
         <p>Error loading tree data: {error}</p>
-        <button onClick={fetchTreeData}>Try Again</button>
+        <button type="button" onClick={fetchTreeData}>
+          Try Again
+        </button>
       </div>
     );
   }
@@ -114,11 +116,7 @@ const Tree = () => {
   return (
     <div className="tree-container">
       {/* Render d3 tree */}
-      <TreeConstructor
-        data={treeData}
-        onNodeEnter={handleNodeEnter}
-        onNodeExit={handleNodeExit}
-      />
+      <TreeConstructor data={treeData} onNodeEnter={handleNodeEnter} onNodeExit={handleNodeExit} />
       {Array.from(mountPoints.entries()).map(([nodeId, element]) =>
         ReactDOM.createPortal(<AddToGraphButton nodeId={nodeId} />, element),
       )}

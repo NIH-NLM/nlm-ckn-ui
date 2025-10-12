@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import InfoPopup from "../InfoPopup/InfoPopup";
 
 const ExpandIcon = () => (
@@ -12,6 +12,7 @@ const ExpandIcon = () => (
     strokeLinecap="round"
     strokeLinejoin="round"
   >
+    <title>Expand</title>
     <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
   </svg>
 );
@@ -27,6 +28,7 @@ const CollapseIcon = () => (
     strokeLinecap="round"
     strokeLinejoin="round"
   >
+    <title>Collapse</title>
     <path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7" />
   </svg>
 );
@@ -50,10 +52,7 @@ const FTUIllustration = ({ selectedIllustration, illustrations }) => {
       }
 
       // Get event data details
-      const id = event.detail.representation_of
-        .split("/")
-        .pop()
-        .replace("_", "/");
+      const id = event.detail.representation_of.split("/").pop().replace("_", "/");
       const label = event.detail.label;
       setPopupData({ id, label });
 
@@ -85,6 +84,7 @@ const FTUIllustration = ({ selectedIllustration, illustrations }) => {
   return (
     <div className={containerClasses}>
       <button
+        type="button"
         onClick={toggleFullScreen}
         className="expand-button"
         title={isFullScreen ? "Collapse" : "Expand"}
@@ -92,17 +92,14 @@ const FTUIllustration = ({ selectedIllustration, illustrations }) => {
         {isFullScreen ? <CollapseIcon /> : <ExpandIcon />}
       </button>
 
+      {/* biome-ignore lint/style/useSelfClosingElements: custom element intentionally non-self-closing for clarity */}
       <hra-medical-illustration
         selected-illustration={selectedIllustration}
         illustrations={illustrations}
         ref={ftuRef}
       ></hra-medical-illustration>
 
-      <InfoPopup
-        data={popupData}
-        position={popupPosition}
-        onClose={handleClosePopup}
-      />
+      <InfoPopup data={popupData} position={popupPosition} onClose={handleClosePopup} />
     </div>
   );
 };

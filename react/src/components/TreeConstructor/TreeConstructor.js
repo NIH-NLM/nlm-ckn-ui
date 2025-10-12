@@ -1,7 +1,7 @@
-import React, { useEffect, useRef } from "react";
 import * as d3 from "d3";
-import { getLabel, truncateString } from "../Utils/Utils";
+import { useEffect, useRef } from "react";
 import { getColorForCollection } from "../../services/ColorServices/ColorServices";
+import { getLabel, truncateString } from "../Utils/Utils";
 
 /**
  * Tree Constructor Component.
@@ -62,10 +62,7 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit }) => {
       .attr("stroke-opacity", 0.4)
       .attr("stroke-width", 1.5);
 
-    const gNode = svg
-      .append("g")
-      .attr("cursor", "pointer")
-      .attr("pointer-events", "all");
+    const gNode = svg.append("g").attr("cursor", "pointer").attr("pointer-events", "all");
 
     /**
      * The core D3 update function that handles the enter, update, and exit
@@ -107,11 +104,10 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit }) => {
           // React handles adding to graph
           if (event.target.closest(".add-to-graph-button")) {
             return;
-          } else {
-            // Toggle children
-            d.children = d.children ? null : d._children;
-            update(event, d);
           }
+          // Toggle children
+          d.children = d.children ? null : d._children;
+          update(event, d);
         });
 
       // Append circle
@@ -127,9 +123,7 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit }) => {
         .attr("dy", "0.31em")
         .attr("x", (d) => (d._children ? -6 : 6))
         .attr("text-anchor", (d) => (d._children ? "end" : "start"))
-        .text((d) =>
-          truncateString(getLabel(d.data) || d.data._key, maxLabelLength),
-        )
+        .text((d) => truncateString(getLabel(d.data) || d.data._key, maxLabelLength))
         .clone(true)
         .lower()
         .attr("stroke-linejoin", "round")
@@ -145,17 +139,13 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit }) => {
         .attr("x", (d) => {
           const gap = 15;
           // Estimate label size
-          const label = truncateString(
-            getLabel(d.data) || d.data._key,
-            maxLabelLength,
-          );
+          const label = truncateString(getLabel(d.data) || d.data._key, maxLabelLength);
           const textWidthEstimate = label.length * 6;
           if (d._children) {
             const textEndX = -6;
             return textEndX - textWidthEstimate - gap;
-          } else {
-            return textWidthEstimate + gap;
           }
+          return textWidthEstimate + gap;
         })
         .attr("pointer-events", "all")
         .each(function (d) {
@@ -176,7 +166,7 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit }) => {
       // Remove and transition out old nodes.
       node
         .exit()
-        .each(function (d) {
+        .each((d) => {
           // Notify the parent component that this node is being removed.
           onNodeExit(d.data._id);
         })

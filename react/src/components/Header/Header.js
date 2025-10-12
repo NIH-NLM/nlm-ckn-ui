@@ -22,29 +22,19 @@ const Header = () => {
           <h4 className={activeNav === "/" ? "active-nav" : ""}>Search</h4>
         </Link>
         <Link to="/sunburst">
-          <h4 className={activeNav === "/sunburst" ? "active-nav" : ""}>
-            Browse
-          </h4>
+          <h4 className={activeNav === "/sunburst" ? "active-nav" : ""}>Browse</h4>
         </Link>
         <Link to="/tree">
           <h4 className={activeNav === "/tree" ? "active-nav" : ""}>Explore</h4>
         </Link>
         <Link to="/collections">
-          <h4
-            className={activeNav.startsWith("/collections") ? "active-nav" : ""}
-          >
-            Collections
-          </h4>
+          <h4 className={activeNav.startsWith("/collections") ? "active-nav" : ""}>Collections</h4>
         </Link>
         <Link to="/graph">
-          <h4 className={activeNav.startsWith("/graph") ? "active-nav" : ""}>
-            Graph
-          </h4>
+          <h4 className={activeNav.startsWith("/graph") ? "active-nav" : ""}>Graph</h4>
         </Link>
         <Link to="/about">
-          <h4 className={activeNav.startsWith("/about") ? "active-nav" : ""}>
-            About
-          </h4>
+          <h4 className={activeNav.startsWith("/about") ? "active-nav" : ""}>About</h4>
         </Link>
         {/* Hide query page until it is useful */}
         <Link to="/aql" style={{ display: "none" }}>

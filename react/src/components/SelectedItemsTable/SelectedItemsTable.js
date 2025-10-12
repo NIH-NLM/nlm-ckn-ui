@@ -1,12 +1,7 @@
 import { Link } from "react-router-dom";
 import { getLabel, getUrl } from "../Utils/Utils";
 
-const SelectedItemsTable = ({
-  selectedItems,
-  generateGraph,
-  removeSelectedItem,
-  isStale,
-}) => {
+const SelectedItemsTable = ({ selectedItems, generateGraph, removeSelectedItem, isStale }) => {
   function handleGenerateGraph() {
     generateGraph();
   }
@@ -20,15 +15,14 @@ const SelectedItemsTable = ({
     if (!url) return "";
     try {
       const parsedUrl = new URL(url);
-      let displayUrl =
-        parsedUrl.hostname +
-        (parsedUrl.pathname === "/" ? "" : parsedUrl.pathname);
+      const displayUrl =
+        parsedUrl.hostname + (parsedUrl.pathname === "/" ? "" : parsedUrl.pathname);
       if (displayUrl.length > 40) {
-        return displayUrl.substring(0, 37) + "...";
+        return `${displayUrl.substring(0, 37)}...`;
       }
       return displayUrl;
     } catch (e) {
-      return url.length > 40 ? url.substring(0, 37) + "..." : url;
+      return url.length > 40 ? `${url.substring(0, 37)}...` : url;
     }
   };
 
@@ -67,6 +61,7 @@ const SelectedItemsTable = ({
                     View
                   </Link>
                   <button
+                    type="button"
                     onClick={() => handleRemoveItem(item)}
                     className="action-button remove-button"
                     aria-label={`Remove ${getLabel(item)}`}
@@ -81,6 +76,7 @@ const SelectedItemsTable = ({
         <div className="generate-graph-action-area">
           {/* Conditionally add the 'stale' class */}
           <button
+            type="button"
             onClick={handleGenerateGraph}
             className={`primary-action-button generate-graph-button ${isStale ? "stale" : ""}`}
           >

@@ -1,18 +1,14 @@
-import React, { useEffect, useState, useContext, useMemo } from "react";
-import { useParams } from "react-router-dom";
-import DocumentCard from "../../components/DocumentCard/DocumentCard";
-import ForceGraph from "../../components/ForceGraph/ForceGraph";
-import { PrunedCollectionsContext } from "../../contexts/PrunedCollectionsContext";
-import {
-  findFtuUrlById,
-  getTitle,
-  parseId,
-} from "../../components/Utils/Utils";
-import FTUIllustration from "../../components/FTUIllustration/FTUIllustration";
-import { useFtuParts } from "../../contexts/FTUPartsContext";
-import { initializeGraph } from "../../store/graphSlice";
+import { useContext, useEffect, useMemo, useState } from "react";
 import { useDispatch } from "react-redux";
+import { useParams } from "react-router-dom";
 import collectionDefaults from "../../assets/collection-defaults.json";
+import DocumentCard from "../../components/DocumentCard/DocumentCard";
+import FTUIllustration from "../../components/FTUIllustration/FTUIllustration";
+import ForceGraph from "../../components/ForceGraph/ForceGraph";
+import { findFtuUrlById, getTitle, parseId } from "../../components/Utils/Utils";
+import { useFtuParts } from "../../contexts/FTUPartsContext";
+import { PrunedCollectionsContext } from "../../contexts/PrunedCollectionsContext";
+import { initializeGraph } from "../../store/graphSlice";
 
 const DocumentPage = () => {
   const dispatch = useDispatch();
@@ -56,7 +52,7 @@ const DocumentPage = () => {
     if (!document || !ftuParts || ftuParts.length === 0) {
       return null;
     }
-    const ftuUrl = findFtuUrlById(ftuParts, coll + "_" + id);
+    const ftuUrl = findFtuUrlById(ftuParts, `${coll}_${id}`);
     console.log(ftuUrl);
     return ftuUrl;
   }, [document, ftuParts, id]);
@@ -93,8 +89,7 @@ const DocumentPage = () => {
     return (
       <div className="content-page-layout">
         <div className="error-message">
-          Document not found or failed to load. Please check the URL or try
-          again.
+          Document not found or failed to load. Please check the URL or try again.
         </div>
       </div>
     );
@@ -106,6 +101,7 @@ const DocumentPage = () => {
       <div className="content-box document-details-content-box">
         <div className="document-item-header">
           <button
+            type="button"
             onClick={() => setIsPanelVisible(!isPanelVisible)}
             className={"toggle-options-button"}
             style={{ position: "static" }}
@@ -116,9 +112,7 @@ const DocumentPage = () => {
           {document.term && <span>Term: {document.term}</span>}{" "}
         </div>
         <div className="document-page-main-content-area">
-          <div
-            className={`document-card-panel ${isPanelVisible ? "" : "hidden"}`}
-          >
+          <div className={`document-card-panel ${isPanelVisible ? "" : "hidden"}`}>
             <DocumentCard document={document} />
             {ftuIllustrationUrl && (
               <FTUIllustration
@@ -129,9 +123,7 @@ const DocumentPage = () => {
               />
             )}
           </div>
-          <div
-            className={`force-graph-panel ${isPanelVisible ? "" : "flex-full"}`}
-          >
+          <div className={`force-graph-panel ${isPanelVisible ? "" : "flex-full"}`}>
             <ForceGraph nodeIds={nodeIds} settings={forceGraphSettings} />
           </div>
         </div>

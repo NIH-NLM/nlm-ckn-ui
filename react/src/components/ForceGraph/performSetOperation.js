@@ -40,11 +40,10 @@ export function performSetOperation(graphs, operation) {
       break;
 
     case "Symmetric Difference":
-      finalNodes = allEntries
-        .filter((entry) => entry.count === 1)
-        .map((entry) => entry.node);
+      finalNodes = allEntries.filter((entry) => entry.count === 1).map((entry) => entry.node);
       break;
 
+    // biome-ignore lint/complexity/noUselessSwitchCase: keep explicit Union case for readability and future extension
     case "Union":
     default:
       finalNodes = allEntries.map((entry) => entry.node);

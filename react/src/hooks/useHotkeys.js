@@ -10,23 +10,22 @@ export function useHotkeys(hotkeys, deps = []) {
   useEffect(() => {
     const handleKeyDown = (event) => {
       // Loop through hotkeys
-      savedHotkeys.current.forEach((hotkey) => {
+      for (const hotkey of savedHotkeys.current) {
         // Check for main key match
-        if (event.key.toLowerCase() !== hotkey.key.toLowerCase()) return;
+        if (event.key.toLowerCase() !== hotkey.key.toLowerCase()) continue;
 
         // Check if shift matches requirement
         const shiftMatch = (hotkey.shiftKey || false) === event.shiftKey;
 
         // Check if one of the main modifiers (Ctrl or Cmd) is pressed
         const modifierMatch =
-          (hotkey.ctrlKey && event.ctrlKey) ||
-          (hotkey.metaKey && event.metaKey);
+          (hotkey.ctrlKey && event.ctrlKey) || (hotkey.metaKey && event.metaKey);
 
         if (shiftMatch && modifierMatch) {
           event.preventDefault();
           hotkey.handler();
         }
-      });
+      }
     };
 
     // Add the event listener when the component mounts

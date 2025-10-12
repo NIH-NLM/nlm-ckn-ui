@@ -1,14 +1,12 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import { useCallback, useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { removeNodeFromSlice } from "../../store/nodesSlice";
 import { LoadingBar } from "../Utils/Utils";
 
 // Fetch details for the nodes in the global state and displays them.
 const NodeListTable = () => {
   const dispatch = useDispatch();
-  const nodesSliceNodeIds = useSelector(
-    (state) => state.nodesSlice.originNodeIds,
-  );
+  const nodesSliceNodeIds = useSelector((state) => state.nodesSlice.originNodeIds);
   const [nodeObjects, setNodeObjects] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -17,12 +15,12 @@ const NodeListTable = () => {
     if (!ids || ids.length === 0) return [];
     setIsLoading(true);
     try {
-      const response = await fetch(`/arango_api/nodes/details`, {
+      const response = await fetch("/arango_api/nodes/details", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ node_ids: ids }),
       });
-      if (!response.ok) throw new Error(`Failed to fetch node details`);
+      if (!response.ok) throw new Error("Failed to fetch node details");
       return await response.json();
     } catch (error) {
       console.error("Error fetching node details:", error);
@@ -49,12 +47,7 @@ const NodeListTable = () => {
   }
 
   if (nodeObjects.length === 0) {
-    return (
-      <p>
-        No nodes have been added to the graph yet. Add nodes from other pages to
-        begin.
-      </p>
-    );
+    return <p>No nodes have been added to the graph yet. Add nodes from other pages to begin.</p>;
   }
 
   return (
@@ -75,6 +68,7 @@ const NodeListTable = () => {
               <td>{item._id.split("/")[0]}</td>
               <td>
                 <button
+                  type="button"
                   className="remove-button"
                   onClick={() => dispatch(removeNodeFromSlice(item._id))}
                 >
