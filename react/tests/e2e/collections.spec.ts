@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { doc } from './utils/testSeeds';
 
-// Deterministic test collection and documents
+// Seed: deterministic collection and docs
 const TEST_COLL = 'TEST_DOCUMENT_COLLECTION';
 const docs = [
     doc('0001', 'Alpha'),
@@ -10,7 +10,7 @@ const docs = [
 ];
 
 test('Collections page: select, filter, and navigate to item', async ({ page }) => {
-    // Mock the collections list endpoint
+    // Mock collections list
     await page.route('**/arango_api/collections/', async (route) => {
         if (route.request().method() === 'POST') {
             return route.fulfill({
@@ -22,10 +22,10 @@ test('Collections page: select, filter, and navigate to item', async ({ page }) 
         return route.continue();
     });
 
-    // Mock the documents fetch for the selected collection
+    // Mock documents in collection
     await page.route(`**/arango_api/collection/${TEST_COLL}/`, async (route) => {
         if (route.request().method() === 'POST') {
-            // API returns an object keyed by _id in real app; BrowseBox flattens via Object.values
+            // API returns object keyed by _id; UI flattens via Object.values
             const body: Record<string, unknown> = {};
             for (const d of docs) body[d._id] = d;
             return route.fulfill({
@@ -37,7 +37,7 @@ test('Collections page: select, filter, and navigate to item', async ({ page }) 
         return route.continue();
     });
 
-    // Mock the document details fetch when navigating to the item page
+    // Mock document details for navigation
     await page.route(`**/arango_api/collection/${TEST_COLL}/0002/`, async (route) => {
         return route.fulfill({
             status: 200,
@@ -46,35 +46,35 @@ test('Collections page: select, filter, and navigate to item', async ({ page }) 
         });
     });
 
-    // Go to home and open Collections from the header
+    // Navigate -> Collections
     await page.goto('/');
     await page.getByRole('link', { name: 'Collections' }).click();
     await expect(page).toHaveURL(/#\/collections$/);
 
-    // The list should show our test collection by its display name
+    // Pick test collection
     await page.getByRole('link', { name: /Test document collection/i }).click();
     await expect(page).toHaveURL(new RegExp(`#/collections/${TEST_COLL}$`));
 
-    // Wait for items to populate (document list panel)
+    // Items visible
     const listPanel = page.locator('.document-list-panel');
     await expect(listPanel).toContainText('Alpha');
     await expect(listPanel).toContainText('Beta');
     await expect(listPanel).toContainText('Gamma');
 
-    // Type into the filter to narrow results to "Beta"
+    // Filter -> Beta
     const filter = page.locator('input.document-filter-input');
     await filter.fill('Beta');
 
-    // Only Beta should remain visible in the list items container
+    // Only Beta remains
     const itemsContainer = page.locator('.document-list-items-container');
     await expect(itemsContainer).toContainText('Beta');
     await expect(itemsContainer).not.toContainText('Alpha');
     await expect(itemsContainer).not.toContainText('Gamma');
 
-    // Click the Beta item to navigate to its page
+    // Navigate to Beta
     await itemsContainer.getByRole('link', { name: 'Beta' }).click();
     await expect(page).toHaveURL(new RegExp(`#/collections/${TEST_COLL}/0002$`));
 
-    // Document page should render the title using collection map + label
+    // Title shows collection + label
     await expect(page.locator('.document-item-header h1')).toHaveText(/Test document collection: Beta/i);
 });

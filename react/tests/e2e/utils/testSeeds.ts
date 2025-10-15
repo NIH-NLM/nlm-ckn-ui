@@ -80,3 +80,40 @@ export function smallGraphWithEdges() {
     const e4 = edge('E4', c2._id, g2._id, 'has_child');
     return { root: r, edges: [e1, e2, e3, e4] };
 }
+
+// Another test collection id to exercise allowedCollections filter behavior
+export const OTHER_COLL = 'OTHER_TEST_COLLECTION';
+
+export type RawGraph = { nodes: TestDoc[]; links: TestEdge[] };
+
+// Build two raw graphs keyed by two origin ids with partial overlap:
+// Shared nodes: ROOT, MID. Unique nodes: Y only in first, Z only in second.
+export function twoOriginRawGraphs(originA: string, originB: string) {
+    const r = doc('ROOT', 'Root');
+    const mid = doc('MID', 'Mid');
+    const c1 = doc('C1', 'C1');
+    const y = doc('Y', 'Y');
+    const z = doc('Z', 'Z');
+    const e_rm = edge('E_RM', r._id, mid._id, 'has_child');
+    const e_mc1 = edge('E_MC1', mid._id, c1._id, 'has_child');
+    const e_ry = edge('E_RY', r._id, y._id, 'has_child');
+    const e_c1z = edge('E_C1Z', c1._id, z._id, 'has_child');
+
+    const graphA: RawGraph = { nodes: [r, mid, c1, y], links: [e_rm, e_mc1, e_ry] };
+    const graphB: RawGraph = { nodes: [r, mid, c1, z], links: [e_rm, e_mc1, e_c1z] };
+
+    return {
+        [originA]: graphA,
+        [originB]: graphB,
+    } as Record<string, RawGraph>;
+}
+
+// Build a simple shortest-path-shaped graph: A -> B -> C
+export function shortestPathGraph() {
+    const a = doc('A', 'A');
+    const b = doc('B', 'B');
+    const c = doc('C', 'C');
+    const e_ab = edge('E_AB', a._id, b._id, 'path');
+    const e_bc = edge('E_BC', b._id, c._id, 'path');
+    return { nodes: [a, b, c], links: [e_ab, e_bc] };
+}

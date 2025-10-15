@@ -1,20 +1,19 @@
 import { expect, test } from '@playwright/test';
 import { doc } from './utils/testSeeds';
 
-// Contract
-// - Type 'lung' into the homepage search input
-// - Mock /arango_api/search/ to return a result with id TEST_DOCUMENT_COLLECTION/0001 and label 'lung'
-// - Click first result and verify navigation to #/collections/TEST_DOCUMENT_COLLECTION/0001
+// Behavior: typing "lung" navigates to the matching document page.
+// Mock: /arango_api/search/ returns TEST_DOCUMENT_COLLECTION/0001 labeled "lung".
+// Assert: hash route ends with #/collections/TEST_DOCUMENT_COLLECTION/0001.
 
 const LUNG_ID = 'TEST_DOCUMENT_COLLECTION/0001';
 
-// Helper to build expected hash route without hardcoding host
+// Hash-only route helper
 function expectedHashForDocument(id: string) {
     return `#/collections/${id}`;
 }
 
 test('searching "lung" navigates to lung page', async ({ page }) => {
-    // Intercept the search API and return mocked results
+    // Mock search
     await page.route('**/arango_api/search/', async (route) => {
         const request = route.request();
         if (request.method() === 'POST') {
@@ -26,7 +25,7 @@ test('searching "lung" navigates to lung page', async ({ page }) => {
                     contentType: 'application/json',
                     body: JSON.stringify([
                         doc('0001', 'lung'),
-                        // Optionally other decoys
+                        // decoys optional
                     ]),
                 });
             }
@@ -34,25 +33,24 @@ test('searching "lung" navigates to lung page', async ({ page }) => {
         return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
     });
 
-    // Navigate to app root (SearchPage is at '/')
+    // Navigate
     await page.goto('/');
 
-    // Locate the search input by placeholder text
+    // Input
     const input = page.getByPlaceholder('Search NCKN...');
     await expect(input).toBeVisible();
 
-    // Type the query and wait for dropdown to appear
+    // Type
     await input.fill('lung');
 
-    // Wait for the results dropdown to show an item labeled 'lung'
-    // The SearchResultsTable uses getLabel(item) based on collection maps; TEST_DOCUMENT_COLLECTION maps label directly.
+    // Results
     const firstResult = page.locator('.unified-search-results-list .result-item-row-link').first();
     await expect(firstResult).toBeVisible();
     await expect(firstResult).toContainText('lung');
 
-    // Clicking the first result should navigate to the document page.
+    // Click result
     await firstResult.click();
 
-    // Expect hash-based navigation using React Router HashRouter
+    // Assert navigation
     await expect(page).toHaveURL(new RegExp(`${expectedHashForDocument(LUNG_ID)}$`));
 });
