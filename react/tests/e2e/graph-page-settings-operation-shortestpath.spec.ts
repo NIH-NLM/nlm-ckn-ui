@@ -142,5 +142,5 @@ test('Graph settings: set operation and shortest path', async ({ page }) => {
     await expect.poll(() => postedBodies.length, { timeout: 10000 }).toBeGreaterThan(beforeSP);
     await expect.poll(() => postedBodies.some((b) => Array.isArray(b?.node_ids) && b.node_ids.length === 2 && b.edge_direction && !b.depth && !b.allowed_collections), { timeout: 10000 }).toBeTruthy();
 
-    // No DOM assertions; network-level verification only
+    // TODO: DOM assertions for shortest path graph?
 });
