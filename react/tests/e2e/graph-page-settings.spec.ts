@@ -171,3 +171,45 @@ test('Graph export buttons exist and trigger download', async ({ page }) => {
     const download = await downloadPromise;
     expect(download.suggestedFilename()).toContain('.json');
 });
+
+test('Graph node click opens popup with actions', async ({ page }) => {
+    await installErrorInstrumentation(page);
+    const originId = `${COLL}/ROOT`;
+
+    // Mock setup
+    await page.route('**/arango_api/collections/', async (route) => route.fulfill({ status: 200, body: JSON.stringify([COLL]) }));
+    await page.route('**/arango_api/edge_filter_options/', async (route) => route.fulfill({ status: 200, body: JSON.stringify({ Label: ['has_child'] }) }));
+    await page.route('**/arango_api/graph/', async (route) => route.fulfill({ status: 200, body: JSON.stringify(buildRawGraph(originId)) }));
+    await page.route('**/arango_api/document/details', async (route) => route.fulfill({ status: 200, body: JSON.stringify([{ _id: originId, label: 'Root Node' }]) }));
+
+    // Seed state
+    await page.addInitScript((origin) => {
+        const persistedRoot = {
+            nodesSlice: JSON.stringify({ originNodeIds: [origin] }),
+            savedGraphs: JSON.stringify({ graphs: [] }),
+            _persist: JSON.stringify({ version: -1, rehydrated: true }),
+        } as any;
+        localStorage.setItem('persist:root', JSON.stringify(persistedRoot));
+    }, originId);
+
+    await page.goto('/#/graph');
+    await page.locator('.selected-items-container').waitFor({ state: 'visible' });
+    await page.getByRole('button', { name: /Generate Graph|Update Graph/i }).click();
+
+    // Wait for nodes
+    const node = page.locator('g.node').first();
+    await node.waitFor({ state: 'visible' });
+
+    // Force right-click because the popup is triggered by contextmenu
+    await node.click({ button: 'right', force: true });
+
+    // Check popup
+    const popup = page.locator('.document-popup');
+    await expect(popup).toBeVisible();
+
+    // Check buttons
+    await expect(popup.getByText(/Go To/)).toBeVisible();
+    await expect(popup.getByRole('button', { name: 'Expand' })).toBeVisible();
+    await expect(popup.getByRole('button', { name: 'Collapse Leaves' })).toBeVisible();
+    await expect(popup.getByRole('button', { name: 'Remove Node' })).toBeVisible();
+});
