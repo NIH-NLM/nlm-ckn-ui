@@ -6,7 +6,6 @@ import Footer from "./components/Footer/Footer";
 import Header from "./components/Header/Header";
 import { FtuPartsProvider } from "./contexts/FTUPartsContext";
 import { GraphProvider } from "./contexts/GraphContext";
-import AQLQueryPage from "./pages/AQLQueryPage/AQLQueryPage";
 import AboutPage from "./pages/AboutPage/AboutPage";
 import CollectionsPage from "./pages/CollectionsPage/CollectionsPage";
 import DocumentPage from "./pages/DocumentPage/DocumentPage";
@@ -32,7 +31,6 @@ function App() {
                   <Route path="/collections" element={<CollectionsPage />} />
                   <Route path="/graph" element={<GraphPage />} />
                   <Route path="/ftu" element={<FTUExplorerPage />} />
-                  <Route path="/aql" element={<AQLQueryPage />} />
                   <Route path="/about" element={<AboutPage />} />
                   <Route path="/tree" element={<TreePage />} />
                   <Route path="/sunburst" element={<SunburstPage />} />

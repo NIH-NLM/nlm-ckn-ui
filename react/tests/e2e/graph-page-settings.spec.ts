@@ -109,3 +109,65 @@ test('Graph generates from one origin, shows nodes/links, and options toggle aff
     // Verify no "split of undefined" errors occurred
     expect(filterErrorsContaining(await getCollectedErrors(page), 'split').length).toBe(0);
 });
+
+test('Graph export buttons exist and trigger download', async ({ page }) => {
+    await installErrorInstrumentation(page);
+    const originId = `${COLL}/ROOT`;
+
+    // Mock Search
+    await page.route('**/arango_api/search/', async (route) => {
+        return route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify([{ _id: originId, label: 'Root Node' }])
+        });
+    });
+
+    // Mock Graph APIs
+    await page.route('**/arango_api/collections/', async (route) => route.fulfill({ status: 200, body: JSON.stringify([COLL]) }));
+    await page.route('**/arango_api/edge_filter_options/', async (route) => route.fulfill({ status: 200, body: JSON.stringify({ Label: ['has_child'] }) }));
+    await page.route('**/arango_api/graph/', async (route) => route.fulfill({ status: 200, body: JSON.stringify(buildRawGraph(originId)) }));
+    await page.route('**/arango_api/document/details', async (route) => route.fulfill({ status: 200, body: JSON.stringify([{ _id: originId, label: 'Root Node' }]) }));
+
+    // Go to Search Page
+    await page.goto('/');
+
+    // Search
+    await page.getByPlaceholder('Search NCKN...').fill('Root Node');
+    // Wait for results
+    await page.locator('.unified-search-results-list').waitFor({ state: 'visible' });
+
+    // Add to Graph
+    await page.getByTitle('Add to Graph').first().click();
+
+    // Go to Graph Page
+    await page.goto('/#/graph');
+
+    // Wait for selected items
+    await page.locator('.selected-items-container').waitFor({ state: 'visible' });
+
+    // Generate Graph
+    await page.getByRole('button', { name: /Generate Graph|Update Graph/i }).click();
+    await page.locator('#chart-container-wrapper svg').waitFor({ state: 'visible' });
+
+    // Open options
+    await page.locator('.graph-component-wrapper .toggle-options-button').click();
+
+    // Switch to Export tab
+    await page.getByRole('button', { name: 'Export' }).click();
+
+    // Check buttons
+    const svgBtn = page.getByRole('button', { name: 'Download as SVG' });
+    const pngBtn = page.getByRole('button', { name: 'Download as PNG' });
+    const jsonBtn = page.getByRole('button', { name: 'Download as JSON' });
+
+    await expect(svgBtn).toBeVisible();
+    await expect(pngBtn).toBeVisible();
+    await expect(jsonBtn).toBeVisible();
+
+    // Verify click triggers download
+    const downloadPromise = page.waitForEvent('download');
+    await jsonBtn.click();
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toContain('.json');
+});

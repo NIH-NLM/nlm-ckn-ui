@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useActiveNav } from "../ActiveNavContext/ActiveNavContext";
 
@@ -35,10 +35,6 @@ const Header = () => {
         </Link>
         <Link to="/about">
           <h4 className={activeNav.startsWith("/about") ? "active-nav" : ""}>About</h4>
-        </Link>
-        {/* Hide query page until it is useful */}
-        <Link to="/aql" style={{ display: "none" }}>
-          <h4 className={activeNav === "/aql" ? "active-nav" : ""}>Query</h4>
         </Link>
       </div>
     </div>
