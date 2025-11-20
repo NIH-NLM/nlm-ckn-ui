@@ -21,7 +21,7 @@ const SelectedItemsTable = ({ selectedItems, generateGraph, removeSelectedItem, 
         return `${displayUrl.substring(0, 37)}...`;
       }
       return displayUrl;
-    } catch (e) {
+    } catch (_e) {
       return url.length > 40 ? `${url.substring(0, 37)}...` : url;
     }
   };

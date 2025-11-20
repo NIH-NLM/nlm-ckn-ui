@@ -14,7 +14,7 @@ export function performSetOperation(graphs, operation) {
     if (safeGraphs.length === 0) return { nodes: [], links: [] };
     if (safeGraphs.length === 1) return safeGraphs[0] || { nodes: [], links: [] };
 
-    // Normalize operation 
+    // Normalize operation
     const op = String(operation || "Union").toLowerCase();
 
     // Aggregate nodes and counts
@@ -48,7 +48,6 @@ export function performSetOperation(graphs, operation) {
         finalNodes = allEntries.filter((e) => e.count === 1).map((e) => e.node);
         break;
       }
-      case "union":
       default: {
         finalNodes = allEntries.map((e) => e.node);
         break;
@@ -68,16 +67,22 @@ export function performSetOperation(graphs, operation) {
       const currentLinks = Array.isArray(graph?.links) ? graph.links : [];
       for (const link of currentLinks) {
         if (!link) continue;
-        const key = link._id || link._key || `${link._from || "?"}->${link._to || "?"}|${link.Label || ""}`;
+        const key =
+          link._id || link._key || `${link._from || "?"}->${link._to || "?"}|${link.Label || ""}`;
         if (!uniqueLinks.has(key)) uniqueLinks.set(key, link);
       }
     }
 
     // Keep links whose endpoints are in final set
     const filteredLinks = Array.from(uniqueLinks.values()).filter((link) => {
-      const from = link && link._from;
-      const to = link && link._to;
-      return typeof from === "string" && typeof to === "string" && finalNodeIdSet.has(from) && finalNodeIdSet.has(to);
+      const from = link?._from;
+      const to = link?._to;
+      return (
+        typeof from === "string" &&
+        typeof to === "string" &&
+        finalNodeIdSet.has(from) &&
+        finalNodeIdSet.has(to)
+      );
     });
 
     return { nodes: finalNodes, links: filteredLinks };

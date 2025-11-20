@@ -345,7 +345,7 @@ const graphSlice = createSlice({
       // Ensure lastAppliedSettings reflects the settings that produced this graph.
       try {
         state.lastAppliedSettings = JSON.parse(JSON.stringify(settings));
-      } catch (err) {
+      } catch (_err) {
         state.lastAppliedSettings = { ...settings };
       }
       state.lastActionType = "loadGraph";
@@ -370,7 +370,7 @@ const graphSlice = createSlice({
       // lastAppliedSettings already set to initial defaults above, ensure deep clone
       try {
         state.lastAppliedSettings = JSON.parse(JSON.stringify(state.settings));
-      } catch (err) {
+      } catch (_err) {
         state.lastAppliedSettings = { ...state.settings };
       }
       state.lastActionType = "loadGraph";
@@ -390,7 +390,7 @@ const graphSlice = createSlice({
         // Store deep-cloned snapshots so later comparisons are by-value, not by reference.
         try {
           state.lastAppliedSettings = JSON.parse(JSON.stringify(state.settings));
-        } catch (err) {
+        } catch (_err) {
           // Fallback to shallow copy if cloning fails for some reason.
           state.lastAppliedSettings = { ...state.settings };
         }
@@ -398,7 +398,7 @@ const graphSlice = createSlice({
         if (state.isAdvancedMode) {
           try {
             state.lastAppliedPerNodeSettings = JSON.parse(JSON.stringify(state.perNodeSettings));
-          } catch (err) {
+          } catch (_err) {
             state.lastAppliedPerNodeSettings = { ...state.perNodeSettings };
           }
         } else {
@@ -479,7 +479,7 @@ export const {
 // Wrap base reducer with redux-undo.
 const undoableGraphReducer = undoable(graphSlice.reducer, {
   // Only create new history states on these specific actions.
-  filter: (action, currentState, previousHistory) => {
+  filter: (action, _currentState, _previousHistory) => {
     return action.type === setGraphData.type || action.type === updateNodePosition.type;
   },
   ignoreInitialState: true,

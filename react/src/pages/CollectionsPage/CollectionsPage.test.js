@@ -1,4 +1,4 @@
-import CollectionsPage from "./CollectionsPage";
+// import CollectionsPage from "./CollectionsPage";
 
 describe("CollectionsPage", () => {
   it("Should have tests", () => {

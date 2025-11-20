@@ -1,4 +1,3 @@
-import React from "react";
 import schemaImage from "../../assets/schema.png";
 
 const AboutPage = () => {

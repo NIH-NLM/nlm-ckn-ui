@@ -1,4 +1,4 @@
-import BrowsePage from "./ExplorationPage";
+// import BrowsePage from "./ExplorationPage";
 
 describe("ExplorationPage", () => {
   it("Should have tests", () => {

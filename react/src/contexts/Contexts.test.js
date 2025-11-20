@@ -4,11 +4,9 @@ import { PrunedCollections } from "./Contexts";
 // Dummy component to consume contexts
 const ConsumerComponent = () => {
   return (
-    <>
-      <PrunedCollections.Consumer>
-        {(value) => <div>{`Pruned: ${value.join(", ")}`}</div>}
-      </PrunedCollections.Consumer>
-    </>
+    <PrunedCollections.Consumer>
+      {(value) => <div>{`Pruned: ${value.join(", ")}`}</div>}
+    </PrunedCollections.Consumer>
   );
 };
 

@@ -102,7 +102,7 @@ export function processGraphLinks(
 
 // Renders graph nodes and links using D3 data join pattern.
 // Handles enter, update, and exit selections for dynamic updates.
-function renderGraph(simulation, nodes, links, d3, containers, options) {
+function renderGraph(_simulation, nodes, links, d3, containers, options) {
   // Handle node enter/exit/update.
   const nodeSelection = containers.nodeContainer.selectAll("g.node").data(nodes, (d) => d.id);
 
@@ -358,9 +358,9 @@ function ForceGraphConstructor(
     nodeFontSize: 10,
     linkFontSize: 10,
     minVisibleFontSize: 7,
-    onNodeClick: () => { },
-    onNodeDragEnd: () => { },
-    interactionCallback: () => { },
+    onNodeClick: () => {},
+    onNodeDragEnd: () => {},
+    interactionCallback: () => {},
     nodeRadius: 16,
     linkSource: ({ _from }) => _from,
     linkTarget: ({ _to }) => _to,
@@ -386,17 +386,17 @@ function ForceGraphConstructor(
     options.drag ||
     d3
       .drag()
-      .on("start", (event, d) => {
+      .on("start", (event, _d) => {
         if (!event.active) simulation.alphaTarget(0.1).restart();
         event.subject.fx = event.subject.x;
         event.subject.fy = event.subject.y;
         mergedOptions.interactionCallback();
       })
-      .on("drag", (event, d) => {
+      .on("drag", (event, _d) => {
         event.subject.fx = event.x;
         event.subject.fy = event.y;
       })
-      .on("end", (event, d) => {
+      .on("end", (event, _d) => {
         if (!event.active) simulation.alphaTarget(0);
         event.subject.fx = null;
         event.subject.fy = null;
@@ -601,7 +601,7 @@ function ForceGraphConstructor(
       .enter()
       .append("g")
       .attr("class", "legend-item")
-      .attr("transform", (d, i) => `translate(0, ${i * (legendSize + legendSpacing)})`);
+      .attr("transform", (_d, i) => `translate(0, ${i * (legendSize + legendSpacing)})`);
 
     legendEnter.append("rect").attr("x", 0).attr("width", legendSize).attr("height", legendSize);
 
@@ -616,7 +616,7 @@ function ForceGraphConstructor(
     legendUpdate
       .transition()
       .duration(200)
-      .attr("transform", (d, i) => `translate(0, ${i * (legendSize + legendSpacing)})`);
+      .attr("transform", (_d, i) => `translate(0, ${i * (legendSize + legendSpacing)})`);
     legendUpdate.select("rect").style("fill", (d) => getColorForCollection(d));
     legendUpdate
       .select("text")

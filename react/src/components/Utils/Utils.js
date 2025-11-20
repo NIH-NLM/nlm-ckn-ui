@@ -283,9 +283,9 @@ export const capitalCase = (input) => {
       .map((str) =>
         typeof str === "string"
           ? str
-            .split(" ")
-            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(" ")
+              .split(" ")
+              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(" ")
           : str,
       )
       .join("|");
@@ -428,8 +428,8 @@ export const getAllSearchableFields = () => {
   const collectionMaps = new Map(collMaps.maps);
 
   const fieldsToDisplay = new Set();
-  collectionMaps.forEach((collectionMap, collection, collectionMaps) => {
-    collectionMap.individual_fields.forEach((fieldMap, index) => {
+  collectionMaps.forEach((collectionMap, _collection, _collectionMaps) => {
+    collectionMap.individual_fields.forEach((fieldMap, _index) => {
       fieldsToDisplay.add(fieldMap.field_to_display);
     });
   });

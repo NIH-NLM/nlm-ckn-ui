@@ -1,4 +1,4 @@
-import SchemaPage from "./SchemaPage";
+// import SchemaPage from "./SchemaPage";
 
 describe("SchemaPage", () => {
   it("Should have tests", () => {

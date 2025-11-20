@@ -92,7 +92,6 @@ const FTUIllustration = ({ selectedIllustration, illustrations }) => {
         {isFullScreen ? <CollapseIcon /> : <ExpandIcon />}
       </button>
 
-      {/* biome-ignore lint/style/useSelfClosingElements: custom element intentionally non-self-closing for clarity */}
       <hra-medical-illustration
         selected-illustration={selectedIllustration}
         illustrations={illustrations}

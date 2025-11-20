@@ -1,4 +1,4 @@
-import AboutPage from "./AboutPage";
+// import AboutPage from "./AboutPage";
 
 describe("AboutPage", () => {
   it("Should have tests", () => {

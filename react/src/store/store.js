@@ -4,10 +4,10 @@ import {
   PAUSE,
   PERSIST,
   PURGE,
-  REGISTER,
-  REHYDRATE,
   persistReducer,
   persistStore,
+  REGISTER,
+  REHYDRATE,
 } from "redux-persist";
 import storage from "redux-persist/lib/storage";
 import graphReducer, { fetchAndProcessGraph } from "./graphSlice";

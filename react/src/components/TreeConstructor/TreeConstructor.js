@@ -97,7 +97,7 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit }) => {
         .enter()
         .append("g")
         .attr("class", "node-group")
-        .attr("transform", (d) => `translate(${source.y0},${source.x0})`)
+        .attr("transform", (_d) => `translate(${source.y0},${source.x0})`)
         .attr("fill-opacity", 0)
         .attr("stroke-opacity", 0)
         .on("click", (event, d) => {
@@ -172,7 +172,7 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit }) => {
         })
         .transition(transition)
         .remove()
-        .attr("transform", (d) => `translate(${source.y},${source.x})`)
+        .attr("transform", (_d) => `translate(${source.y},${source.x})`)
         .attr("fill-opacity", 0)
         .attr("stroke-opacity", 0);
 
@@ -182,7 +182,7 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit }) => {
       link
         .enter()
         .append("path")
-        .attr("d", (d) => {
+        .attr("d", (_d) => {
           const o = { x: source.x0, y: source.y0 };
           return diagonal({ source: o, target: o });
         })
@@ -194,7 +194,7 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit }) => {
         .exit()
         .transition(transition)
         .remove()
-        .attr("d", (d) => {
+        .attr("d", (_d) => {
           const o = { x: source.x, y: source.y };
           return diagonal({ source: o, target: o });
         });

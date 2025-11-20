@@ -1,4 +1,4 @@
-import SearchPage from "./SearchPage";
+// import SearchPage from "./SearchPage";
 
 describe("SearchPage", () => {
   it("Should have tests", () => {

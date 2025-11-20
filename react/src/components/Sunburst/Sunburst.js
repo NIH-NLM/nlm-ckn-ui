@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import AddToGraphButton from "../AddToGraphButton/AddToGraphButton";
 import DocumentPopup from "../DocumentPopup/DocumentPopup";
 import SunburstConstructor from "../SunburstConstructor/SunburstConstructor";
-import { LoadingBar, getLabel, mergeChildren } from "../Utils/Utils";
+import { getLabel, LoadingBar, mergeChildren } from "../Utils/Utils";
 
 const Sunburst = ({ addSelectedItem }) => {
   // --- State ---
@@ -123,7 +123,7 @@ const Sunburst = ({ addSelectedItem }) => {
 
   // --- Event Handlers ---
   const latestHandleNodeClick = useCallback(
-    (event, d3Node) => {
+    (_event, d3Node) => {
       if (!d3Node.data._hasChildren) {
         return false;
       }
@@ -292,7 +292,7 @@ const Sunburst = ({ addSelectedItem }) => {
     };
   }, [popupVisible]);
 
-  function handleSelectItem() {
+  function _handleSelectItem() {
     if (clickedItem) {
       addSelectedItem(clickedItem);
     }
@@ -306,6 +306,7 @@ const Sunburst = ({ addSelectedItem }) => {
   // --- Render ---
   return (
     <div className="sunburst-component-wrapper">
+      {/* biome-ignore lint/correctness/useUniqueElementIds: legacy id */}
       <div
         data-testid="sunburst-container"
         id="sunburst-container"

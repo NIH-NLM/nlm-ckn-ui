@@ -1,4 +1,3 @@
-import React from "react";
 import { getDisplayFields, getUrl } from "../Utils/Utils";
 
 /**

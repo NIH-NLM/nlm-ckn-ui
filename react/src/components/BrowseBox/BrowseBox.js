@@ -35,7 +35,7 @@ const BrowseBox = () => {
       const labelB = Array.isArray(getLabel(b)) ? getLabel(b)[0] : getLabel(b);
       return labelA.localeCompare(labelB);
     });
-    keyItems.sort((a, b) => Number.parseInt(a._key) - Number.parseInt(b._key));
+    keyItems.sort((a, b) => Number.parseInt(a._key, 10) - Number.parseInt(b._key, 10));
     setDocumentList([...labeledItems, ...keyItems]);
   }, []);
 

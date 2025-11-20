@@ -201,7 +201,7 @@ function SunburstConstructor(
       .attr("fill", "none")
       .attr("pointer-events", "all")
       .style("cursor", "pointer")
-      .on("click", (event) => {
+      .on("click", (_event) => {
         if (handleCenterClickRef.current) {
           handleCenterClickRef.current();
         }
@@ -214,7 +214,7 @@ function SunburstConstructor(
       .style("font-weight", "bold")
       .style("cursor", "pointer")
       .text(getLabel(currentVisualCenterNode.data) || "Root")
-      .on("click", (event) => {
+      .on("click", (_event) => {
         if (handleCenterClickRef.current) {
           handleCenterClickRef.current();
         }

@@ -30,7 +30,7 @@ const AQLQueryPage = () => {
 
   const handleQueryChange = (event) => {
     const selectedId = event.target.value;
-    const sq = predefinedQueries.find((q) => q.id === Number.parseInt(selectedId));
+    const sq = predefinedQueries.find((q) => q.id === Number.parseInt(selectedId, 10));
     setSelectedQuery(sq);
     setQueryTemplate(sq ? sq.query : "");
   };

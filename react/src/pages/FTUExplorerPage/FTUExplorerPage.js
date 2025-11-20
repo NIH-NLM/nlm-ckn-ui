@@ -1,4 +1,3 @@
-import React from "react";
 import FTUIllustration from "../../components/FTUIllustration/FTUIllustration";
 
 const FTUExplorerPage = () => {

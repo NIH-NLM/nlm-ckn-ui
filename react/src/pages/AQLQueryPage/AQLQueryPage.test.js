@@ -1,4 +1,4 @@
-import AQLQueryPage from "./AQLQueryPage";
+// import AQLQueryPage from "./AQLQueryPage";
 
 describe("AQLQueryPage", () => {
   it("Should have tests", () => {

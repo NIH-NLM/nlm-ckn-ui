@@ -32,7 +32,7 @@ const Pagination = ({ currentPage, totalPages, paginate }) => {
       <button type="button" onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1}>
         Prev
       </button>
-      {pageNumbers.map((item, index) =>
+      {pageNumbers.map((item, _index) =>
         item.toString().includes("ellipsis") ? (
           <span key={item} className="pagination-ellipsis">
             ...

@@ -184,10 +184,12 @@ td {
 }
 
 .nowrap {
+  /* biome-ignore lint/complexity/noImportantStyles: utility class */
   text-wrap: nowrap !important;
 }
 
 .wrap {
+  /* biome-ignore lint/complexity/noImportantStyles: utility class */
   text-wrap: wrap !important;
 }
 
@@ -208,7 +210,9 @@ tr:nth-of-type(even) {
   background-color: var(--color-white);
   border: 1px solid var(--color-border);
   border-radius: 8px;
-  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  transition:
+    border-color 0.2s ease-in-out,
+    box-shadow 0.2s ease-in-out;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
@@ -263,7 +267,10 @@ tr:nth-of-type(even) {
   opacity: 0;
   transform: translateY(-10px);
   visibility: hidden;
-  transition: opacity 0.2s ease-out, transform 0.2s ease-out, visibility 0s 0.2s;
+  transition:
+    opacity 0.2s ease-out,
+    transform 0.2s ease-out,
+    visibility 0s 0.2s;
 }
 
 .show {
@@ -273,7 +280,10 @@ tr:nth-of-type(even) {
 .search-component-wrapper .search-bar-container .search-results-dropdown {
   opacity: 1;
   transform: translateY(0);
-  transition: opacity 0.2s ease-out, transform 0.2s ease-out, visibility 0s 0s;
+  transition:
+    opacity 0.2s ease-out,
+    transform 0.2s ease-out,
+    visibility 0s 0s;
 }
 
 /* Styling for SearchResultsTable items */
@@ -590,7 +600,9 @@ tr:nth-of-type(even) {
   font-weight: 600;
   border-radius: 5px;
   cursor: pointer;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .primary-action-button.generate-graph-button:hover {
@@ -692,12 +704,17 @@ tr:nth-of-type(even) {
   padding: 8px 12px;
   border-bottom: 1px solid var(--color-light-bg);
   cursor: pointer;
+  /* biome-ignore lint/suspicious/noDuplicateProperties: intentional override */
   border-bottom: 1px solid var(--color-white);
 }
 
 /*Hover color changes*/
 
-.app-header a:hover,
+.app-header a:hover {
+  color: var(--color-light);
+}
+
+/* biome-ignore lint/style/noDescendingSpecificity: legacy css */
 table a:hover {
   color: var(--color-light);
 }
@@ -716,7 +733,18 @@ table a:hover {
 }
 
 .aql-query-input select,
-.aql-query-input input[type="text"],
+.aql-query-input input[type="text"] {
+  width: 100%;
+  margin-bottom: 15px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+  transition:
+    border-color 0.3s,
+    box-shadow 0.3s;
+}
+
 .aql-query-input button {
   width: 100%;
   margin-bottom: 15px;
@@ -724,7 +752,9 @@ table a:hover {
   border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 16px;
-  transition: border-color 0.3s, box-shadow 0.3s;
+  transition:
+    border-color 0.3s,
+    box-shadow 0.3s;
 }
 
 select:focus,
@@ -733,6 +763,7 @@ input[type="text"]:focus {
   outline: none;
 }
 
+/* biome-ignore lint/style/noDescendingSpecificity: legacy css */
 button {
   border: none;
   cursor: pointer;
@@ -843,7 +874,10 @@ option {
   background-color: inherit;
   margin: 0 1rem;
   padding: 0.25rem;
+  /* biome-ignore lint/complexity/noImportantStyles: browser specific override */
   width: -webkit-fill-available !important;
+  /* biome-ignore lint/complexity/noImportantStyles: browser specific override */
+  /* biome-ignore lint/suspicious/noDuplicateProperties: browser specific override */
   width: -moz-available !important;
 }
 
@@ -852,6 +886,7 @@ option {
     padding: 15px;
   }
 
+  /* biome-ignore lint/style/noDescendingSpecificity: legacy css */
   select {
     max-width: 100%;
     /* Full width on smaller screens */
@@ -1052,7 +1087,9 @@ button.active {
   border: none;
   cursor: pointer;
   outline: none;
-  transition: color 0.15s ease-in-out, text-decoration-color 0.15s ease-in-out;
+  transition:
+    color 0.15s ease-in-out,
+    text-decoration-color 0.15s ease-in-out;
   text-decoration-color: var(--color-focus);
 }
 
@@ -1154,7 +1191,9 @@ button.active {
   color: var(--color-text);
   border-radius: 5px;
   border: 1px solid transparent;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .collection-link:hover {
@@ -1183,6 +1222,7 @@ button.active {
   font-weight: 600;
 }
 
+/* biome-ignore lint/style/noDescendingSpecificity: legacy css */
 .collection-abbreviation {
   font-size: 0.85em;
   color: var(--color-gray);
@@ -1320,7 +1360,9 @@ button.active {
   box-shadow: -2px 0 5px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
-  transition: flex-basis 0.3s ease, width 0.3s ease;
+  transition:
+    flex-basis 0.3s ease,
+    width 0.3s ease;
   z-index: 10;
   overflow: hidden;
   margin: 0px 20px;
@@ -1358,7 +1400,10 @@ button.active {
   font-size: 0.9em;
   font-weight: 500;
   border-radius: 0;
-  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .tab-button:hover {
@@ -1427,7 +1472,9 @@ button.active {
 }
 
 .collection-button-all {
+  /* biome-ignore lint/complexity/noImportantStyles: override */
   margin: 0 !important;
+  /* biome-ignore lint/complexity/noImportantStyles: override */
   padding: 0 0.85rem !important;
 }
 
@@ -1489,6 +1536,7 @@ button.active {
 }
 
 .option-group .graph-source-toggle {
+  /* biome-ignore lint/complexity/noImportantStyles: override */
   flex-direction: row !important;
   justify-content: center;
   align-items: center;
@@ -1522,7 +1570,10 @@ button.active {
   border-radius: 4px;
   border: 1px solid var(--color-border);
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
   line-height: 1.2;
   min-height: 34px;
 }
@@ -2022,6 +2073,7 @@ input:checked + .slider:before {
   background-color: var(--color-light);
 }
 
+/* biome-ignore lint/style/noDescendingSpecificity: legacy css */
 svg {
   height: 90%;
 }
@@ -2075,7 +2127,9 @@ kbd {
   background-color: #eee;
   border-radius: 3px;
   border: 1px solid #b4b4b4;
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2), 0 2px 0 0 rgba(255, 255, 255, 0.7) inset;
+  box-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.2),
+    0 2px 0 0 rgba(255, 255, 255, 0.7) inset;
   color: #333;
   display: inline-block;
   font-family: monospace;
@@ -2100,7 +2154,9 @@ kbd {
   background-color: #eee;
   border-radius: 3px;
   border: 1px solid #b4b4b4;
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2), 0 2px 0 0 rgba(255, 255, 255, 0.7) inset;
+  box-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.2),
+    0 2px 0 0 rgba(255, 255, 255, 0.7) inset;
   color: #333;
   display: inline-block;
   font-family: monospace;
@@ -2335,7 +2391,9 @@ kbd {
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.3s, box-shadow 0.3s;
+  transition:
+    background-color 0.3s,
+    box-shadow 0.3s;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
@@ -2459,7 +2517,9 @@ kbd {
   border-radius: 4px;
   cursor: pointer;
   line-height: inherit;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
 
 .document-popup-button:hover,

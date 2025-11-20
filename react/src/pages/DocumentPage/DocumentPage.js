@@ -3,8 +3,8 @@ import { useDispatch } from "react-redux";
 import { useParams } from "react-router-dom";
 import collectionDefaults from "../../assets/collection-defaults.json";
 import DocumentCard from "../../components/DocumentCard/DocumentCard";
-import FTUIllustration from "../../components/FTUIllustration/FTUIllustration";
 import ForceGraph from "../../components/ForceGraph/ForceGraph";
+import FTUIllustration from "../../components/FTUIllustration/FTUIllustration";
 import { findFtuUrlById, getTitle, parseId } from "../../components/Utils/Utils";
 import { useFtuParts } from "../../contexts/FTUPartsContext";
 import { PrunedCollectionsContext } from "../../contexts/PrunedCollectionsContext";
@@ -18,7 +18,7 @@ const DocumentPage = () => {
   const [isPanelVisible, setIsPanelVisible] = useState(true);
 
   const prunedCollections = useContext(PrunedCollectionsContext);
-  const { ftuParts, ftuPartsIsLoading, ftuPartsError } = useFtuParts();
+  const { ftuParts } = useFtuParts();
 
   const filteredPrunedCollections = prunedCollections.includes(coll)
     ? prunedCollections.filter((item) => item !== coll)
