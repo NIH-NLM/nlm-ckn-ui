@@ -283,9 +283,9 @@ export const capitalCase = (input) => {
       .map((str) =>
         typeof str === "string"
           ? str
-              .split(" ")
-              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-              .join(" ")
+            .split(" ")
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(" ")
           : str,
       )
       .join("|");
@@ -321,7 +321,6 @@ export function mergeChildren(graphData, parentId, childrenWithGrandchildren) {
   const parentNode = findNodeById(newData, parentId);
 
   if (parentNode) {
-    console.log(`Found parent ${parentId}, merging children:`, childrenWithGrandchildren);
     parentNode.children = childrenWithGrandchildren;
     parentNode._childrenLoaded = true;
   } else {
@@ -367,7 +366,6 @@ export const findFtuUrlById = (ftuPartsArray, searchId) => {
   );
 
   // Return match digital object URL
-  console.log(foundMatch);
   return foundMatch?.ftu_digital_object || null;
 };
 
@@ -376,14 +374,22 @@ export const isMac = /mac/i.test(navigator.platform);
 
 // A helper to determine if a raw API graph response object is empty
 export const hasNodesInRawData = (data) => {
-  if (!data || typeof data !== "object" || Object.keys(data).length === 0) {
-    return false;
+  // Guard
+  if (!data || typeof data !== "object") return false;
+
+  // Shortest-path shape: { nodes: Array, links: Array }
+  if (Array.isArray(data.nodes)) {
+    return data.nodes.length > 0;
   }
+
+  // Per-origin shape: { [originId]: { nodes: Array, links: Array }, ... }
   if (data.nodes && typeof data.nodes === "object") {
     return Object.values(data.nodes).some(
       (nodeArray) => Array.isArray(nodeArray) && nodeArray.length > 0,
     );
   }
+
+  // Unknown/empty
   return false;
 };
 

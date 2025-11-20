@@ -50,6 +50,7 @@ export function deepChildren(): TestDoc[] {
 // Arango-style edge document
 export type TestEdge = {
     _id: string;
+    _key: string;
     _from: string;
     _to: string;
     Label?: string;
@@ -58,6 +59,7 @@ export type TestEdge = {
 export function edge(key: string, fromDocId: string, toDocId: string, label = 'related'): TestEdge {
     return {
         _id: `${EDGE_COLL}/${key}`,
+        _key: key,
         _from: fromDocId,
         _to: toDocId,
         Label: label,
@@ -109,11 +111,12 @@ export function twoOriginRawGraphs(originA: string, originB: string) {
 }
 
 // Build a simple shortest-path-shaped graph: A -> B -> C
-export function shortestPathGraph() {
-    const a = doc('A', 'A');
-    const b = doc('B', 'B');
-    const c = doc('C', 'C');
-    const e_ab = edge('E_AB', a._id, b._id, 'path');
-    const e_bc = edge('E_BC', b._id, c._id, 'path');
-    return { nodes: [a, b, c], links: [e_ab, e_bc] };
+export function shortestPathGraph(originA: string, originB: string) {
+    // Dynamic origins with a mid path node to mimic backend shortest path response
+    const a: TestDoc = { _id: originA, label: originA.split('/')[1] };
+    const mid = doc('MID_PATH', 'MID_PATH');
+    const b: TestDoc = { _id: originB, label: originB.split('/')[1] };
+    const e_ab = edge('PATH1', a._id, mid._id, 'path');
+    const e_mb = edge('PATH2', mid._id, b._id, 'path');
+    return { nodes: [a, mid, b], links: [e_ab, e_mb] };
 }

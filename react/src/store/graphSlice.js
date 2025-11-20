@@ -235,7 +235,6 @@ const graphSlice = createSlice({
     updateSetting: (state, action) => {
       const { setting, value } = action.payload;
       state.settings[setting] = value;
-      console.log("Update setting:", value);
       state.lastActionType = "updateSetting";
     },
     // Sets final, processed graph data, including node positions.

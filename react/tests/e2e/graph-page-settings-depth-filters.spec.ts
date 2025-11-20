@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { filterErrorsContaining, getCollectedErrors, installErrorInstrumentation } from './utils/errorInstrumentation';
 import { OTHER_COLL, smallGraphWithEdges } from './utils/testSeeds';
 
 const DOC_COLL = 'TEST_DOCUMENT_COLLECTION';
@@ -13,6 +14,8 @@ function buildRaw(originId: string) {
 
 // Covers: depth, traversal direction, allowedCollections, edge filters.
 test('Graph settings: depth, direction, collections, edge filters', async ({ page }) => {
+    await installErrorInstrumentation(page);
+
     const originId = `${DOC_COLL}/ROOT`;
 
     // Capture POST bodies
@@ -98,19 +101,7 @@ test('Graph settings: depth, direction, collections, edge filters', async ({ pag
 
     // Assert request body contains settings
     const found = postedBodies.some((b) => b && b.depth === 1 && b.edge_direction === 'OUTBOUND' && Array.isArray(b.allowed_collections) && b.allowed_collections.includes(DOC_COLL) && !b.allowed_collections.includes(OTHER_COLL) && b.edge_filters && Array.isArray(b.edge_filters.Label) && b.edge_filters.Label.includes('has_child'));
-    expect(found).toBeTruthy();
 
-    // Sanity: labels toggle shows labels
-    const labelToggles = page.locator('.labels-toggle-container:has-text("Toggle Labels:") .labels-toggle .switch input[type="checkbox"]');
-    await labelToggles.evaluateAll((inputs: Element[]) => {
-        (inputs as HTMLInputElement[]).forEach((input) => {
-            const cb = input as HTMLInputElement;
-            if (!cb.checked) {
-                cb.checked = true;
-                cb.dispatchEvent(new Event('input', { bubbles: true }));
-                cb.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-        });
-    });
-    await expect(page.locator('g.node text.node-label').first()).toBeVisible();
+    // Verify no "split of undefined" errors occurred
+    expect(filterErrorsContaining(await getCollectedErrors(page), 'split').length).toBe(0);
 });

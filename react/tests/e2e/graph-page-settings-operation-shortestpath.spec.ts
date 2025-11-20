@@ -1,10 +1,11 @@
 import { expect, test } from '@playwright/test';
+import { filterErrorsContaining, getCollectedErrors, installErrorInstrumentation } from './utils/errorInstrumentation';
 import { shortestPathGraph, twoOriginRawGraphs } from './utils/testSeeds';
 
 const DOC_COLL = 'TEST_DOCUMENT_COLLECTION';
 
 // Covers: setOperation transitions and shortest path mode.
-test('Graph settings: set operation and shortest path', async ({ page }) => {
+test('Graph settings: shortest path filters union graph correctly', async ({ page }) => {
     const originA = `${DOC_COLL}/ROOT_A`;
     const originB = `${DOC_COLL}/ROOT_B`;
 
@@ -50,14 +51,12 @@ test('Graph settings: set operation and shortest path', async ({ page }) => {
         return route.continue();
     });
 
-    // Mock shortest path
+    // Mock shortest path using dynamic seed (includes _key on edges)
     await page.route('**/arango_api/shortest_paths/', async (route) => {
         if (route.request().method() === 'POST') {
             const body = await route.request().postDataJSON();
             postedBodies.push(body);
-            const sp = shortestPathGraph();
-            // Single merged payload
-            const graph = { nodes: sp.nodes, links: sp.links };
+            const graph = shortestPathGraph(body.node_ids[0], body.node_ids[1]);
             return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(graph) });
         }
         return route.continue();
@@ -75,8 +74,12 @@ test('Graph settings: set operation and shortest path', async ({ page }) => {
     }, { a: originA, b: originB });
 
     await page.goto('/#/graph');
-    // E2E mode: show graph area immediately
-    await page.evaluate(() => { (window as any).__E2E__ = true; });
+    // Instrument error capture & console monitoring
+    await installErrorInstrumentation(page);
+
+    const generateBtn = page.getByRole('button', { name: /Generate Graph|Update Graph/i });
+    await expect(generateBtn).toBeVisible();
+
     // Wait for store
     await page.waitForFunction(() => (window as any).__STORE__ != null);
     const selected = page.locator('.selected-items-container');
@@ -84,6 +87,12 @@ test('Graph settings: set operation and shortest path', async ({ page }) => {
     // Both origins visible
     await expect(selected).toContainText('ROOT_A');
     await expect(selected).toContainText('ROOT_B');
+
+    // Ensure graph area mounts deterministically (test hook)
+    await page.evaluate(() => { (window as any).__GRAPH__?.show?.(); });
+    const graphArea = page.locator('.graph-display-area');
+    await graphArea.waitFor({ state: 'visible' });
+    await expect(page.locator('svg[aria-label="Graph visualization"]')).toBeVisible();
     // Wait for allowedCollections
     await page.waitForFunction(() => {
         const store: any = (window as any).__STORE__;
@@ -111,6 +120,10 @@ test('Graph settings: set operation and shortest path', async ({ page }) => {
     await page.evaluate(() => {
         const store: any = (window as any).__STORE__;
         store.dispatch({ type: 'graph/updateSetting', payload: { setting: 'depth', value: 1 } });
+        // Disable automatic collapsing so union graph retains all branch nodes
+        store.dispatch({ type: 'graph/updateSetting', payload: { setting: 'collapseOnStart', value: false } });
+        // Disable focus nodes (donut rendering) just to avoid any conditional pruning differences
+        store.dispatch({ type: 'graph/updateSetting', payload: { setting: 'useFocusNodes', value: false } });
     });
     // Reinitialize
     await page.evaluate((ids) => {
@@ -120,16 +133,29 @@ test('Graph settings: set operation and shortest path', async ({ page }) => {
 
     // Options panel already open
 
-    // SetOperation = Intersection (Redux)
+    // Ensure we start from a Union so we have extra branch nodes (Y, Z) present
     await page.evaluate(() => {
         const store: any = (window as any).__STORE__;
-        store.dispatch({ type: 'graph/updateSetting', payload: { setting: 'setOperation', value: 'Intersection' } });
+        store.dispatch({ type: 'graph/updateSetting', payload: { setting: 'setOperation', value: 'Union' } });
     });
-    // Trigger fetch
+    // Trigger fetch for union graph
     const beforeOp = postedBodies.length;
     await page.evaluate(() => { (window as any).__ACTIONS__.fetchNow(); });
     await expect.poll(() => postedBodies.length, { timeout: 10000 }).toBeGreaterThan(beforeOp);
     await expect.poll(() => postedBodies.some((b) => Array.isArray(b?.node_ids) && b.node_ids.length === 2 && !b.advanced_settings && !b.shortestPaths), { timeout: 10000 }).toBeTruthy();
+
+    // Wait for processed union graphData (set operation applied client-side)
+    await expect.poll(
+        () => page.evaluate(() => (window as any).__STORE__?.getState?.().graph?.present?.graphData?.nodes?.length || 0),
+        { timeout: 10000 }
+    ).toBeGreaterThanOrEqual(5); // r, mid, c1, y, z expected
+    const unionNodeIds = await page.evaluate(() => {
+        const st: any = (window as any).__STORE__?.getState?.().graph?.present;
+        return (st?.graphData?.nodes || []).map((n: any) => n?.id || n?._id);
+    });
+    // Sanity: union should contain branch nodes (Y and Z)
+    expect(unionNodeIds.some((id: string) => id.endsWith('/Y')), 'Union graph missing Y node').toBeTruthy();
+    expect(unionNodeIds.some((id: string) => id.endsWith('/Z')), 'Union graph missing Z node').toBeTruthy();
 
     // Enable shortest path (Redux)
     await page.evaluate(() => {
@@ -142,5 +168,33 @@ test('Graph settings: set operation and shortest path', async ({ page }) => {
     await expect.poll(() => postedBodies.length, { timeout: 10000 }).toBeGreaterThan(beforeSP);
     await expect.poll(() => postedBodies.some((b) => Array.isArray(b?.node_ids) && b.node_ids.length === 2 && b.edge_direction && !b.depth && !b.allowed_collections), { timeout: 10000 }).toBeTruthy();
 
-    // TODO: DOM assertions for shortest path graph?
+    // Assert shortest path rawData present in store and is reduced (no Y/Z, no has_child edges)
+    await expect.poll(
+        () => page.evaluate(() => (window as any).__STORE__?.getState?.().graph?.present?.rawData?.nodes?.map((n: any) => n._id) || []),
+        { timeout: 10000 }
+    ).toHaveLength(3); // shortest path nodes: originA, mid, originB
+    const spNodeIds = await page.evaluate(() => (window as any).__STORE__?.getState?.().graph?.present?.rawData?.nodes?.map((n: any) => n._id) || []);
+    expect(spNodeIds.every((id: string) => !id.endsWith('/Y') && !id.endsWith('/Z')), 'Shortest path graph still contains branch nodes Y/Z').toBeTruthy();
+    await expect.poll(
+        () => page.evaluate(() => (window as any).__STORE__?.getState?.().graph?.present?.rawData?.links?.length || 0),
+        { timeout: 10000 }
+    ).toBe(2);
+    const spLinkLabels = await page.evaluate(() => (window as any).__STORE__?.getState?.().graph?.present?.rawData?.links?.map((l: any) => l.Label) || []);
+    expect(spLinkLabels.every((lab: string) => lab === 'path'), 'Non-path edges present after shortest path filtering').toBeTruthy();
+
+    // Capture shape snapshot for diagnostics
+    const shape = await page.evaluate(() => {
+        const st: any = (window as any).__STORE__?.getState?.().graph?.present;
+        return {
+            nodes: (st?.rawData?.nodes || []).map((n: any) => n?._id),
+            links: (st?.rawData?.links || []).map((l: any) => ({ from: l?._from, to: l?._to })),
+        };
+    });
+
+    // Verify no "split of undefined" errors occurred
+    expect(filterErrorsContaining(await getCollectedErrors(page), 'split').length).toBe(0);
+
+    // Final validation: ensure shortest path result is strict subset of union nodes (excluding Y/Z)
+    const extraInUnion = unionNodeIds.filter((id: string) => !spNodeIds.includes(id));
+    expect(extraInUnion.some((id: string) => id.endsWith('/Y') || id.endsWith('/Z')), 'Union vs shortest path difference does not include expected branch nodes').toBeTruthy();
 });

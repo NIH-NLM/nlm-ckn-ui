@@ -153,7 +153,6 @@ const Sunburst = ({ addSelectedItem }) => {
   );
 
   const latestHandleCenterClick = useCallback(() => {
-    console.log(`[latestHandleCenterClick EXECUTION] Current state zoomedNodeId: ${zoomedNodeId}`);
     const currentHierarchy = currentHierarchyRootRef.current;
     const currentCenterId = zoomedNodeId;
     const currentIsLoading = isLoadingRef.current;
@@ -201,7 +200,6 @@ const Sunburst = ({ addSelectedItem }) => {
         }
       }
     } else {
-      console.log("[latestHandleCenterClick] Already at the root.");
       if (zoomedNodeId !== null) setZoomedNodeId(null);
       if (d3ClickedRef.current && centeredNode) {
         d3ClickedRef.current(null, centeredNode);
@@ -240,7 +238,6 @@ const Sunburst = ({ addSelectedItem }) => {
 
     if (graphData) {
       if (needsFullReconstruction) {
-        console.log("[Main D3 useEffect] Performing full D3 reconstruction.");
         if (svgNodeRef.current && container.contains(svgNodeRef.current)) {
           container.removeChild(svgNodeRef.current);
         }

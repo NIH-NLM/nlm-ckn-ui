@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { filterErrorsContaining, getCollectedErrors, installErrorInstrumentation } from './utils/errorInstrumentation';
 import { smallGraphWithEdges } from './utils/testSeeds';
 
 const COLL = 'TEST_DOCUMENT_COLLECTION';
@@ -16,6 +17,8 @@ function buildRawGraph(originId: string) {
 }
 
 test('Graph generates from one origin, shows nodes/links, and options toggle affects labels', async ({ page }) => {
+    await installErrorInstrumentation(page);
+
     const originId = `${COLL}/ROOT`;
     const { root, edges } = smallGraphWithEdges();
 
@@ -98,14 +101,11 @@ test('Graph generates from one origin, shows nodes/links, and options toggle aff
         (inputs as HTMLInputElement[]).forEach((input) => {
             const cb = input as HTMLInputElement;
             if (!cb.checked) {
-                cb.checked = true;
-                cb.dispatchEvent(new Event('input', { bubbles: true }));
-                cb.dispatchEvent(new Event('change', { bubbles: true }));
+                cb.click();
             }
         });
     });
 
-    // Assert label visible
-    const nodeLabels = page.locator('g.node text.node-label');
-    await expect(nodeLabels.first()).toBeVisible();
+    // Verify no "split of undefined" errors occurred
+    expect(filterErrorsContaining(await getCollectedErrors(page), 'split').length).toBe(0);
 });

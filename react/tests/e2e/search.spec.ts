@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { filterErrorsContaining, getCollectedErrors, installErrorInstrumentation } from './utils/errorInstrumentation';
 import { doc } from './utils/testSeeds';
 
 // Behavior: typing "lung" navigates to the matching document page.
@@ -13,6 +14,8 @@ function expectedHashForDocument(id: string) {
 }
 
 test('searching "lung" navigates to lung page', async ({ page }) => {
+    await installErrorInstrumentation(page);
+
     // Mock search
     await page.route('**/arango_api/search/', async (route) => {
         const request = route.request();
@@ -47,6 +50,9 @@ test('searching "lung" navigates to lung page', async ({ page }) => {
     const firstResult = page.locator('.unified-search-results-list .result-item-row-link').first();
     await expect(firstResult).toBeVisible();
     await expect(firstResult).toContainText('lung');
+
+    // Verify no "split of undefined" errors occurred
+    expect(filterErrorsContaining(await getCollectedErrors(page), 'split').length).toBe(0);
 
     // Click result
     await firstResult.click();

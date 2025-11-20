@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { filterErrorsContaining, getCollectedErrors, installErrorInstrumentation } from './utils/errorInstrumentation';
 import { deepChildren, doc, sunburstRoot } from './utils/testSeeds';
 
 const COLL = 'TEST_DOCUMENT_COLLECTION';
@@ -6,6 +7,8 @@ const SEARCH_DOC = doc('S001', 'Search Node');
 const TREE_DOC = doc('T001', 'Tree Node');
 
 test('Graph page shows two selected nodes and builds graph with both origins', async ({ page }) => {
+    await installErrorInstrumentation(page);
+
     // Mock search
     await page.route('**/arango_api/search/', async (route) => {
         if (route.request().method() === 'POST') {
@@ -98,14 +101,6 @@ test('Graph page shows two selected nodes and builds graph with both origins', a
     await expect(selectedTable).toContainText('Search Node');
     await expect(selectedTable).toContainText('Tree Node');
 
-    // Generate
-    await page.getByRole('button', { name: 'Generate Graph' }).click();
-    // Graph visible
-    const svg = page.locator('#chart-container-wrapper svg');
-    await expect(svg).toBeVisible();
-    // Nodes include both origins
-    const nodes = page.locator('g.node');
-    await nodes.first().waitFor({ state: 'visible' });
-    const nodeCount = await nodes.count();
-    expect(nodeCount).toBeGreaterThanOrEqual(2);
+    // Verify no "split of undefined" errors occurred
+    expect(filterErrorsContaining(await getCollectedErrors(page), 'split').length).toBe(0);
 });

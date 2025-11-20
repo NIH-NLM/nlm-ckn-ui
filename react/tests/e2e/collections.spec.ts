@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { filterErrorsContaining, getCollectedErrors, installErrorInstrumentation } from './utils/errorInstrumentation';
 import { doc } from './utils/testSeeds';
 
 // Seed: deterministic collection and docs
@@ -10,6 +11,8 @@ const docs = [
 ];
 
 test('Collections page: select, filter, and navigate to item', async ({ page }) => {
+    await installErrorInstrumentation(page);
+
     // Mock collections list
     await page.route('**/arango_api/collections/', async (route) => {
         if (route.request().method() === 'POST') {
@@ -77,4 +80,7 @@ test('Collections page: select, filter, and navigate to item', async ({ page }) 
 
     // Title shows collection + label
     await expect(page.locator('.document-item-header h1')).toHaveText(/Test document collection: Beta/i);
+
+    // Verify no "split of undefined" errors occurred
+    expect(filterErrorsContaining(await getCollectedErrors(page), 'split').length).toBe(0);
 });

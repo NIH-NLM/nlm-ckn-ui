@@ -173,7 +173,7 @@ const ForceGraph = ({
     const missing = originNodeIds.filter((id) => !nodeNameMap?.get(id) && !cachedNames[id]);
     if (missing.length === 0) return;
     // fire-and-forget
-    fetchNodeDetailsByIds(missing).catch(() => {});
+    fetchNodeDetailsByIds(missing).catch(() => { });
   }, [originNodeIds, nodeNameMap, cachedNames, fetchNodeDetailsByIds]);
 
   // Local component state for UI and temporary flags.
@@ -396,8 +396,20 @@ const ForceGraph = ({
           } else if (settings.findShortestPaths) {
             processedData = rawData;
           } else {
-            const graphsToProcess = originNodeIds.map((nodeId) => rawData[nodeId]);
-            processedData = performSetOperation(graphsToProcess, settings.setOperation);
+            const graphsToProcess = originNodeIds
+              .map((nodeId) => rawData[nodeId])
+              .filter(Boolean);
+            try {
+              processedData = performSetOperation(graphsToProcess, settings.setOperation);
+            } catch (err) {
+              console.error("Set operation failed; falling back to Union:", err);
+              try {
+                processedData = performSetOperation(graphsToProcess, "Union");
+              } catch (fallbackErr) {
+                console.error("Union fallback failed; using empty graph:", fallbackErr);
+                processedData = { nodes: [], links: [] };
+              }
+            }
           }
           let collapseList = finalCollapseList;
           if (lastActionType === "fetch/fulfilled" && collapsed?.initial?.length === 0) {

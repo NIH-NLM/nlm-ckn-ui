@@ -53,7 +53,6 @@ const DocumentPage = () => {
       return null;
     }
     const ftuUrl = findFtuUrlById(ftuParts, `${coll}_${id}`);
-    console.log(ftuUrl);
     return ftuUrl;
   }, [document, ftuParts, id]);
 

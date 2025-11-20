@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { filterErrorsContaining, getCollectedErrors, installErrorInstrumentation } from './utils/errorInstrumentation';
 import { smallGraphWithEdges } from './utils/testSeeds';
 
 const TEST_COLL = 'TEST_DOCUMENT_COLLECTION';
@@ -17,6 +18,8 @@ function buildRawGraph(originId: string) {
 }
 
 test('DocumentPage shows details, toggles panel, renders graph, and opens options', async ({ page }) => {
+    await installErrorInstrumentation(page);
+
     const originKey = 'ROOT';
     const originId = `${TEST_COLL}/${originKey}`;
     const { root } = smallGraphWithEdges();
@@ -89,4 +92,7 @@ test('DocumentPage shows details, toggles panel, renders graph, and opens option
     await expect(page.locator('#graph-options-panel')).toBeVisible();
     await toggleOptions.click();
     await expect(page.locator('#graph-options-panel')).toBeHidden();
+
+    // Verify no "split of undefined" errors occurred
+    expect(filterErrorsContaining(await getCollectedErrors(page), 'split').length).toBe(0);
 });

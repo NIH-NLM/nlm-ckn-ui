@@ -1,10 +1,13 @@
 import { expect, test } from '@playwright/test';
+import { filterErrorsContaining, getCollectedErrors, installErrorInstrumentation } from './utils/errorInstrumentation';
 import { deepChildren, sunburstRoot, treeApiWrapper } from './utils/testSeeds';
 
 // Shape: Tree uses data.children[0] as root; wrap root accordingly.
 const mockApiResponse = treeApiWrapper(sunburstRoot({ label: 'Root', children: deepChildren() }));
 
 test('Explore shows Root then expands to children', async ({ page }) => {
+    await installErrorInstrumentation(page);
+
     // Mock sunburst for Tree
     await page.route('**/arango_api/sunburst/', async (route) => {
         const req = route.request();
@@ -43,4 +46,7 @@ test('Explore shows Root then expands to children', async ({ page }) => {
     const aNodeGroup = container.locator('g.node-group', { hasText: 'A' }).first();
     await aNodeGroup.dispatchEvent('click');
     await expect(container.getByText('A1').first()).toBeVisible();
+
+    // Verify no "split of undefined" errors occurred
+    expect(filterErrorsContaining(await getCollectedErrors(page), 'split').length).toBe(0);
 });
