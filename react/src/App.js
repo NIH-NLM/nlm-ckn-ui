@@ -1,6 +1,15 @@
 import { Route, HashRouter as Router, Routes } from "react-router-dom";
 
-import "./App.css";
+// Import modular CSS files in order of specificity
+import "./styles/base.css";
+import "./styles/components.css";
+import "./styles/graph.css";
+import "./styles/layout.css";
+import "./styles/navigation.css";
+import "./styles/pages.css";
+import "./styles/utilities.css";
+import "./styles/variables.css";
+
 import { ActiveNavProvider } from "./components/ActiveNavContext/ActiveNavContext";
 import Footer from "./components/Footer/Footer";
 import Header from "./components/Header/Header";

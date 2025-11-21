@@ -1,0 +1,61 @@
+/* CSS Custom Properties and Theme Variables */
+
+:root {
+    --color-main: #205493;
+    --color-text: #212121;
+    --color-text-on-dark: #ffffff;
+    --color-dark: #212121;
+    --color-gray: #5b616b;
+    --color-bg: #aeb0b5;
+    --color-light-bg: #f1f1f1;
+    --color-light: #d6d7d9;
+    --color-white: #fff;
+    --color-border: #aeb0b5;
+    --color-focus: #0071bc;
+    --color-visited: #4c2c92;
+    --color-green-light: #4aa564;
+    --color-secondary-red: #e31c3d;
+}
+
+.dark {
+    --color-main: #112e51;
+    --color-text: #212121;
+    --color-text-on-dark: #ffffff;
+    --color-dark: #f1f1f1;
+    --color-gray: #5b616b;
+    --color-bg: #5b616b;
+    --color-light-bg: #323a45;
+    --color-light: #aeb0b5;
+    --color-white: #323a45;
+    --color-border: #212121;
+    --color-focus: #0071bc;
+    --color-visited: #4c2c92;
+    --color-green-light: #4aa564;
+    --color-secondary-red: #e31c3d;
+}
+
+/* Generic utility classes */
+
+.background-color-main {
+    background-color: var(--color-main);
+    color: var(--color-text-on-dark);
+}
+
+.background-color-bg {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+}
+
+button.background-color-bg:hover {
+    color: var(--color-light);
+}
+
+.background-color-light-bg {
+    background-color: var(--color-light-bg);
+    color: var(--color-text);
+}
+
+.background-color-white {
+    background-color: var(--color-white);
+    color: var(--color-text);
+}
