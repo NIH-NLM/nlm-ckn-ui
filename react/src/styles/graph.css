@@ -192,9 +192,8 @@
     padding: 6px 0;
 }
 
-.option-group .graph-source-toggle {
-    /* biome-ignore lint/complexity/noImportantStyles: override */
-    flex-direction: row !important;
+.labels-toggle-container .option-group .graph-source-toggle {
+    flex-direction: row;
     justify-content: center;
     align-items: center;
     gap: 10px;
