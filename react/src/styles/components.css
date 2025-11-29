@@ -868,3 +868,26 @@ input:checked+.slider:before {
 .popup-close-btn:hover {
     color: var(--color-dark);
 }
+/* Table Wrapper for Mobile Responsiveness */
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: var(--spacing-md) 0;
+}
+
+.table-wrapper table {
+    min-width: 600px;
+}
+
+@media (max-width: 639px) {
+    .search-results-table,
+    .selected-items-table {
+        font-size: 0.9em;
+    }
+
+    .search-results-table th,
+    .search-results-table td {
+        padding: var(--spacing-xs);
+    }
+}

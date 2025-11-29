@@ -50,10 +50,7 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit }) => {
       .attr("width", width)
       .attr("height", dx)
       .attr("viewBox", [-marginLeft, -marginTop, width, dx])
-      .style("max-width", "100%")
-      .style("height", "auto")
-      .style("font", "10px sans-serif")
-      .style("user-select", "none");
+      .attr("class", "tree-svg");
 
     const gLink = svg
       .append("g")

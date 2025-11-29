@@ -2,7 +2,9 @@
  * Cell Knowledge Network MVP UI - Styles Entry Point
  * 
  * This file imports all modular CSS files in the correct order.
- * Import order matters: variables → base → layout → navigation → components → graph → pages → utilities
+ * Import order: variables → base → layout → navigation → components → graph → pages → utilities → responsive
+ * 
+ * Responsive utilities come last to ensure they override component-specific styles when needed.
  */
 
 @import "./variables.css";
@@ -13,3 +15,4 @@
 @import "./graph.css";
 @import "./pages.css";
 @import "./utilities.css";
+@import "./responsive.css";

@@ -1,65 +1,119 @@
 /* Page-Specific Styles */
 
-/* DocumentPage */
+/* DocumentPage - Mobile First */
 
 .document-item-header {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
+  gap: var(--spacing-sm);
 }
 
 .document-item-header * {
-  padding: 0 2rem 1rem 0;
+  padding: 0;
+  margin-bottom: var(--spacing-sm);
 }
 
 .document-details-content-box {
-  max-width: 95%;
+  max-width: 100%;
   align-items: stretch;
   display: flex;
   flex-direction: column;
   flex-grow: 1;
 }
 
+/* Mobile: Stack panels vertically */
 .document-page-main-content-area {
   display: flex;
-  gap: 20px;
+  flex-direction: column;
+  gap: var(--spacing-md);
   width: 100%;
   flex-grow: 1;
-  overflow: hidden;
-  height: calc(100vh - 200px);
+  overflow: visible;
+  min-height: auto;
 }
 
 .document-card-panel {
-  flex: 0 0 40%;
-  min-width: 300px;
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   background-color: var(--color-light-bg);
-  border-radius: 6px;
+  border-radius: var(--border-radius);
   border: 1px solid var(--color-light);
   overflow: hidden;
-  margin: 20px 0px;
+  margin: var(--spacing-md) 0;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.document-card-panel.hidden {
+  display: none;
+}
+
+.force-graph-panel {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 500px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background-color: var(--color-white);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--color-light);
+  padding: 0;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.force-graph-panel.flex-full {
+  flex: 1 1 100%;
+}
+
+.force-graph-panel.flex-full {
+  flex: 1 1 100%;
+}
+
+/* Panel headers for better UX */
+.panel-header {
+  background-color: var(--color-light-bg);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--color-light);
+  font-weight: 600;
+  font-size: var(--font-size-lg);
+  color: var(--color-dark);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panel-header .panel-title {
+  margin: 0;
+  font-size: 1em;
+}
+
+.panel-badge {
+  font-size: var(--font-size-sm);
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  padding: 2px 8px;
+  border-radius: var(--border-radius-sm);
+  font-weight: 500;
 }
 
 .document-item-list-wrapper {
   width: 100%;
-  height: calc(100vh - 80px);
+  max-height: 400px;
   overflow-y: auto;
-  padding: 15px;
+  padding: var(--spacing-sm);
   box-sizing: border-box;
-}
-
-.force-graph-panel {
-  flex: 0 0 60%;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  position: relative;
 }
 
 .force-graph-panel #chart-container-wrapper {
   flex-grow: 1;
   min-height: 400px;
   width: 100%;
+  position: relative;
+  overflow: hidden;
 }
 
 .document-info-fieldset {
@@ -280,7 +334,7 @@ a.document-popup-button {
   align-items: flex-start;
 }
 
-.about-content-box > .content-page-title {
+.about-content-box>.content-page-title {
   width: 100%;
   text-align: center;
   margin-bottom: 30px;
@@ -364,16 +418,20 @@ a.document-popup-button {
   margin-bottom: 0;
 }
 
+/* Mobile-first: Stack vertically */
 .browse-box-content {
   display: flex;
-  gap: 20px;
+  flex-direction: column;
+  gap: var(--spacing-lg);
 }
 
 .collections-list-panel {
-  flex: 0 0 300px;
-  padding-right: 20px;
-  border-right: 1px solid var(--color-light);
-  max-height: 600px;
+  width: 100%;
+  padding: 0;
+  border-right: none;
+  border-bottom: 1px solid var(--color-light);
+  padding-bottom: var(--spacing-lg);
+  max-height: 300px;
   overflow-y: auto;
 }
 
@@ -442,6 +500,7 @@ a.document-popup-button {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  width: 100%;
   max-height: calc(80vh - 100px);
 }
 
@@ -530,11 +589,11 @@ a.document-popup-button {
   gap: 20px;
 }
 
-.sunburst-search-container > :first-child {
+.sunburst-search-container> :first-child {
   flex: 3;
 }
 
-.sunburst-search-container > :last-child {
+.sunburst-search-container> :last-child {
   flex: 2;
 }
 
@@ -545,7 +604,7 @@ a.document-popup-button {
   position: relative;
 }
 
-.ftu-container > hra-medical-illustration {
+.ftu-container>hra-medical-illustration {
   width: 100%;
   height: 100%;
 }
@@ -565,7 +624,7 @@ a.document-popup-button {
   box-sizing: border-box;
 }
 
-.ftu-container.fullscreen > hra-medical-illustration {
+.ftu-container.fullscreen>hra-medical-illustration {
   width: 100%;
   height: 100%;
   max-width: 90vw;
@@ -575,7 +634,74 @@ a.document-popup-button {
 }
 
 .ftu-container.fullscreen .expand-button {
-  top: 2rem;
-  right: 2rem;
+  top: var(--spacing-lg);
+  right: var(--spacing-lg);
   background-color: var(--color-light);
+}
+
+/* Tablet and up: Side-by-side document layout */
+@media (min-width: 768px) {
+  .document-item-header {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .document-item-header * {
+    padding: 0 var(--spacing-lg) var(--spacing-md) 0;
+    margin-bottom: 0;
+  }
+
+  .document-page-main-content-area {
+    flex-direction: row;
+    gap: var(--spacing-lg);
+    overflow: hidden;
+    height: calc(100vh - 200px);
+  }
+
+  .document-card-panel {
+    flex: 0 0 40%;
+    min-width: 300px;
+    margin: var(--spacing-lg) 0;
+  }
+
+  .document-item-list-wrapper {
+    max-height: none;
+    height: calc(100vh - 80px);
+    padding: var(--spacing-sm);
+  }
+
+  .force-graph-panel {
+    flex: 0 0 60%;
+    min-height: calc(100vh - 250px);
+    height: calc(100vh - 250px);
+  }
+
+  .force-graph-panel #chart-container-wrapper {
+    height: 100%;
+    min-height: 600px;
+  }
+
+  .document-details-content-box {
+    max-width: 95%;
+  }
+
+  /* Collections page: Side-by-side layout */
+  .browse-box-content {
+    flex-direction: row;
+    gap: var(--spacing-lg);
+  }
+
+  .collections-list-panel {
+    flex: 0 0 300px;
+    width: auto;
+    padding-right: var(--spacing-lg);
+    padding-bottom: 0;
+    border-right: 1px solid var(--color-light);
+    border-bottom: none;
+    max-height: 600px;
+  }
+
+  .document-list-panel {
+    width: auto;
+  }
 }

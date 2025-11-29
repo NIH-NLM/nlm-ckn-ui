@@ -1,0 +1,299 @@
+/* Responsive Design - Mobile-First Breakpoints */
+
+/* Mobile First: Base styles are for mobile (< 640px) */
+/* Styles are added progressively for larger screens */
+
+/* Tablet and up: 640px+ */
+@media (min-width: 640px) {
+
+    /* Container padding increases on tablet */
+    .search-page-layout,
+    .visualization-page-layout,
+    .collections-page-layout,
+    .content-page-layout {
+        padding: var(--spacing-large);
+    }
+
+    .content-box,
+    .main-search-box,
+    .visualization-content-box {
+        padding: var(--spacing-large);
+    }
+}
+
+/* Desktop and up: 1024px+ */
+@media (min-width: 1024px) {
+
+    /* Larger padding on desktop */
+    .content-box,
+    .main-search-box,
+    .visualization-content-box {
+        padding: var(--spacing-xlarge) var(--spacing-large);
+    }
+
+    /* Document page layouts go side-by-side */
+    .document-page-main-content-area {
+        flex-direction: row;
+    }
+
+    .document-card-panel {
+        flex: 0 0 40%;
+    }
+
+    .force-graph-panel {
+        flex: 0 0 60%;
+    }
+
+    /* Graph options panel becomes sidebar */
+    .graph-options-side-panel {
+        position: relative;
+        flex-basis: 300px;
+        transform: none;
+    }
+}
+
+/* Mobile-specific overrides: < 640px */
+@media (max-width: 639px) {
+
+    /* Typography adjustments */
+    .search-page-title,
+    .page-title,
+    .content-page-title {
+        font-size: 1.5rem;
+    }
+
+    /* Force full width on mobile */
+    .search-component-wrapper,
+    .selected-items-container {
+        max-width: 100%;
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    /* Stack layouts */
+    .document-page-main-content-area {
+        flex-direction: column;
+        min-height: auto;
+        gap: var(--spacing-sm);
+    }
+
+    .document-card-panel,
+    .force-graph-panel {
+        flex: 0 0 auto;
+        min-width: 100%;
+        margin: var(--spacing-sm) 0;
+    }
+
+    .document-card-panel {
+        min-height: 400px;
+        max-height: 600px;
+        overflow-y: auto;
+    }
+
+    .force-graph-panel {
+        height: 70vh;
+        max-height: 70vh;
+        min-height: 500px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .force-graph-panel #chart-container-wrapper {
+        flex: 1 1 auto;
+        min-height: 0;
+        max-height: 100%;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .force-graph-panel #chart-container-wrapper svg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        max-width: 100%;
+        max-height: 100%;
+    }
+
+    /* Add mobile view indicators */
+    .document-card-panel::before {
+        content: "📄 Document Details";
+        display: block;
+        flex-shrink: 0;
+        background-color: var(--color-primary);
+        color: var(--color-white);
+        padding: var(--spacing-xs) var(--spacing-sm);
+        font-weight: 600;
+        font-size: var(--font-size-sm);
+        border-bottom: 1px solid var(--color-primary-dark);
+    }
+
+    .force-graph-panel::before {
+        content: "🔗 Relationship Graph";
+        display: block;
+        flex-shrink: 0;
+        background-color: var(--color-primary-dark);
+        color: var(--color-white);
+        padding: var(--spacing-xs) var(--spacing-sm);
+        font-weight: 600;
+        font-size: var(--font-size-sm);
+        border-bottom: 1px solid var(--color-primary-darker);
+        margin: 0;
+    }
+
+    /* Graph panel becomes overlay */
+    .graph-options-side-panel {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100vh;
+        z-index: 1000;
+        transform: translateX(-100%);
+        transition: transform var(--transition-slow);
+    }
+
+    .graph-options-side-panel.open {
+        transform: translateX(0);
+    }
+
+    /* Reduce padding on small screens */
+    .search-page-layout,
+    .visualization-page-layout,
+    .collections-page-layout,
+    .content-page-layout {
+        padding: var(--spacing-md);
+    }
+
+    .content-box,
+    .main-search-box,
+    .visualization-content-box,
+    .collections-content-box {
+        padding: var(--spacing-medium);
+    }
+
+    /* Smaller buttons on mobile */
+    .btn {
+        padding: 8px 16px;
+        font-size: var(--font-size-sm);
+    }
+
+    /* Prevent horizontal scroll */
+    body {
+        overflow-x: hidden;
+    }
+
+    /* Tree visualization - zoom in and enable scrolling on mobile */
+    .tree-constructor-container {
+        overflow: auto;
+        -webkit-overflow-scrolling: touch;
+        /* Enable smooth momentum scrolling on iOS */
+        max-height: 70vh;
+        border: 1px solid var(--color-border);
+        border-radius: var(--border-radius);
+        background-color: var(--color-white);
+    }
+
+    .tree-svg {
+        font-size: 28px !important;
+        /* Large base font for mobile readability */
+        transform: scale(2);
+        transform-origin: top left;
+        min-width: 200%;
+        min-height: 200%;
+    }
+
+    .tree-constructor-container .node-group text {
+        font-size: 28px !important;
+        font-weight: 600;
+    }
+
+    .tree-constructor-container .node-group circle {
+        r: 6 !important;
+        stroke-width: 3 !important;
+    }
+
+    .sunburst-visualization-container {
+        min-height: 70vh;
+    }
+}
+
+/* Tablet range: 640px - 1023px */
+@media (min-width: 640px) and (max-width: 1023px) {
+
+    /* Document page stacks on tablet */
+    .document-page-main-content-area {
+        flex-direction: column;
+    }
+
+    .document-card-panel,
+    .force-graph-panel {
+        flex: 1 1 100%;
+        min-width: 100%;
+    }
+
+    /* Graph panel can be sidebar or stacked depending on orientation */
+    .graph-options-side-panel {
+        flex-basis: 250px;
+    }
+}
+
+/* Touch-friendly targets for mobile and tablet */
+@media (max-width: 1023px) {
+
+    /* Ensure minimum 44px tap targets (WCAG AAA) */
+    button,
+    .btn,
+    .tab-button,
+    .item-action-button,
+    a.action-button {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    /* Larger clickable areas for dropdowns */
+    select {
+        min-height: 44px;
+        padding: var(--spacing-sm) var(--spacing-md);
+    }
+
+    /* Larger input fields for easier typing */
+    input[type="text"],
+    input[type="search"] {
+        min-height: 44px;
+        font-size: 16px;
+        /* Prevents iOS zoom on focus */
+    }
+}
+
+/* Landscape phone adjustments */
+@media (max-width: 768px) and (orientation: landscape) {
+
+    /* Reduce vertical padding in landscape */
+    .search-page-layout,
+    .visualization-page-layout {
+        padding: var(--spacing-sm) var(--spacing-md);
+    }
+
+    /* Modals take less vertical space */
+    .modal-content {
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+}
+
+/* Wide screens: 1200px+ */
+@media (min-width: 1200px) {
+
+    /* Allow more breathing room on wide screens */
+    .main-search-box,
+    .visualization-content-box,
+    .content-box {
+        max-width: 1100px;
+    }
+
+    .collections-content-box {
+        max-width: 1200px;
+    }
+}
