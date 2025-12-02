@@ -1,55 +1,41 @@
 /* Responsive Design - Mobile-First Breakpoints */
-
-/* Mobile First: Base styles are for mobile (< 640px) */
-/* Styles are added progressively for larger screens */
-
-/* Tablet and up: 640px+ */
-@media (min-width: 640px) {
-
-    /* Container padding increases on tablet */
-    .search-page-layout,
-    .visualization-page-layout,
-    .collections-page-layout,
-    .content-page-layout {
-        padding: var(--spacing-large);
+@media (max-width: 1024px) {
+    .tree-svg {
+        font-size: 18px;
+        transform: scale(1);
+        transform-origin: top left;
+        min-width: 100%;
+        min-height: 100%;
     }
 
-    .content-box,
-    .main-search-box,
-    .visualization-content-box {
-        padding: var(--spacing-large);
+    .tree-constructor-container .node-group text {
+        font-size: 18px;
+        font-weight: 500;
+    }
+
+    .tree-constructor-container .node-group circle {
+        r: 7;
+        stroke-width: 2;
     }
 }
 
-/* Desktop and up: 1024px+ */
-@media (min-width: 1024px) {
+.document-page-main-content-area {
+    flex-direction: row;
+}
 
-    /* Larger padding on desktop */
-    .content-box,
-    .main-search-box,
-    .visualization-content-box {
-        padding: var(--spacing-xlarge) var(--spacing-large);
-    }
+.document-card-panel {
+    flex: 0 0 40%;
+}
 
-    /* Document page layouts go side-by-side */
-    .document-page-main-content-area {
-        flex-direction: row;
-    }
+.force-graph-panel {
+    flex: 0 0 60%;
+}
 
-    .document-card-panel {
-        flex: 0 0 40%;
-    }
-
-    .force-graph-panel {
-        flex: 0 0 60%;
-    }
-
-    /* Graph options panel becomes sidebar */
-    .graph-options-side-panel {
-        position: relative;
-        flex-basis: 300px;
-        transform: none;
-    }
+/* Graph options panel becomes sidebar */
+.graph-options-side-panel {
+    position: relative;
+    flex-basis: 300px;
+    transform: none;
 }
 
 /* Mobile-specific overrides: < 640px */
@@ -187,8 +173,6 @@
     /* Tree visualization - zoom in and enable scrolling on mobile */
     .tree-constructor-container {
         overflow: auto;
-        -webkit-overflow-scrolling: touch;
-        /* Enable smooth momentum scrolling on iOS */
         max-height: 70vh;
         border: 1px solid var(--color-border);
         border-radius: var(--border-radius);
@@ -196,22 +180,22 @@
     }
 
     .tree-svg {
-        font-size: 28px !important;
-        /* Large base font for mobile readability */
-        transform: scale(2);
-        transform-origin: top left;
-        min-width: 200%;
-        min-height: 200%;
+        /* Mobile: Scale up the entire SVG to zoom in */
+        width: 250%;
+        max-width: none;
+        height: auto;
+        font-size: 12px;
+        /* Reset to desktop base so scaling is proportional */
     }
 
     .tree-constructor-container .node-group text {
-        font-size: 28px !important;
-        font-weight: 600;
+        font-size: 12px;
+        font-weight: 500;
     }
 
     .tree-constructor-container .node-group circle {
-        r: 6 !important;
-        stroke-width: 3 !important;
+        r: 4.5;
+        stroke-width: 2;
     }
 
     .sunburst-visualization-container {

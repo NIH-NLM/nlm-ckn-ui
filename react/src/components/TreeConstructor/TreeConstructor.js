@@ -27,18 +27,28 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit }) => {
     // Clear any previous SVG to prevent duplicates on data change.
     d3.select(svgRef.current).selectAll("*").remove();
 
-    const width = 928;
     const marginTop = 10;
     const marginRight = 10;
     const marginBottom = 10;
     const marginLeft = 120;
-    const maxLabelLength = 12;
+    const maxLabelLength = 24;
 
     const root = d3.hierarchy(data);
-    const dx = 10;
-    const dy = (width - marginRight - marginLeft) / (1 + root.height);
+    const dx = 24; // Reasonable vertical spacing for 12-14px text
+    const dy = 180; // Standard horizontal spacing
 
     const tree = d3.tree().nodeSize([dx, dy]);
+    tree(root); // Lay out the tree to calculate its extent
+
+    // --- Calculate dynamic width based on tree content ---
+    let yMax = 0;
+    root.each((d) => {
+      if (d.y > yMax) {
+        yMax = d.y;
+      }
+    });
+    const width = yMax + marginLeft + marginRight;
+
     const diagonal = d3
       .linkHorizontal()
       .x((d) => d.y)
@@ -52,14 +62,16 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit }) => {
       .attr("viewBox", [-marginLeft, -marginTop, width, dx])
       .attr("class", "tree-svg");
 
-    const gLink = svg
+    const g = svg.append("g");
+
+    const gLink = g
       .append("g")
       .attr("fill", "none")
       .attr("stroke", "#555")
       .attr("stroke-opacity", 0.4)
       .attr("stroke-width", 1.5);
 
-    const gNode = svg.append("g").attr("cursor", "pointer").attr("pointer-events", "all");
+    const gNode = g.append("g").attr("cursor", "pointer").attr("pointer-events", "all");
 
     /**
      * The core D3 update function that handles the enter, update, and exit
@@ -84,7 +96,14 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit }) => {
         .transition()
         .duration(duration)
         .attr("height", height)
-        .attr("viewBox", [-marginLeft, left.x - marginTop, width, height]);
+        .attr("viewBox", [-marginLeft, left.x - marginTop, width, height])
+        .on("end", () => {
+          if (svgRef.current && !svgRef.current.dataset.scrolled) {
+            const container = svgRef.current;
+            container.scrollTop = (container.scrollHeight - container.clientHeight) / 2;
+            container.dataset.scrolled = "true";
+          }
+        });
 
       // --- Node Selection ---
       const node = gNode.selectAll("g.node-group").data(nodes, (d) => d.id);
@@ -110,15 +129,15 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit }) => {
       // Append circle
       nodeEnter
         .append("circle")
-        .attr("r", 2.5)
-        .attr("fill", (d) => getColorForCollection(d.data._id.split("/")[0]))
-        .attr("stroke-width", 10);
+        .attr("class", "node-circle")
+        .attr("fill", (d) => getColorForCollection(d.data._id.split("/")[0]));
 
       // Append text
       nodeEnter
-        .append("text", "node-label-text")
+        .append("text")
+        .attr("class", "node-text")
         .attr("dy", "0.31em")
-        .attr("x", (d) => (d._children ? -6 : 6))
+        .attr("x", (d) => (d._children ? -8 : 8))
         .attr("text-anchor", (d) => (d._children ? "end" : "start"))
         .text((d) => truncateString(getLabel(d.data) || d.data._key, maxLabelLength))
         .clone(true)
@@ -130,14 +149,14 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit }) => {
       // For each new node, create a foreignObject as a placeholder.
       nodeEnter
         .append("foreignObject")
-        .attr("width", 16)
-        .attr("height", 16)
-        .attr("y", -8)
+        .attr("width", 24)
+        .attr("height", 24)
+        .attr("y", -12)
         .attr("x", (d) => {
-          const gap = 15;
+          const gap = 8;
           // Estimate label size
           const label = truncateString(getLabel(d.data) || d.data._key, maxLabelLength);
-          const textWidthEstimate = label.length * 6;
+          const textWidthEstimate = label.length * 8; // Adjusted for 12px font size
           if (d._children) {
             const textEndX = -6;
             return textEndX - textWidthEstimate - gap;

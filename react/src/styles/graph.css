@@ -257,15 +257,28 @@
 .tree-constructor-container {
     display: flex;
     min-height: 60vh;
+    overflow-x: auto;
+    /* Allow horizontal scrolling for wide trees on desktop */
+    overflow-y: auto;
 }
 
 /* Tree SVG Base Styles */
 .tree-svg {
     max-width: 100%;
     height: auto;
-    font-size: 18px;
+    font-size: 12px;
     font-family: sans-serif;
     user-select: none;
+}
+
+.tree-constructor-container .node-group circle {
+    r: 4.5;
+    stroke-width: 2;
+}
+
+.tree-constructor-container .node-group text {
+    font-size: 12px;
+    font-weight: 500;
 }
 
 .tree-constructor-container .add-to-graph-button {
