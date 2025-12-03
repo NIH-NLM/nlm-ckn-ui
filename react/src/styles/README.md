@@ -1,116 +1,267 @@
-# Styles Directory
+# Cell KN MVP UI - CSS Architecture
 
-This directory contains the modular CSS architecture for the Cell Knowledge Network MVP UI.
+## Overview
 
-## File Structure
+This stylesheet system has been modernized to align with **NCBI Style Guide** and **USWDS (U.S. Web Design System)** standards, with a focus on:
 
-The CSS has been split into 8 logical files to improve maintainability and organization:
+- **Modularity**: Reusable components and utility classes
+- **Responsiveness**: Mobile-first design with breakpoints
+- **Maintainability**: CSS variables for consistency
+- **Accessibility**: WCAG-compliant colors and touch targets
 
-### 1. `variables.css` (~70 lines)
-**CSS custom properties and theme definitions**
-- Color palette definitions (`:root`)
-- Dark theme overrides (`.dark`)
-- Generic utility background classes
+## File Structure & Import Order
 
-### 2. `base.css` (~95 lines)
-**Global resets and base element styles**
-- Universal selector reset
-- Base typography (body, a)
-- Default element styles (table, button, select, etc.)
+Files are imported in the following cascade order (see `index.css`):
 
-### 3. `layout.css` (~155 lines)
-**Page layouts and structural containers**
-- Page layout patterns (`.search-page-layout`, `.collections-page-layout`, etc.)
-- Content boxes (`.main-search-box`, `.content-box`, etc.)
-- Page titles
-- Image containers
-
-### 4. `navigation.css` (~120 lines)
-**Navigation and header components**
-- App header (`.app-header`, `.navbar`)
-- Footer (`.site-footer`)
-- Navigation states (`.active-nav`)
-
-### 5. `components.css` (~900 lines)
-**Reusable component styles**
-- Search components
-- Buttons (action buttons, primary/secondary buttons, add-to-graph)
-- Tables
-- Forms and inputs
-- Switches and toggles
-- Pills
-- Modals and popups
-- Links
-
-### 6. `graph.css` (~560 lines)
-**Graph visualization components**
-- Chart container
-- Graph options panel
-- Tab navigation
-- Collection controls
-- Node groups and lists
-- Graph display area
-- Settings and actions
-
-### 7. `pages.css` (~650 lines)
-**Page-specific styles**
-- DocumentPage
-- AboutPage
-- CollectionsPage / BrowseBox
-- SunburstPage
-- FTU Explorer
-
-### 8. `utilities.css` (~175 lines)
-**Utility classes and helpers**
-- Text utilities (`.nowrap`, `.wrap`)
-- Display utilities (`.hidden`, `.flex-full`)
-- Loading states
-- Progress bars
-- Messages
-- Keyboard hints
-- Animations (`@keyframes`)
-
-## Import Order
-
-**IMPORTANT**: The order of imports matters! Styles should be imported in this specific order:
-
-```javascript
-import "./styles/variables.css";    // 1. Variables first
-import "./styles/base.css";         // 2. Base resets
-import "./styles/layout.css";       // 3. Layout patterns
-import "./styles/navigation.css";   // 4. Navigation
-import "./styles/components.css";   // 5. Reusable components
-import "./styles/graph.css";        // 6. Graph-specific
-import "./styles/pages.css";        // 7. Page-specific
-import "./styles/utilities.css";    // 8. Utilities last
+```
+variables.css     → Design tokens (colors, spacing, breakpoints)
+base.css          → Global resets and element defaults
+layout.css        → Page structure and containers
+navigation.css    → Header, navbar, footer
+components.css    → Reusable components (buttons, cards, tables)
+graph.css         → Graph visualization specific styles
+pages.css         → Page-specific layouts
+utilities.css     → Utility classes (flexbox, spacing, display)
+responsive.css    → Responsive utilities and overrides
 ```
 
-Alternatively, use the single entry point:
-```javascript
-import "./styles/index.css";
+**Order matters**: Later files can override earlier ones. Responsive utilities come last to ensure they take precedence.
+
+## Design Tokens (variables.css)
+
+### Color Palette (USWDS Compliant)
+
+**Primary Blues**
+- `--color-primary`: #0071bc (Main brand blue)
+- `--color-primary-dark`: #205493
+- `--color-primary-darker`: #112e51
+
+**Secondary & Accents**
+- `--color-secondary`: #e31c3d (Red for alerts/danger)
+- `--color-focus`: #3e94cf (Focus states)
+- `--color-visited`: #4c2c92 (Visited links)
+
+**Tertiary**
+- `--color-tertiary-green`: #2e8540
+- `--color-tertiary-gold`: #fdb81e
+
+**Neutrals**
+- Grays from `--color-gray-lightest` (#f1f1f1) to `--color-gray-dark` (#323a45)
+
+### Spacing Scale (USWDS Standard)
+
+```css
+--spacing-xs: 0.375rem;   /* 6px */
+--spacing-sm: 0.9375rem;  /* 15px - USWDS unit */
+--spacing-md: 1.25rem;    /* 20px - USWDS unit */
+--spacing-lg: 1.875rem;   /* 30px - USWDS unit */
+--spacing-xl: 3.75rem;    /* 60px - USWDS unit */
 ```
 
-## Adding New Styles
+### Typography Scale
 
-When adding new CSS:
+```css
+--font-size-sm: 0.875rem;   /* 14px */
+--font-size-base: 1rem;     /* 16px */
+--font-size-lg: 1.125rem;   /* 18px */
+--font-size-xl: 1.5rem;     /* 24px */
+--font-size-2xl: 2rem;      /* 32px */
+--font-size-3xl: 2.5rem;    /* 40px */
+```
 
-1. **Determine the correct file** based on the style's purpose:
-   - Is it a new color/variable? → `variables.css`
-   - Is it for a new page? → `pages.css`
-   - Is it a reusable component? → `components.css`
-   - Is it graph-related? → `graph.css`
-   - Is it a utility class? → `utilities.css`
+**Font Family**: Roboto (not Roboto Mono), with Roboto Mono reserved for `<code>` and `<pre>` elements only.
 
-2. **Follow existing patterns** in that file
-3. **Document complex selectors** with comments
-4. **Test in both light and dark themes** (if applicable)
+### Breakpoints (Mobile-First)
 
-## Legacy File
+```css
+--breakpoint-mobile: 640px;   /* Tablet start */
+--breakpoint-tablet: 768px;   /* Standard tablet */
+--breakpoint-desktop: 1024px; /* Desktop start */
+--breakpoint-wide: 1200px;    /* Wide screens */
+```
 
-The original `App.css` (2747 lines) has been preserved in the root but is no longer imported. It can be removed once the refactoring is validated in production.
+### Dark Theme
 
-## Next Steps
+Dark mode uses semantic variable remapping:
+- `--color-white` → `#323a45` (dark background)
+- `--color-text` → `#f1f1f1` (light text)
+- **Brand colors do NOT change** in dark mode (maintains USWDS compliance)
 
-- Part 2: Cross-check for unused classes
-- Part 3: Consolidate duplicates and remove redundancy
-- Part 4: Final reorganization based on findings
+## Component Patterns
+
+### Button System
+
+Base class with size and variant modifiers:
+
+```css
+.btn               /* Base button */
+.btn-primary       /* Blue, primary action */
+.btn-secondary     /* Gray, secondary action */
+.btn-danger        /* Red, destructive action */
+.btn-sm            /* Small size */
+.btn-lg            /* Large size */
+```
+
+**Legacy classes preserved**: `.action-button`, `.remove-button`, etc. still work for backward compatibility.
+
+### Card System
+
+```css
+.card              /* Base card component */
+.card-sm           /* Small card (reduced padding) */
+.card-lg           /* Large card (increased padding) */
+```
+
+### Tables
+
+Wrap tables in `.table-wrapper` for horizontal scroll on mobile:
+
+```html
+<div class="table-wrapper">
+  <table class="search-results-table">
+    <!-- table content -->
+  </table>
+</div>
+```
+
+## Utility Classes
+
+### Flexbox Utilities
+
+```css
+.flex              /* display: flex */
+.flex-col          /* flex-direction: column */
+.flex-row          /* flex-direction: row */
+.items-center      /* align-items: center */
+.items-start       /* align-items: flex-start */
+.items-end         /* align-items: flex-end */
+.justify-between   /* justify-content: space-between */
+.justify-center    /* justify-content: center */
+.justify-end       /* justify-content: flex-end */
+```
+
+### Spacing Utilities
+
+```css
+.gap-xs, .gap-sm, .gap-md, .gap-lg, .gap-xl    /* Gap using spacing scale */
+.p-*, .px-*, .py-*, .pt-*, .pr-*, .pb-*, .pl-* /* Padding */
+.m-*, .mx-*, .my-*, .mt-*, .mr-*, .mb-*, .ml-* /* Margin */
+```
+
+### Display Utilities
+
+```css
+.block             /* display: block */
+.inline-block      /* display: inline-block */
+.hidden            /* display: none */
+.w-full            /* width: 100% */
+.h-full            /* height: 100% */
+```
+
+## Responsive Design
+
+### Mobile-First Approach
+
+All base styles are designed for mobile (<640px) first. Media queries progressively enhance for larger screens:
+
+```css
+/* Mobile base (no media query) */
+.app-header {
+  flex-direction: column;
+  padding: var(--spacing-md);
+}
+
+/* Tablet and up */
+@media (min-width: 640px) {
+  .app-header {
+    flex-direction: row;
+    padding: var(--spacing-lg);
+  }
+}
+
+/* Desktop and up */
+@media (min-width: 1024px) {
+  .app-header {
+    padding: calc(var(--spacing-lg) * 1.5);
+  }
+}
+```
+
+### Responsive Utilities (responsive.css)
+
+```css
+.container           /* Responsive container with max-width and padding */
+.mobile-full         /* width: 100% on mobile */
+.mobile-hide         /* Hidden on mobile (<640px) */
+.desktop-only        /* Only visible on desktop (≥1024px) */
+.tablet-up           /* Visible on tablet and up (≥640px) */
+```
+
+### Key Responsive Patterns
+
+**Navigation**
+- Mobile: Vertical stack, reduced padding
+- Desktop: Horizontal layout with spacing
+
+**Document Page**
+- Mobile: `.document-card-panel` and `.force-graph-panel` stack vertically
+- Tablet+: Side-by-side layout (40% / 60% split)
+
+**Graph Side Panel**
+- Mobile: Full-screen overlay (slides in from right)
+- Desktop: Fixed sidebar (300px width)
+
+**Tables**
+- Mobile: Horizontal scroll with touch support
+- Desktop: Full width display
+
+## Accessibility Features
+
+- **Touch Targets**: Minimum 44x44px on interactive elements (WCAG AAA)
+- **Color Contrast**: USWDS colors meet WCAG AA standards
+- **Focus States**: Visible focus indicators using `--color-focus`
+- **Semantic HTML**: Proper use of headings, landmarks, ARIA labels
+
+## Migration Notes
+
+### Using New Components
+
+**Before** (legacy):
+```html
+<button class="action-button">Submit</button>
+<div class="content-box">...</div>
+```
+
+**After** (recommended):
+```html
+<button class="btn btn-primary">Submit</button>
+<div class="card">...</div>
+```
+
+**Both still work** due to backward compatibility.
+
+## Testing Checklist
+
+Test responsive behavior at these widths:
+
+- **480px**: Mobile small (phones in portrait)
+- **640px**: Mobile large / Tablet small (breakpoint)
+- **768px**: Tablet (standard iPad)
+- **1024px**: Desktop (breakpoint)
+- **1200px**: Wide desktop (breakpoint)
+
+**What to test**:
+- [ ] Navigation stacks properly on mobile
+- [ ] Touch targets are 44px minimum
+- [ ] Tables scroll horizontally on mobile
+- [ ] Document page panels stack vertically on mobile
+- [ ] Graph side panel overlays on mobile
+- [ ] Forms and inputs are usable on touch devices
+- [ ] No horizontal scrolling on any viewport
+- [ ] Dark mode works across all breakpoints
+
+---
+
+**Last Updated**: Dec 2025
+**Maintained by**: Cell KN Team
+**Standards**: NCBI Style Guide + USWDS 2.x

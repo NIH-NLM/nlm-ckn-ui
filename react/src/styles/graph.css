@@ -1,45 +1,59 @@
 /* Graph Visualization Components */
 
 #chart-container-wrapper {
-  flex-grow: 1;
+  flex: 1;
   width: 100%;
   border: none;
   min-width: 300px;
-}
-
-/* Graph Component Wrapper */
-
-.graph-component-wrapper {
-  display: flex;
-  width: 100%;
-  height: 100%;
+  min-height: 400px;
   position: relative;
   overflow: hidden;
 }
 
+/* Ensure SVG fills container but doesn't overflow */
+#chart-container-wrapper svg {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* Graph Component Wrapper - Mobile First */
+
+.graph-component-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Side Panel - Mobile: Full Width Overlay */
 .graph-options-side-panel {
-  flex-grow: 0;
-  flex-shrink: 0;
-  flex-basis: 300px;
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100%;
+  max-width: 320px;
+  height: 100%;
   background-color: var(--color-white);
   border: 1px solid var(--color-border);
   box-shadow: -2px 0 5px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
-  transition:
-    flex-basis 0.3s ease,
-    width 0.3s ease;
+  transition: transform 0.3s ease;
   z-index: 10;
   overflow: hidden;
-  margin: 0px 20px;
+  transform: translateX(0);
 }
 
 .graph-component-wrapper.options-closed .graph-options-side-panel {
-  width: 0px;
-  overflow: hidden;
-  border-left: none;
-  padding-left: 0;
-  padding-right: 0;
+  transform: translateX(100%);
 }
 
 .graph-component-wrapper.options-closed .graph-options-side-panel > * {
@@ -202,8 +216,9 @@
 /* Graph Display Area */
 
 .graph-main-area {
-  flex-grow: 1;
+  flex: 1;
   display: flex;
+  flex-direction: column;
   position: relative;
   min-width: 0;
   margin-right: 10px;
@@ -221,18 +236,20 @@
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.9em;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .graph-display-area {
+  display: flex;
+  flex-direction: column;
   width: 100%;
   height: 100vh;
   border: 1px solid var(--color-white);
   margin-top: 20px;
-  padding: 20px;
+  padding: 0;
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 /* Tree Constructor */
@@ -240,6 +257,28 @@
 .tree-constructor-container {
   display: flex;
   min-height: 60vh;
+  overflow-x: auto;
+  /* Allow horizontal scrolling for wide trees on desktop */
+  overflow-y: auto;
+}
+
+/* Tree SVG Base Styles */
+.tree-svg {
+  max-width: 100%;
+  height: auto;
+  font-size: 12px;
+  font-family: sans-serif;
+  user-select: none;
+}
+
+.tree-constructor-container .node-group circle {
+  r: 4.5;
+  stroke-width: 2;
+}
+
+.tree-constructor-container .node-group text {
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .tree-constructor-container .add-to-graph-button {
@@ -285,7 +324,7 @@
 .node-list-table {
   width: 100%;
   border-collapse: collapse;
-  box-shadow: 0 2px 4px var(--color-gray);
+  box-shadow: var(--shadow-md);
 }
 
 .node-list-table th,
@@ -364,7 +403,7 @@
   color: var(--color-text-on-dark);
   border-radius: 6px;
   text-align: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-md);
 }
 
 .settings-apply-container p {
@@ -384,12 +423,42 @@
 }
 
 .stale-graph-warning {
-  padding: 1rem;
-  margin-bottom: 1rem;
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
   background-color: var(--color-focus);
   color: var(--color-text-on-dark);
-  border-radius: 6px;
+  border-radius: var(--border-radius);
   text-align: center;
   font-weight: 500;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Desktop and up: Side-by-Side Layout */
+@media (min-width: 1024px) {
+  .graph-component-wrapper {
+    flex-direction: row;
+  }
+
+  .graph-options-side-panel {
+    position: relative;
+    flex-grow: 0;
+    flex-shrink: 0;
+    flex-basis: 300px;
+    width: auto;
+    max-width: none;
+    height: auto;
+    margin: 0 var(--spacing-lg);
+    transform: none;
+    transition:
+      flex-basis 0.3s ease,
+      width 0.3s ease;
+  }
+
+  .graph-component-wrapper.options-closed .graph-options-side-panel {
+    width: 0;
+    flex-basis: 0;
+    margin: 0;
+    border: none;
+    transform: none;
+  }
 }

@@ -1,37 +1,139 @@
 /* CSS Custom Properties and Theme Variables */
+/* Based on NCBI Style Guide / USWDS Color Palette */
+/* https://www.ncbi.nlm.nih.gov/style-guide/basics/colors/ */
 
 :root {
-  --color-main: #205493;
-  --color-text: #212121;
-  --color-text-on-dark: #ffffff;
-  --color-dark: #212121;
+  /* Primary Colors */
+  --color-primary: #0071bc;
+  --color-primary-darker: #205493;
+  --color-primary-darkest: #112e51;
+
+  /* Base & Grays */
+  --color-base: #212121;
+  --color-gray-dark: #323a45;
   --color-gray: #5b616b;
-  --color-bg: #aeb0b5;
-  --color-light-bg: #f1f1f1;
-  --color-light: #d6d7d9;
-  --color-white: #fff;
-  --color-border: #aeb0b5;
-  --color-focus: #0071bc;
-  --color-visited: #4c2c92;
+  --color-gray-light: #aeb0b5;
+  --color-gray-lighter: #d6d7d9;
+  --color-gray-lightest: #f1f1f1;
+  --color-white: #ffffff;
+
+  /* Secondary Colors (use sparingly) */
+  --color-secondary: #e31c3d;
+  --color-secondary-dark: #cd2026;
+  --color-secondary-darkest: #981b1e;
+  --color-secondary-light: #e59393;
+  --color-secondary-lightest: #f9dede;
+
+  /* Tertiary Colors */
+  --color-green: #2e8540;
   --color-green-light: #4aa564;
-  --color-secondary-red: #e31c3d;
+  --color-green-lighter: #94bfa2;
+  --color-green-lightest: #e7f4e4;
+
+  --color-gold: #fdb81e;
+  --color-gold-light: #f9c642;
+  --color-gold-lighter: #fad980;
+  --color-gold-lightest: #fff1d2;
+
+  /* Special State Colors */
+  --color-focus: #3e94cf;
+  --color-visited: #4c2c92;
+
+  /* Semantic Mappings (for backward compatibility) */
+  --color-main: var(--color-primary-darker);
+  --color-text: var(--color-base);
+  --color-text-on-dark: var(--color-white);
+  --color-dark: var(--color-base);
+  --color-bg: var(--color-gray-light);
+  --color-light-bg: var(--color-gray-lightest);
+  --color-light: var(--color-gray-lighter);
+  --color-border: var(--color-gray-light);
+  --color-secondary-red: var(--color-secondary);
+
+  /* USWDS Spacing Scale */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-small: 0.9375rem;
+  --spacing-md: 1rem;
+  --spacing-medium: 1.25rem;
+  --spacing-lg: 1.5rem;
+  --spacing-large: 1.875rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 2.5rem;
+  --spacing-xlarge: 3.75rem;
+
+  /* Typography Scale */
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 2rem;
+  --font-size-4xl: 2.5rem;
+
+  /* Font Families */
+  --font-family-base: "Roboto", sans-serif;
+  --font-family-mono: "Roboto Mono", monospace;
+
+  /* Line Heights */
+  --line-height-tight: 1.2;
+  --line-height-base: 1.5;
+  --line-height-relaxed: 1.8;
+
+  /* Responsive Breakpoints */
+  --breakpoint-mobile: 640px;
+  --breakpoint-tablet: 768px;
+  --breakpoint-desktop: 1024px;
+  --breakpoint-wide: 1200px;
+
+  /* Border Radius */
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 3px 10px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.2s ease;
+  --transition-slow: 0.3s ease;
 }
 
 .dark {
-  --color-main: #112e51;
-  --color-text: #212121;
-  --color-text-on-dark: #ffffff;
-  --color-dark: #f1f1f1;
-  --color-gray: #5b616b;
-  --color-bg: #5b616b;
-  --color-light-bg: #323a45;
-  --color-light: #aeb0b5;
-  --color-white: #323a45;
-  --color-border: #212121;
-  --color-focus: #0071bc;
-  --color-visited: #4c2c92;
-  --color-green-light: #4aa564;
-  --color-secondary-red: #e31c3d;
+  /* Dark theme - USWDS base colors stay the same, only semantic mappings change */
+  /* Don't redefine --color-primary, --color-gray, etc. - those are brand colors! */
+
+  /* Semantic overrides for dark mode - flip the color usage */
+  --color-main: var(--color-primary);
+  /* Brighter blue for dark backgrounds */
+  --color-text: var(--color-gray-lightest);
+  /* Light text (#f1f1f1) */
+  --color-text-on-dark: var(--color-gray-lightest);
+  /* Light text */
+  --color-dark: var(--color-gray-lightest);
+  /* For elements that need to stand out */
+  --color-bg: var(--color-gray-dark);
+  /* Dark gray background (#323a45) */
+  --color-light-bg: var(--color-base);
+  /* Very dark background (#212121) */
+  --color-light: var(--color-gray);
+  /* Medium gray for subtle elements */
+  --color-white: var(--color-gray-dark);
+  /* "White" surfaces are dark gray */
+  --color-border: var(--color-gray);
+  /* Visible borders on dark */
+
+  /* Adjust shadows for dark mode - lighter shadows */
+  --shadow-sm: 0 1px 3px rgba(255, 255, 255, 0.05);
+  --shadow-md: 0 3px 10px rgba(255, 255, 255, 0.08);
+  --shadow-lg: 0 4px 12px rgba(255, 255, 255, 0.15);
 }
 
 /* Generic utility classes */
