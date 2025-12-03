@@ -47,7 +47,9 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit }) => {
         yMax = d.y;
       }
     });
-    const width = yMax + marginLeft + marginRight;
+    // Add extra padding for the rightmost labels and buttons
+    const rightPadding = 200;
+    const width = yMax + marginLeft + marginRight + rightPadding;
 
     const diagonal = d3
       .linkHorizontal()

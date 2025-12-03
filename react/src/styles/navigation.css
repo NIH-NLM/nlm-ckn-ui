@@ -6,7 +6,7 @@
   flex-direction: column;
   align-items: flex-start;
   gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-md);
 }
 
 .app-header * {
@@ -127,7 +127,7 @@
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    padding: var(--spacing-md) var(--spacing-lg);
+    padding: var(--spacing-lg);
   }
 
   .navbar {
