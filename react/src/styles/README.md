@@ -262,6 +262,6 @@ Test responsive behavior at these widths:
 
 ---
 
-**Last Updated**: 2024  
-**Maintained by**: Cell KN Team  
+**Last Updated**: Dec 2025
+**Maintained by**: Cell KN Team
 **Standards**: NCBI Style Guide + USWDS 2.x
