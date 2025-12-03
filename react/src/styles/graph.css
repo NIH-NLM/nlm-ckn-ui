@@ -236,7 +236,7 @@
     border-radius: 4px;
     cursor: pointer;
     font-size: 0.9em;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-sm);
 }
 
 .graph-display-area {
@@ -249,7 +249,7 @@
     padding: 0;
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md);
 }
 
 /* Tree Constructor */
@@ -324,7 +324,7 @@
 .node-list-table {
     width: 100%;
     border-collapse: collapse;
-    box-shadow: 0 2px 4px var(--color-gray);
+    box-shadow: var(--shadow-md);
 }
 
 .node-list-table th,
@@ -403,7 +403,7 @@
     color: var(--color-text-on-dark);
     border-radius: 6px;
     text-align: center;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--shadow-md);
 }
 
 .settings-apply-container p {

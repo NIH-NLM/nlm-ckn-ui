@@ -1,23 +1,4 @@
 /* Responsive Design - Mobile-First Breakpoints */
-@media (max-width: 1024px) {
-    .tree-svg {
-        font-size: 18px;
-        transform: scale(1);
-        transform-origin: top left;
-        min-width: 100%;
-        min-height: 100%;
-    }
-
-    .tree-constructor-container .node-group text {
-        font-size: 18px;
-        font-weight: 500;
-    }
-
-    .tree-constructor-container .node-group circle {
-        r: 7;
-        stroke-width: 2;
-    }
-}
 
 .document-page-main-content-area {
     flex-direction: row;
@@ -220,6 +201,27 @@
     /* Graph panel can be sidebar or stacked depending on orientation */
     .graph-options-side-panel {
         flex-basis: 250px;
+    }
+}
+
+/* Tree Visualization - Tablet Overrides */
+@media (max-width: 1023px) {
+    .tree-svg {
+        font-size: 18px;
+        transform: scale(1);
+        transform-origin: top left;
+        min-width: 100%;
+        min-height: 100%;
+    }
+
+    .tree-constructor-container .node-group text {
+        font-size: 18px;
+        font-weight: 500;
+    }
+
+    .tree-constructor-container .node-group circle {
+        r: 7;
+        stroke-width: 2;
     }
 }
 
