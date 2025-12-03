@@ -1,89 +1,89 @@
 /* Base Styles - Resets and Element Defaults */
 
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: var(--font-family-base);
-    color: inherit;
-    scroll-behavior: smooth;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: var(--font-family-base);
+  color: inherit;
+  scroll-behavior: smooth;
 }
 
 body {
-    overflow-y: auto;
-    height: 100%;
-    line-height: var(--line-height-relaxed);
-    font-weight: 400;
-    font-size: var(--font-size-base);
+  overflow-y: auto;
+  height: 100%;
+  line-height: var(--line-height-relaxed);
+  font-weight: 400;
+  font-size: var(--font-size-base);
 }
 
 a {
-    text-decoration: none;
+  text-decoration: none;
 }
 
 /* Table element defaults */
 table {
-    width: 100%;
-    table-layout: fixed;
-    border-collapse: collapse;
-    text-indent: initial;
-    border-spacing: 2px;
-    overflow-wrap: break-word;
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  text-indent: initial;
+  border-spacing: 2px;
+  overflow-wrap: break-word;
 }
 
 tbody {
-    display: table-row-group;
-    vertical-align: middle;
-    unicode-bidi: isolate;
-    border-color: inherit;
+  display: table-row-group;
+  vertical-align: middle;
+  unicode-bidi: isolate;
+  border-color: inherit;
 }
 
 fieldset {
-    border: 1px solid #c0c0c0;
-    padding: 0.35em 0.625em 0.75em;
+  border: 1px solid #c0c0c0;
+  padding: 0.35em 0.625em 0.75em;
 }
 
 tr {
-    display: table-row;
-    unicode-bidi: isolate;
-    border-color: inherit;
+  display: table-row;
+  unicode-bidi: isolate;
+  border-color: inherit;
 }
 
 tr:nth-of-type(even) {
-    background-color: var(--color-light-bg);
+  background-color: var(--color-light-bg);
 }
 
 td {
-    padding: 0.5rem;
+  padding: 0.5rem;
 }
 
 /* Base button styles */
 button {
-    border: none;
-    cursor: pointer;
-    font-size: 16px;
-    border-radius: 4px;
-    transition: background-color 0.3s;
-    margin: 0 1rem;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+  margin: 0 1rem;
 }
 
 button:hover {
-    color: var(--color-gray);
+  color: var(--color-gray);
 }
 
 button.active {
-    color: var(--color-text-on-dark);
-    background-color: var(--color-focus);
+  color: var(--color-text-on-dark);
+  background-color: var(--color-focus);
 }
 
 select:focus,
 input[type="text"]:focus {
-    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
-    outline: none;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+  outline: none;
 }
 
 option {
-    padding: 10px;
+  padding: 10px;
 }
 
 /* Code blocks should use monospace font */
@@ -91,10 +91,9 @@ code,
 pre,
 kbd,
 samp {
-    font-family: var(--font-family-mono);
+  font-family: var(--font-family-mono);
 }
 
-/* biome-ignore lint/style/noDescendingSpecificity: legacy css */
 svg {
-    height: 90%;
+  height: 90%;
 }

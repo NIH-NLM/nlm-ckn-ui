@@ -334,7 +334,7 @@ a.document-popup-button {
   align-items: flex-start;
 }
 
-.about-content-box>.content-page-title {
+.about-content-box > .content-page-title {
   width: 100%;
   text-align: center;
   margin-bottom: 30px;
@@ -589,11 +589,11 @@ a.document-popup-button {
   gap: 20px;
 }
 
-.sunburst-search-container> :first-child {
+.sunburst-search-container > :first-child {
   flex: 3;
 }
 
-.sunburst-search-container> :last-child {
+.sunburst-search-container > :last-child {
   flex: 2;
 }
 
@@ -604,7 +604,7 @@ a.document-popup-button {
   position: relative;
 }
 
-.ftu-container>hra-medical-illustration {
+.ftu-container > hra-medical-illustration {
   width: 100%;
   height: 100%;
 }
@@ -624,7 +624,7 @@ a.document-popup-button {
   box-sizing: border-box;
 }
 
-.ftu-container.fullscreen>hra-medical-illustration {
+.ftu-container.fullscreen > hra-medical-illustration {
   width: 100%;
   height: 100%;
   max-width: 90vw;
