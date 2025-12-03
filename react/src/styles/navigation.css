@@ -6,11 +6,17 @@
   flex-direction: column;
   align-items: flex-start;
   gap: var(--spacing-sm);
-  padding: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
 }
 
 .app-header * {
   font-weight: 100;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: var(--font-size-2xl);
+  line-height: 1.2;
 }
 
 .app-header a:hover {
@@ -30,7 +36,6 @@
 
 .navbar h4 {
   padding-left: var(--spacing-md);
-  margin: var(--spacing-xs) 0;
   min-height: 44px;
   display: flex;
   align-items: center;
@@ -122,7 +127,7 @@
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    padding: var(--spacing-lg);
+    padding: var(--spacing-md) var(--spacing-lg);
   }
 
   .navbar {
@@ -131,7 +136,6 @@
 
   .navbar h4 {
     padding-left: var(--spacing-xl);
-    margin: var(--spacing-md) 0;
   }
 }
 
