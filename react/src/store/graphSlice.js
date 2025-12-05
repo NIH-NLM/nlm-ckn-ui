@@ -1,7 +1,7 @@
 import { createAsyncThunk, createSlice, current } from "@reduxjs/toolkit";
 import undoable from "redux-undo";
 import { performSetOperation } from "../components/ForceGraph/performSetOperation";
-import { getFilterableEdgeFields } from "../components/Utils/Utils";
+import { getFilterableEdgeFields } from "../utils";
 
 // API helper to fetch graph data from backend.
 // Handles three types of requests: standard traversal, shortest path, and advanced per-node settings.

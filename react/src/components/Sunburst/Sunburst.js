@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { getLabel, LoadingBar, mergeChildren } from "../../utils";
 import AddToGraphButton from "../AddToGraphButton/AddToGraphButton";
 import DocumentPopup from "../DocumentPopup/DocumentPopup";
 import SunburstConstructor from "../SunburstConstructor/SunburstConstructor";
-import { getLabel, LoadingBar, mergeChildren } from "../Utils/Utils";
 
 const Sunburst = ({ addSelectedItem }) => {
   // --- State ---

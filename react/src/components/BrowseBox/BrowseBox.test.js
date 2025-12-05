@@ -1,12 +1,13 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import * as Utils from "../Utils/Utils";
+import * as Utils from "../../utils";
 import BrowseBox from "./BrowseBox";
 
 // Mocking the fetchCollections and parseCollections functions
-jest.mock("../Utils/Utils", () => ({
+jest.mock("../../utils", () => ({
   fetchCollections: jest.fn(),
   parseCollections: jest.fn(),
+  getLabel: jest.fn((item) => item.label || item._id),
 }));
 
 describe("BrowseBox", () => {

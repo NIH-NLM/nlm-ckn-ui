@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom";
 import AddToGraphButton from "../../components/AddToGraphButton/AddToGraphButton";
 import TreeConstructor from "../../components/TreeConstructor/TreeConstructor";
-import { LoadingBar } from "../Utils/Utils";
+import { LoadingBar } from "../../utils";
 
 /**
  * Tree Page Component.

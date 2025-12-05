@@ -20,11 +20,6 @@ import {
   updateNodePosition,
   updateSetting,
 } from "../../store";
-import AddToGraphButton from "../AddToGraphButton/AddToGraphButton";
-import DocumentPopup from "../DocumentPopup/DocumentPopup";
-import FilterableDropdown from "../FilterableDropdown/FilterableDropdown";
-import ForceGraphConstructor from "../ForceGraphConstructor/ForceGraphConstructor";
-import LoadGraphModal from "../LoadGraphModal/LoadGraphModal";
 import {
   fetchCollections,
   fetchNodeDetailsByIds as fetchNodeDetailsByIdsHelper,
@@ -33,7 +28,12 @@ import {
   isMac,
   LoadingBar,
   parseCollections,
-} from "../Utils/Utils";
+} from "../../utils";
+import AddToGraphButton from "../AddToGraphButton/AddToGraphButton";
+import DocumentPopup from "../DocumentPopup/DocumentPopup";
+import FilterableDropdown from "../FilterableDropdown/FilterableDropdown";
+import ForceGraphConstructor from "../ForceGraphConstructor/ForceGraphConstructor";
+import LoadGraphModal from "../LoadGraphModal/LoadGraphModal";
 import { performSetOperation } from "./performSetOperation";
 
 // Whitelist of settings that can be configured on a per-node basis.
@@ -172,7 +172,7 @@ const ForceGraph = ({
     const missing = originNodeIds.filter((id) => !nodeNameMap?.get(id) && !cachedNames[id]);
     if (missing.length === 0) return;
     // fire-and-forget
-    fetchNodeDetailsByIds(missing).catch(() => { });
+    fetchNodeDetailsByIds(missing).catch(() => {});
   }, [originNodeIds, nodeNameMap, cachedNames, fetchNodeDetailsByIds]);
 
   // Local component state for UI and temporary flags.

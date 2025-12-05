@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { removeNodeFromSlice } from "../../store/nodesSlice";
-import { LoadingBar } from "../Utils/Utils";
+import { LoadingBar } from "../../utils";
 
 // Fetch details for the nodes in the global state and displays them.
 const NodeListTable = () => {

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { getLabel } from "../Utils/Utils";
+import { getLabel } from "../../utils";
 
 const ListDocuments = ({ document }) => {
   return (

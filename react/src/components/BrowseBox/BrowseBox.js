@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import collMaps from "../../assets/cell-kn-mvp-collection-maps.json";
+import { fetchCollections, getLabel, parseCollections } from "../../utils";
 import ListDocuments from "../ListDocuments/ListDocuments";
-import { fetchCollections, getLabel, parseCollections } from "../Utils/Utils";
 
 const collectionMaps = new Map(collMaps.maps);
 const ITEMS_PER_LOAD = 50;

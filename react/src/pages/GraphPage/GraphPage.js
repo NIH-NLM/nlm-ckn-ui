@@ -3,9 +3,9 @@ import { useDispatch, useSelector } from "react-redux";
 import ForceGraph from "../../components/ForceGraph/ForceGraph";
 import LoadGraphModal from "../../components/LoadGraphModal/LoadGraphModal";
 import SelectedItemsTable from "../../components/SelectedItemsTable/SelectedItemsTable";
-import { fetchNodeDetailsByIds } from "../../components/Utils/Utils";
 import { GraphContext } from "../../contexts";
 import { initializeGraph, loadGraphFromJson, removeNodeFromSlice } from "../../store";
+import { fetchNodeDetailsByIds } from "../../utils";
 
 const GraphPage = () => {
   const dispatch = useDispatch();

@@ -1,6 +1,6 @@
 import * as d3 from "d3";
 import { getColorForCollection } from "../../services/ColorServices/ColorServices";
-import { truncateString } from "../Utils/Utils";
+import { truncateString } from "../../utils";
 
 /* Pure Functions */
 

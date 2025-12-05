@@ -50,7 +50,7 @@ describe("SearchBar Component", () => {
         addSelectedItem={mockAddSelectedItem}
       />,
     );
-    const input = screen.getByPlaceholderText("Search...");
+    const input = screen.getByPlaceholderText("Search NCKN...");
     expect(input).toBeInTheDocument();
 
     const selectedTable = screen.getByTestId("selected-items-table");
@@ -69,7 +69,7 @@ describe("SearchBar Component", () => {
         addSelectedItem={mockAddSelectedItem}
       />,
     );
-    const input = screen.getByPlaceholderText("Search...");
+    const input = screen.getByPlaceholderText("Search NCKN...");
     fireEvent.change(input, { target: { value: "test" } });
 
     // Advance timers by 150ms to trigger the debounce
@@ -90,7 +90,7 @@ describe("SearchBar Component", () => {
         addSelectedItem={mockAddSelectedItem}
       />,
     );
-    const input = screen.getByPlaceholderText("Search...");
+    const input = screen.getByPlaceholderText("Search NCKN...");
 
     // The results container is the parent of the search results table
     const resultsContainer = screen.getByTestId("search-results-table").parentElement;
@@ -116,7 +116,7 @@ describe("SearchBar Component", () => {
         addSelectedItem={mockAddSelectedItem}
       />,
     );
-    const input = screen.getByPlaceholderText("Search...");
+    const input = screen.getByPlaceholderText("Search NCKN...");
     fireEvent.change(input, { target: { value: "test" } });
     jest.advanceTimersByTime(150);
     await waitFor(() => expect(global.fetch).toHaveBeenCalled());
