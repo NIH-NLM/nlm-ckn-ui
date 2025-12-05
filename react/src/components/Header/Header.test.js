@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter as Router } from "react-router-dom"; // Wrap with Router for routing context
-import { ActiveNavProvider } from "../ActiveNavContext/ActiveNavContext"; // Assuming this is the context provider
+import { ActiveNavProvider } from "../../contexts/ActiveNavContext";
 import Header from "./Header";
 
 describe("Header Component", () => {
