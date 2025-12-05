@@ -8,20 +8,20 @@
  * @returns {Promise<Array>} Array of collection names.
  */
 export const fetchCollections = async (graphType) => {
-  const response = await fetch("/arango_api/collections/", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      graph: graphType,
-    }),
-  });
-  if (!response.ok) {
-    console.error("Fetch collections failed:", response.status, await response.text());
-    throw new Error(`Network response was not ok (${response.status})`);
-  }
-  return response.json();
+    const response = await fetch("/arango_api/collections/", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            graph: graphType,
+        }),
+    });
+    if (!response.ok) {
+        console.error("Fetch collections failed:", response.status, await response.text());
+        throw new Error(`Network response was not ok (${response.status})`);
+    }
+    return response.json();
 };
 
 /**
@@ -32,17 +32,17 @@ export const fetchCollections = async (graphType) => {
  * @returns {Promise<Array>} Array of document objects.
  */
 export const fetchNodeDetailsByIds = async (ids, db) => {
-  if (!ids || ids.length === 0) return [];
-  try {
-    const response = await fetch("/arango_api/document/details", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ document_ids: ids, db }),
-    });
-    if (!response.ok) throw new Error("Failed to fetch node details");
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching node details:", error);
-    return [];
-  }
+    if (!ids || ids.length === 0) return [];
+    try {
+        const response = await fetch("/arango_api/document/details", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ document_ids: ids, db }),
+        });
+        if (!response.ok) throw new Error("Failed to fetch node details");
+        return await response.json();
+    } catch (error) {
+        console.error("Error fetching node details:", error);
+        return [];
+    }
 };

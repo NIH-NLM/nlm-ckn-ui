@@ -9,13 +9,13 @@
  * @returns {string|null} FTU digital object URL or null.
  */
 export const findFtuUrlById = (ftuPartsArray, searchId) => {
-  if (!Array.isArray(ftuPartsArray) || !searchId) {
-    return null;
-  }
+    if (!Array.isArray(ftuPartsArray) || !searchId) {
+        return null;
+    }
 
-  const foundMatch = ftuPartsArray.find(
-    (ftuPart) => ftuPart.ftu_iri.includes(searchId) || ftuPart.ftu_part_iri.includes(searchId),
-  );
+    const foundMatch = ftuPartsArray.find(
+        (ftuPart) => ftuPart.ftu_iri.includes(searchId) || ftuPart.ftu_part_iri.includes(searchId),
+    );
 
-  return foundMatch?.ftu_digital_object || null;
+    return foundMatch?.ftu_digital_object || null;
 };

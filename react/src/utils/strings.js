@@ -8,25 +8,25 @@
  * @returns {string} Capital cased string.
  */
 export const capitalCase = (input) => {
-  if (Array.isArray(input)) {
-    return input
-      .map((str) =>
-        typeof str === "string"
-          ? str
-              .split(" ")
-              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-              .join(" ")
-          : str,
-      )
-      .join("|");
-  }
-  if (typeof input === "string") {
-    return input
-      .split(" ")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
-  }
-  return input;
+    if (Array.isArray(input)) {
+        return input
+            .map((str) =>
+                typeof str === "string"
+                    ? str
+                        .split(" ")
+                        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                        .join(" ")
+                    : str,
+            )
+            .join("|");
+    }
+    if (typeof input === "string") {
+        return input
+            .split(" ")
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(" ");
+    }
+    return input;
 };
 
 /**
@@ -36,8 +36,8 @@ export const capitalCase = (input) => {
  * @returns {string} Truncated string.
  */
 export function truncateString(text, maxLength) {
-  if (!text || text.length <= maxLength) {
-    return text;
-  }
-  return `${text.slice(0, maxLength)}...`;
+    if (!text || text.length <= maxLength) {
+        return text;
+    }
+    return `${text.slice(0, maxLength)}...`;
 }

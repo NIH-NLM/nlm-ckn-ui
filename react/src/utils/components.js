@@ -6,10 +6,10 @@
  * Loading bar component with progress indicator.
  */
 export const LoadingBar = () => {
-  return (
-    <div className="loading-indicator">
-      <div className="progress-bar" />
-      <span>Loading...</span>
-    </div>
-  );
+    return (
+        <div className="loading-indicator">
+            <div className="progress-bar" />
+            <span>Loading...</span>
+        </div>
+    );
 };
