@@ -1,18 +1,35 @@
 {
+  "_defaults": {
+    "graphType": "ontologies",
+    "depth": 2,
+    "edgeDirection": "ANY",
+    "collapseOnStart": false,
+    "allowedCollections": null,
+    "preferredPredicates": []
+  },
   "UBERON": {
     "graphType": "ontologies",
     "depth": 2,
     "edgeDirection": "ANY",
     "collapseOnStart": false,
-    "allowedCollections": ["UBERON"],
-    "preferredPredicates": ["SUB_CLASS_OF"]
+    "allowedCollections": [
+      "UBERON"
+    ],
+    "preferredPredicates": [
+      "SUB_CLASS_OF"
+    ]
   },
   "CHEBI": {
     "graphType": "ontologies",
     "depth": 3,
     "edgeDirection": "ANY",
     "collapseOnStart": false,
-    "allowedCollections": ["CL", "MONDO", "GS", "PR"],
+    "allowedCollections": [
+      "CL",
+      "MONDO",
+      "GS",
+      "PR"
+    ],
     "preferredPredicates": [
       "MOLECULARLY_INTERACTS_WITH",
       "GENETIC_BASIS_FOR",
@@ -26,15 +43,23 @@
     "depth": 2,
     "edgeDirection": "ANY",
     "collapseOnStart": false,
-    "allowedCollections": ["CL"],
-    "preferredPredicates": ["SUB_CLASS_OF"]
+    "allowedCollections": [
+      "CL"
+    ],
+    "preferredPredicates": [
+      "SUB_CLASS_OF"
+    ]
   },
   "BMC": {
     "graphType": "phenotypes",
     "depth": 1,
     "edgeDirection": "ANY",
     "collapseOnStart": true,
-    "allowedCollections": ["CS", "CL", "GS"],
+    "allowedCollections": [
+      "CS",
+      "CL",
+      "GS"
+    ],
     "preferredPredicates": []
   },
   "CS": {
@@ -42,7 +67,13 @@
     "depth": 2,
     "edgeDirection": "ANY",
     "collapseOnStart": true,
-    "allowedCollections": ["UBERON", "BMC", "CSD", "CL", "GS"],
+    "allowedCollections": [
+      "UBERON",
+      "BMC",
+      "CSD",
+      "CL",
+      "GS"
+    ],
     "preferredPredicates": [
       "DERIVES_FROM",
       "SOURCE",
@@ -59,7 +90,12 @@
     "depth": 1,
     "edgeDirection": "ANY",
     "collapseOnStart": false,
-    "allowedCollections": ["CS", "CSD", "CL", "PUB"],
+    "allowedCollections": [
+      "CS",
+      "CSD",
+      "CL",
+      "PUB"
+    ],
     "preferredPredicates": []
   },
   "MONDO": {
@@ -67,7 +103,13 @@
     "depth": 2,
     "edgeDirection": "ANY",
     "collapseOnStart": false,
-    "allowedCollections": ["CHEBI", "CL", "MONDO", "GS", "PR"],
+    "allowedCollections": [
+      "CHEBI",
+      "CL",
+      "MONDO",
+      "GS",
+      "PR"
+    ],
     "preferredPredicates": [
       "MOLECULARLY_INTERACTS_WITH",
       "GENETIC_BASIS_FOR",
@@ -82,7 +124,10 @@
     "depth": 2,
     "edgeDirection": "ANY",
     "collapseOnStart": false,
-    "allowedCollections": ["CL", "GS"],
+    "allowedCollections": [
+      "CL",
+      "GS"
+    ],
     "preferredPredicates": []
   },
   "PR": {
@@ -90,7 +135,11 @@
     "depth": 2,
     "edgeDirection": "ANY",
     "collapseOnStart": false,
-    "allowedCollections": ["PR", "GS", "CL"],
+    "allowedCollections": [
+      "PR",
+      "GS",
+      "CL"
+    ],
     "preferredPredicates": []
   },
   "PUB": {
@@ -98,7 +147,12 @@
     "depth": 2,
     "edgeDirection": "ANY",
     "collapseOnStart": false,
-    "allowedCollections": ["CS", "CSD", "CL", "PUB"],
+    "allowedCollections": [
+      "CS",
+      "CSD",
+      "CL",
+      "PUB"
+    ],
     "preferredPredicates": []
   },
   "NCBITaxon": {
@@ -106,7 +160,9 @@
     "depth": 2,
     "edgeDirection": "ANY",
     "collapseOnStart": false,
-    "allowedCollections": ["NCBITaxon"],
+    "allowedCollections": [
+      "NCBITaxon"
+    ],
     "preferredPredicates": []
   }
 }

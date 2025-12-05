@@ -1,5 +1,5 @@
 describe("ActiveNavProvider", () => {
-    it("Should have tests", () => {
-        // TODO: Finish testing
-    });
+  it("Should have tests", () => {
+    // TODO: Finish testing
+  });
 });

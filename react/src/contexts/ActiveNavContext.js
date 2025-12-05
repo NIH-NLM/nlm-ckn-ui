@@ -5,20 +5,20 @@ const ActiveNavContext = createContext();
 
 // Create a custom hook to use the context
 export const useActiveNav = () => {
-    return useContext(ActiveNavContext);
+  return useContext(ActiveNavContext);
 };
 
 // Create a Provider component
 export const ActiveNavProvider = ({ children }) => {
-    const [activeNav, setActiveNav] = useState("/"); // Default to the home route
+  const [activeNav, setActiveNav] = useState("/"); // Default to the home route
 
-    const setActive = (path) => {
-        setActiveNav(path);
-    };
+  const setActive = (path) => {
+    setActiveNav(path);
+  };
 
-    return (
-        <ActiveNavContext.Provider value={{ activeNav, setActive }}>
-            {children}
-        </ActiveNavContext.Provider>
-    );
+  return (
+    <ActiveNavContext.Provider value={{ activeNav, setActive }}>
+      {children}
+    </ActiveNavContext.Provider>
+  );
 };
