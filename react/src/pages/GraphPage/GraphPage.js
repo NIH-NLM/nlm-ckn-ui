@@ -4,9 +4,8 @@ import ForceGraph from "../../components/ForceGraph/ForceGraph";
 import LoadGraphModal from "../../components/LoadGraphModal/LoadGraphModal";
 import SelectedItemsTable from "../../components/SelectedItemsTable/SelectedItemsTable";
 import { fetchNodeDetailsByIds } from "../../components/Utils/Utils";
-import { GraphContext } from "../../contexts/GraphContext";
-import { initializeGraph, loadGraphFromJson } from "../../store/graphSlice";
-import { removeNodeFromSlice } from "../../store/nodesSlice";
+import { GraphContext } from "../../contexts";
+import { initializeGraph, loadGraphFromJson, removeNodeFromSlice } from "../../store";
 
 const GraphPage = () => {
   const dispatch = useDispatch();

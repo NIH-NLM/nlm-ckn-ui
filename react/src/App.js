@@ -5,9 +5,7 @@ import "./styles/index.css";
 
 import Footer from "./components/Footer/Footer";
 import Header from "./components/Header/Header";
-import { ActiveNavProvider } from "./contexts/ActiveNavContext";
-import { FtuPartsProvider } from "./contexts/FTUPartsContext";
-import { GraphProvider } from "./contexts/GraphContext";
+import { ActiveNavProvider, FtuPartsProvider, GraphProvider } from "./contexts";
 import AboutPage from "./pages/AboutPage/AboutPage";
 import CollectionsPage from "./pages/CollectionsPage/CollectionsPage";
 import DocumentPage from "./pages/DocumentPage/DocumentPage";

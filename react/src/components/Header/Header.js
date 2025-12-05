@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { useActiveNav } from "../../contexts/ActiveNavContext";
+import { useActiveNav } from "../../contexts";
 
 const Header = () => {
   const { activeNav, setActive } = useActiveNav();

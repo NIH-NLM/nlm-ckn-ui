@@ -6,8 +6,8 @@ import DocumentCard from "../../components/DocumentCard/DocumentCard";
 import ForceGraph from "../../components/ForceGraph/ForceGraph";
 import FTUIllustration from "../../components/FTUIllustration/FTUIllustration";
 import { findFtuUrlById, getTitle, parseId } from "../../components/Utils/Utils";
-import { useFtuParts } from "../../contexts/FTUPartsContext";
-import { initializeGraph } from "../../store/graphSlice";
+import { useFtuParts } from "../../contexts";
+import { initializeGraph } from "../../store";
 
 const DocumentPage = () => {
   const dispatch = useDispatch();
