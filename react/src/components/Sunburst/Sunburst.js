@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { fetchHierarchyData } from "../../services";
 import { getLabel, LoadingBar, mergeChildren } from "../../utils";
 import AddToGraphButton from "../AddToGraphButton/AddToGraphButton";
 import DocumentPopup from "../DocumentPopup/DocumentPopup";
@@ -37,18 +38,8 @@ const Sunburst = ({ addSelectedItem }) => {
       }
       setIsLoading(true);
       isLoadingRef.current = true;
-      const fetchUrl = "/arango_api/sunburst/";
       try {
-        const response = await fetch(fetchUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ parent_id: parentId, graph: graphType }),
-        });
-        if (!response.ok) {
-          const err = await response.text();
-          throw new Error(`Fetch failed: ${response.status} ${err}`);
-        }
-        const data = await response.json();
+        const data = await fetchHierarchyData(parentId, graphType);
         if (parentId) {
           if (!Array.isArray(data)) throw new Error(`API error for parent ${parentId}`);
           setGraphData((prevData) => {

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom";
 import AddToGraphButton from "../../components/AddToGraphButton/AddToGraphButton";
 import TreeConstructor from "../../components/TreeConstructor/TreeConstructor";
+import { fetchHierarchyData } from "../../services";
 import { LoadingBar } from "../../utils";
 
 /**
@@ -58,20 +59,8 @@ const Tree = () => {
     setError(null);
 
     try {
-      const response = await fetch("/arango_api/sunburst/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          parent_id: null,
-          graph: graphTypeForTree,
-        }),
-      });
+      const data = await fetchHierarchyData(null, graphTypeForTree);
 
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status}`);
-      }
-
-      const data = await response.json();
       if (typeof data !== "object" || data === null || Array.isArray(data)) {
         throw new Error("Invalid data format: Expected a single root object.");
       }

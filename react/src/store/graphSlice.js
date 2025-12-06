@@ -1,68 +1,12 @@
 import { createAsyncThunk, createSlice, current } from "@reduxjs/toolkit";
 import undoable from "redux-undo";
 import { performSetOperation } from "../components/ForceGraph/performSetOperation";
+import {
+  fetchEdgeFilterOptions as fetchEdgeFilterOptionsAPI,
+  fetchGraphData,
+  fetchNodeExpansion,
+} from "../services";
 import { getFilterableEdgeFields } from "../utils";
-
-// API helper to fetch graph data from backend.
-// Handles three types of requests: standard traversal, shortest path, and advanced per-node settings.
-const fetchGraphDataAPI = async (params) => {
-  const {
-    nodeIds,
-    shortestPaths,
-    depth,
-    edgeDirection,
-    allowedCollections,
-    nodeLimit,
-    graphType,
-    edgeFilters,
-    advancedSettings,
-  } = params;
-
-  // Determine if this is a shortest path query.
-  const useShortestPath = shortestPaths && !advancedSettings && nodeIds.length > 1;
-
-  const endpoint = useShortestPath ? "/arango_api/shortest_paths/" : "/arango_api/graph/";
-
-  let body;
-
-  if (useShortestPath) {
-    // Body for a shortest path query.
-    body = {
-      node_ids: nodeIds,
-      edge_direction: edgeDirection,
-    };
-  } else if (advancedSettings) {
-    // Body for an advanced per-node settings query.
-    body = {
-      node_ids: nodeIds,
-      advanced_settings: advancedSettings,
-      graph: graphType,
-      include_inter_node_edges: params.includeInterNodeEdges ?? true,
-    };
-  } else {
-    // Body for a standard traversal query.
-    body = {
-      node_ids: nodeIds,
-      depth,
-      edge_direction: edgeDirection,
-      allowed_collections: allowedCollections,
-      node_limit: nodeLimit,
-      graph: graphType,
-      edge_filters: edgeFilters,
-      include_inter_node_edges: params.includeInterNodeEdges ?? true,
-    };
-  }
-
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!response.ok) {
-    throw new Error(`Failed to fetch from ${endpoint}`);
-  }
-  return response.json();
-};
 
 // Async thunk for fetching graph data.
 export const fetchAndProcessGraph = createAsyncThunk(
@@ -96,7 +40,7 @@ export const fetchAndProcessGraph = createAsyncThunk(
     }
 
     try {
-      const rawData = await fetchGraphDataAPI(params);
+      const rawData = await fetchGraphData(params);
       return rawData;
     } catch (error) {
       console.error("Thunk fetch error:", error);
@@ -121,18 +65,7 @@ export const fetchEdgeFilterOptions = createAsyncThunk(
       return {}; // No fields to fetch.
     }
 
-    // Call backend API to get unique field values.
-    const response = await fetch("/arango_api/edge_filter_options/", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fields: fieldsToQuery, graph: graphType }),
-    });
-
-    if (!response.ok) {
-      throw new Error("Edge filter options fetch failed.");
-    }
-
-    return await response.json();
+    return await fetchEdgeFilterOptionsAPI(fieldsToQuery, graphType);
   },
 );
 
@@ -142,21 +75,11 @@ export const expandNode = createAsyncThunk(
   "graph/expandNode",
   async (nodeIdToExpand, { getState }) => {
     const { settings } = getState().graph.present;
-    const response = await fetch("/arango_api/graph/", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        node_ids: [nodeIdToExpand],
-        depth: 1,
-        edge_direction: "ANY",
-        allowed_collections: [],
-        graph: settings.graphType,
-        edge_filters: [],
-        include_inter_node_edges: settings.includeInterNodeEdges ?? true,
-      }),
-    });
-    if (!response.ok) throw new Error("Expansion fetch failed");
-    const expansionData = await response.json();
+    const expansionData = await fetchNodeExpansion(
+      nodeIdToExpand,
+      settings.graphType,
+      settings.includeInterNodeEdges ?? true,
+    );
     return {
       newNodes: expansionData?.[nodeIdToExpand].nodes || [],
       newLinks: expansionData?.[nodeIdToExpand].links || [],

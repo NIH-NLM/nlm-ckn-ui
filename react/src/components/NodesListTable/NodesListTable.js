@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { fetchNodesDetails } from "../../services";
 import { removeNodeFromSlice } from "../../store/nodesSlice";
 import { LoadingBar } from "../../utils";
 
@@ -10,37 +11,22 @@ const NodeListTable = () => {
   const [nodeObjects, setNodeObjects] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Get details for nodesSlice
-  const fetchNodeDetailsByIds = useCallback(async (ids) => {
-    if (!ids || ids.length === 0) return [];
-    setIsLoading(true);
-    try {
-      const response = await fetch("/arango_api/nodes/details", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ node_ids: ids }),
-      });
-      if (!response.ok) throw new Error("Failed to fetch node details");
-      return await response.json();
-    } catch (error) {
-      console.error("Error fetching node details:", error);
-      return [];
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
     const syncObjects = async () => {
       if (nodesSliceNodeIds.length > 0) {
-        const objects = await fetchNodeDetailsByIds(nodesSliceNodeIds);
-        setNodeObjects(objects);
+        setIsLoading(true);
+        try {
+          const objects = await fetchNodesDetails(nodesSliceNodeIds);
+          setNodeObjects(objects);
+        } finally {
+          setIsLoading(false);
+        }
       } else {
         setNodeObjects([]); // Clear the list if the cart is empty
       }
     };
     syncObjects();
-  }, [nodesSliceNodeIds, fetchNodeDetailsByIds]);
+  }, [nodesSliceNodeIds]);
 
   if (isLoading) {
     return <LoadingBar />;

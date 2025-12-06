@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import ForceGraph from "../../components/ForceGraph/ForceGraph";
+import { executeAqlQuery, fetchPredefinedQueries } from "../../services";
 
 const AQLQueryPage = () => {
   const [queryTemplate, setQueryTemplate] = useState("");
@@ -12,20 +13,16 @@ const AQLQueryPage = () => {
 
   useEffect(() => {
     // Fetch predefined queries on component mount
-    const fetchPredefinedQueries = async () => {
+    const loadPredefinedQueries = async () => {
       try {
-        const response = await fetch("/api/predefined-queries/");
-        if (!response.ok) {
-          throw new Error("Failed to fetch predefined queries");
-        }
-        const data = await response.json();
+        const data = await fetchPredefinedQueries();
         setPredefinedQueries(data);
       } catch (err) {
         console.error(err);
       }
     };
 
-    fetchPredefinedQueries();
+    loadPredefinedQueries();
   }, []);
 
   const handleQueryChange = (event) => {
@@ -67,21 +64,8 @@ const AQLQueryPage = () => {
   const executeQuery = async () => {
     setError(null); // Reset any previous error
     try {
-      const response = await fetch("/arango_api/aql/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          query: queryTemplate.replace(/@value1/g, `${value1}`).replace(/@value2/g, `${value2}`),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-
-      const data = await response.json();
+      const query = queryTemplate.replace(/@value1/g, `${value1}`).replace(/@value2/g, `${value2}`);
+      const data = await executeAqlQuery(query);
 
       // Check if response has information
       if (data?.nodes?.[0]) {

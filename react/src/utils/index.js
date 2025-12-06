@@ -1,17 +1,14 @@
 // Utils barrel file - re-exports all utility functions
 
-// API utilities
-export { fetchCollections, fetchNodeDetailsByIds } from "./api";
-
 // Collection and label utilities
 export {
-    getAllSearchableFields,
-    getDisplayFields,
-    getFilterableEdgeFields,
-    getLabel,
-    getTitle,
-    getUrl,
-    parseCollections
+  getAllSearchableFields,
+  getDisplayFields,
+  getFilterableEdgeFields,
+  getLabel,
+  getTitle,
+  getUrl,
+  parseCollections,
 } from "./collections";
 // Shared components
 export { LoadingBar } from "./components";
@@ -19,11 +16,11 @@ export { LoadingBar } from "./components";
 export { findFtuUrlById } from "./ftu";
 // Graph and tree utilities
 export {
-    findNodeById,
-    hasAnyNodes,
-    hasNodesInRawData,
-    mergeChildren,
-    parseId
+  findNodeById,
+  hasAnyNodes,
+  hasNodesInRawData,
+  mergeChildren,
+  parseId,
 } from "./graph";
 
 // Platform utilities

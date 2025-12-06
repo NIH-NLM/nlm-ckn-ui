@@ -6,6 +6,7 @@ import DocumentCard from "../../components/DocumentCard/DocumentCard";
 import ForceGraph from "../../components/ForceGraph/ForceGraph";
 import FTUIllustration from "../../components/FTUIllustration/FTUIllustration";
 import { useFtuParts } from "../../contexts";
+import { fetchDocument } from "../../services";
 import { initializeGraph } from "../../store";
 import { findFtuUrlById, getTitle, parseId } from "../../utils";
 
@@ -19,28 +20,23 @@ const DocumentPage = () => {
   const { ftuParts } = useFtuParts();
 
   useEffect(() => {
-    const getDocument = async () => {
+    const getDocumentData = async () => {
       try {
-        const response = await fetch(`/arango_api/collection/${coll}/${id}/`);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
+        const data = await fetchDocument(coll, id);
         setDocument(data);
         setNodeIds(parseId(data));
         dispatch(initializeGraph({ nodeIds: parseId(data) }));
       } catch (error) {
         console.error("Failed to fetch document:", error);
-
         setDocument(null);
       }
     };
 
     if (id && coll) {
       setDocument(null);
-      getDocument();
+      getDocumentData();
     }
-  }, [id, coll]);
+  }, [id, coll, dispatch]);
 
   const ftuIllustrationUrl = useMemo(() => {
     if (!document || !ftuParts || ftuParts.length === 0) {

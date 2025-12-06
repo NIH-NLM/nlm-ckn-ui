@@ -4,6 +4,10 @@ import { ActionCreators } from "redux-undo";
 import collMaps from "../../assets/cell-kn-mvp-collection-maps.json";
 import { useHotkeyHold, useHotkeys } from "../../hooks";
 import {
+  fetchCollections,
+  fetchNodeDetailsByIds as fetchNodeDetailsByIdsHelper,
+} from "../../services";
+import {
   clearNodeToCenter,
   collapseNode,
   expandNode,
@@ -20,15 +24,7 @@ import {
   updateNodePosition,
   updateSetting,
 } from "../../store";
-import {
-  fetchCollections,
-  fetchNodeDetailsByIds as fetchNodeDetailsByIdsHelper,
-  getLabel,
-  hasNodesInRawData,
-  isMac,
-  LoadingBar,
-  parseCollections,
-} from "../../utils";
+import { getLabel, hasNodesInRawData, isMac, LoadingBar, parseCollections } from "../../utils";
 import AddToGraphButton from "../AddToGraphButton/AddToGraphButton";
 import DocumentPopup from "../DocumentPopup/DocumentPopup";
 import FilterableDropdown from "../FilterableDropdown/FilterableDropdown";

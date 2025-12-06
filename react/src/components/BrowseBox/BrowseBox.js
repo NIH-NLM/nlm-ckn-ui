@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import collMaps from "../../assets/cell-kn-mvp-collection-maps.json";
-import { fetchCollections, getLabel, parseCollections } from "../../utils";
+import { fetchCollectionDocuments, fetchCollections } from "../../services";
+import { getLabel, parseCollections } from "../../utils";
 import ListDocuments from "../ListDocuments/ListDocuments";
 
 const collectionMaps = new Map(collMaps.maps);
@@ -46,13 +47,7 @@ const BrowseBox = () => {
         return;
       }
       try {
-        const response = await fetch(`/arango_api/collection/${currentCollection}/`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ graph: graphType }),
-        });
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const data = await response.json();
+        const data = await fetchCollectionDocuments(currentCollection, graphType);
         sortDocumentList(data);
       } catch (error) {
         console.error("Failed to fetch document list:", error);
