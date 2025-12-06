@@ -1,12 +1,22 @@
-import { processGraphData, processGraphLinks } from "./ForceGraphConstructor";
+import { getColorForCollection } from "../../services/ColorServices/ColorServices";
+import { processGraphData, processGraphLinks } from "./graphDataProcessing";
+
+// Mock the color service
+jest.mock("../../services/ColorServices/ColorServices", () => ({
+  getColorForCollection: jest.fn((collection) => `color-${collection}`),
+}));
 
 describe("ForceGraphConstructor data tests", () => {
+  beforeEach(() => {
+    // Reset mock implementation before each test
+    getColorForCollection.mockImplementation((collection) => `color-${collection}`);
+  });
+
   describe("processGraphData", () => {
     // Define simple helper functions
     const nodeId = (d) => d._id;
     const labelFn = (d) => `label-${d._id}`;
     const nodeHover = (d) => `hover-${d._id}`;
-    const dummyColor = (d) => `color-${d}`;
 
     // Existing nodes array
     const existingNodes = [{ _id: "A", someProp: 1 }];
@@ -18,14 +28,7 @@ describe("ForceGraphConstructor data tests", () => {
     ];
 
     it("should filter out duplicates and augment new nodes", () => {
-      const result = processGraphData(
-        existingNodes,
-        newNodes,
-        nodeId,
-        labelFn,
-        dummyColor,
-        nodeHover,
-      );
+      const result = processGraphData(existingNodes, newNodes, nodeId, labelFn, nodeHover);
       // Expect 3 nodes: the original "A" plus new "B" and "C"
       expect(result).toHaveLength(3);
 
@@ -41,11 +44,12 @@ describe("ForceGraphConstructor data tests", () => {
   describe("processGraphLinks", () => {
     // Define a label function for links
     const labelFn = (d) => `link-${d._from}-${d._to}`;
-    // Use the default linkSource and linkTarget from the function
 
     // Existing links: one link from A to B
     const existingLinks = [
       {
+        _id: "links/A-B",
+        _key: "A-B",
         _from: "A",
         _to: "B",
         name: "link1",
@@ -55,9 +59,9 @@ describe("ForceGraphConstructor data tests", () => {
     ];
     // New links: include a duplicate (A->B) and two new links.
     const newLinks = [
-      { _from: "A", _to: "B", name: "link1" }, // duplicate
-      { _from: "B", _to: "C", name: "link2" },
-      { _from: "C", _to: "A", name: "link3" },
+      { _id: "links/A-B", _key: "A-B", _from: "A", _to: "B", name: "link1" }, // duplicate
+      { _id: "links/B-C", _key: "B-C", _from: "B", _to: "C", name: "link2" },
+      { _id: "links/C-A", _key: "C-A", _from: "C", _to: "A", name: "link3" },
     ];
     // Nodes available for mapping
     const nodes = [{ id: "A" }, { id: "B" }, { id: "C" }];

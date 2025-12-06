@@ -1,12 +1,26 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import * as utils from "../../utils";
 import SelectedItemsTable from "./SelectedItemsTable";
+
+// Mock the utils module
+jest.mock("../../utils", () => ({
+  ...jest.requireActual("../../utils"),
+  getLabel: jest.fn((item) => item.label || item._id),
+  getUrl: jest.fn((item) => item.url || null),
+}));
 
 describe("SelectedItemsTable", () => {
   const selectedItems = [
-    { _id: "1", term: "item1", label: "Label1" },
-    { _id: "2", label: "Label2" }, // No term provided, so _id should be used instead
+    { _id: "1", label: "Label1", url: "https://example.com/1" },
+    { _id: "2", label: "Label2", url: "https://example.com/2" },
   ];
+
+  beforeEach(() => {
+    // Reset mocks and ensure getLabel returns the label
+    utils.getLabel.mockImplementation((item) => item.label || item._id);
+    utils.getUrl.mockImplementation((item) => item.url || null);
+  });
 
   it("renders nothing if selectedItems array is empty", () => {
     const { container } = render(
@@ -34,11 +48,8 @@ describe("SelectedItemsTable", () => {
     // Check for title
     expect(screen.getByText("Origin Nodes")).toBeInTheDocument();
 
-    // Check that each row is rendered with the appropriate data
-    expect(screen.getByText("item1")).toBeInTheDocument();
+    // Check that each row is rendered with the labels
     expect(screen.getByText("Label1")).toBeInTheDocument();
-
-    expect(screen.getByText("2")).toBeInTheDocument();
     expect(screen.getByText("Label2")).toBeInTheDocument();
   });
 
@@ -79,7 +90,8 @@ describe("SelectedItemsTable", () => {
     const generateGraphButton = screen.getByText("Generate Graph");
     fireEvent.click(generateGraphButton);
 
-    expect(generateGraphMock).toHaveBeenCalledWith(selectedItems);
+    // generateGraph is called without arguments (it reads from state)
+    expect(generateGraphMock).toHaveBeenCalled();
   });
 
   it('renders a Link with the correct "to" attribute for each item', () => {

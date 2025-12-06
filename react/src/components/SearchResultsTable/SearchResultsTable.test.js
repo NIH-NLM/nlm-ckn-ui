@@ -1,85 +1,82 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { configureStore } from "@reduxjs/toolkit";
+import { render, screen } from "@testing-library/react";
+import { Provider } from "react-redux";
 import { MemoryRouter } from "react-router-dom";
+import nodesReducer from "../../store/nodesSlice";
 import SearchResultsTable from "./SearchResultsTable";
 
-describe("SearchResultsTable", () => {
-  const sampleResults = {
-    fruits: [
-      { _id: "CL/0", label: "Apple", definition: "apple" },
-      { _id: "CL/1", label: "Banana", definition: "banana" },
-    ],
-    vegetables: [{ _id: "CL/2", label: "Carrot", definition: "carrot" }],
-    dairy: [{ _id: "CL/0", definition: "milk" }],
-    empty: [], // This key should be filtered out.
-  };
-
-  const handleSelectItem = jest.fn();
-
-  beforeEach(() => {
-    handleSelectItem.mockClear();
+// Create a test store
+const createTestStore = () =>
+  configureStore({
+    reducer: {
+      nodesSlice: nodesReducer,
+    },
   });
 
-  test("renders headers and toggles expansion to show items", () => {
-    render(
-      <MemoryRouter>
-        <SearchResultsTable searchResults={sampleResults} handleSelectItem={handleSelectItem} />
-      </MemoryRouter>,
-    );
+// Mock the color service
+jest.mock("../../services/ColorServices/ColorServices", () => ({
+  getColorForCollection: jest.fn(() => "#336699"),
+}));
 
-    // Only non-empty keys should be rendered as headers.
-    expect(screen.getByText("fruits")).toBeInTheDocument();
-    expect(screen.getByText("vegetables")).toBeInTheDocument();
-    expect(screen.getByText("dairy")).toBeInTheDocument();
-    expect(screen.queryByText("empty")).not.toBeInTheDocument();
+// Mock collection maps
+jest.mock("../../assets/cell-kn-mvp-collection-maps.json", () => ({
+  maps: [
+    ["CL", { display_name: "Cell Types" }],
+    ["GO", { display_name: "Gene Ontology" }],
+  ],
+}));
 
-    // Initially, items should not be visible
-    expect(screen.queryByText("Apple")).not.toBeInTheDocument();
-    expect(screen.queryByText("Carrot")).not.toBeInTheDocument();
-    expect(screen.queryByText("milk")).not.toBeInTheDocument();
+// Mock utils - use __esModule to ensure proper export handling
+jest.mock("../../utils", () => {
+  return {
+    __esModule: true,
+    getLabel: (item) => item.label || item._id,
+  };
+});
 
-    // Click on the "fruits" header to expand it
-    fireEvent.click(screen.getByText("fruits"));
+// Wrapper component for tests
+const renderWithProviders = (component) => {
+  return render(
+    <Provider store={createTestStore()}>
+      <MemoryRouter>{component}</MemoryRouter>
+    </Provider>,
+  );
+};
+
+describe("SearchResultsTable", () => {
+  // New flat array format (no longer grouped by key)
+  const sampleResults = [
+    { _id: "CL/0", label: "Apple" },
+    { _id: "CL/1", label: "Banana" },
+    { _id: "GO/2", label: "Carrot" },
+  ];
+
+  test("renders search results as links", () => {
+    renderWithProviders(<SearchResultsTable searchResults={sampleResults} />);
+
+    // Items should be rendered as links
     expect(screen.getByText("Apple")).toBeInTheDocument();
     expect(screen.getByText("Banana")).toBeInTheDocument();
-
-    // Expand "vegetables" header
-    fireEvent.click(screen.getByText("vegetables"));
     expect(screen.getByText("Carrot")).toBeInTheDocument();
-
-    // Expand "dairy" header
-    fireEvent.click(screen.getByText("dairy"));
-    expect(screen.getByText("milk")).toBeInTheDocument();
   });
 
-  test("calls handleSelectItem when plus sign is clicked", () => {
-    render(
-      <MemoryRouter>
-        <SearchResultsTable searchResults={sampleResults} handleSelectItem={handleSelectItem} />
-      </MemoryRouter>,
-    );
+  test("shows no results message when array is empty", () => {
+    renderWithProviders(<SearchResultsTable searchResults={[]} />);
 
-    // Expand the "fruits" header so that its items are visible.
-    fireEvent.click(screen.getByTestId("header-fruits"));
+    expect(screen.getByText("No results found.")).toBeInTheDocument();
+  });
 
-    // Locate the container for "Apple" and click its plus icon.
-    const appleItem = screen.getByText("Apple").closest(".result-list-item");
-    const applePlus = within(appleItem).getByText("+");
-    fireEvent.click(applePlus);
-    expect(handleSelectItem).toHaveBeenCalledWith({
-      _id: "CL/0",
-      label: "Apple",
-      definition: "apple",
-    });
+  test("shows no results message when searchResults is not an array", () => {
+    renderWithProviders(<SearchResultsTable searchResults={null} />);
 
-    // Expand the "vegetables" header and locate the "Carrot" container.
-    fireEvent.click(screen.getByTestId("header-vegetables"));
-    const carrotItem = screen.getByText("Carrot").closest(".result-list-item");
-    const carrotPlus = within(carrotItem).getByText("+");
-    fireEvent.click(carrotPlus);
-    expect(handleSelectItem).toHaveBeenCalledWith({
-      _id: "CL/2",
-      label: "Carrot",
-      definition: "carrot",
-    });
+    expect(screen.getByText("No results found.")).toBeInTheDocument();
+  });
+
+  test("renders collection tags with correct display names", () => {
+    renderWithProviders(<SearchResultsTable searchResults={sampleResults} />);
+
+    // Collection tags should show display names
+    expect(screen.getAllByText("Cell Types").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Gene Ontology").length).toBeGreaterThan(0);
   });
 });

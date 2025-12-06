@@ -1,12 +1,4 @@
-import {
-  capitalCase,
-  fetchCollections,
-  getLabel,
-  getTitle,
-  getUrl,
-  hasAnyNodes,
-  parseCollections,
-} from "./index";
+import { capitalCase, getLabel, getTitle, getUrl, hasAnyNodes, parseCollections } from "./index";
 
 // --- Mocking ---
 
@@ -56,64 +48,9 @@ jest.mock(
   { virtual: true },
 );
 
-// Mock the global fetch function
-global.fetch = jest.fn();
-
-// Helper to reset mocks before each test
-beforeEach(() => {
-  fetch.mockClear();
-});
-
 // --- Tests ---
 
 describe("Utils Module", () => {
-  // --- fetchCollections ---
-  describe("fetchCollections", () => {
-    it("should fetch collections successfully", async () => {
-      const mockData = { collections: ["col1", "col2"] };
-      const graphType = "myGraph";
-
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockData,
-      });
-
-      const result = await fetchCollections(graphType);
-
-      expect(fetch).toHaveBeenCalledTimes(1);
-      expect(fetch).toHaveBeenCalledWith("/arango_api/collections/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ graph: graphType }),
-      });
-
-      expect(result).toEqual(mockData);
-    });
-
-    it("should throw an error if fetch fails", async () => {
-      const graphType = "myGraph";
-      const errorStatus = 500;
-      const errorText = "Server Error";
-
-      fetch.mockResolvedValueOnce({
-        ok: false,
-        status: errorStatus,
-        text: async () => errorText,
-      });
-
-      const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
-
-      await expect(fetchCollections(graphType)).rejects.toThrow(
-        `Network response was not ok (${errorStatus})`,
-      );
-
-      expect(fetch).toHaveBeenCalledTimes(1);
-      expect(consoleSpy).toHaveBeenCalledWith("Fetch collections failed:", errorStatus, errorText);
-
-      consoleSpy.mockRestore();
-    });
-  });
-
   // --- hasAnyNodes ---
   describe("hasAnyNodes", () => {
     const nodeId = "nodes_a/123";

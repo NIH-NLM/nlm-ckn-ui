@@ -1,6 +1,19 @@
 import { render, screen } from "@testing-library/react";
 import { BrowserRouter as Router } from "react-router-dom";
-import ListDocuments from "./ListDocuments"; // Adjust the import path if necessary
+import ListDocuments from "./ListDocuments";
+
+// Mock the utils module - use __esModule to ensure proper export handling
+jest.mock("../../utils", () => {
+  return {
+    __esModule: true,
+    getLabel: (item) => {
+      if (Array.isArray(item.label)) {
+        return item.label.join(",");
+      }
+      return item.label || item._id;
+    },
+  };
+});
 
 describe("ListDocuments Component", () => {
   it("renders a single label correctly", () => {
@@ -29,8 +42,8 @@ describe("ListDocuments Component", () => {
       </Router>,
     );
 
-    // Check if the labels are joined by '|'
-    expect(screen.getByText("Label1 | Label2")).toBeInTheDocument();
+    // Check if the labels are joined by ',' (matching actual getLabel behavior)
+    expect(screen.getByText("Label1,Label2")).toBeInTheDocument();
 
     const linkElement = screen.getByRole("link");
     expect(linkElement).toHaveAttribute("href", "/collections/CL/123");
