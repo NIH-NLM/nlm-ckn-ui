@@ -1,7 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-
-// URL from HRA
-const FTU_ILLUSTRATIONS_URL = "https://apps.humanatlas.io/api/v1/ftu-illustrations";
+import { FTU_ILLUSTRATIONS_API_URL } from "../constants";
 
 // Define context
 const FtuPartsContext = createContext({
@@ -38,7 +36,7 @@ export const FtuPartsProvider = ({ children }) => {
   useEffect(() => {
     const fetchFtuParts = async () => {
       try {
-        const response = await fetch(FTU_ILLUSTRATIONS_URL);
+        const response = await fetch(FTU_ILLUSTRATIONS_API_URL);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }

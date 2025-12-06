@@ -168,7 +168,7 @@ const ForceGraph = ({
     const missing = originNodeIds.filter((id) => !nodeNameMap?.get(id) && !cachedNames[id]);
     if (missing.length === 0) return;
     // fire-and-forget
-    fetchNodeDetailsByIds(missing).catch(() => { });
+    fetchNodeDetailsByIds(missing).catch(() => {});
   }, [originNodeIds, nodeNameMap, cachedNames, fetchNodeDetailsByIds]);
 
   // Local component state for UI and temporary flags.

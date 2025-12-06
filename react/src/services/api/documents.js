@@ -2,6 +2,12 @@
  * API functions for document/node operations.
  */
 
+import {
+    COLLECTION_DOCUMENT_ENDPOINT,
+    DOCUMENT_DETAILS_ENDPOINT,
+    NODES_DETAILS_ENDPOINT,
+} from "../../constants";
+
 /**
  * Fetch a single document by collection and ID.
  * @param {string} collection - Collection name.
@@ -9,11 +15,11 @@
  * @returns {Promise<Object>} Document object.
  */
 export const fetchDocument = async (collection, id) => {
-  const response = await fetch(`/arango_api/collection/${collection}/${id}/`);
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
-  return response.json();
+    const response = await fetch(COLLECTION_DOCUMENT_ENDPOINT(collection, id));
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
 };
 
 /**
@@ -24,19 +30,19 @@ export const fetchDocument = async (collection, id) => {
  * @returns {Promise<Array>} Array of document objects.
  */
 export const fetchNodeDetailsByIds = async (ids, db) => {
-  if (!ids || ids.length === 0) return [];
-  try {
-    const response = await fetch("/arango_api/document/details", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ document_ids: ids, db }),
-    });
-    if (!response.ok) throw new Error("Failed to fetch node details");
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching node details:", error);
-    return [];
-  }
+    if (!ids || ids.length === 0) return [];
+    try {
+        const response = await fetch(DOCUMENT_DETAILS_ENDPOINT, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ document_ids: ids, db }),
+        });
+        if (!response.ok) throw new Error("Failed to fetch node details");
+        return await response.json();
+    } catch (error) {
+        console.error("Error fetching node details:", error);
+        return [];
+    }
 };
 
 /**
@@ -46,17 +52,17 @@ export const fetchNodeDetailsByIds = async (ids, db) => {
  * @returns {Promise<Array>} Array of node detail objects.
  */
 export const fetchNodesDetails = async (nodeIds) => {
-  if (!nodeIds || nodeIds.length === 0) return [];
-  try {
-    const response = await fetch("/arango_api/nodes/details", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ node_ids: nodeIds }),
-    });
-    if (!response.ok) throw new Error("Failed to fetch node details");
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching node details:", error);
-    return [];
-  }
+    if (!nodeIds || nodeIds.length === 0) return [];
+    try {
+        const response = await fetch(NODES_DETAILS_ENDPOINT, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ node_ids: nodeIds }),
+        });
+        if (!response.ok) throw new Error("Failed to fetch node details");
+        return await response.json();
+    } catch (error) {
+        console.error("Error fetching node details:", error);
+        return [];
+    }
 };

@@ -5,6 +5,7 @@ import collectionDefaults from "../../assets/collection-defaults.json";
 import DocumentCard from "../../components/DocumentCard/DocumentCard";
 import ForceGraph from "../../components/ForceGraph/ForceGraph";
 import FTUIllustration from "../../components/FTUIllustration/FTUIllustration";
+import { FTU_ILLUSTRATIONS_JSONLD_URL } from "../../constants";
 import { useFtuParts } from "../../contexts";
 import { fetchDocument } from "../../services";
 import { initializeGraph } from "../../store";
@@ -104,9 +105,7 @@ const DocumentPage = () => {
             {ftuIllustrationUrl && (
               <FTUIllustration
                 selectedIllustration={ftuIllustrationUrl}
-                illustrations={
-                  "https://cdn.humanatlas.io/digital-objects/graph/2d-ftu-illustrations/latest/assets/2d-ftu-illustrations.jsonld"
-                }
+                illustrations={FTU_ILLUSTRATIONS_JSONLD_URL}
               />
             )}
           </div>

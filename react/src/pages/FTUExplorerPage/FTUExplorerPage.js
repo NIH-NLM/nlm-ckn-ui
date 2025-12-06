@@ -1,13 +1,12 @@
 import FTUIllustration from "../../components/FTUIllustration/FTUIllustration";
+import { DEFAULT_FTU_ILLUSTRATION_URL, FTU_ILLUSTRATIONS_JSONLD_URL } from "../../constants";
 
 const FTUExplorerPage = () => {
   return (
     <div>
       <FTUIllustration
-        selectedIllustration={"https://purl.humanatlas.io/2d-ftu/lung-pulmonary-alveolus"}
-        illustrations={
-          "https://cdn.humanatlas.io/digital-objects/graph/2d-ftu-illustrations/latest/assets/2d-ftu-illustrations.jsonld"
-        }
+        selectedIllustration={DEFAULT_FTU_ILLUSTRATION_URL}
+        illustrations={FTU_ILLUSTRATIONS_JSONLD_URL}
       />
     </div>
   );

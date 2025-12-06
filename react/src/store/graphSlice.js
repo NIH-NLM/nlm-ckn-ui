@@ -2,6 +2,21 @@ import { createAsyncThunk, createSlice, current } from "@reduxjs/toolkit";
 import undoable from "redux-undo";
 import { performSetOperation } from "../components/ForceGraph/performSetOperation";
 import {
+  DEFAULT_COLLAPSE_ON_START,
+  DEFAULT_DEPTH,
+  DEFAULT_EDGE_DIRECTION,
+  DEFAULT_EDGE_FONT_SIZE,
+  DEFAULT_FIND_SHORTEST_PATHS,
+  DEFAULT_GRAPH_TYPE,
+  DEFAULT_INCLUDE_INTER_NODE_EDGES,
+  DEFAULT_LABEL_STATES,
+  DEFAULT_NODE_FONT_SIZE,
+  DEFAULT_NODE_LIMIT,
+  DEFAULT_SET_OPERATION,
+  DEFAULT_USE_FOCUS_NODES,
+  GRAPH_STATUS,
+} from "../constants";
+import {
   fetchEdgeFilterOptions as fetchEdgeFilterOptionsAPI,
   fetchGraphData,
   fetchNodeExpansion,
@@ -92,26 +107,21 @@ export const expandNode = createAsyncThunk(
 const initialState = {
   // User-configurable settings for graph generation and appearance.
   settings: {
-    depth: 2,
-    edgeDirection: "ANY",
-    setOperation: "Union",
+    depth: DEFAULT_DEPTH,
+    edgeDirection: DEFAULT_EDGE_DIRECTION,
+    setOperation: DEFAULT_SET_OPERATION,
     allowedCollections: [], // Collections currently allowed in query
     availableCollections: [], // Collections currently in DB
     allCollections: [], // Collections in all DB
-    nodeFontSize: 12,
-    edgeFontSize: 8,
-    nodeLimit: 5000,
-    labelStates: {
-      "collection-label": false,
-      "link-source": false,
-      "link-label": true,
-      "node-label": true,
-    },
-    findShortestPaths: false,
-    useFocusNodes: true,
-    collapseOnStart: true,
-    graphType: "phenotypes",
-    includeInterNodeEdges: true, // Query for edges between result nodes
+    nodeFontSize: DEFAULT_NODE_FONT_SIZE,
+    edgeFontSize: DEFAULT_EDGE_FONT_SIZE,
+    nodeLimit: DEFAULT_NODE_LIMIT,
+    labelStates: { ...DEFAULT_LABEL_STATES },
+    findShortestPaths: DEFAULT_FIND_SHORTEST_PATHS,
+    useFocusNodes: DEFAULT_USE_FOCUS_NODES,
+    collapseOnStart: DEFAULT_COLLAPSE_ON_START,
+    graphType: DEFAULT_GRAPH_TYPE,
+    includeInterNodeEdges: DEFAULT_INCLUDE_INTER_NODE_EDGES,
     edgeFilters: getFilterableEdgeFields().reduce((acc, field) => {
       acc[field] = [];
       return acc;
@@ -137,17 +147,16 @@ const initialState = {
   },
   nodeToCenter: null, // ID of node to center view on after update.
   // Async operation status for UI feedback.
-  status: "idle", // (idle | loading | processing | succeeded | failed)
+  status: GRAPH_STATUS.IDLE,
   error: null,
   lastActionType: null, // Tracks last action for conditional logic in UI.
   availableEdgeFilters: {}, // Stores all unique edge attribute values fetched from API.
-  edgeFilterStatus: "idle", // Status for edge filter options fetch.
+  edgeFilterStatus: GRAPH_STATUS.IDLE, // Status for edge filter options fetch.
   // Flag indicating if advanced mode is active for the current query.
   isAdvancedMode: false,
   // Stores the settings for each origin node when in advanced mode.
   perNodeSettings: {},
 };
-
 // Redux slice for managing all graph-related state.
 const graphSlice = createSlice({
   name: "graph",
@@ -163,7 +172,7 @@ const graphSlice = createSlice({
     // Sets final, processed graph data, including node positions.
     setGraphData: (state, action) => {
       state.graphData = action.payload;
-      state.status = "succeeded";
+      state.status = GRAPH_STATUS.SUCCEEDED;
       state.lastActionType = "setGraphData";
     },
     // Resets graph state for new query.
@@ -177,7 +186,7 @@ const graphSlice = createSlice({
       state.perNodeSettings = perNodeSettings;
 
       // Reset graph data and status.
-      state.status = "idle";
+      state.status = GRAPH_STATUS.IDLE;
       state.lastActionType = "initializeGraph";
       state.rawData = {};
       state.graphData = { nodes: [], links: [] };
@@ -264,7 +273,7 @@ const graphSlice = createSlice({
       state.originNodeIds = originNodeIds;
       state.settings = settings;
       state.graphData = graphData;
-      state.status = "succeeded";
+      state.status = GRAPH_STATUS.SUCCEEDED;
       // Ensure lastAppliedSettings reflects the settings that produced this graph.
       try {
         state.lastAppliedSettings = JSON.parse(JSON.stringify(settings));
@@ -289,7 +298,7 @@ const graphSlice = createSlice({
       state.lastAppliedSettings = initialState.settings;
 
       // Set the state to signal a successful load.
-      state.status = "succeeded";
+      state.status = GRAPH_STATUS.SUCCEEDED;
       // lastAppliedSettings already set to initial defaults above, ensure deep clone
       try {
         state.lastAppliedSettings = JSON.parse(JSON.stringify(state.settings));
@@ -305,11 +314,11 @@ const graphSlice = createSlice({
     builder
       // Reducers for main graph fetch.
       .addCase(fetchAndProcessGraph.pending, (state) => {
-        state.status = "loading";
+        state.status = GRAPH_STATUS.LOADING;
         state.lastActionType = "fetch/pending";
       })
       .addCase(fetchAndProcessGraph.fulfilled, (state, action) => {
-        state.status = "processing";
+        state.status = GRAPH_STATUS.PROCESSING;
         // Store deep-cloned snapshots so later comparisons are by-value, not by reference.
         try {
           state.lastAppliedSettings = JSON.parse(JSON.stringify(state.settings));
@@ -333,16 +342,16 @@ const graphSlice = createSlice({
         state.lastActionType = "fetch/fulfilled";
       })
       .addCase(fetchAndProcessGraph.rejected, (state, action) => {
-        state.status = "failed";
+        state.status = GRAPH_STATUS.FAILED;
         state.error = action.error.message;
         state.lastActionType = "fetch/rejected";
       })
       // Reducers for edge filter options fetch.
       .addCase(fetchEdgeFilterOptions.pending, (state) => {
-        state.edgeFilterStatus = "loading";
+        state.edgeFilterStatus = GRAPH_STATUS.LOADING;
       })
       .addCase(fetchEdgeFilterOptions.fulfilled, (state, action) => {
-        state.edgeFilterStatus = "succeeded";
+        state.edgeFilterStatus = GRAPH_STATUS.SUCCEEDED;
         state.availableEdgeFilters = action.payload;
         // Initialize edgeFilters in settings with empty arrays for each new field.
         // Prevents undefined errors when accessing filters later.
@@ -353,7 +362,7 @@ const graphSlice = createSlice({
         }
       })
       .addCase(fetchEdgeFilterOptions.rejected, (state, action) => {
-        state.edgeFilterStatus = "failed";
+        state.edgeFilterStatus = GRAPH_STATUS.FAILED;
         state.error = action.error.message; // Store error for UI feedback.
         console.error("fetchEdgeFilterOptions rejected:", action.error.message);
       })
@@ -377,7 +386,7 @@ const graphSlice = createSlice({
       })
       .addCase(expandNode.rejected, (state, action) => {
         console.error("Expansion failed:", action.error.message);
-        state.status = "failed";
+        state.status = GRAPH_STATUS.FAILED;
         state.lastActionType = "expand/rejected";
       });
   },
