@@ -12,24 +12,24 @@ import { SEARCH_ENDPOINT } from "../../constants";
  * @returns {Promise<Array>} Array of matching documents.
  */
 export const searchDocuments = async (searchTerm, graphType, searchFields) => {
-    try {
-        const response = await fetch(SEARCH_ENDPOINT, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                search_term: searchTerm,
-                db: graphType,
-                search_fields: searchFields,
-            }),
-        });
+  try {
+    const response = await fetch(SEARCH_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        search_term: searchTerm,
+        db: graphType,
+        search_fields: searchFields,
+      }),
+    });
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error("Error fetching search terms:", error);
-        return [];
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching search terms:", error);
+    return [];
+  }
 };

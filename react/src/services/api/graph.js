@@ -3,10 +3,10 @@
  */
 
 import {
-    EDGE_FILTER_OPTIONS_ENDPOINT,
-    EXPANSION_DEPTH,
-    GRAPH_ENDPOINT,
-    SHORTEST_PATHS_ENDPOINT,
+  EDGE_FILTER_OPTIONS_ENDPOINT,
+  EXPANSION_DEPTH,
+  GRAPH_ENDPOINT,
+  SHORTEST_PATHS_ENDPOINT,
 } from "../../constants";
 
 /**
@@ -26,62 +26,62 @@ import {
  * @returns {Promise<Object>} Graph data with nodes and links.
  */
 export const fetchGraphData = async (params) => {
-    const {
-        nodeIds,
-        shortestPaths,
-        depth,
-        edgeDirection,
-        allowedCollections,
-        nodeLimit,
-        graphType,
-        edgeFilters,
-        advancedSettings,
-        includeInterNodeEdges = true,
-    } = params;
+  const {
+    nodeIds,
+    shortestPaths,
+    depth,
+    edgeDirection,
+    allowedCollections,
+    nodeLimit,
+    graphType,
+    edgeFilters,
+    advancedSettings,
+    includeInterNodeEdges = true,
+  } = params;
 
-    // Determine if this is a shortest path query.
-    const useShortestPath = shortestPaths && !advancedSettings && nodeIds.length > 1;
+  // Determine if this is a shortest path query.
+  const useShortestPath = shortestPaths && !advancedSettings && nodeIds.length > 1;
 
-    const endpoint = useShortestPath ? SHORTEST_PATHS_ENDPOINT : GRAPH_ENDPOINT;
+  const endpoint = useShortestPath ? SHORTEST_PATHS_ENDPOINT : GRAPH_ENDPOINT;
 
-    let body;
+  let body;
 
-    if (useShortestPath) {
-        body = {
-            node_ids: nodeIds,
-            edge_direction: edgeDirection,
-        };
-    } else if (advancedSettings) {
-        body = {
-            node_ids: nodeIds,
-            advanced_settings: advancedSettings,
-            graph: graphType,
-            include_inter_node_edges: includeInterNodeEdges,
-        };
-    } else {
-        body = {
-            node_ids: nodeIds,
-            depth,
-            edge_direction: edgeDirection,
-            allowed_collections: allowedCollections,
-            node_limit: nodeLimit,
-            graph: graphType,
-            edge_filters: edgeFilters,
-            include_inter_node_edges: includeInterNodeEdges,
-        };
-    }
+  if (useShortestPath) {
+    body = {
+      node_ids: nodeIds,
+      edge_direction: edgeDirection,
+    };
+  } else if (advancedSettings) {
+    body = {
+      node_ids: nodeIds,
+      advanced_settings: advancedSettings,
+      graph: graphType,
+      include_inter_node_edges: includeInterNodeEdges,
+    };
+  } else {
+    body = {
+      node_ids: nodeIds,
+      depth,
+      edge_direction: edgeDirection,
+      allowed_collections: allowedCollections,
+      node_limit: nodeLimit,
+      graph: graphType,
+      edge_filters: edgeFilters,
+      include_inter_node_edges: includeInterNodeEdges,
+    };
+  }
 
-    const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-    });
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
 
-    if (!response.ok) {
-        throw new Error(`Failed to fetch from ${endpoint}`);
-    }
+  if (!response.ok) {
+    throw new Error(`Failed to fetch from ${endpoint}`);
+  }
 
-    return response.json();
+  return response.json();
 };
 
 /**
@@ -92,25 +92,25 @@ export const fetchGraphData = async (params) => {
  * @returns {Promise<Object>} Expansion data with nodes and links.
  */
 export const fetchNodeExpansion = async (nodeId, graphType, includeInterNodeEdges = true) => {
-    const response = await fetch(GRAPH_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            node_ids: [nodeId],
-            depth: EXPANSION_DEPTH,
-            edge_direction: "ANY",
-            allowed_collections: [],
-            graph: graphType,
-            edge_filters: [],
-            include_inter_node_edges: includeInterNodeEdges,
-        }),
-    });
+  const response = await fetch(GRAPH_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      node_ids: [nodeId],
+      depth: EXPANSION_DEPTH,
+      edge_direction: "ANY",
+      allowed_collections: [],
+      graph: graphType,
+      edge_filters: [],
+      include_inter_node_edges: includeInterNodeEdges,
+    }),
+  });
 
-    if (!response.ok) {
-        throw new Error("Expansion fetch failed");
-    }
+  if (!response.ok) {
+    throw new Error("Expansion fetch failed");
+  }
 
-    return response.json();
+  return response.json();
 };
 
 /**
@@ -120,19 +120,19 @@ export const fetchNodeExpansion = async (nodeId, graphType, includeInterNodeEdge
  * @returns {Promise<Object>} Object with field names as keys and arrays of options as values.
  */
 export const fetchEdgeFilterOptions = async (fields, graphType) => {
-    if (!fields || fields.length === 0) {
-        return {};
-    }
+  if (!fields || fields.length === 0) {
+    return {};
+  }
 
-    const response = await fetch(EDGE_FILTER_OPTIONS_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fields, graph: graphType }),
-    });
+  const response = await fetch(EDGE_FILTER_OPTIONS_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fields, graph: graphType }),
+  });
 
-    if (!response.ok) {
-        throw new Error("Edge filter options fetch failed.");
-    }
+  if (!response.ok) {
+    throw new Error("Edge filter options fetch failed.");
+  }
 
-    return response.json();
+  return response.json();
 };

@@ -9,7 +9,7 @@ export const API_BASE = "/arango_api";
 export const COLLECTIONS_ENDPOINT = `${API_BASE}/collections/`;
 export const COLLECTION_ENDPOINT = (collection) => `${API_BASE}/collection/${collection}/`;
 export const COLLECTION_DOCUMENT_ENDPOINT = (collection, id) =>
-    `${API_BASE}/collection/${collection}/${id}/`;
+  `${API_BASE}/collection/${collection}/${id}/`;
 
 // Document endpoints
 export const DOCUMENT_DETAILS_ENDPOINT = `${API_BASE}/document/details`;

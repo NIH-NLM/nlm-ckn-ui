@@ -11,19 +11,19 @@ import { SUNBURST_ENDPOINT } from "../../constants";
  * @returns {Promise<Object|Array>} Hierarchical data (object for root, array for children).
  */
 export const fetchHierarchyData = async (parentId, graphType) => {
-    const response = await fetch(SUNBURST_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            parent_id: parentId,
-            graph: graphType,
-        }),
-    });
+  const response = await fetch(SUNBURST_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      parent_id: parentId,
+      graph: graphType,
+    }),
+  });
 
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Fetch failed: ${response.status} ${errorText}`);
-    }
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Fetch failed: ${response.status} ${errorText}`);
+  }
 
-    return response.json();
+  return response.json();
 };

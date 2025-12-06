@@ -15,10 +15,10 @@ export const DEFAULT_EDGE_FONT_SIZE = 8;
 
 // Default label visibility states
 export const DEFAULT_LABEL_STATES = {
-    "collection-label": false,
-    "link-source": false,
-    "link-label": true,
-    "node-label": true,
+  "collection-label": false,
+  "link-source": false,
+  "link-label": true,
+  "node-label": true,
 };
 
 // Default graph behavior flags
@@ -32,9 +32,9 @@ export const EXPANSION_DEPTH = 1;
 
 // Graph status values
 export const GRAPH_STATUS = {
-    IDLE: "idle",
-    LOADING: "loading",
-    PROCESSING: "processing",
-    SUCCEEDED: "succeeded",
-    FAILED: "failed",
+  IDLE: "idle",
+  LOADING: "loading",
+  PROCESSING: "processing",
+  SUCCEEDED: "succeeded",
+  FAILED: "failed",
 };
