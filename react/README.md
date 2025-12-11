@@ -21,15 +21,22 @@ react/
 │   ├── assets/              # Images and static resources
 │   ├── components/          # Reusable UI components
 │   │   ├── ForceGraph/      # Force-directed graph visualization
-│   │   ├── ForceGraphConstructor/  # D3 graph rendering logic (modular)
-│   │   │   ├── forceGraphDrag.js
-│   │   │   ├── forceGraphLinks.js
-│   │   │   ├── forceGraphNodes.js
-│   │   │   ├── forceGraphPopup.js
-│   │   │   ├── forceGraphSimulation.js
-│   │   │   ├── forceGraphStyles.js
-│   │   │   ├── forceGraphTooltip.js
-│   │   │   └── ForceGraphConstructor.js
+│   │   │   ├── hooks/       # Custom hooks for graph functionality
+│   │   │   │   ├── useGraphData.js      # Graph data processing
+│   │   │   │   ├── useGraphExport.js    # Export to PNG/SVG/PDF
+│   │   │   │   └── useGraphSettings.js  # Settings management
+│   │   │   ├── panels/      # UI panel components
+│   │   │   │   ├── GraphLegend.js       # Collection legend
+│   │   │   │   ├── GraphOriginList.js   # Origin node list
+│   │   │   │   ├── GraphSettingsPanel.js # Settings drawer
+│   │   │   │   ├── GraphToolbar.js      # Action buttons
+│   │   │   │   └── SetOperationInfo.js  # Set operation display
+│   │   │   └── ForceGraph.js  # Main graph container
+│   │   ├── ForceGraphConstructor/  # D3 graph rendering logic
+│   │   │   ├── graphDataProcessing.js   # Node/link processing
+│   │   │   ├── graphRendering.js        # D3 rendering functions
+│   │   │   ├── simulationUtils.js       # Force simulation setup
+│   │   │   └── ForceGraphConstructor.js # Main D3 orchestration
 │   │   ├── Sunburst/        # Hierarchical sunburst visualization
 │   │   ├── SunburstConstructor/  # D3 sunburst rendering
 │   │   ├── Tree/            # Tree structure visualization
@@ -37,7 +44,8 @@ react/
 │   │   └── ...              # Other UI components
 │   ├── constants/           # Application-wide constants
 │   │   ├── collections.js   # Collection definitions & colors
-│   │   ├── edges.js         # Edge type definitions
+│   │   ├── graph.js         # Graph-related constants
+│   │   ├── ui.js            # UI constants (dimensions, etc.)
 │   │   └── index.js         # Barrel exports
 │   ├── contexts/            # React Context providers
 │   │   ├── ActiveNavContext.js  # Navigation state
@@ -68,8 +76,12 @@ react/
 │   │   ├── global.css       # Global styles
 │   │   └── ...              # Component-specific styles
 │   ├── utils/               # Utility functions
-│   │   ├── collections.js   # Collection helpers (getLabel, colors)
-│   │   ├── graph.js         # Graph utilities
+│   │   ├── collections.js   # Collection helpers (getLabel, parseId)
+│   │   ├── colors.js        # D3 color scales for collections
+│   │   ├── graph.js         # Graph utilities (findNodeById, etc.)
+│   │   ├── setOperations.js # Graph set operations (union, intersection)
+│   │   ├── strings.js       # String formatting helpers
+│   │   ├── platform.js      # Platform detection
 │   │   └── index.js         # Barrel exports
 │   ├── App.js               # Root component with routing
 │   └── index.js             # Application entry point
@@ -226,10 +238,18 @@ ComponentName/
 ```
 
 ### D3 Integration
-D3 visualizations are implemented using a "Constructor" pattern:
-1. React component manages state and DOM container
-2. Constructor module handles D3 rendering and updates
-3. Modular helpers handle specific concerns (drag, zoom, styles)
+D3 visualizations are implemented using a layered architecture:
+
+**ForceGraph (React Layer)**
+- Main component manages layout and UI panels
+- `hooks/` directory contains data processing, export, and settings logic
+- `panels/` directory contains toolbar, legend, and settings UI components
+
+**ForceGraphConstructor (D3 Layer)**
+- `ForceGraphConstructor.js` - Orchestrates D3 rendering
+- `graphDataProcessing.js` - Processes nodes and links with colors/labels
+- `graphRendering.js` - Handles D3 DOM updates and styling
+- `simulationUtils.js` - Configures force simulation parameters
 
 ## 🔑 Environment Variables
 
