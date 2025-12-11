@@ -3,7 +3,7 @@
  * These functions transform graph data without side effects.
  */
 
-import { getColorForCollection } from "../../services/ColorServices/ColorServices";
+import { getColorForCollection } from "../../utils";
 
 /**
  * Merges new nodes into existing node list.

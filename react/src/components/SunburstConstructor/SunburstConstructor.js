@@ -1,6 +1,5 @@
 import * as d3 from "d3";
-import { getColorForCollection } from "../../services/ColorServices/ColorServices";
-import { getLabel } from "../../utils";
+import { getColorForCollection, getLabel } from "../../utils";
 
 /**
  * Creates or updates a D3 Sunburst chart.

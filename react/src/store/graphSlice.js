@@ -1,6 +1,5 @@
 import { createAsyncThunk, createSlice, current } from "@reduxjs/toolkit";
 import undoable from "redux-undo";
-import { performSetOperation } from "../components/ForceGraph/performSetOperation";
 import {
   DEFAULT_COLLAPSE_ON_START,
   DEFAULT_DEPTH,
@@ -21,7 +20,7 @@ import {
   fetchGraphData,
   fetchNodeExpansion,
 } from "../services";
-import { getFilterableEdgeFields } from "../utils";
+import { getFilterableEdgeFields, performSetOperation } from "../utils";
 
 // Async thunk for fetching graph data.
 export const fetchAndProcessGraph = createAsyncThunk(

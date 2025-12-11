@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import { getColorForCollection } from "../../services/ColorServices/ColorServices";
+import { getColorForCollection } from "../../utils";
 import { findLeafNodes, processGraphData, processGraphLinks } from "./graphDataProcessing";
 import { renderGraph } from "./graphRendering";
 import { DEFAULT_GRAPH_OPTIONS, runSimulation, waitForAlpha } from "./simulationUtils";

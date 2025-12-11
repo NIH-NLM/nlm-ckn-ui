@@ -10,6 +10,8 @@ export {
   getUrl,
   parseCollections,
 } from "./collections";
+// Color utilities
+export { colorScale, getColorForCollection } from "./colors";
 // Shared components
 export { LoadingBar } from "./components";
 // FTU utilities
@@ -25,5 +27,7 @@ export {
 
 // Platform utilities
 export { isMac } from "./platform";
+// Set operations for graphs
+export { performSetOperation } from "./setOperations";
 // String utilities
 export { capitalCase, truncateString } from "./strings";

@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import collMaps from "../../assets/cell-kn-mvp-collection-maps.json";
-import { getColorForCollection } from "../../services/ColorServices/ColorServices";
-import { getLabel } from "../../utils";
+import { getColorForCollection, getLabel } from "../../utils";
 import AddToGraphButton from "../AddToGraphButton/AddToGraphButton";
 
 /**

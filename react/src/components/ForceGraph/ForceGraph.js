@@ -19,15 +19,20 @@ import {
   uncollapseNode,
   updateSetting,
 } from "../../store";
-import { getLabel, hasNodesInRawData, isMac, LoadingBar, parseCollections } from "../../utils";
+import {
+  getLabel,
+  hasNodesInRawData,
+  isMac,
+  LoadingBar,
+  parseCollections,
+  performSetOperation,
+} from "../../utils";
 import AddToGraphButton from "../AddToGraphButton/AddToGraphButton";
 import DocumentPopup from "../DocumentPopup/DocumentPopup";
 import ForceGraphConstructor from "../ForceGraphConstructor/ForceGraphConstructor";
 import LoadGraphModal from "../LoadGraphModal/LoadGraphModal";
-
 // Import extracted hooks
 import { useGraphExport, useNodeNames, usePerNodeSettings } from "./hooks";
-
 // Import extracted panels
 import {
   ExportPanel,
@@ -36,8 +41,6 @@ import {
   HistoryPanel,
   MultiNodePanel,
 } from "./panels";
-
-import { performSetOperation } from "./performSetOperation";
 
 /**
  * Main React component for D3 force-directed graph visualization.

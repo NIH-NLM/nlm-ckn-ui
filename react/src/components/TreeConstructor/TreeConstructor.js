@@ -1,7 +1,6 @@
 import * as d3 from "d3";
 import { useEffect, useRef } from "react";
-import { getColorForCollection } from "../../services/ColorServices/ColorServices";
-import { getLabel, truncateString } from "../../utils";
+import { getColorForCollection, getLabel, truncateString } from "../../utils";
 
 /**
  * Tree Constructor Component.

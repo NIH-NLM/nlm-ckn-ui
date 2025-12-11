@@ -13,11 +13,6 @@ const createTestStore = () =>
     },
   });
 
-// Mock the color service
-jest.mock("../../services/ColorServices/ColorServices", () => ({
-  getColorForCollection: jest.fn(() => "#336699"),
-}));
-
 // Mock collection maps
 jest.mock("../../assets/cell-kn-mvp-collection-maps.json", () => ({
   maps: [
@@ -26,11 +21,12 @@ jest.mock("../../assets/cell-kn-mvp-collection-maps.json", () => ({
   ],
 }));
 
-// Mock utils - use __esModule to ensure proper export handling
+// Mock utils - include all needed exports
 jest.mock("../../utils", () => {
   return {
     __esModule: true,
     getLabel: (item) => item.label || item._id,
+    getColorForCollection: jest.fn(() => "#336699"),
   };
 });
 

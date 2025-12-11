@@ -1,8 +1,8 @@
-import { getColorForCollection } from "../../services/ColorServices/ColorServices";
+import { getColorForCollection } from "../../utils/colors";
 import { processGraphData, processGraphLinks } from "./graphDataProcessing";
 
-// Mock the color service
-jest.mock("../../services/ColorServices/ColorServices", () => ({
+// Mock the color utilities
+jest.mock("../../utils/colors", () => ({
   getColorForCollection: jest.fn((collection) => `color-${collection}`),
 }));
 
