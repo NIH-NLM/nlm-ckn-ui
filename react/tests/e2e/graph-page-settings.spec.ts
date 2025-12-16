@@ -141,6 +141,101 @@ test("Graph generates from one origin, shows nodes/links, and options toggle aff
   expect(filterErrorsContaining(await getCollectedErrors(page), "split").length).toBe(0);
 });
 
+test("Graph renders edges (links) between nodes", async ({ page }) => {
+  await installErrorInstrumentation(page);
+
+  const originId = `${COLL}/ROOT`;
+
+  // Mock collections, edge filter options
+  await page.route("**/arango_api/collections/", async (route) => {
+    if (route.request().method() === "POST") {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([COLL]),
+      });
+    }
+    return route.continue();
+  });
+  await page.route("**/arango_api/edge_filter_options/", async (route) => {
+    if (route.request().method() === "POST") {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ Label: ["has_child"] }),
+      });
+    }
+    return route.continue();
+  });
+
+  // Mock graph fetch with nodes and links
+  await page.route("**/arango_api/graph/", async (route) => {
+    if (route.request().method() === "POST") {
+      const raw = buildRawGraph(originId);
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(raw),
+      });
+    }
+    return route.continue();
+  });
+
+  // Mock document details
+  await page.route("**/arango_api/document/details", async (route) => {
+    if (route.request().method() === "POST") {
+      const req = await route.request().postDataJSON();
+      const ids: string[] = req.document_ids || [];
+      const results = ids.map((id) => ({ _id: id, label: id.split("/")[1] }));
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(results),
+      });
+    }
+    return route.continue();
+  });
+
+  // Seed one origin via redux-persist
+  await page.addInitScript((origin) => {
+    const persistedRoot = {
+      nodesSlice: JSON.stringify({ originNodeIds: [origin] }),
+      savedGraphs: JSON.stringify({ graphs: [] }),
+      _persist: JSON.stringify({ version: -1, rehydrated: true }),
+    };
+    localStorage.setItem("persist:root", JSON.stringify(persistedRoot));
+  }, originId);
+
+  // Navigate to graph page
+  await page.goto("/#/graph");
+
+  // Generate graph
+  const generateBtn = page.getByRole("button", { name: /Generate Graph|Update Graph/i });
+  await expect(generateBtn).toBeVisible();
+  await generateBtn.click();
+
+  // Wait for SVG to be visible
+  const svg = page.locator("#chart-container-wrapper svg");
+  await expect(svg).toBeVisible();
+
+  // Wait for nodes to render
+  const nodes = page.locator("g.node");
+  await expect(async () => {
+    const count = await nodes.count();
+    expect(count).toBeGreaterThan(0);
+  }).toPass();
+
+  // Verify edges/links are rendered - this is the critical check
+  const links = page.locator("g.link");
+  await expect(async () => {
+    const linkCount = await links.count();
+    expect(linkCount).toBeGreaterThan(0);
+  }).toPass({ timeout: 5000 });
+
+  // Verify no console errors
+  expect(filterErrorsContaining(await getCollectedErrors(page), "split").length).toBe(0);
+});
+
 test("Graph export buttons exist and trigger download", async ({ page }) => {
   await installErrorInstrumentation(page);
   const originId = `${COLL}/ROOT`;
