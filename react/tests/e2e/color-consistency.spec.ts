@@ -4,12 +4,7 @@ import {
   getCollectedErrors,
   installErrorInstrumentation,
 } from "./utils/errorInstrumentation";
-import {
-  deepChildren,
-  smallGraphWithEdges,
-  sunburstRoot,
-  treeApiWrapper,
-} from "./utils/testSeeds";
+import { deepChildren, smallGraphWithEdges, sunburstRoot, treeApiWrapper } from "./utils/testSeeds";
 
 const COLL = "TEST_DOCUMENT_COLLECTION";
 // This color is defined in cell-kn-mvp-collection-maps.json for TEST_DOCUMENT_COLLECTION
@@ -260,9 +255,7 @@ test.describe("Collection colors consistency", () => {
       if (route.request().method() === "POST") {
         // Return tree format if tree collection param, else sunburst format
         const body = await route.request().postDataJSON();
-        const response = body?.collection?.includes("tree")
-          ? mockTreeResponse
-          : mockSunburstRoot;
+        const response = body?.collection?.includes("tree") ? mockTreeResponse : mockSunburstRoot;
         return route.fulfill({
           status: 200,
           contentType: "application/json",

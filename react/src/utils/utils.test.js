@@ -1,4 +1,12 @@
-import { capitalCase, getLabel, getTitle, getUrl, hasAnyNodes, parseCollections } from "./index";
+import {
+  capitalCase,
+  getLabel,
+  getTitle,
+  getUrl,
+  hasAnyNodes,
+  hasNodesInRawData,
+  parseCollections,
+} from "./index";
 
 // --- Mocking ---
 
@@ -101,6 +109,72 @@ describe("Utils Module", () => {
       ).toBe(true);
       expect(hasAnyNodes({ nodes: { [nodeId]: [{ node: "some_value" }] } }, nodeId)).toBe(true);
       expect(hasAnyNodes({ nodes: { [nodeId]: [{ node: 0 }] } }, nodeId)).toBe(true); // 0 is not null
+    });
+  });
+
+  // --- hasNodesInRawData ---
+  describe("hasNodesInRawData", () => {
+    it("should return false for null or undefined data", () => {
+      expect(hasNodesInRawData(null)).toBe(false);
+      expect(hasNodesInRawData(undefined)).toBe(false);
+    });
+
+    it("should return false if data is not an object", () => {
+      expect(hasNodesInRawData("string")).toBe(false);
+      expect(hasNodesInRawData(123)).toBe(false);
+    });
+
+    it("should return false for empty object", () => {
+      expect(hasNodesInRawData({})).toBe(false);
+    });
+
+    // Shortest-path shape: { nodes: Array, links: Array }
+    it("should return true for shortest-path shape with nodes", () => {
+      expect(hasNodesInRawData({ nodes: [{ _id: "CL/1" }], links: [] })).toBe(true);
+    });
+
+    it("should return false for shortest-path shape with empty nodes", () => {
+      expect(hasNodesInRawData({ nodes: [], links: [] })).toBe(false);
+    });
+
+    // Per-origin shape: { [originId]: { nodes: Array, links: Array } }
+    it("should return true for per-origin shape with nodes", () => {
+      expect(
+        hasNodesInRawData({
+          "CL/123": { nodes: [{ _id: "CL/123" }], links: [] },
+        }),
+      ).toBe(true);
+    });
+
+    it("should return true if any origin has nodes", () => {
+      expect(
+        hasNodesInRawData({
+          "CL/123": { nodes: [], links: [] },
+          "UBERON/456": { nodes: [{ _id: "UBERON/456" }], links: [] },
+        }),
+      ).toBe(true);
+    });
+
+    it("should return false for per-origin shape with all empty nodes", () => {
+      expect(
+        hasNodesInRawData({
+          "CL/123": { nodes: [], links: [] },
+          "UBERON/456": { nodes: [], links: [] },
+        }),
+      ).toBe(false);
+    });
+
+    it("should return false for per-origin shape with invalid structure", () => {
+      expect(
+        hasNodesInRawData({
+          "CL/123": { links: [] }, // missing nodes
+        }),
+      ).toBe(false);
+      expect(
+        hasNodesInRawData({
+          "CL/123": null,
+        }),
+      ).toBe(false);
     });
   });
 

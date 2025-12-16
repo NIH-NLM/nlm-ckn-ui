@@ -48,10 +48,16 @@ export const hasNodesInRawData = (data) => {
   }
 
   // Per-origin shape: { [originId]: { nodes: Array, links: Array }, ... }
-  if (data.nodes && typeof data.nodes === "object") {
-    return Object.values(data.nodes).some(
-      (nodeArray) => Array.isArray(nodeArray) && nodeArray.length > 0,
-    );
+  // Check each origin's nodes array
+  for (const value of Object.values(data)) {
+    if (
+      value &&
+      typeof value === "object" &&
+      Array.isArray(value.nodes) &&
+      value.nodes.length > 0
+    ) {
+      return true;
+    }
   }
 
   return false;
