@@ -43,17 +43,18 @@ react/
 │   │   ├── TreeConstructor/ # D3 tree rendering
 │   │   └── ...              # Other UI components
 │   ├── constants/           # Application-wide constants
-│   │   ├── collections.js   # Collection definitions & colors
-│   │   ├── graph.js         # Graph-related constants
-│   │   ├── ui.js            # UI constants (dimensions, etc.)
+│   │   ├── api.js           # API endpoint URLs
+│   │   ├── external.js      # External service URLs (FTU, etc.)
+│   │   ├── graph.js         # Graph-related constants & defaults
 │   │   └── index.js         # Barrel exports
 │   ├── contexts/            # React Context providers
 │   │   ├── ActiveNavContext.js  # Navigation state
 │   │   ├── FTUPartsContext.js   # FTU parts data
 │   │   └── GraphContext.js      # Graph configuration
 │   ├── hooks/               # Custom React hooks
-│   │   ├── useSearch.js     # Search functionality
-│   │   └── ...
+│   │   ├── useHotkeys.js    # Keyboard shortcut handling
+│   │   ├── useHotkeyHold.js # Hold-to-activate hotkey behavior
+│   │   └── index.js         # Barrel exports
 │   ├── pages/               # Page-level components (routes)
 │   │   ├── AboutPage/
 │   │   ├── CollectionsPage/
