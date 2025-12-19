@@ -75,7 +75,7 @@ const Tree = () => {
       setIsLoading(false);
       isLoadingRef.current = false;
     }
-  }, [graphTypeForTree]);
+  }, []);
 
   // Trigger the initial data fetch when the component mounts.
   useEffect(() => {

@@ -13,6 +13,7 @@ const SearchResultsTable = ({ searchResults }) => {
   const expandAmount = 20;
   const [displayLimit, setDisplayLimit] = useState(expandAmount);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset display when results change
   useEffect(() => {
     setDisplayLimit(expandAmount);
   }, [searchResults]);

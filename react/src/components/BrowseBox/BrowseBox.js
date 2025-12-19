@@ -25,7 +25,7 @@ const BrowseBox = () => {
     fetchCollections(graphType).then((data) => {
       setCollections(parseCollections(data, collectionMaps));
     });
-  }, [graphType]);
+  }, []);
 
   const sortDocumentList = useCallback((documents) => {
     const sortedList = Object.values(documents);
@@ -61,7 +61,7 @@ const BrowseBox = () => {
       documentListScrollRef.current.scrollTop = 0;
     }
     fetchDocuments();
-  }, [currentCollection, graphType, sortDocumentList]);
+  }, [currentCollection, sortDocumentList]);
 
   const filteredDocuments = documentList.filter((doc) => {
     const searchLower = filterText.toLowerCase();

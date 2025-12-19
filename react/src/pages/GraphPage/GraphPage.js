@@ -35,6 +35,7 @@ const GraphPage = () => {
   }, [dispatch]);
 
   // Effect to synchronize local objects with global node IDs.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: selectedItemObjects read for diff, nodeIds triggers effect
   useEffect(() => {
     const syncObjectsWithNodeIds = async () => {
       // Logic to prevent re-fetching objects already existing
@@ -58,7 +59,7 @@ const GraphPage = () => {
     } else {
       setSelectedItemObjects([]);
     }
-  }, [nodeIds, graphType, fetchNodeDetailsByIds]);
+  }, [nodeIds, graphType]);
 
   // Effect to scroll down
   useEffect(() => {
@@ -68,7 +69,7 @@ const GraphPage = () => {
         block: "start",
       });
     }
-  }, [showGraph, lastAppliedOriginNodeIds]);
+  }, [showGraph]);
 
   // E2E-only: if tests set window.__E2E__, always show the graph area so ForceGraph mounts.
   useEffect(() => {
@@ -113,7 +114,7 @@ const GraphPage = () => {
     // Init empty graph
     setIsLoadModalOpen(true);
     setShowGraph(true);
-  }, [dispatch]);
+  }, []);
 
   const handleLoadFromJson = () => {
     fileInputRef.current.click();

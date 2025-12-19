@@ -67,16 +67,16 @@ const Sunburst = ({ addSelectedItem }) => {
         isLoadingRef.current = false;
       }
     },
-    [graphType],
+    [],
   );
 
   useEffect(() => {
     isLoadingRef.current = isLoading;
   }, [isLoading]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional - only run on mount
   useEffect(() => {
     if (!graphData && !isLoadingRef.current) {
-      // ensure not to fetch if already loading
       fetchSunburstData(null, true);
     }
   }, []);
@@ -92,9 +92,9 @@ const Sunburst = ({ addSelectedItem }) => {
     setClickedItem(null);
     setPopupVisible(false);
     fetchSunburstData(null, false);
-  }, [graphType, fetchSunburstData]);
+  }, [fetchSunburstData]);
 
-  const checkNeedsLoad = (d) => {
+  const checkNeedsLoad = useCallback((d) => {
     if (!d) return false;
     let needsLoad = false;
     if (d.data._hasChildren) {
@@ -110,7 +110,7 @@ const Sunburst = ({ addSelectedItem }) => {
       }
     }
     return needsLoad;
-  };
+  }, []);
 
   // --- Event Handlers ---
   const latestHandleNodeClick = useCallback(
@@ -140,7 +140,7 @@ const Sunburst = ({ addSelectedItem }) => {
       }
       return false; // Default: do not animate
     },
-    [fetchSunburstData, zoomedNodeId],
+    [checkNeedsLoad, fetchSunburstData, zoomedNodeId],
   );
 
   const latestHandleCenterClick = useCallback(() => {
@@ -196,20 +196,17 @@ const Sunburst = ({ addSelectedItem }) => {
         d3ClickedRef.current(null, centeredNode);
       }
     }
-  }, [zoomedNodeId, fetchSunburstData]);
+  }, [checkNeedsLoad, zoomedNodeId, fetchSunburstData]);
 
-  const latestHandleSunburstClick = useCallback(
-    (e, dataNode) => {
-      // For right-click
-      setClickedItem(dataNode.data);
-      setPopupPosition({
-        x: e.clientX + 10 + window.scrollX,
-        y: e.clientY + 10 + window.scrollY,
-      });
-      setPopupVisible(true);
-    },
-    [zoomedNodeId],
-  );
+  const latestHandleSunburstClick = useCallback((e, dataNode) => {
+    // For right-click
+    setClickedItem(dataNode.data);
+    setPopupPosition({
+      x: e.clientX + 10 + window.scrollX,
+      y: e.clientY + 10 + window.scrollY,
+    });
+    setPopupVisible(true);
+  }, []);
 
   // useEffect to update the refs with the latest callback functions
   useEffect(() => {
@@ -269,6 +266,11 @@ const Sunburst = ({ addSelectedItem }) => {
   }, [graphData, zoomedNodeId]);
 
   // --- Popup Handling ---
+  const handlePopupClose = useCallback(() => {
+    setPopupVisible(false);
+    setClickedItem(null);
+  }, []);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (popupRef.current && !popupRef.current.contains(event.target)) {
@@ -281,7 +283,7 @@ const Sunburst = ({ addSelectedItem }) => {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [popupVisible]);
+  }, [popupVisible, handlePopupClose]);
 
   function _handleSelectItem() {
     if (clickedItem) {
@@ -289,10 +291,6 @@ const Sunburst = ({ addSelectedItem }) => {
     }
     handlePopupClose();
   }
-  const handlePopupClose = () => {
-    setPopupVisible(false);
-    setClickedItem(null);
-  };
 
   // --- Render ---
   return (

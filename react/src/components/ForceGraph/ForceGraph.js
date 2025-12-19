@@ -143,6 +143,7 @@ const ForceGraph = ({
   }, [dispatch, settings.graphType]);
 
   // Fetches available edge filter options when component mounts or graph type changes.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: graphType triggers refetch
   useEffect(() => {
     dispatch(fetchEdgeFilterOptions());
   }, [dispatch, settings.graphType]);
@@ -299,6 +300,7 @@ const ForceGraph = ({
   };
 
   // Main effect for synchronizing D3 instance with Redux state.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: complex effect intentionally limited deps
   useEffect(() => {
     const graphInstance = graphInstanceRef.current;
     if (!graphInstance && settings.availableCollections.length > 0) {
@@ -424,15 +426,15 @@ const ForceGraph = ({
   }, [settings.labelStates]);
 
   // --- History & Save/Load Handlers ---
-  const handleUndo = () => {
+  const handleUndo = useCallback(() => {
     setIsRestoring(true);
     dispatch(ActionCreators.undo());
-  };
+  }, [dispatch]);
 
-  const handleRedo = () => {
+  const handleRedo = useCallback(() => {
     setIsRestoring(true);
     dispatch(ActionCreators.redo());
-  };
+  }, [dispatch]);
 
   const handleSave = useCallback(() => {
     const graphName = window.prompt("Please enter a name for your graph:");
@@ -481,7 +483,7 @@ const ForceGraph = ({
     } catch (err) {
       console.error("Failed to capture graph on simulation off:", err);
     }
-  }, []);
+  }, [handleSimulationEnd]);
 
   useHotkeyHold("s", handleSimulationOn, handleSimulationOff);
 

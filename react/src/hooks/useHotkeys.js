@@ -35,5 +35,6 @@ export function useHotkeys(hotkeys, deps = []) {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
+    // biome-ignore lint/correctness/useExhaustiveDependencies: deps passed by caller
   }, deps);
 }

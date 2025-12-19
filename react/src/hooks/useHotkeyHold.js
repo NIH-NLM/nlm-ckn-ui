@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useEffect } from "react";
 
 /**
  * Custom hook to handle press-and-hold hotkey actions.
@@ -7,10 +7,6 @@ import { useCallback, useEffect } from "react";
  * @param {Function} onKeyUp - Callback to fire on keyup event.
  */
 export function useHotkeyHold(key, onKeyDown, onKeyUp) {
-  // Memoize callbacks to prevent re-creating listeners on every render.
-  const memoizedOnKeyDown = useCallback(onKeyDown, [onKeyDown]);
-  const memoizedOnKeyUp = useCallback(onKeyUp, [onKeyUp]);
-
   useEffect(() => {
     // Handler for keydown events.
     const handleKeyDown = (event) => {
@@ -23,8 +19,8 @@ export function useHotkeyHold(key, onKeyDown, onKeyUp) {
         return;
       }
       event.preventDefault();
-      if (memoizedOnKeyDown) {
-        memoizedOnKeyDown();
+      if (onKeyDown) {
+        onKeyDown();
       }
     };
 
@@ -34,8 +30,8 @@ export function useHotkeyHold(key, onKeyDown, onKeyUp) {
         return;
       }
       event.preventDefault();
-      if (memoizedOnKeyUp) {
-        memoizedOnKeyUp();
+      if (onKeyUp) {
+        onKeyUp();
       }
     };
 
@@ -48,9 +44,9 @@ export function useHotkeyHold(key, onKeyDown, onKeyUp) {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
       // Ensures "off" state is triggered if component unmounts while key is held.
-      if (memoizedOnKeyUp) {
-        memoizedOnKeyUp();
+      if (onKeyUp) {
+        onKeyUp();
       }
     };
-  }, [key, memoizedOnKeyDown, memoizedOnKeyUp]); // Re-runs effect if key or callbacks change.
+  }, [key, onKeyDown, onKeyUp]); // Re-runs effect if key or callbacks change.
 }

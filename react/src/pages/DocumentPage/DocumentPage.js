@@ -45,7 +45,7 @@ const DocumentPage = () => {
     }
     const ftuUrl = findFtuUrlById(ftuParts, `${coll}_${id}`);
     return ftuUrl;
-  }, [document, ftuParts, id]);
+  }, [document, ftuParts, id, coll]);
 
   const forceGraphSettings = useMemo(() => {
     // Use collection-specific defaults, falling back to _defaults for unknown collections
