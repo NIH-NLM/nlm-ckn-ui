@@ -1,5 +1,6 @@
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import ErrorBoundary from "../../components/ErrorBoundary";
 import ForceGraph from "../../components/ForceGraph/ForceGraph";
 import LoadGraphModal from "../../components/LoadGraphModal/LoadGraphModal";
 import SelectedItemsTable from "../../components/SelectedItemsTable/SelectedItemsTable";
@@ -199,7 +200,9 @@ const GraphPage = () => {
       </div>
 
       <div className={!showGraph ? "hidden" : "graph-display-area"} ref={graphDisplayAreaRef}>
-        <ForceGraph />
+        <ErrorBoundary>
+          <ForceGraph />
+        </ErrorBoundary>
       </div>
       <LoadGraphModal isOpen={isLoadModalOpen} onClose={() => setIsLoadModalOpen(false)} />
     </div>

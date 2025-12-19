@@ -1,3 +1,4 @@
+import ErrorBoundary from "../../components/ErrorBoundary";
 import Tree from "../../components/Tree/Tree";
 
 const TreePage = () => {
@@ -6,7 +7,9 @@ const TreePage = () => {
       <div className="visualization-content-box">
         <h1 className="page-title">Explore the Tree</h1>
         <div className="sunburst-visualization-container">
-          <Tree />
+          <ErrorBoundary>
+            <Tree />
+          </ErrorBoundary>
         </div>
         <p className="visualization-description">
           This interactive tree visualizes the structure and distribution of data entities within

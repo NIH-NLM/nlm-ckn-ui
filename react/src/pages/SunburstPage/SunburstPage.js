@@ -1,3 +1,4 @@
+import ErrorBoundary from "../../components/ErrorBoundary";
 import Sunburst from "../../components/Sunburst/Sunburst";
 
 const SunburstPage = () => {
@@ -6,7 +7,9 @@ const SunburstPage = () => {
       <div className="visualization-content-box">
         <h1 className="page-title">Browse the Database</h1>
         <div className="sunburst-visualization-container">
-          <Sunburst />
+          <ErrorBoundary>
+            <Sunburst />
+          </ErrorBoundary>
         </div>
         <p className="visualization-description">
           This sunburst chart visualizes the structure and distribution of data entities within this
