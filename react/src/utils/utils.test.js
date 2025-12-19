@@ -1,316 +1,316 @@
 import {
-  capitalCase,
-  getLabel,
-  getTitle,
-  getUrl,
-  hasAnyNodes,
-  hasNodesInRawData,
-  parseCollections,
+    capitalCase,
+    getLabel,
+    getTitle,
+    getUrl,
+    hasAnyNodes,
+    hasNodesInRawData,
+    parseCollections,
 } from "./index";
 
 // --- Mocking ---
 
 // Mock the collectionsMapData import
 jest.mock(
-  "../assets/cell-kn-mvp-collection-maps.json",
-  () => ({
-    maps: [
-      [
-        "nodes_a",
-        {
-          display_name: "Nodes A",
-          individual_labels: [{ field_to_use: "name" }, { field_to_use: "key" }],
-          individual_urls: [
-            {
-              individual_url: "/data/nodes-a/<FIELD_TO_USE>",
-              field_to_use: "key",
-              to_be_replaced: "_",
-              replace_with: "-",
-              make_lower_case: true,
-            },
-          ],
-        },
-      ],
-      [
-        "nodes_b",
-        {
-          display_name: "Nodes B",
-          individual_labels: [{ field_to_use: "title" }],
-        },
-      ],
-      [
-        "edges",
-        {
-          display_name: "Relationships",
-          individual_labels: [{ field_to_use: "label" }],
-        },
-      ],
-      [
-        "nodes_c",
-        {
-          individual_labels: [{ field_to_use: "description" }],
-        },
-      ],
-    ],
-  }),
-  { virtual: true },
+    "../assets/cell-kn-mvp-collection-maps.json",
+    () => ({
+        maps: [
+            [
+                "nodes_a",
+                {
+                    display_name: "Nodes A",
+                    individual_labels: [{ field_to_use: "name" }, { field_to_use: "key" }],
+                    individual_urls: [
+                        {
+                            individual_url: "/data/nodes-a/<FIELD_TO_USE>",
+                            field_to_use: "key",
+                            to_be_replaced: "_",
+                            replace_with: "-",
+                            make_lower_case: true,
+                        },
+                    ],
+                },
+            ],
+            [
+                "nodes_b",
+                {
+                    display_name: "Nodes B",
+                    individual_labels: [{ field_to_use: "title" }],
+                },
+            ],
+            [
+                "edges",
+                {
+                    display_name: "Relationships",
+                    individual_labels: [{ field_to_use: "label" }],
+                },
+            ],
+            [
+                "nodes_c",
+                {
+                    individual_labels: [{ field_to_use: "description" }],
+                },
+            ],
+        ],
+    }),
+    { virtual: true },
 );
 
 // --- Tests ---
 
 describe("Utils Module", () => {
-  // --- hasAnyNodes ---
-  describe("hasAnyNodes", () => {
-    const nodeId = "nodes_a/123";
+    // --- hasAnyNodes ---
+    describe("hasAnyNodes", () => {
+        const nodeId = "nodes_a/123";
 
-    it("should return false for null or undefined data", () => {
-      expect(hasAnyNodes(null, nodeId)).toBe(false);
-      expect(hasAnyNodes(undefined, nodeId)).toBe(false);
+        it("should return false for null or undefined data", () => {
+            expect(hasAnyNodes(null, nodeId)).toBe(false);
+            expect(hasAnyNodes(undefined, nodeId)).toBe(false);
+        });
+
+        it("should return false if data is not an object", () => {
+            expect(hasAnyNodes("string", nodeId)).toBe(false);
+            expect(hasAnyNodes(123, nodeId)).toBe(false);
+        });
+
+        it("should return false if data.nodes is missing or not an object", () => {
+            expect(hasAnyNodes({}, nodeId)).toBe(false);
+            expect(hasAnyNodes({ nodes: null }, nodeId)).toBe(false);
+            expect(hasAnyNodes({ nodes: "string" }, nodeId)).toBe(false);
+        });
+
+        it("should return false if the specific nodeId key is missing in data.nodes", () => {
+            expect(hasAnyNodes({ nodes: { "other_nodes/456": [] } }, nodeId)).toBe(false);
+        });
+
+        it("should return false for an empty array", () => {
+            expect(hasAnyNodes({ nodes: { [nodeId]: [] } }, nodeId)).toBe(false);
+        });
+
+        it("should return false if array entries are null or not objects", () => {
+            expect(hasAnyNodes({ nodes: { [nodeId]: [null, undefined] } }, nodeId)).toBe(false);
+            expect(hasAnyNodes({ nodes: { [nodeId]: [1, "a"] } }, nodeId)).toBe(false);
+        });
+
+        it("should return false if array entries lack a 'node' property", () => {
+            expect(hasAnyNodes({ nodes: { [nodeId]: [{ id: 1 }, {}] } }, nodeId)).toBe(false);
+        });
+
+        it("should return false if all 'node' properties are null", () => {
+            expect(hasAnyNodes({ nodes: { [nodeId]: [{ node: null }, { node: null }] } }, nodeId)).toBe(
+                false,
+            );
+        });
+
+        it("should return true if at least one entry has a non-null 'node' property", () => {
+            expect(hasAnyNodes({ nodes: { [nodeId]: [{ node: {} }] } }, nodeId)).toBe(true);
+            expect(
+                hasAnyNodes({ nodes: { [nodeId]: [{ node: null }, { node: { id: 1 } }] } }, nodeId),
+            ).toBe(true);
+            expect(hasAnyNodes({ nodes: { [nodeId]: [{ node: "some_value" }] } }, nodeId)).toBe(true);
+            expect(hasAnyNodes({ nodes: { [nodeId]: [{ node: 0 }] } }, nodeId)).toBe(true); // 0 is not null
+        });
     });
 
-    it("should return false if data is not an object", () => {
-      expect(hasAnyNodes("string", nodeId)).toBe(false);
-      expect(hasAnyNodes(123, nodeId)).toBe(false);
+    // --- hasNodesInRawData ---
+    describe("hasNodesInRawData", () => {
+        it("should return false for null or undefined data", () => {
+            expect(hasNodesInRawData(null)).toBe(false);
+            expect(hasNodesInRawData(undefined)).toBe(false);
+        });
+
+        it("should return false if data is not an object", () => {
+            expect(hasNodesInRawData("string")).toBe(false);
+            expect(hasNodesInRawData(123)).toBe(false);
+        });
+
+        it("should return false for empty object", () => {
+            expect(hasNodesInRawData({})).toBe(false);
+        });
+
+        // Shortest-path shape: { nodes: Array, links: Array }
+        it("should return true for shortest-path shape with nodes", () => {
+            expect(hasNodesInRawData({ nodes: [{ _id: "CL/1" }], links: [] })).toBe(true);
+        });
+
+        it("should return false for shortest-path shape with empty nodes", () => {
+            expect(hasNodesInRawData({ nodes: [], links: [] })).toBe(false);
+        });
+
+        // Per-origin shape: { [originId]: { nodes: Array, links: Array } }
+        it("should return true for per-origin shape with nodes", () => {
+            expect(
+                hasNodesInRawData({
+                    "CL/123": { nodes: [{ _id: "CL/123" }], links: [] },
+                }),
+            ).toBe(true);
+        });
+
+        it("should return true if any origin has nodes", () => {
+            expect(
+                hasNodesInRawData({
+                    "CL/123": { nodes: [], links: [] },
+                    "UBERON/456": { nodes: [{ _id: "UBERON/456" }], links: [] },
+                }),
+            ).toBe(true);
+        });
+
+        it("should return false for per-origin shape with all empty nodes", () => {
+            expect(
+                hasNodesInRawData({
+                    "CL/123": { nodes: [], links: [] },
+                    "UBERON/456": { nodes: [], links: [] },
+                }),
+            ).toBe(false);
+        });
+
+        it("should return false for per-origin shape with invalid structure", () => {
+            expect(
+                hasNodesInRawData({
+                    "CL/123": { links: [] }, // missing nodes
+                }),
+            ).toBe(false);
+            expect(
+                hasNodesInRawData({
+                    "CL/123": null,
+                }),
+            ).toBe(false);
+        });
     });
 
-    it("should return false if data.nodes is missing or not an object", () => {
-      expect(hasAnyNodes({}, nodeId)).toBe(false);
-      expect(hasAnyNodes({ nodes: null }, nodeId)).toBe(false);
-      expect(hasAnyNodes({ nodes: "string" }, nodeId)).toBe(false);
+    // --- parseCollections ---
+    describe("parseCollections", () => {
+        const unsortedCollections = ["nodes_c", "Edges", "nodes_A"]; // Mixed case
+
+        it("should sort collections alphabetically (case-insensitive) without a map", () => {
+            const expected = ["Edges", "nodes_A", "nodes_c"];
+            expect(parseCollections(unsortedCollections)).toEqual(expected);
+        });
+
+        it("should sort collections using display_name from map (case-insensitive)", () => {
+            // Use the mocked collectionsMapData via the Map constructor
+            const collectionMaps = new Map(require("../assets/cell-kn-mvp-collection-maps.json").maps);
+            const input = ["nodes_b", "nodes_a"]; // Based on mock display names: Nodes B, Nodes A
+            const expected = ["nodes_a", "nodes_b"]; // Sorted: Nodes A, Nodes B
+            expect(parseCollections(input, collectionMaps)).toEqual(expected);
+        });
+
+        it("should fallback to collection key for sorting if display_name is missing", () => {
+            const collectionMaps = new Map(require("../assets/cell-kn-mvp-collection-maps.json").maps);
+            // nodes_c has no display_name in mock, nodes_a has "Nodes A"
+            const input = ["nodes_c", "nodes_a"];
+            // Expected: nodes_a ("Nodes A"), nodes_c (key)
+            const expected = ["nodes_a", "nodes_c"];
+            expect(parseCollections(input, collectionMaps)).toEqual(expected);
+        });
+
+        it("should fallback to collection key for sorting if collection not in map", () => {
+            const collectionMaps = new Map(require("../assets/cell-kn-mvp-collection-maps.json").maps);
+            // nodes_x not in mock map, nodes_a has "Nodes A"
+            const input = ["nodes_x", "nodes_a"];
+            // Expected: nodes_a ("Nodes A"), nodes_x (key)
+            const expected = ["nodes_a", "nodes_x"];
+            expect(parseCollections(input, collectionMaps)).toEqual(expected);
+        });
+
+        it("should handle mixed cases with and without map entries", () => {
+            const collectionMaps = new Map(require("../assets/cell-kn-mvp-collection-maps.json").maps);
+            // nodes_a: "Nodes A", nodes_b: "Nodes B", nodes_c: no display, nodes_x: no entry
+            const input = ["nodes_x", "nodes_c", "nodes_b", "nodes_a"];
+            const expected = ["nodes_a", "nodes_b", "nodes_c", "nodes_x"];
+            expect(parseCollections(input, collectionMaps)).toEqual(expected);
+        });
     });
 
-    it("should return false if the specific nodeId key is missing in data.nodes", () => {
-      expect(hasAnyNodes({ nodes: { "other_nodes/456": [] } }, nodeId)).toBe(false);
+    // --- getLabel ---
+    describe("getLabel", () => {
+        it("should return label based on the first 'individual_labels' option found", () => {
+            const item = { _id: "nodes_a/1", name: "Label A", key: "key_a" };
+            expect(getLabel(item)).toBe("Label A"); // 'name' exists
+        });
+
+        it("should return label based on the second 'individual_labels' option if first is missing", () => {
+            const item = { _id: "nodes_a/2", key: "key_a2" }; // 'name' is missing
+            expect(getLabel(item)).toBe("key_a2"); // falls back to 'key'
+        });
+
+        it("should return label from default 'edges' config if specific collection config is missing or labels not found", () => {
+            const item = { _id: "edges/e1", label: "Edge Label" }; // Use edge label config
+            expect(getLabel(item)).toBe("Edge Label");
+        });
+
+        it("should handle label values that are arrays by converting to string", () => {
+            const item = { _id: "nodes_b/3", title: ["Part 1", "Part 2"] };
+            expect(getLabel(item)).toBe("Part 1,Part 2");
+        });
+
+        it("should handle numeric labels", () => {
+            const item = { _id: "nodes_a/4", key: 12345 }; // 'name' is missing
+            expect(getLabel(item)).toBe("12345");
+        });
+
+        it("should return NAME UNKNOWN if no label options are found", () => {
+            const item = { _id: "nodes_a/5", other_prop: "value" }; // neither 'name' nor 'key' exist
+            expect(getLabel(item)).toBe("NAME UNKNOWN");
+        });
     });
 
-    it("should return false for an empty array", () => {
-      expect(hasAnyNodes({ nodes: { [nodeId]: [] } }, nodeId)).toBe(false);
+    // --- getUrl ---
+    describe("getUrl", () => {
+        it("should generate the correct URL with replacement and lowercasing", () => {
+            const item = { _id: "nodes_a/1", key: "Item_Key_1" };
+            expect(getUrl(item)).toBe("/data/nodes-a/item-key-1");
+        });
+
+        it("should return null if config has no url", () => {
+            const item = { _id: "nodes_b/1", title: "Test Title" }; // nodes_b has no URL config in mock
+            expect(getUrl(item)).toBeNull();
+        });
     });
 
-    it("should return false if array entries are null or not objects", () => {
-      expect(hasAnyNodes({ nodes: { [nodeId]: [null, undefined] } }, nodeId)).toBe(false);
-      expect(hasAnyNodes({ nodes: { [nodeId]: [1, "a"] } }, nodeId)).toBe(false);
+    // --- getTitle ---
+    describe("getTitle", () => {
+        it("should generate title using display_name and capitalized label", () => {
+            const item = { _id: "nodes_a/1", name: "item one", key: "key_1" };
+            expect(getTitle(item)).toBe("Nodes A: Item One");
+        });
+
+        it("should handle complex labels in title (arrays become comma-separated)", () => {
+            const item = { _id: "nodes_b/3", title: ["part 1", "part 2"] };
+            expect(getTitle(item)).toBe("Nodes B: Part 1,part 2");
+        });
     });
 
-    it("should return false if array entries lack a 'node' property", () => {
-      expect(hasAnyNodes({ nodes: { [nodeId]: [{ id: 1 }, {}] } }, nodeId)).toBe(false);
-    });
+    // --- capitalCase ---
+    describe("capitalCase", () => {
+        it("should capitalize the first letter of each word in a string", () => {
+            expect(capitalCase("hello world")).toBe("Hello World");
+            expect(capitalCase("singleword")).toBe("Singleword");
+            expect(capitalCase("already Capitalized")).toBe("Already Capitalized");
+        });
 
-    it("should return false if all 'node' properties are null", () => {
-      expect(hasAnyNodes({ nodes: { [nodeId]: [{ node: null }, { node: null }] } }, nodeId)).toBe(
-        false,
-      );
-    });
+        it("should handle empty strings", () => {
+            expect(capitalCase("")).toBe("");
+        });
 
-    it("should return true if at least one entry has a non-null 'node' property", () => {
-      expect(hasAnyNodes({ nodes: { [nodeId]: [{ node: {} }] } }, nodeId)).toBe(true);
-      expect(
-        hasAnyNodes({ nodes: { [nodeId]: [{ node: null }, { node: { id: 1 } }] } }, nodeId),
-      ).toBe(true);
-      expect(hasAnyNodes({ nodes: { [nodeId]: [{ node: "some_value" }] } }, nodeId)).toBe(true);
-      expect(hasAnyNodes({ nodes: { [nodeId]: [{ node: 0 }] } }, nodeId)).toBe(true); // 0 is not null
-    });
-  });
+        it("should capitalize words in each string of an array and join with '|'", () => {
+            expect(capitalCase(["hello world", "test case"])).toBe("Hello World|Test Case");
+            expect(capitalCase(["single"])).toBe("Single");
+        });
 
-  // --- hasNodesInRawData ---
-  describe("hasNodesInRawData", () => {
-    it("should return false for null or undefined data", () => {
-      expect(hasNodesInRawData(null)).toBe(false);
-      expect(hasNodesInRawData(undefined)).toBe(false);
-    });
+        it("should handle arrays with non-string elements gracefully", () => {
+            expect(capitalCase(["string one", 123, "string two"])).toBe("String One|123|String Two"); // Only strings are modified
+        });
 
-    it("should return false if data is not an object", () => {
-      expect(hasNodesInRawData("string")).toBe(false);
-      expect(hasNodesInRawData(123)).toBe(false);
-    });
+        it("should handle empty arrays", () => {
+            expect(capitalCase([])).toBe(""); // .join results in empty string
+        });
 
-    it("should return false for empty object", () => {
-      expect(hasNodesInRawData({})).toBe(false);
+        it("should return non-string, non-array inputs as is", () => {
+            expect(capitalCase(null)).toBeNull();
+            expect(capitalCase(undefined)).toBeUndefined();
+            expect(capitalCase(123)).toBe(123);
+            expect(capitalCase({ a: 1 })).toEqual({ a: 1 });
+        });
     });
-
-    // Shortest-path shape: { nodes: Array, links: Array }
-    it("should return true for shortest-path shape with nodes", () => {
-      expect(hasNodesInRawData({ nodes: [{ _id: "CL/1" }], links: [] })).toBe(true);
-    });
-
-    it("should return false for shortest-path shape with empty nodes", () => {
-      expect(hasNodesInRawData({ nodes: [], links: [] })).toBe(false);
-    });
-
-    // Per-origin shape: { [originId]: { nodes: Array, links: Array } }
-    it("should return true for per-origin shape with nodes", () => {
-      expect(
-        hasNodesInRawData({
-          "CL/123": { nodes: [{ _id: "CL/123" }], links: [] },
-        }),
-      ).toBe(true);
-    });
-
-    it("should return true if any origin has nodes", () => {
-      expect(
-        hasNodesInRawData({
-          "CL/123": { nodes: [], links: [] },
-          "UBERON/456": { nodes: [{ _id: "UBERON/456" }], links: [] },
-        }),
-      ).toBe(true);
-    });
-
-    it("should return false for per-origin shape with all empty nodes", () => {
-      expect(
-        hasNodesInRawData({
-          "CL/123": { nodes: [], links: [] },
-          "UBERON/456": { nodes: [], links: [] },
-        }),
-      ).toBe(false);
-    });
-
-    it("should return false for per-origin shape with invalid structure", () => {
-      expect(
-        hasNodesInRawData({
-          "CL/123": { links: [] }, // missing nodes
-        }),
-      ).toBe(false);
-      expect(
-        hasNodesInRawData({
-          "CL/123": null,
-        }),
-      ).toBe(false);
-    });
-  });
-
-  // --- parseCollections ---
-  describe("parseCollections", () => {
-    const unsortedCollections = ["nodes_c", "Edges", "nodes_A"]; // Mixed case
-
-    it("should sort collections alphabetically (case-insensitive) without a map", () => {
-      const expected = ["Edges", "nodes_A", "nodes_c"];
-      expect(parseCollections(unsortedCollections)).toEqual(expected);
-    });
-
-    it("should sort collections using display_name from map (case-insensitive)", () => {
-      // Use the mocked collectionsMapData via the Map constructor
-      const collectionMaps = new Map(require("../assets/cell-kn-mvp-collection-maps.json").maps);
-      const input = ["nodes_b", "nodes_a"]; // Based on mock display names: Nodes B, Nodes A
-      const expected = ["nodes_a", "nodes_b"]; // Sorted: Nodes A, Nodes B
-      expect(parseCollections(input, collectionMaps)).toEqual(expected);
-    });
-
-    it("should fallback to collection key for sorting if display_name is missing", () => {
-      const collectionMaps = new Map(require("../assets/cell-kn-mvp-collection-maps.json").maps);
-      // nodes_c has no display_name in mock, nodes_a has "Nodes A"
-      const input = ["nodes_c", "nodes_a"];
-      // Expected: nodes_a ("Nodes A"), nodes_c (key)
-      const expected = ["nodes_a", "nodes_c"];
-      expect(parseCollections(input, collectionMaps)).toEqual(expected);
-    });
-
-    it("should fallback to collection key for sorting if collection not in map", () => {
-      const collectionMaps = new Map(require("../assets/cell-kn-mvp-collection-maps.json").maps);
-      // nodes_x not in mock map, nodes_a has "Nodes A"
-      const input = ["nodes_x", "nodes_a"];
-      // Expected: nodes_a ("Nodes A"), nodes_x (key)
-      const expected = ["nodes_a", "nodes_x"];
-      expect(parseCollections(input, collectionMaps)).toEqual(expected);
-    });
-
-    it("should handle mixed cases with and without map entries", () => {
-      const collectionMaps = new Map(require("../assets/cell-kn-mvp-collection-maps.json").maps);
-      // nodes_a: "Nodes A", nodes_b: "Nodes B", nodes_c: no display, nodes_x: no entry
-      const input = ["nodes_x", "nodes_c", "nodes_b", "nodes_a"];
-      const expected = ["nodes_a", "nodes_b", "nodes_c", "nodes_x"];
-      expect(parseCollections(input, collectionMaps)).toEqual(expected);
-    });
-  });
-
-  // --- getLabel ---
-  describe("getLabel", () => {
-    it("should return label based on the first 'individual_labels' option found", () => {
-      const item = { _id: "nodes_a/1", name: "Label A", key: "key_a" };
-      expect(getLabel(item)).toBe("Label A"); // 'name' exists
-    });
-
-    it("should return label based on the second 'individual_labels' option if first is missing", () => {
-      const item = { _id: "nodes_a/2", key: "key_a2" }; // 'name' is missing
-      expect(getLabel(item)).toBe("key_a2"); // falls back to 'key'
-    });
-
-    it("should return label from default 'edges' config if specific collection config is missing or labels not found", () => {
-      const item = { _id: "edges/e1", label: "Edge Label" }; // Use edge label config
-      expect(getLabel(item)).toBe("Edge Label");
-    });
-
-    it("should handle label values that are arrays by converting to string", () => {
-      const item = { _id: "nodes_b/3", title: ["Part 1", "Part 2"] };
-      expect(getLabel(item)).toBe("Part 1,Part 2");
-    });
-
-    it("should handle numeric labels", () => {
-      const item = { _id: "nodes_a/4", key: 12345 }; // 'name' is missing
-      expect(getLabel(item)).toBe("12345");
-    });
-
-    it("should return NAME UNKNOWN if no label options are found", () => {
-      const item = { _id: "nodes_a/5", other_prop: "value" }; // neither 'name' nor 'key' exist
-      expect(getLabel(item)).toBe("NAME UNKNOWN");
-    });
-  });
-
-  // --- getUrl ---
-  describe("getUrl", () => {
-    it("should generate the correct URL with replacement and lowercasing", () => {
-      const item = { _id: "nodes_a/1", key: "Item_Key_1" };
-      expect(getUrl(item)).toBe("/data/nodes-a/item-key-1");
-    });
-
-    it("should return null if config has no url", () => {
-      const item = { _id: "nodes_b/1", title: "Test Title" }; // nodes_b has no URL config in mock
-      expect(getUrl(item)).toBeNull();
-    });
-  });
-
-  // --- getTitle ---
-  describe("getTitle", () => {
-    it("should generate title using display_name and capitalized label", () => {
-      const item = { _id: "nodes_a/1", name: "item one", key: "key_1" };
-      expect(getTitle(item)).toBe("Nodes A: Item One");
-    });
-
-    it("should handle complex labels in title (arrays become comma-separated)", () => {
-      const item = { _id: "nodes_b/3", title: ["part 1", "part 2"] };
-      expect(getTitle(item)).toBe("Nodes B: Part 1,part 2");
-    });
-  });
-
-  // --- capitalCase ---
-  describe("capitalCase", () => {
-    it("should capitalize the first letter of each word in a string", () => {
-      expect(capitalCase("hello world")).toBe("Hello World");
-      expect(capitalCase("singleword")).toBe("Singleword");
-      expect(capitalCase("already Capitalized")).toBe("Already Capitalized");
-    });
-
-    it("should handle empty strings", () => {
-      expect(capitalCase("")).toBe("");
-    });
-
-    it("should capitalize words in each string of an array and join with '|'", () => {
-      expect(capitalCase(["hello world", "test case"])).toBe("Hello World|Test Case");
-      expect(capitalCase(["single"])).toBe("Single");
-    });
-
-    it("should handle arrays with non-string elements gracefully", () => {
-      expect(capitalCase(["string one", 123, "string two"])).toBe("String One|123|String Two"); // Only strings are modified
-    });
-
-    it("should handle empty arrays", () => {
-      expect(capitalCase([])).toBe(""); // .join results in empty string
-    });
-
-    it("should return non-string, non-array inputs as is", () => {
-      expect(capitalCase(null)).toBeNull();
-      expect(capitalCase(undefined)).toBeUndefined();
-      expect(capitalCase(123)).toBe(123);
-      expect(capitalCase({ a: 1 })).toEqual({ a: 1 });
-    });
-  });
 });
