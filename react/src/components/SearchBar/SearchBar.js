@@ -1,8 +1,8 @@
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
-import { GraphContext } from "../../contexts";
-import { searchDocuments } from "../../services";
-import { getAllSearchableFields } from "../../utils";
-import SearchResultsTable from "../SearchResultsTable/SearchResultsTable";
+import SearchResultsTable from "components/SearchResultsTable";
+import { GraphContext } from "contexts";
+import { searchDocuments } from "services";
+import { getAllSearchableFields } from "utils";
 
 // SVG Icon Component
 const SearchIcon = () => (

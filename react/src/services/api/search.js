@@ -2,7 +2,8 @@
  * API functions for search operations.
  */
 
-import { SEARCH_ENDPOINT } from "../../constants";
+import { SEARCH_ENDPOINT } from "constants/index";
+import { postJson } from "./fetchWrapper";
 
 /**
  * Search for documents matching a term.
@@ -12,24 +13,13 @@ import { SEARCH_ENDPOINT } from "../../constants";
  * @returns {Promise<Array>} Array of matching documents.
  */
 export const searchDocuments = async (searchTerm, graphType, searchFields) => {
-  try {
-    const response = await fetch(SEARCH_ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        search_term: searchTerm,
-        db: graphType,
-        search_fields: searchFields,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching search terms:", error);
-    return [];
-  }
+  return postJson(
+    SEARCH_ENDPOINT,
+    {
+      search_term: searchTerm,
+      db: graphType,
+      search_fields: searchFields,
+    },
+    { fallback: [] },
+  );
 };

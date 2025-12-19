@@ -7,7 +7,8 @@ import {
   EXPANSION_DEPTH,
   GRAPH_ENDPOINT,
   SHORTEST_PATHS_ENDPOINT,
-} from "../../constants";
+} from "constants/index";
+import { postJson } from "./fetchWrapper";
 
 /**
  * Fetch graph data from backend.
@@ -71,17 +72,7 @@ export const fetchGraphData = async (params) => {
     };
   }
 
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch from ${endpoint}`);
-  }
-
-  return response.json();
+  return postJson(endpoint, body);
 };
 
 /**
@@ -92,25 +83,15 @@ export const fetchGraphData = async (params) => {
  * @returns {Promise<Object>} Expansion data with nodes and links.
  */
 export const fetchNodeExpansion = async (nodeId, graphType, includeInterNodeEdges = true) => {
-  const response = await fetch(GRAPH_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      node_ids: [nodeId],
-      depth: EXPANSION_DEPTH,
-      edge_direction: "ANY",
-      allowed_collections: [],
-      graph: graphType,
-      edge_filters: [],
-      include_inter_node_edges: includeInterNodeEdges,
-    }),
+  return postJson(GRAPH_ENDPOINT, {
+    node_ids: [nodeId],
+    depth: EXPANSION_DEPTH,
+    edge_direction: "ANY",
+    allowed_collections: [],
+    graph: graphType,
+    edge_filters: [],
+    include_inter_node_edges: includeInterNodeEdges,
   });
-
-  if (!response.ok) {
-    throw new Error("Expansion fetch failed");
-  }
-
-  return response.json();
 };
 
 /**
@@ -124,15 +105,5 @@ export const fetchEdgeFilterOptions = async (fields, graphType) => {
     return {};
   }
 
-  const response = await fetch(EDGE_FILTER_OPTIONS_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ fields, graph: graphType }),
-  });
-
-  if (!response.ok) {
-    throw new Error("Edge filter options fetch failed.");
-  }
-
-  return response.json();
+  return postJson(EDGE_FILTER_OPTIONS_ENDPOINT, { fields, graph: graphType });
 };

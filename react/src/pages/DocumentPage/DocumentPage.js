@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch } from "react-redux";
 import { useParams } from "react-router-dom";
-import collectionDefaults from "../../assets/collection-defaults.json";
-import DocumentCard from "../../components/DocumentCard/DocumentCard";
-import ForceGraph from "../../components/ForceGraph/ForceGraph";
-import FTUIllustration from "../../components/FTUIllustration/FTUIllustration";
-import { FTU_ILLUSTRATIONS_JSONLD_URL } from "../../constants";
-import { useFtuParts } from "../../contexts";
-import { fetchDocument } from "../../services";
-import { initializeGraph } from "../../store";
-import { findFtuUrlById, getTitle, parseId } from "../../utils";
+import collectionDefaults from "assets/collection-defaults.json";
+import DocumentCard from "components/DocumentCard";
+import ForceGraph from "components/ForceGraph/ForceGraph";
+import FTUIllustration from "components/FTUIllustration";
+import { FTU_ILLUSTRATIONS_JSONLD_URL } from "constants/index";
+import { useFtuParts } from "contexts";
+import { fetchDocument } from "services";
+import { initializeGraph } from "store";
+import { findFtuUrlById, getTitle, parseId } from "utils";
 
 const DocumentPage = () => {
   const dispatch = useDispatch();

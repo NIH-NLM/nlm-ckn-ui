@@ -1,5 +1,5 @@
-import ErrorBoundary from "../../components/ErrorBoundary";
-import Sunburst from "../../components/Sunburst/Sunburst";
+import ErrorBoundary from "components/ErrorBoundary";
+import Sunburst from "components/Sunburst";
 
 const SunburstPage = () => {
   return (

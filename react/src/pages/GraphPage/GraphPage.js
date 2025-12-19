@@ -1,12 +1,12 @@
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import ErrorBoundary from "../../components/ErrorBoundary";
-import ForceGraph from "../../components/ForceGraph/ForceGraph";
-import LoadGraphModal from "../../components/LoadGraphModal/LoadGraphModal";
-import SelectedItemsTable from "../../components/SelectedItemsTable/SelectedItemsTable";
-import { GraphContext } from "../../contexts";
-import { fetchNodeDetailsByIds } from "../../services";
-import { initializeGraph, loadGraphFromJson, removeNodeFromSlice } from "../../store";
+import ErrorBoundary from "components/ErrorBoundary";
+import ForceGraph from "components/ForceGraph/ForceGraph";
+import LoadGraphModal from "components/LoadGraphModal";
+import SelectedItemsTable from "components/SelectedItemsTable";
+import { GraphContext } from "contexts";
+import { fetchNodeDetailsByIds } from "services";
+import { initializeGraph, loadGraphFromJson, removeNodeFromSlice } from "store";
 
 const GraphPage = () => {
   const dispatch = useDispatch();

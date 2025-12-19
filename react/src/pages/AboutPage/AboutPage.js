@@ -1,4 +1,4 @@
-import schemaImage from "../../assets/schema.png";
+import schemaImage from "assets/schema.png";
 
 const AboutPage = () => {
   return (

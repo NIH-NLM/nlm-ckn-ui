@@ -1,4 +1,4 @@
-import BrowseBox from "../../components/BrowseBox/BrowseBox";
+import BrowseBox from "components/BrowseBox";
 
 const CollectionsPage = (currentCollection) => {
   return (

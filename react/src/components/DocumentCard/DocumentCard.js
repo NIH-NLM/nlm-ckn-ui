@@ -1,4 +1,4 @@
-import { getDisplayFields, getUrl } from "../../utils";
+import { getDisplayFields, getUrl } from "utils";
 
 /**
  * Renders structured card for single document.

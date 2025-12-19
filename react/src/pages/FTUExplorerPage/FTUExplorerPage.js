@@ -1,5 +1,5 @@
-import FTUIllustration from "../../components/FTUIllustration/FTUIllustration";
-import { DEFAULT_FTU_ILLUSTRATION_URL, FTU_ILLUSTRATIONS_JSONLD_URL } from "../../constants";
+import FTUIllustration from "components/FTUIllustration";
+import { DEFAULT_FTU_ILLUSTRATION_URL, FTU_ILLUSTRATIONS_JSONLD_URL } from "constants/index";
 
 const FTUExplorerPage = () => {
   return (

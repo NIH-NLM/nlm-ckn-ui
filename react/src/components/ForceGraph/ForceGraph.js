@@ -1,9 +1,13 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { shallowEqual, useDispatch, useSelector } from "react-redux";
 import { ActionCreators } from "redux-undo";
-import collMaps from "../../assets/cell-kn-mvp-collection-maps.json";
-import { useHotkeyHold, useHotkeys } from "../../hooks";
-import { fetchCollections } from "../../services";
+import collMaps from "assets/cell-kn-mvp-collection-maps.json";
+import AddToGraphButton from "components/AddToGraphButton";
+import DocumentPopup from "components/DocumentPopup";
+import ForceGraphConstructor from "components/ForceGraphConstructor/ForceGraphConstructor";
+import LoadGraphModal from "components/LoadGraphModal";
+import { useHotkeyHold, useHotkeys } from "hooks";
+import { fetchCollections } from "services";
 import {
   clearNodeToCenter,
   collapseNode,
@@ -18,7 +22,7 @@ import {
   setInitialCollapseList,
   uncollapseNode,
   updateSetting,
-} from "../../store";
+} from "store";
 import {
   getLabel,
   hasNodesInRawData,
@@ -26,11 +30,7 @@ import {
   LoadingBar,
   parseCollections,
   performSetOperation,
-} from "../../utils";
-import AddToGraphButton from "../AddToGraphButton/AddToGraphButton";
-import DocumentPopup from "../DocumentPopup/DocumentPopup";
-import ForceGraphConstructor from "../ForceGraphConstructor/ForceGraphConstructor";
-import LoadGraphModal from "../LoadGraphModal/LoadGraphModal";
+} from "utils";
 // Import extracted hooks
 import { useGraphExport, useNodeNames, usePerNodeSettings } from "./hooks";
 // Import extracted panels

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { getLabel, getUrl } from "../../utils";
+import { getLabel, getUrl } from "utils";
 
 const SelectedItemsTable = ({ selectedItems, generateGraph, removeSelectedItem, isStale }) => {
   function handleGenerateGraph() {

@@ -2,7 +2,8 @@
  * API functions for collection operations.
  */
 
-import { COLLECTION_ENDPOINT, COLLECTIONS_ENDPOINT } from "../../constants";
+import { COLLECTION_ENDPOINT, COLLECTIONS_ENDPOINT } from "constants/index";
+import { postJson } from "./fetchWrapper";
 
 /**
  * Fetch available collections from the backend.
@@ -10,16 +11,7 @@ import { COLLECTION_ENDPOINT, COLLECTIONS_ENDPOINT } from "../../constants";
  * @returns {Promise<Array>} Array of collection names.
  */
 export const fetchCollections = async (graphType) => {
-  const response = await fetch(COLLECTIONS_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ graph: graphType }),
-  });
-  if (!response.ok) {
-    console.error("Fetch collections failed:", response.status, await response.text());
-    throw new Error(`Network response was not ok (${response.status})`);
-  }
-  return response.json();
+  return postJson(COLLECTIONS_ENDPOINT, { graph: graphType });
 };
 
 /**
@@ -29,13 +21,5 @@ export const fetchCollections = async (graphType) => {
  * @returns {Promise<Object>} Object containing document data.
  */
 export const fetchCollectionDocuments = async (collection, graphType) => {
-  const response = await fetch(COLLECTION_ENDPOINT(collection), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ graph: graphType }),
-  });
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
-  return response.json();
+  return postJson(COLLECTION_ENDPOINT(collection), { graph: graphType });
 };

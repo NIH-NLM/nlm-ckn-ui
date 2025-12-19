@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import collMaps from "../../assets/cell-kn-mvp-collection-maps.json";
-import { getColorForCollection, getLabel } from "../../utils";
-import AddToGraphButton from "../AddToGraphButton/AddToGraphButton";
+import collMaps from "assets/cell-kn-mvp-collection-maps.json";
+import AddToGraphButton from "components/AddToGraphButton";
+import { getColorForCollection, getLabel } from "utils";
 
 /**
  * SearchResultsTable component.

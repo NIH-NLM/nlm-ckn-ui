@@ -1,5 +1,5 @@
-import ErrorBoundary from "../../components/ErrorBoundary";
-import Tree from "../../components/Tree/Tree";
+import ErrorBoundary from "components/ErrorBoundary";
+import Tree from "components/Tree";
 
 const TreePage = () => {
   return (

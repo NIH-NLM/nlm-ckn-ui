@@ -2,7 +2,8 @@
  * API functions for hierarchical data (sunburst/tree) operations.
  */
 
-import { SUNBURST_ENDPOINT } from "../../constants";
+import { SUNBURST_ENDPOINT } from "constants/index";
+import { postJson } from "./fetchWrapper";
 
 /**
  * Fetch hierarchical data for sunburst/tree visualizations.
@@ -11,19 +12,8 @@ import { SUNBURST_ENDPOINT } from "../../constants";
  * @returns {Promise<Object|Array>} Hierarchical data (object for root, array for children).
  */
 export const fetchHierarchyData = async (parentId, graphType) => {
-  const response = await fetch(SUNBURST_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      parent_id: parentId,
-      graph: graphType,
-    }),
+  return postJson(SUNBURST_ENDPOINT, {
+    parent_id: parentId,
+    graph: graphType,
   });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Fetch failed: ${response.status} ${errorText}`);
-  }
-
-  return response.json();
 };

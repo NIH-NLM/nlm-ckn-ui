@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchHierarchyData } from "../../services";
-import { getLabel, LoadingBar, mergeChildren } from "../../utils";
-import AddToGraphButton from "../AddToGraphButton/AddToGraphButton";
-import DocumentPopup from "../DocumentPopup/DocumentPopup";
-import SunburstConstructor from "../SunburstConstructor/SunburstConstructor";
+import AddToGraphButton from "components/AddToGraphButton";
+import DocumentPopup from "components/DocumentPopup";
+import SunburstConstructor from "components/SunburstConstructor";
+import { fetchHierarchyData } from "services";
+import { getLabel, LoadingBar, mergeChildren } from "utils";
 
 const Sunburst = ({ addSelectedItem }) => {
   // --- State ---

@@ -3,6 +3,8 @@
  * Centralized exports for all API functions.
  */
 
+// Fetch utilities
+export { ApiError, fetchWithErrorHandling, getJson, postJson } from "./fetchWrapper";
 // AQL query operations
 export { executeAqlQuery, fetchPredefinedQueries } from "./aql";
 // Collection operations

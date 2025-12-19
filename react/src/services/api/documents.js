@@ -6,7 +6,8 @@ import {
   COLLECTION_DOCUMENT_ENDPOINT,
   DOCUMENT_DETAILS_ENDPOINT,
   NODES_DETAILS_ENDPOINT,
-} from "../../constants";
+} from "constants/index";
+import { getJson, postJson } from "./fetchWrapper";
 
 /**
  * Fetch a single document by collection and ID.
@@ -15,11 +16,7 @@ import {
  * @returns {Promise<Object>} Document object.
  */
 export const fetchDocument = async (collection, id) => {
-  const response = await fetch(COLLECTION_DOCUMENT_ENDPOINT(collection, id));
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
-  return response.json();
+  return getJson(COLLECTION_DOCUMENT_ENDPOINT(collection, id));
 };
 
 /**
@@ -31,18 +28,12 @@ export const fetchDocument = async (collection, id) => {
  */
 export const fetchNodeDetailsByIds = async (ids, db) => {
   if (!ids || ids.length === 0) return [];
-  try {
-    const response = await fetch(DOCUMENT_DETAILS_ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ document_ids: ids, db }),
-    });
-    if (!response.ok) throw new Error("Failed to fetch node details");
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching node details:", error);
-    return [];
-  }
+
+  return postJson(
+    DOCUMENT_DETAILS_ENDPOINT,
+    { document_ids: ids, db },
+    { fallback: [] },
+  );
 };
 
 /**
@@ -53,16 +44,10 @@ export const fetchNodeDetailsByIds = async (ids, db) => {
  */
 export const fetchNodesDetails = async (nodeIds) => {
   if (!nodeIds || nodeIds.length === 0) return [];
-  try {
-    const response = await fetch(NODES_DETAILS_ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ node_ids: nodeIds }),
-    });
-    if (!response.ok) throw new Error("Failed to fetch node details");
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching node details:", error);
-    return [];
-  }
+
+  return postJson(
+    NODES_DETAILS_ENDPOINT,
+    { node_ids: nodeIds },
+    { fallback: [] },
+  );
 };
