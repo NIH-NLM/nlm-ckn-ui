@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
 import collMaps from "assets/cell-kn-mvp-collection-maps.json";
 import AddToGraphButton from "components/AddToGraphButton";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { getColorForCollection, getLabel } from "utils";
 
 /**
@@ -76,13 +76,11 @@ const SearchResultsTable = ({ searchResults }) => {
           : "var(--color-text, #212121)";
 
         return (
-          <div
+          <button
+            type="button"
             key={item._id || index}
             className="result-item-row-link"
             onClick={() => navigate(`/collections/${item._id}`)}
-            onKeyDown={(e) => e.key === "Enter" && navigate(`/collections/${item._id}`)}
-            role="button"
-            tabIndex={0}
           >
             <div className="item-label-area">{getLabel(item)}</div>
             <div className="item-meta-actions">
@@ -101,7 +99,7 @@ const SearchResultsTable = ({ searchResults }) => {
               </Link>
               <AddToGraphButton nodeId={item._id} />
             </div>
-          </div>
+          </button>
         );
       })}
     </div>

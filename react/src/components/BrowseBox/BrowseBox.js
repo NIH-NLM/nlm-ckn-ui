@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
 import collMaps from "assets/cell-kn-mvp-collection-maps.json";
 import ListDocuments from "components/ListDocuments";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link, useParams } from "react-router-dom";
 import { fetchCollectionDocuments, fetchCollections } from "services";
 import { getLabel, parseCollections } from "utils";
 

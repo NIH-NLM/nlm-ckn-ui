@@ -29,11 +29,7 @@ export const fetchDocument = async (collection, id) => {
 export const fetchNodeDetailsByIds = async (ids, db) => {
   if (!ids || ids.length === 0) return [];
 
-  return postJson(
-    DOCUMENT_DETAILS_ENDPOINT,
-    { document_ids: ids, db },
-    { fallback: [] },
-  );
+  return postJson(DOCUMENT_DETAILS_ENDPOINT, { document_ids: ids, db }, { fallback: [] });
 };
 
 /**
@@ -45,9 +41,5 @@ export const fetchNodeDetailsByIds = async (ids, db) => {
 export const fetchNodesDetails = async (nodeIds) => {
   if (!nodeIds || nodeIds.length === 0) return [];
 
-  return postJson(
-    NODES_DETAILS_ENDPOINT,
-    { node_ids: nodeIds },
-    { fallback: [] },
-  );
+  return postJson(NODES_DETAILS_ENDPOINT, { node_ids: nodeIds }, { fallback: [] });
 };

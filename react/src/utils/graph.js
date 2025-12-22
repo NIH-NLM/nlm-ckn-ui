@@ -9,29 +9,29 @@
  * @returns {boolean} True if nodes exist for the nodeId.
  */
 export const hasAnyNodes = (data, nodeId) => {
-    if (
-        !data ||
-        typeof data !== "object" ||
-        !data.nodes ||
-        typeof data.nodes !== "object" ||
-        !Object.hasOwn(data.nodes, nodeId)
-    ) {
-        return false;
-    }
+  if (
+    !data ||
+    typeof data !== "object" ||
+    !data.nodes ||
+    typeof data.nodes !== "object" ||
+    !Object.hasOwn(data.nodes, nodeId)
+  ) {
+    return false;
+  }
 
-    const nodeEntries = data.nodes[nodeId];
+  const nodeEntries = data.nodes[nodeId];
 
-    if (!Array.isArray(nodeEntries)) {
-        return false;
-    }
+  if (!Array.isArray(nodeEntries)) {
+    return false;
+  }
 
-    const result = nodeEntries.some((entry) => {
-        return (
-            entry && typeof entry === "object" && Object.hasOwn(entry, "node") && entry.node !== null
-        );
-    });
+  const result = nodeEntries.some((entry) => {
+    return (
+      entry && typeof entry === "object" && Object.hasOwn(entry, "node") && entry.node !== null
+    );
+  });
 
-    return result;
+  return result;
 };
 
 /**
@@ -40,27 +40,27 @@ export const hasAnyNodes = (data, nodeId) => {
  * @returns {boolean} True if data contains nodes.
  */
 export const hasNodesInRawData = (data) => {
-    if (!data || typeof data !== "object") return false;
+  if (!data || typeof data !== "object") return false;
 
-    // Shortest-path shape: { nodes: Array, links: Array }
-    if (Array.isArray(data.nodes)) {
-        return data.nodes.length > 0;
+  // Shortest-path shape: { nodes: Array, links: Array }
+  if (Array.isArray(data.nodes)) {
+    return data.nodes.length > 0;
+  }
+
+  // Per-origin shape: { [originId]: { nodes: Array, links: Array }, ... }
+  // Check each origin's nodes array
+  for (const value of Object.values(data)) {
+    if (
+      value &&
+      typeof value === "object" &&
+      Array.isArray(value.nodes) &&
+      value.nodes.length > 0
+    ) {
+      return true;
     }
+  }
 
-    // Per-origin shape: { [originId]: { nodes: Array, links: Array }, ... }
-    // Check each origin's nodes array
-    for (const value of Object.values(data)) {
-        if (
-            value &&
-            typeof value === "object" &&
-            Array.isArray(value.nodes) &&
-            value.nodes.length > 0
-        ) {
-            return true;
-        }
-    }
-
-    return false;
+  return false;
 };
 
 /**
@@ -70,18 +70,18 @@ export const hasNodesInRawData = (data) => {
  * @returns {object|null} Found node or null.
  */
 export function findNodeById(node, id) {
-    if (node._id === id) {
-        return node;
+  if (node._id === id) {
+    return node;
+  }
+  if (node.children) {
+    for (const child of node.children) {
+      const found = findNodeById(child, id);
+      if (found) {
+        return found;
+      }
     }
-    if (node.children) {
-        for (const child of node.children) {
-            const found = findNodeById(child, id);
-            if (found) {
-                return found;
-            }
-        }
-    }
-    return null;
+  }
+  return null;
 }
 
 /**
@@ -92,16 +92,16 @@ export function findNodeById(node, id) {
  * @returns {object} New graph data with merged children.
  */
 export function mergeChildren(graphData, parentId, childrenWithGrandchildren) {
-    const newData = JSON.parse(JSON.stringify(graphData)); // Deep copy
-    const parentNode = findNodeById(newData, parentId);
+  const newData = JSON.parse(JSON.stringify(graphData)); // Deep copy
+  const parentNode = findNodeById(newData, parentId);
 
-    if (parentNode) {
-        parentNode.children = childrenWithGrandchildren;
-        parentNode._childrenLoaded = true;
-    } else {
-        console.warn(`Parent node ${parentId} not found for merging children.`);
-    }
-    return newData;
+  if (parentNode) {
+    parentNode.children = childrenWithGrandchildren;
+    parentNode._childrenLoaded = true;
+  } else {
+    console.warn(`Parent node ${parentId} not found for merging children.`);
+  }
+  return newData;
 }
 
 /**
@@ -110,8 +110,8 @@ export function mergeChildren(graphData, parentId, childrenWithGrandchildren) {
  * @returns {Array<string>} Array of IDs.
  */
 export function parseId(document) {
-    if (document._from && document._to) {
-        return [document._from, document._to];
-    }
-    return [document._id];
+  if (document._from && document._to) {
+    return [document._from, document._to];
+  }
+  return [document._id];
 }

@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
 import SearchBar from "components/SearchBar";
+import { Link } from "react-router-dom";
 
 const SearchPage = () => {
   return (

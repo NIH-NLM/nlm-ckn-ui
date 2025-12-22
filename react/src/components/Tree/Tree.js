@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import ReactDOM from "react-dom";
 import AddToGraphButton from "components/AddToGraphButton";
 import TreeConstructor from "components/TreeConstructor";
+import { useCallback, useEffect, useRef, useState } from "react";
+import ReactDOM from "react-dom";
 import { fetchHierarchyData } from "services";
 import { LoadingBar } from "utils";
 

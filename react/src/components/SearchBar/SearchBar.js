@@ -1,6 +1,6 @@
-import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import SearchResultsTable from "components/SearchResultsTable";
 import { GraphContext } from "contexts";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { searchDocuments } from "services";
 import { getAllSearchableFields } from "utils";
 
