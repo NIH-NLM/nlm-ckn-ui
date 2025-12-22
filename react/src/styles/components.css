@@ -125,16 +125,22 @@
 }
 
 .result-item-row-link {
+  /* Reset button styles */
+  appearance: none;
+  background: none;
+  border: none;
+  border-radius: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  /* Layout styles */
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 10px 15px;
   border-bottom: 1px solid var(--color-light);
   gap: 10px;
-}
-
-.result-item-row-link.selectable {
-  cursor: pointer;
+  width: 100%;
 }
 
 .result-item-row-link:last-child {
