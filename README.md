@@ -80,4 +80,53 @@ From project root (`cell-kn-mvp-ui`) with virtual environment activated:
 python manage.py runserver
 ```
 > Server available at `http://127.0.0.1:8000/`.
-> 
+
+## Environment Configuration
+
+The application uses environment variables for configuration. Copy the example file to get started:
+
+```bash
+cp .env.example .env
+```
+
+Then edit `.env` with your local settings. For local development, the defaults in `.env.example` should work with minimal changes (just add your ArangoDB password).
+
+### Required Environment Variables
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `SECRET_KEY` | Django secret key | Use the generator command below |
+| `DEBUG` | Enable debug mode | `True` for dev, `False` for prod |
+| `ALLOWED_HOSTS` | Comma-separated allowed hosts | `localhost,127.0.0.1` |
+| `CORS_ALLOW_ALL_ORIGINS` | Allow all CORS origins | `True` for dev only |
+| `CORS_ALLOWED_ORIGINS` | Comma-separated allowed origins | `http://localhost:3000` |
+| `ARANGO_DB_HOST` | ArangoDB connection URL | `http://127.0.0.1:8529` |
+| `ARANGO_DB_USER` | ArangoDB username | `root` |
+| `ARANGO_DB_PASSWORD` | ArangoDB password | Your password |
+| `ARANGO_DB_NAME_ONTOLOGIES` | Ontologies database name | `Cell-KN-Ontologies` |
+| `ARANGO_DB_NAME_PHENOTYPES` | Phenotypes database name | `Cell-KN-Phenotypes` |
+| `GRAPH_NAME_ONTOLOGIES` | Ontologies graph name | `KN-Ontologies-v2.0` |
+| `GRAPH_NAME_PHENOTYPES` | Phenotypes graph name | `KN-Phenotypes-v2.0` |
+
+## Production Deployment
+
+1. **Generate a new SECRET_KEY:**
+   ```bash
+   python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+   ```
+
+2. **Configure environment variables:**
+   ```bash
+   SECRET_KEY=<generated-key-goes-here>
+   DEBUG=False
+   ALLOWED_HOSTS=your-domain.com,www.your-domain.com
+   CORS_ALLOW_ALL_ORIGINS=False
+   CORS_ALLOWED_ORIGINS=https://your-domain.com
+   ```
+
+3. **Enable HTTPS security settings** in `.env`:
+   ```bash
+   SECURE_SSL_REDIRECT=True
+   SESSION_COOKIE_SECURE=True
+   CSRF_COOKIE_SECURE=True
+   ```

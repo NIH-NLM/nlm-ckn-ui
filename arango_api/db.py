@@ -1,11 +1,11 @@
-import environ
+from pathlib import Path
 
+import environ
 from arango import ArangoClient
 
-
-# Load db info from .env file
+# Load db info from .env file in project root
 env = environ.Env()
-environ.Env.read_env()
+environ.Env.read_env(Path(__file__).resolve().parent.parent / ".env")
 
 # Retrieve ArangoDB credentials from the environment
 ARANGO_DB_HOST = env("ARANGO_DB_HOST")
