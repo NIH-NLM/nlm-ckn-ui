@@ -1,7 +1,9 @@
+import logging
 import re
 from itertools import chain
-from rest_framework.response import Response
+
 from rest_framework import status
+from rest_framework.response import Response
 
 from arango_api.db import (
     db_ontologies,
@@ -9,6 +11,8 @@ from arango_api.db import (
     GRAPH_NAME_PHENOTYPES,
     db_phenotypes,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def get_collections(collection_type, graph="ontologies"):
@@ -33,7 +37,7 @@ def get_all_by_collection(coll, graph):
         collection = db_ontologies.collection(coll)
 
     if not collection:
-        print(f"Collection '{coll}' not found.")
+        logger.warning("Collection '%s' not found", coll)
     return collection.all()
 
 
@@ -340,7 +344,7 @@ def get_all():
         cursor = db_ontologies.aql.execute(final_query)
         results = list(cursor)  # Collect the results
     except Exception as e:
-        print(f"Error executing query: {e}")
+        logger.exception("Error executing get_all query")
         results = []
 
     flat_results = list(chain.from_iterable(results))
@@ -416,13 +420,10 @@ def search_by_term(search_term, search_fields, db):
         results = cursor.next()
 
     except StopIteration:
-        print("Query executed successfully but returned no results.")
+        logger.debug("Search query returned no results for term: %s", search_term)
         results = {}
     except Exception as e:
-        import traceback
-
-        print(f"Error executing query: {e}")
-        traceback.print_exc()
+        logger.exception("Error executing search query")
         results = {}
 
     return results
@@ -436,7 +437,7 @@ def run_aql_query(query):
             0
         ]  # Collect the results - one element should be guaranteed
     except Exception as e:
-        print(f"Error executing query: {e}")
+        logger.exception("Error executing AQL query")
         results = []
 
     return results
@@ -590,7 +591,7 @@ def get_phenotypes_sunburst(ignored_parent_id):
         result_list = list(cursor)
 
         if not result_list:
-            print("WARN: Full structure query returned no results.")
+            logger.warning("Full structure query returned no results")
             empty_root = {
                 "_id": graph_root_id,
                 "label": "Phenotype Associations - No Data",
@@ -613,7 +614,7 @@ def get_phenotypes_sunburst(ignored_parent_id):
         )
 
     except Exception as e:
-        print(f"ERROR: AQL Execution failed for full structure load: {e}")
+        logger.exception("AQL execution failed for full structure load")
         error_content = {"error": "Failed to fetch full phenotype structure."}
         if hasattr(e, "response") and hasattr(e.response, "text"):
             error_content["db_error"] = e.response.text
@@ -777,7 +778,7 @@ def get_ontologies_sunburst(parent_id):
                     initial_nodes_with_children.append(node_data)
 
             except Exception as e:
-                print(f"ERROR: AQL Execution failed for initial node {node_id}: {e}")
+                logger.exception("AQL execution failed for initial node %s", node_id)
 
         # Create the final top-level root node structure
         graph_root = {
@@ -874,7 +875,7 @@ def query_edge_filter_options(fields_to_query):
         return results
 
     except Exception as e:
-        print(f"Error executing edge_filter_options query: {e}")
+        logger.exception("Error executing edge_filter_options query")
         # Re-raise exception to be handled by the view layer.
         raise
 
@@ -898,7 +899,7 @@ def get_documents(document_ids, graph_name):
             collections_to_keys.setdefault(collection_name, []).append(key)
         except ValueError:
             # Handle potentially malformed IDs
-            print(f"Warning: Skipping malformed document ID: {doc_id}")
+            logger.warning("Skipping malformed document ID: %s", doc_id)
             continue
 
     # If no valid IDs were found after parsing
@@ -912,7 +913,7 @@ def get_documents(document_ids, graph_name):
             db_phenotypes if db_name_lower == "phenotypes" else db_ontologies
         )
     except Exception as e:
-        print(f"Error selecting database connection: {e}")
+        logger.exception("Error selecting database connection")
         return []
 
     # Execute one query per collection and aggregate results
@@ -934,8 +935,7 @@ def get_documents(document_ids, graph_name):
             all_results.extend(results_for_collection)
 
         except Exception as e:
-            print(f"Error executing query for collection '{collection}': {e}")
+            logger.exception("Error executing query for collection '%s'", collection)
             continue
 
-    print(all_results)
     return all_results

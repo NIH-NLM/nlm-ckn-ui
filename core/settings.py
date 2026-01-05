@@ -160,3 +160,41 @@ ARANGO_DB_NAME_ONTOLOGIES = env("ARANGO_DB_NAME_ONTOLOGIES")
 ARANGO_DB_NAME_PHENOTYPES = env("ARANGO_DB_NAME_PHENOTYPES")
 GRAPH_NAME_ONTOLOGIES = env("GRAPH_NAME_ONTOLOGIES")
 GRAPH_NAME_PHENOTYPES = env("GRAPH_NAME_PHENOTYPES")
+
+# Logging configuration
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {name} {message}",
+            "style": "{",
+        },
+        "simple": {
+            "format": "{levelname} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "arango_api": {
+            "handlers": ["console"],
+            "level": "DEBUG" if DEBUG else "INFO",
+            "propagate": False,
+        },
+    },
+}
