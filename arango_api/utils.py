@@ -15,12 +15,25 @@ from arango_api.db import (
 logger = logging.getLogger(__name__)
 
 
+def get_db_and_graph(graph_name):
+    """
+    Returns the appropriate database connection and graph name based on graph type.
+
+    Args:
+        graph_name (str): The graph type, either "phenotypes" or "ontologies".
+
+    Returns:
+        tuple: A tuple of (db_connection, graph_name_constant).
+    """
+    if graph_name and graph_name.lower() == "phenotypes":
+        return db_phenotypes, GRAPH_NAME_PHENOTYPES
+    return db_ontologies, GRAPH_NAME_ONTOLOGIES
+
+
 def get_collections(collection_type, graph="ontologies"):
     # Filter for document collections
-    if graph == "phenotypes":
-        all_collections = db_phenotypes.collections()
-    else:
-        all_collections = db_ontologies.collections()
+    db, _ = get_db_and_graph(graph)
+    all_collections = db.collections()
     collections = [
         collection
         for collection in all_collections
@@ -31,10 +44,8 @@ def get_collections(collection_type, graph="ontologies"):
 
 
 def get_all_by_collection(coll, graph):
-    if graph == "phenotypes":
-        collection = db_phenotypes.collection(coll)
-    else:
-        collection = db_ontologies.collection(coll)
+    db, _ = get_db_and_graph(graph)
+    collection = db.collection(coll)
 
     if not collection:
         logger.warning("Collection '%s' not found", coll)
@@ -82,12 +93,7 @@ def get_graph(
         raise ValueError("edge_direction must be 'INBOUND', 'OUTBOUND', or 'ANY'")
 
     # Select Database.
-    if graph == "phenotypes":
-        graph_name = GRAPH_NAME_PHENOTYPES
-        db = db_phenotypes
-    else:
-        graph_name = GRAPH_NAME_ONTOLOGIES
-        db = db_ontologies
+    db, graph_name = get_db_and_graph(graph)
 
     bind_vars = {
         "node_ids": node_ids,
@@ -352,8 +358,8 @@ def get_all():
     return flat_results
 
 
-def search_by_term(search_term, search_fields, db):
-    db_name_lower = db.lower()
+def search_by_term(search_term, search_fields, graph):
+    db_connection, _ = get_db_and_graph(graph)
 
     # Construct query from parameters
     query_beginning = f"""
@@ -412,10 +418,6 @@ def search_by_term(search_term, search_fields, db):
     bind_vars = {"search_term": search_term}
 
     try:
-        # db selection
-        db_connection = (
-            db_phenotypes if db_name_lower == "phenotypes" else db_ontologies
-        )
         cursor = db_connection.aql.execute(query, bind_vars=bind_vars)
         results = cursor.next()
 
@@ -907,14 +909,7 @@ def get_documents(document_ids, graph_name):
         return []
 
     # Select the correct database connection
-    try:
-        db_name_lower = graph_name.lower()
-        db_connection = (
-            db_phenotypes if db_name_lower == "phenotypes" else db_ontologies
-        )
-    except Exception as e:
-        logger.exception("Error selecting database connection")
-        return []
+    db_connection, _ = get_db_and_graph(graph_name)
 
     # Execute one query per collection and aggregate results
     all_results = []
