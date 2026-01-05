@@ -1,8 +1,12 @@
-from django.http import JsonResponse, HttpResponseNotFound
-from rest_framework.decorators import api_view
+import logging
+
+from django.http import HttpResponseNotFound, JsonResponse
 from rest_framework import status
+from rest_framework.decorators import api_view
 
 from arango_api import utils
+
+logger = logging.getLogger(__name__)
 
 
 @api_view(["POST"])
@@ -28,6 +32,7 @@ def get_object(request, coll, pk):
         else:
             return HttpResponseNotFound("Object not found")
     except Exception as e:
+        logger.exception("Error fetching object %s/%s", coll, pk)
         return JsonResponse({"error": str(e)}, status=500)
 
 
@@ -126,7 +131,7 @@ def run_aql_query(request):
         search_results = utils.run_aql_query(query)
         return JsonResponse(search_results, safe=False)
     except Exception as e:
-        ##TODO: Handle errors
+        logger.exception("Error running AQL query")
         return JsonResponse({"error": str(e)}, status=500)
 
 
@@ -159,9 +164,11 @@ def get_edge_filter_options(request):
 
     except ValueError as e:
         # Handle specific input errors raised by the utility.
+        logger.warning("Invalid input for edge_filter_options: %s", e)
         return JsonResponse({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         # Handle all other errors.
+        logger.exception("Error fetching edge filter options")
         return JsonResponse(
             {"error": "An internal server error occurred."},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
