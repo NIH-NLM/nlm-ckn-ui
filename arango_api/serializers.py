@@ -1,23 +1,27 @@
 """
 DRF Serializers for request validation.
+
+Serializers validate incoming request data before it reaches the service layer.
+Each serializer defines the expected fields, types, and constraints for an endpoint.
+
+Usage in views:
+    serializer = GraphTraversalSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)  # Raises 400 if invalid
+    data = serializer.validated_data  # Safe to use
+
+See: https://www.django-rest-framework.org/api-guide/serializers/
 """
 from rest_framework import serializers
 
 
 class GraphRequestSerializer(serializers.Serializer):
-    """Serializer for graph parameter in requests."""
+    """Base serializer for requests that need a graph/database parameter."""
 
     graph = serializers.ChoiceField(
         choices=["ontologies", "phenotypes"],
         required=False,
         default="ontologies",
     )
-
-
-class CollectionRequestSerializer(GraphRequestSerializer):
-    """Serializer for collection listing requests."""
-
-    pass
 
 
 class GraphTraversalSerializer(serializers.Serializer):

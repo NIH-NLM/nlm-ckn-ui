@@ -1,5 +1,15 @@
 """
 Django REST Framework views for the ArangoDB API.
+
+Views handle HTTP concerns: parsing requests, calling services, returning responses.
+Business logic lives in the services/ package.
+
+Each view:
+1. Validates request data using a serializer
+2. Calls the appropriate service function
+3. Returns a Response object
+
+See: https://www.django-rest-framework.org/api-guide/views/
 """
 import logging
 
@@ -9,7 +19,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from arango_api.serializers import (
-    CollectionRequestSerializer,
+    GraphRequestSerializer,
     GraphTraversalSerializer,
     AdvancedGraphTraversalSerializer,
     ShortestPathsSerializer,
@@ -30,7 +40,7 @@ class CollectionListView(APIView):
     """List all collection names."""
 
     def post(self, request):
-        serializer = CollectionRequestSerializer(data=request.data)
+        serializer = GraphRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         collection_names = collection_service.get_collections(
@@ -43,7 +53,7 @@ class CollectionDetailView(APIView):
     """List all documents in a collection."""
 
     def post(self, request, coll):
-        serializer = CollectionRequestSerializer(data=request.data)
+        serializer = GraphRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         objects = collection_service.get_all_by_collection(
