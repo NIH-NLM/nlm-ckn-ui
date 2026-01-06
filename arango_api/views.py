@@ -1,183 +1,246 @@
+"""
+Django REST Framework views for the ArangoDB API.
+
+Views handle HTTP concerns: parsing requests, calling services, returning responses.
+Business logic lives in the services/ package.
+
+Each view:
+1. Validates request data using a serializer
+2. Calls the appropriate service function
+3. Returns a Response object
+
+See: https://www.django-rest-framework.org/api-guide/views/
+"""
 import logging
 
-from django.http import HttpResponseNotFound, JsonResponse
+from django.http import HttpResponseNotFound
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from arango_api import utils
+from arango_api.serializers import (
+    GraphRequestSerializer,
+    GraphTraversalSerializer,
+    AdvancedGraphTraversalSerializer,
+    ShortestPathsSerializer,
+    SearchRequestSerializer,
+    AQLQuerySerializer,
+    SunburstRequestSerializer,
+    EdgeFilterOptionsSerializer,
+    DocumentsRequestSerializer,
+)
+from arango_api.services import collection_service, graph_service, search_service
+from arango_api.services import document_service, sunburst_service
+from arango_api.services.sunburst_service import SunburstServiceError
 
 logger = logging.getLogger(__name__)
 
 
-@api_view(["POST"])
-def list_collection_names(request):
-    graph = request.data.get("graph")
-    collection_names = utils.get_collections("document", graph)
-    return JsonResponse(collection_names, safe=False)
+class CollectionListView(APIView):
+    """List all collection names."""
+
+    def post(self, request):
+        serializer = GraphRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        collection_names = collection_service.get_collections(
+            "document", serializer.validated_data.get("graph", "ontologies")
+        )
+        return Response(collection_names)
 
 
-@api_view(["POST"])
-def list_by_collection(request, coll):
-    graph = request.data.get("graph")
-    objects = utils.get_all_by_collection(coll, graph)
-    return JsonResponse(list(objects), safe=False)
+class CollectionDetailView(APIView):
+    """List all documents in a collection."""
+
+    def post(self, request, coll):
+        serializer = GraphRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        objects = collection_service.get_all_by_collection(
+            coll, serializer.validated_data.get("graph", "ontologies")
+        )
+        return Response(list(objects))
 
 
-@api_view(["GET", "PUT", "DELETE"])
-def get_object(request, coll, pk):
-    try:
-        item = utils.get_by_id(coll, pk)
-        if item:
-            return JsonResponse(item, safe=False)
+class ObjectDetailView(APIView):
+    """Get a single object by collection and ID."""
+
+    def get(self, request, coll, pk):
+        try:
+            item = collection_service.get_by_id(coll, pk)
+            if item:
+                return Response(item)
+            else:
+                return HttpResponseNotFound("Object not found")
+        except Exception as e:
+            logger.exception("Error fetching object %s/%s", coll, pk)
+            return Response(
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class RelatedEdgesView(APIView):
+    """Get edges related to a specific object."""
+
+    def get(self, request, edge_coll, dr, item_coll, pk):
+        edges = collection_service.get_edges_by_id(edge_coll, dr, item_coll, pk)
+        return Response(list(edges))
+
+
+class GraphTraversalView(APIView):
+    """
+    Fetch graph data via traversal.
+
+    Dispatches to standard or advanced traversal based on payload structure.
+    """
+
+    def post(self, request):
+        include_inter_node_edges = request.data.get("include_inter_node_edges", True)
+
+        if "advanced_settings" in request.data:
+            serializer = AdvancedGraphTraversalSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            data = serializer.validated_data
+
+            results = graph_service.traverse_graph_advanced(
+                node_ids=data["node_ids"],
+                advanced_settings=data["advanced_settings"],
+                graph=data.get("graph", "ontologies"),
+                include_inter_node_edges=data.get("include_inter_node_edges", True),
+            )
         else:
-            return HttpResponseNotFound("Object not found")
-    except Exception as e:
-        logger.exception("Error fetching object %s/%s", coll, pk)
-        return JsonResponse({"error": str(e)}, status=500)
+            serializer = GraphTraversalSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            data = serializer.validated_data
+
+            results = graph_service.traverse_graph(
+                node_ids=data["node_ids"],
+                depth=data["depth"],
+                edge_direction=data["edge_direction"],
+                allowed_collections=data["allowed_collections"],
+                graph=data.get("graph", "ontologies"),
+                edge_filters=data.get("edge_filters"),
+                include_inter_node_edges=data.get("include_inter_node_edges", True),
+            )
+
+        return Response(results)
 
 
-@api_view(["GET"])
-def get_related_edges(request, edge_coll, dr, item_coll, pk):
-    # TODO: Document arguments
-    edges = utils.get_edges_by_id(edge_coll, dr, item_coll, pk)
-    return JsonResponse(list(edges), safe=False)
+class ShortestPathsView(APIView):
+    """Find shortest paths between nodes."""
 
+    def post(self, request):
+        serializer = ShortestPathsSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
 
-@api_view(["POST"])
-def get_search_items(request):
-    graph = request.data.get("db")
-    search_term = request.data.get("search_term")
-    search_fields = request.data.get("search_fields")
-    search_results = utils.search_by_term(search_term, search_fields, graph)
-    return JsonResponse(search_results, safe=False)
-
-
-@api_view(["POST"])
-def get_graph(request):
-    """
-    API endpoint to fetch graph data.
-
-    Acts as a dispatcher:
-    - If 'advanced_settings' is in the payload, it routes to the advanced
-      orchestrator which handles per-node settings.
-    - Otherwise, it performs a standard traversal with global settings.
-    """
-    # Extract the inter-node edges parameter (default to True)
-    include_inter_node_edges = request.data.get("include_inter_node_edges", True)
-    
-    # Route request based on payload structure
-    if "advanced_settings" in request.data:
-        # Handle advanced per-node settings request.
-        node_ids = request.data.get("node_ids")
-        advanced_settings = request.data.get("advanced_settings")
-        graph = request.data.get("graph")  # Graph type is a global setting.
-
-        # Call the new orchestrator utility function.
-        search_results = utils.get_graph_advanced(
-            node_ids,
-            advanced_settings,
-            graph,
-            include_inter_node_edges,
+        results = graph_service.find_shortest_paths(
+            node_ids=data["node_ids"],
+            edge_direction=data.get("edge_direction", "ANY"),
         )
-        return JsonResponse(search_results, safe=False)
-    else:
-        # Handle standard request with global settings
-        node_ids = request.data.get("node_ids")
-        depth = request.data.get("depth")
-        edge_direction = request.data.get("edge_direction")
-        allowed_collections = request.data.get("allowed_collections")
-        graph = request.data.get("graph")
-        edge_filters = request.data.get("edge_filters", None)
+        return Response(results)
 
-        search_results = utils.get_graph(
-            node_ids,
-            depth,
-            edge_direction,
-            allowed_collections,
-            graph,
-            edge_filters,
-            include_inter_node_edges,
+
+class SearchView(APIView):
+    """Search for items by term."""
+
+    def post(self, request):
+        serializer = SearchRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        results = search_service.search_by_term(
+            search_term=data["search_term"],
+            search_fields=data["search_fields"],
+            graph=data.get("db", "ontologies"),
         )
-        return JsonResponse(search_results, safe=False)
+        return Response(results)
 
 
-@api_view(["POST"])
-def get_shortest_paths(request):
-    node_ids = request.data.get("node_ids")
-    edge_direction = request.data.get("edge_direction")
+class GetAllView(APIView):
+    """Get all documents from all collections."""
 
-    search_results = utils.get_shortest_paths(
-        node_ids,
-        edge_direction,
-    )
-    return JsonResponse(search_results, safe=False)
+    def get(self, request):
+        results = search_service.get_all_documents()
+        return Response(results)
 
 
-@api_view(["GET"])
-def get_all(request):
-    search_results = utils.get_all()
-    return JsonResponse(search_results, safe=False)
+class AQLQueryView(APIView):
+    """Execute a raw AQL query."""
+
+    def post(self, request):
+        serializer = AQLQuerySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            results = search_service.run_aql_query(serializer.validated_data["query"])
+            return Response(results)
+        except Exception as e:
+            logger.exception("Error running AQL query")
+            return Response(
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
-@api_view(["POST"])
-def run_aql_query(request):
-    # Extract the AQL query from the request body
-    query = request.data.get("query")
-    if not query:
-        return JsonResponse({"error": "No query provided"}, status=400)
+class SunburstView(APIView):
+    """Get sunburst visualization data."""
 
-    # Run the AQL query
-    try:
-        search_results = utils.run_aql_query(query)
-        return JsonResponse(search_results, safe=False)
-    except Exception as e:
-        logger.exception("Error running AQL query")
-        return JsonResponse({"error": str(e)}, status=500)
+    def post(self, request):
+        serializer = SunburstRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        graph = data.get("graph", "ontologies")
+        parent_id = data.get("parent_id")
+
+        try:
+            if graph == "phenotypes":
+                results = sunburst_service.get_phenotypes_sunburst(parent_id)
+            else:
+                results = sunburst_service.get_ontologies_sunburst(parent_id)
+
+            return Response(results)
+
+        except SunburstServiceError as e:
+            error_response = {"error": str(e)}
+            if e.db_error:
+                error_response["db_error"] = e.db_error
+            return Response(error_response, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@api_view(["POST"])
-def get_sunburst(request):
-    parent_id = request.data.get("parent_id", None)
-    graph = request.data.get("graph")
+class EdgeFilterOptionsView(APIView):
+    """Get unique values for edge attributes."""
 
-    if graph == "phenotypes":
-        return utils.get_phenotypes_sunburst(parent_id)
-    else:
-        return utils.get_ontologies_sunburst(parent_id)
+    def post(self, request):
+        serializer = EdgeFilterOptionsSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            results = document_service.get_edge_filter_options(
+                serializer.validated_data["fields"]
+            )
+            return Response(results)
+        except ValueError as e:
+            logger.warning("Invalid input for edge_filter_options: %s", e)
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception:
+            logger.exception("Error fetching edge filter options")
+            return Response(
+                {"error": "An internal server error occurred."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 
-@api_view(["POST"])
-def get_edge_filter_options(request):
-    """
-    Handles POST request to fetch unique values for specified edge attributes.
-    Constructs an HTTP response from data returned by utility function.
-    """
-    try:
-        data = request.data
-        fields_to_query = data.get("fields")
+class DocumentsView(APIView):
+    """Get document details by IDs."""
 
-        # Get data.
-        query_results = utils.query_edge_filter_options(fields_to_query)
+    def post(self, request):
+        serializer = DocumentsRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
 
-        # Create Response.
-        return JsonResponse(query_results, status=status.HTTP_200_OK)
-
-    except ValueError as e:
-        # Handle specific input errors raised by the utility.
-        logger.warning("Invalid input for edge_filter_options: %s", e)
-        return JsonResponse({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    except Exception as e:
-        # Handle all other errors.
-        logger.exception("Error fetching edge filter options")
-        return JsonResponse(
-            {"error": "An internal server error occurred."},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        results = document_service.get_documents(
+            document_ids=data["document_ids"],
+            graph_name=data.get("db", "ontologies"),
         )
-
-
-@api_view(["POST"])
-def get_documents(request):
-    graph = request.data.get("db")
-    document_ids = request.data.get("document_ids")
-    results = utils.get_documents(document_ids, graph)
-    return JsonResponse(results, safe=False)
+        return Response(results)
