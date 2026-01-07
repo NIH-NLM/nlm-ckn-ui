@@ -125,13 +125,59 @@ class SearchRequestSerializer(serializers.Serializer):
 
 
 class AQLQuerySerializer(serializers.Serializer):
-    """Serializer for raw AQL query requests."""
+    """
+    Serializer for raw AQL query requests.
+
+    Validates that queries are read-only by blocking write operations.
+
+    TODO: For defense-in-depth, this endpoint should also use a read-only
+    database user at the infrastructure level. See: arango_api/db.py
+    """
+
+    BLOCKED_OPERATIONS = [
+        "INSERT",
+        "UPDATE",
+        "REPLACE",
+        "REMOVE",
+        "UPSERT",
+        "CREATE",
+        "DROP",
+        "TRUNCATE",
+    ]
+
+    BLOCKED_PATTERNS = [
+        "_system",
+        "_users",
+        "_graphs",
+        "_queues",
+        "_jobs",
+        "_statistics",
+    ]
 
     query = serializers.CharField(
         required=True,
         min_length=1,
-        help_text="AQL query to execute",
+        help_text="AQL query to execute (read-only)",
     )
+
+    def validate_query(self, value):
+        """Validate that the query doesn't contain write operations."""
+        upper_query = value.upper()
+
+        for op in self.BLOCKED_OPERATIONS:
+            if op in upper_query:
+                raise serializers.ValidationError(
+                    f"Write operation '{op}' is not allowed. This endpoint only supports read-only queries."
+                )
+
+        lower_query = value.lower()
+        for pattern in self.BLOCKED_PATTERNS:
+            if pattern in lower_query:
+                raise serializers.ValidationError(
+                    f"Access to system collection '{pattern}' is not allowed."
+                )
+
+        return value
 
 
 class SunburstRequestSerializer(serializers.Serializer):
