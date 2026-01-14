@@ -127,27 +127,39 @@ mvp_directory=cell-kn-mvp-ui-$CELL_KN_MVP_UI_VERSION-$subdomain
 rm -rf ~/$mvp_directory
 git clone git@github.com:NIH-NLM/cell-kn-mvp-ui.git ~/$mvp_directory
 
-# Copy in the environment for the ArangoDB API, and update the
-# ArangoDB port
-cp .env ~/$mvp_directory/arango_api/.env
-sed -i \
-    "s/.*ARANGO_DB_HOST.*/ARANGO_DB_HOST=http:\/\/127.0.0.1:$port/" \
-    ~/$mvp_directory/arango_api/.env
-
 # Checkout the specified CELL KN MVP version
 pushd ~/$mvp_directory
 git checkout $CELL_KN_MVP_UI_VERSION
 
-# Install Python dependencies, and migrate
+# Install Python dependencies
 python3.13 -m venv .venv
 . .venv/bin/activate
 python -m pip install -r requirements.txt
+
+# Copy in the application environment, generate and set a secret key,
+# update the ArangoDB port, and set the ArangoDB password, which must
+# be set in the environment used to run this script
+cp ../../.env.production ~/$mvp_directory/.env
+secret_key=$(python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())")
+sed -i \
+    "s/your-secret-key-here/$secret_key/" \
+    ~/$mvp_directory/.env
+sed -i \
+    "s/your-arango-port-here/$port/" \
+    ~/$mvp_directory/.env
+sed -i \
+    "s/your-arango-password-here/$ARANGO_DB_PASSWORD/" \
+    ~/$mvp_directory/.env
+
+# Migrate Django database
 rm -f db.sqlite3
 python manage.py migrate
 
-# Install JavaScript dependencies, and build
+# Install JavaScript dependencies
 pushd react
 npm install
+
+# Build React application
 npm run build
 deactivate
 popd
@@ -155,7 +167,7 @@ popd
 # Update allowed hosts
 allowed_hosts="\"$subdomain.$domain\""
 sed -i \
-    "s/.*ALLOWED_HOSTS.*/ALLOWED_HOSTS = [$allowed_hosts]/" \
+    "s/ALLOWED_HOSTS.*/ALLOWED_HOSTS = [$allowed_hosts],/" \
     core/settings.py
 popd
 
