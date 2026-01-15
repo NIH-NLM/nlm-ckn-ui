@@ -127,6 +127,9 @@ mvp_directory=cell-kn-mvp-ui-$CELL_KN_MVP_UI_VERSION-$subdomain
 rm -rf ~/$mvp_directory
 git clone git@github.com:NIH-NLM/cell-kn-mvp-ui.git ~/$mvp_directory
 
+# Copy in the application environment
+cp ../../.env.production ~/$mvp_directory/.env
+
 # Checkout the specified CELL KN MVP version
 pushd ~/$mvp_directory
 git checkout $CELL_KN_MVP_UI_VERSION
@@ -136,20 +139,40 @@ python3.13 -m venv .venv
 . .venv/bin/activate
 python -m pip install -r requirements.txt
 
-# Copy in the application environment, generate and set a secret key,
-# update the ArangoDB port, and set the ArangoDB password, which must
-# be set in the environment used to run this script
-cp ../../.env.production ~/$mvp_directory/.env
-secret_key=$(python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())")
+# Generate and set a secret key, set allowed hosts, set the ArangoDB
+# port, and set the ArangoDB password, which must be set in the
+# environment used to run this script
+secret_key=$(python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key().replace('&', '\&'))")
+echo "secret_key: $secret_key"
+allowed_host="$subdomain.$domain"
+echo "allowed_host: $allowed_host"
 sed -i \
     "s/your-secret-key-here/$secret_key/" \
-    ~/$mvp_directory/.env
+    .env
+sed -i \
+    "s/your-allowed-host-here/$allowed_host/" \
+    .env
 sed -i \
     "s/your-arango-port-here/$port/" \
-    ~/$mvp_directory/.env
+    .env
 sed -i \
     "s/your-arango-password-here/$ARANGO_DB_PASSWORD/" \
-    ~/$mvp_directory/.env
+    .env
+
+# Ensure backwards compatibility
+last_conf="v1.0.2"
+curr_conf=$(printf "%s\\n%s\\n" "$last_conf" "$CONF" | sort -V | tail -n 1)
+if [[ "$curr_conf" == "$last_conf" ]]; then
+
+    # Copy in the application environment again
+    cp .env arango_api
+
+    # Update allowed hosts directly
+    sed -i \
+	"s/.*ALLOWED_HOSTS.*/ALLOWED_HOSTS = [\"$allowed_host\"]/" \
+	core/settings.py
+
+fi
 
 # Migrate Django database
 rm -f db.sqlite3
@@ -162,14 +185,8 @@ npm install
 # Build React application
 npm run build
 deactivate
-popd
-
-# Update allowed hosts
-allowed_hosts="\"$subdomain.$domain\""
-sed -i \
-    "s/ALLOWED_HOSTS.*/ALLOWED_HOSTS = [$allowed_hosts],/" \
-    core/settings.py
-popd
+popd  # into ~/$mvp_directory
+popd  # into script directory
 
 # Extract, rename, and symbolically link the ArangoDB archive
 pushd ~
@@ -181,10 +198,10 @@ tar -zxvf $archive
 mv arangodb $arangodb_file
 sudo ln -sf $arangodb_file $arangodb_link
 ARANGO_DB_PORT=$port ./start-arangodb.sh
-popd
+popd  # into script directory
 
-# Update, install, and enable the Apache site configuration
-cat 000-default.conf | \
+ # Update, install, and enable the Apache site configuration
+cat default-ssl.conf | \
     sed s/{subdomain}/$subdomain/ | \
     sed s/{domain}/$domain/ | \
     sed s/{server_admin}/$SERVER_ADMIN/ | \
