@@ -4,6 +4,9 @@ staticfiles_collected/
 __pycache__/
 db.sqlite3
 
+# ArangoDB data files 
+arango_api/tests/arangodb/
+
 # Environment
 *~
 .DS_Store
