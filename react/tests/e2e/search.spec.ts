@@ -67,13 +67,10 @@ test('searching "lung" navigates to lung page', async ({ page }) => {
 });
 
 // Exact matches should always appear first, even if other results have higher scores
-// (e.g., "lung lung" would score higher due to term frequency, but "lung" is exact)
-// The backend AQL query handles this sorting via BOOST on exact matches.
 test("exact match appears first when backend returns correctly sorted results", async ({ page }) => {
   await installErrorInstrumentation(page);
 
-  // Mock search to return results in correct order (as backend should return them)
-  // Backend uses BOOST(1000) for exact matches to ensure they appear first
+  // Mock search to return results in correct order 
   await page.route("**/arango_api/search/", async (route) => {
     const request = route.request();
     if (request.method() === "POST") {
@@ -81,7 +78,7 @@ test("exact match appears first when backend returns correctly sorted results", 
       const body = request.postDataJSON?.() as any;
       const term = body?.search_term?.toString()?.toLowerCase?.() ?? "";
       if (term === "lung") {
-        // Backend returns exact match first due to BOOST(1000) on exact matches
+        // Backend returns exact match first 
         return route.fulfill({
           status: 200,
           contentType: "application/json",
