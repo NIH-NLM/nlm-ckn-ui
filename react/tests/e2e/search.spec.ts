@@ -10,6 +10,10 @@ import { doc } from "./utils/testSeeds";
 // Mock: /arango_api/search/ returns TEST_DOCUMENT_COLLECTION/0001 labeled "lung".
 // Assert: hash route ends with #/collections/TEST_DOCUMENT_COLLECTION/0001.
 
+// TODO: Regression - exact matches should be sorted to the top of search results.
+// Currently, search results are not prioritizing exact matches over partial matches.
+// Add a test that verifies exact matches appear first in the results list.
+
 const LUNG_ID = "TEST_DOCUMENT_COLLECTION/0001";
 
 // Hash-only route helper
