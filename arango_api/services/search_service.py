@@ -110,7 +110,7 @@ def get_all_documents():
     for collection in collections:
         union_queries.append(
             f"""
-            FOR doc IN {collection["name"]}
+            FOR doc IN {collection}
                 RETURN doc
         """
         )

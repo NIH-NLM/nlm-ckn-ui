@@ -1,1 +1,0 @@
-{"version":31200,"tasks":{"createSystemCollectionsAndIndices":true,"createSystemStatisticsDBServer":true,"dropLegacyAnalyzersCollection":true,"renameReplicationApplierStateFiles":true,"upgradeArangoSearch0_1":true}}
