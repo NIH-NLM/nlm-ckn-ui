@@ -67,10 +67,12 @@ test('searching "lung" navigates to lung page', async ({ page }) => {
 });
 
 // Exact matches should always appear first, even if other results have higher scores
-test("exact match appears first when backend returns correctly sorted results", async ({ page }) => {
+test("exact match appears first when backend returns correctly sorted results", async ({
+  page,
+}) => {
   await installErrorInstrumentation(page);
 
-  // Mock search to return results in correct order 
+  // Mock search to return results in correct order
   await page.route("**/arango_api/search/", async (route) => {
     const request = route.request();
     if (request.method() === "POST") {
@@ -78,7 +80,7 @@ test("exact match appears first when backend returns correctly sorted results", 
       const body = request.postDataJSON?.() as any;
       const term = body?.search_term?.toString()?.toLowerCase?.() ?? "";
       if (term === "lung") {
-        // Backend returns exact match first 
+        // Backend returns exact match first
         return route.fulfill({
           status: 200,
           contentType: "application/json",
