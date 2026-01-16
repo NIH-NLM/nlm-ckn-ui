@@ -65,3 +65,51 @@ test('searching "lung" navigates to lung page', async ({ page }) => {
   // Assert navigation
   await expect(page).toHaveURL(new RegExp(`${expectedHashForDocument(LUNG_ID)}$`));
 });
+
+// Exact matches should always appear first, even if other results have higher scores
+test("exact match appears first when backend returns correctly sorted results", async ({
+  page,
+}) => {
+  await installErrorInstrumentation(page);
+
+  // Mock search to return results in correct order
+  await page.route("**/arango_api/search/", async (route) => {
+    const request = route.request();
+    if (request.method() === "POST") {
+      // biome-ignore lint/suspicious/noExplicitAny: mocking request body
+      const body = request.postDataJSON?.() as any;
+      const term = body?.search_term?.toString()?.toLowerCase?.() ?? "";
+      if (term === "lung") {
+        // Backend returns exact match first
+        return route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([
+            doc("0001", "lung"), // Exact match - boosted to top by backend
+            doc("0002", "lung lung"), // Higher term frequency but lower boost
+            doc("0003", "lung cancer"), // Partial match
+            doc("0004", "pulmonary lung disease"), // Partial match
+          ]),
+        });
+      }
+    }
+    return route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+  });
+
+  await page.goto("/");
+
+  const input = page.getByPlaceholder("Search NCKN...");
+  await expect(input).toBeVisible();
+  await input.fill("lung");
+
+  // Wait for results to appear
+  const resultItems = page.locator(".unified-search-results-list .result-item-row-link");
+  await expect(resultItems.first()).toBeVisible();
+
+  // The first result should be the exact match "lung"
+  const firstResultLabel = resultItems.first().locator(".item-label-area");
+  await expect(firstResultLabel).toHaveText("lung");
+
+  // Verify no errors occurred
+  expect(filterErrorsContaining(await getCollectedErrors(page), "split").length).toBe(0);
+});

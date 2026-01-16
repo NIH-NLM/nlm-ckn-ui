@@ -153,13 +153,28 @@ SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=False)
 CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=False)
 
 # ArangoDB settings
-ARANGO_DB_HOST = env("ARANGO_DB_HOST")
-ARANGO_DB_USER = env("ARANGO_DB_USER")
-ARANGO_DB_PASSWORD = env("ARANGO_DB_PASSWORD")
-ARANGO_DB_NAME_ONTOLOGIES = env("ARANGO_DB_NAME_ONTOLOGIES")
-ARANGO_DB_NAME_PHENOTYPES = env("ARANGO_DB_NAME_PHENOTYPES")
-GRAPH_NAME_ONTOLOGIES = env("GRAPH_NAME_ONTOLOGIES")
-GRAPH_NAME_PHENOTYPES = env("GRAPH_NAME_PHENOTYPES")
+# Test configuration uses separate port (8530) and database names to avoid conflicts
+# with development instance. Set ARANGO_TEST_MODE=true to use test configuration.
+ARANGO_TEST_MODE = env.bool("ARANGO_TEST_MODE", default=False)
+
+if ARANGO_TEST_MODE:
+    # Test configuration - uses port 8530 and "-Test" suffix databases
+    ARANGO_DB_HOST = env("ARANGO_TEST_HOST", default="http://127.0.0.1:8530")
+    ARANGO_DB_USER = env("ARANGO_DB_USER", default="root")
+    ARANGO_DB_PASSWORD = env("ARANGO_TEST_PASSWORD", default="test")
+    ARANGO_DB_NAME_ONTOLOGIES = "Cell-KN-Ontologies-Test"
+    ARANGO_DB_NAME_PHENOTYPES = "Cell-KN-Phenotypes-Test"
+    GRAPH_NAME_ONTOLOGIES = "ontologies"
+    GRAPH_NAME_PHENOTYPES = "phenotypes"
+else:
+    # Development/production configuration
+    ARANGO_DB_HOST = env("ARANGO_DB_HOST")
+    ARANGO_DB_USER = env("ARANGO_DB_USER")
+    ARANGO_DB_PASSWORD = env("ARANGO_DB_PASSWORD")
+    ARANGO_DB_NAME_ONTOLOGIES = env("ARANGO_DB_NAME_ONTOLOGIES")
+    ARANGO_DB_NAME_PHENOTYPES = env("ARANGO_DB_NAME_PHENOTYPES")
+    GRAPH_NAME_ONTOLOGIES = env("GRAPH_NAME_ONTOLOGIES")
+    GRAPH_NAME_PHENOTYPES = env("GRAPH_NAME_PHENOTYPES")
 
 # Logging configuration
 LOGGING = {

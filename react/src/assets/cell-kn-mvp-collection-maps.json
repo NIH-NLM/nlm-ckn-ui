@@ -128,7 +128,7 @@
       {
         "abbreviated_name": "BMC",
         "display_name": "Biomarker combination",
-        "color": "#e6194B",
+        "color": "#009988",
         "individual_labels": [
           {
             "field_to_use": "Markers",
