@@ -82,10 +82,11 @@ archive+=".tar.gz"
 # Assign the subdomain based on the specified configuration
 subdomain=$(echo $CONF | sed s/\\./-/g)
 
-# Disable the corresponding site
+# Disable the corresponding site, and remove it from available sites
 site=$subdomain-cell-kn-mvp.conf
 sudo a2dissite $site
 sleep 1
+sudo rm /etc/apache2/sites-available/$site
 
 # Find the port corresponding to the configuration
 pushd ~
