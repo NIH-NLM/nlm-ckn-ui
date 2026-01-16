@@ -28,7 +28,7 @@ def search_by_term(search_term, search_fields, graph):
     """
     db_connection, _ = get_db_and_graph(graph)
 
-    query_beginning = f"""
+    query_beginning = """
             LET lower_search_term = LOWER(@search_term)
             LET sortedDocs = (
                 FOR doc IN indexed
@@ -51,22 +51,20 @@ def search_by_term(search_term, search_fields, graph):
         )
     levenshtein_string_1 = levenshtein_string[0:-3] + ', "text_en_no_stem")'
 
-    # Exact match, boosted highest to appear first
-    exact_match_string = " OR "
-    for field in search_fields:
-        exact_match_string += (
-            f'BOOST(ANALYZER(doc.`{field}` == @search_term, "identity"), 1000.0) OR '
-        )
-    exact_match_string = exact_match_string[0:-3]
-
     # n-gram search for phrases
     n_gram_string = " OR "
     for field in search_fields:
         n_gram_string += f'ANALYZER(doc.`{field}` LIKE CONCAT("%", CONCAT(@search_term, "%")), "n-gram") OR '
     n_gram_string = n_gram_string[0:-3]
 
-    query_end = """
-                    SORT BM25(doc) DESC
+    # Build exact match check for sorting 
+    exact_match_conditions = " OR ".join(
+        f"LOWER(doc.`{field}`) == lower_search_term" for field in search_fields
+    )
+
+    query_end = f"""
+                    LET is_exact_match = ({exact_match_conditions})
+                    SORT is_exact_match DESC, BM25(doc) DESC
                     RETURN doc
             )
 
@@ -76,7 +74,6 @@ def search_by_term(search_term, search_fields, graph):
         query_beginning
         + levenshtein_string_0
         + levenshtein_string_1
-        + exact_match_string
         + n_gram_string
         + query_end
     )
