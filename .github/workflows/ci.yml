@@ -63,9 +63,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # Use the PR head ref for PRs so we can push back to it
           ref: ${{ github.head_ref || github.ref }}
-          # Need fetch-depth > 1 to check previous commit message
           fetch-depth: 2
 
       - name: Check if last commit was auto-fix
@@ -120,7 +118,7 @@ jobs:
             echo "No changes needed"
           fi
 
-      - name: Run Biome check (verify)
+      - name: Run Biome check
         if: steps.check-autofix.outputs.skip != 'true'
         run: npm run check
 
@@ -196,7 +194,6 @@ jobs:
         if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: npm ci
 
-      # Cache Playwright browsers separately 
       - name: Get Playwright version
         id: playwright-version
         run: echo "version=$(npm list @playwright/test --json | jq -r '.dependencies["@playwright/test"].version')" >> $GITHUB_OUTPUT
@@ -232,7 +229,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-      - name: Upload test results (screenshots/traces)
+      - name: Upload test results
         if: failure()
         uses: actions/upload-artifact@v4
         with:
