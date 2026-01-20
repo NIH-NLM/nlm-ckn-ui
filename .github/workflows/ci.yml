@@ -1,0 +1,295 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Cancel in-progress runs for the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  # Detect which parts of the codebase changed to skip unnecessary tests
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
+      e2e: ${{ steps.filter.outputs.e2e }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'react/src/**'
+              - 'react/public/**'
+              - 'react/package.json'
+              - 'react/package-lock.json'
+              - 'react/biome.json'
+              - 'react/jsconfig.json'
+            backend:
+              - 'api/**'
+              - 'core/**'
+              - 'arango_api/**'
+              - 'requirements.txt'
+              - 'manage.py'
+            e2e:
+              - 'react/src/**'
+              - 'react/public/**'
+              - 'react/tests/e2e/**'
+              - 'react/playwright.config.ts'
+              - 'api/**'
+              - 'core/**'
+              - 'arango_api/**'
+
+  # Frontend linting with Biome - auto-fixes and pushes on PRs
+  frontend-lint:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: react
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Use the PR head ref for PRs so we can push back to it
+          ref: ${{ github.head_ref || github.ref }}
+          # Need fetch-depth > 1 to check previous commit message
+          fetch-depth: 2
+
+      - name: Check if last commit was auto-fix
+        id: check-autofix
+        run: |
+          if git log -1 --pretty=%B | grep -q "\[biome auto-fix\]"; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+        working-directory: .
+
+      - name: Setup Node.js
+        if: steps.check-autofix.outputs.skip != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'react/package-lock.json'
+
+      - name: Cache node_modules
+        if: steps.check-autofix.outputs.skip != 'true'
+        uses: actions/cache@v4
+        id: cache-node-modules
+        with:
+          path: react/node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('react/package-lock.json') }}
+
+      - name: Install dependencies
+        if: steps.check-autofix.outputs.skip != 'true' && steps.cache-node-modules.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - name: Run Biome auto-fix
+        if: steps.check-autofix.outputs.skip != 'true'
+        run: npm run fix
+        continue-on-error: true
+
+      - name: Check for changes and push
+        if: steps.check-autofix.outputs.skip != 'true' && github.event_name == 'pull_request'
+        run: |
+          cd ..
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if [[ -n $(git status --porcelain react/) ]]; then
+            echo "Biome made changes, committing and pushing..."
+            git add react/
+            git commit -m "style: auto-fix linting issues [biome auto-fix]"
+            git push
+            echo "Changes pushed. The workflow will re-run on the new commit."
+          else
+            echo "No changes needed"
+          fi
+
+      - name: Run Biome check (verify)
+        if: steps.check-autofix.outputs.skip != 'true'
+        run: npm run check
+
+  # Frontend unit tests with Jest
+  frontend-unit-tests:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: react
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'react/package-lock.json'
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        id: cache-node-modules
+        with:
+          path: react/node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('react/package-lock.json') }}
+
+      - name: Install dependencies
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - name: Run Jest tests
+        run: npm test -- --watchAll=false --coverage --ci
+        env:
+          CI: true
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jest-coverage
+          path: react/coverage
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # Frontend E2E tests with Playwright
+  frontend-e2e:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.e2e == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: react
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'react/package-lock.json'
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        id: cache-node-modules
+        with:
+          path: react/node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('react/package-lock.json') }}
+
+      - name: Install dependencies
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        run: npm ci
+
+      # Cache Playwright browsers separately 
+      - name: Get Playwright version
+        id: playwright-version
+        run: echo "version=$(npm list @playwright/test --json | jq -r '.dependencies["@playwright/test"].version')" >> $GITHUB_OUTPUT
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: cache-playwright
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
+
+      - name: Install Playwright browsers
+        if: steps.cache-playwright.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Playwright system dependencies
+        if: steps.cache-playwright.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Run Playwright E2E tests
+        run: npm run test:e2e
+        env:
+          CI: true
+          PORT: '3000'
+          BROWSER: 'none'
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: react/playwright-report
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload test results (screenshots/traces)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: react/test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # Backend tests with Django
+  backend-tests:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Django tests
+        run: python manage.py test --verbosity=2
+        env:
+          DJANGO_SETTINGS_MODULE: core.settings
+
+  # Final status check - this job is used for branch protection rules
+  # It will pass only if all required checks pass 
+  ci-passed:
+    runs-on: ubuntu-latest
+    needs:
+      - detect-changes
+      - frontend-lint
+      - frontend-unit-tests
+      - frontend-e2e
+      - backend-tests
+    if: always()
+    steps:
+      - name: Check all jobs passed
+        run: |
+          echo "Frontend lint: ${{ needs.frontend-lint.result }}"
+          echo "Frontend unit tests: ${{ needs.frontend-unit-tests.result }}"
+          echo "Frontend E2E: ${{ needs.frontend-e2e.result }}"
+          echo "Backend tests: ${{ needs.backend-tests.result }}"
+
+          # Check if any job failed (skipped jobs are OK due to path filtering)
+          if [[ "${{ needs.frontend-lint.result }}" == "failure" ]] || \
+             [[ "${{ needs.frontend-unit-tests.result }}" == "failure" ]] || \
+             [[ "${{ needs.frontend-e2e.result }}" == "failure" ]] || \
+             [[ "${{ needs.backend-tests.result }}" == "failure" ]]; then
+            echo "One or more jobs failed"
+            exit 1
+          fi
+
+          echo "All checks passed"
