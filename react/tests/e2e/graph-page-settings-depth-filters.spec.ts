@@ -113,7 +113,7 @@ test("Graph settings: depth, direction, collections, edge filters", async ({ pag
   await filtersTab.click();
 
   // Collections: disable OTHER_COLL
-  const collectionsInput = page.locator('input[placeholder="Search Collections..."]');
+  const collectionsInput = page.locator('input[placeholder="Filter by Collections..."]');
   await expect(collectionsInput).toBeVisible();
   await collectionsInput.click();
   const otherItem = page.locator("#tab-panel-collections .dropdown-list .dropdown-item-btn", {
@@ -122,7 +122,7 @@ test("Graph settings: depth, direction, collections, edge filters", async ({ pag
   await otherItem.click();
 
   // Edge filters: Label=has_child only
-  const labelFilterInput = page.locator('input[placeholder="Search Label..."]');
+  const labelFilterInput = page.locator('input[placeholder="Filter by Label..."]');
   await expect(labelFilterInput).toBeVisible();
   await labelFilterInput.click();
   const hasChildItem = page.locator("#tab-panel-collections .dropdown-list .dropdown-item-btn", {

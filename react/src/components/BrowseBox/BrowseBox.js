@@ -1,5 +1,6 @@
 import collMaps from "assets/cell-kn-mvp-collection-maps.json";
 import ListDocuments from "components/ListDocuments";
+import { DEFAULT_GRAPH_TYPE } from "constants/index";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { fetchCollectionDocuments, fetchCollections } from "services";
@@ -11,7 +12,7 @@ const ITEMS_PER_LOAD = 50;
 const BrowseBox = () => {
   const { coll: currentCollectionFromUrl } = useParams();
   const currentCollection = currentCollectionFromUrl;
-  const graphType = "phenotypes";
+  const graphType = DEFAULT_GRAPH_TYPE;
 
   const [collections, setCollections] = useState([]);
   const [documentList, setDocumentList] = useState([]);

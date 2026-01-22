@@ -1,7 +1,8 @@
 import { createContext, useState } from "react";
+import { DEFAULT_GRAPH_TYPE } from "../constants";
 
 const defaultGraphContextValue = {
-  graphType: "phenotypes",
+  graphType: DEFAULT_GRAPH_TYPE,
   setGraphType: () => {
     // Default no-op function
     console.warn("Attempted to set graph outside of GraphProvider");
@@ -10,7 +11,7 @@ const defaultGraphContextValue = {
 
 // Create a Provider Component
 export const GraphProvider = ({ children }) => {
-  const [graphType, setGraphType] = useState("phenotypes");
+  const [graphType, setGraphType] = useState(DEFAULT_GRAPH_TYPE);
   const providerValue = {
     graphType,
     setGraphType,
