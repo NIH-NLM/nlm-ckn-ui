@@ -13,8 +13,8 @@
   margin-bottom: var(--spacing-sm);
 }
 
-.document-details-content-box {
-  max-width: 100%;
+.content-box.document-details-content-box {
+  max-width: none;
   align-items: stretch;
   display: flex;
   flex-direction: column;
@@ -681,8 +681,8 @@ a.document-popup-button {
     min-height: 600px;
   }
 
-  .document-details-content-box {
-    max-width: 95%;
+  .content-box.document-details-content-box {
+    max-width: none;
   }
 
   /* Collections page: Side-by-side layout */
