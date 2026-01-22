@@ -67,7 +67,7 @@ const FilterableDropdown = ({
       <input
         type="text"
         className="dropdown-input"
-        placeholder={`Search ${label}...`}
+        placeholder={`Filter by ${label}...`}
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
         onFocus={() => setIsOpen(true)}
