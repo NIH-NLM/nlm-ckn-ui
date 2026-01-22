@@ -1,3 +1,4 @@
+import { PHENOTYPES_ENABLED } from "constants/index";
 import { memo } from "react";
 
 /**
@@ -112,21 +113,23 @@ const GeneralSettingsPanel = ({
         </div>
       </div>
 
-      <div className="option-group labels-toggle-container">
-        <h3 className="group-label">Graph Source:</h3>
-        <div className="labels-toggle graph-source-toggle">
-          Evidence
-          <label className="switch">
-            <input
-              type="checkbox"
-              checked={settings.graphType === "ontologies"}
-              onChange={onGraphToggle}
-            />
-            <span className="slider round" />
-          </label>
-          Knowledge
+      {PHENOTYPES_ENABLED && (
+        <div className="option-group labels-toggle-container">
+          <h3 className="group-label">Graph Source:</h3>
+          <div className="labels-toggle graph-source-toggle">
+            Evidence
+            <label className="switch">
+              <input
+                type="checkbox"
+                checked={settings.graphType === "ontologies"}
+                onChange={onGraphToggle}
+              />
+              <span className="slider round" />
+            </label>
+            Knowledge
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="option-group">
         <button
