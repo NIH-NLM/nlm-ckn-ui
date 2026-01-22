@@ -88,7 +88,7 @@
       {
         "abbreviated_name": "BGS",
         "display_name": "Binary gene set",
-        "color": "#e6194B",
+        "color": "#FF6B6B",
         "individual_labels": [
           {
             "field_to_use": "Binary_genes",
@@ -128,7 +128,7 @@
       {
         "abbreviated_name": "BMC",
         "display_name": "Biomarker combination",
-        "color": "#009988",
+        "color": "#e6194B",
         "individual_labels": [
           {
             "field_to_use": "Markers",
