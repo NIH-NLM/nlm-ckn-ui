@@ -22,7 +22,7 @@
         ],
         "individual_urls": [
           {
-            "individual_url": "http://cell-kn-mvp.org/#/collections/<FIELD_TO_USE>",
+            "individual_url": "https://cell-kn-mvp.org/#/collections/<FIELD_TO_USE>",
             "field_to_use": "_id",
             "to_be_replaced": "",
             "replace_with": "",
@@ -105,7 +105,7 @@
         ],
         "individual_urls": [
           {
-            "individual_url": "http://cell-kn-mvp.org/#/collections/<FIELD_TO_USE>",
+            "individual_url": "https://cell-kn-mvp.org/#/collections/<FIELD_TO_USE>",
             "field_to_use": "_id",
             "to_be_replaced": "",
             "replace_with": "",
@@ -145,7 +145,7 @@
         ],
         "individual_urls": [
           {
-            "individual_url": "http://cell-kn-mvp.org/#/collections/<FIELD_TO_USE>",
+            "individual_url": "https://cell-kn-mvp.org/#/collections/<FIELD_TO_USE>",
             "field_to_use": "_id",
             "to_be_replaced": "",
             "replace_with": "",
@@ -395,7 +395,7 @@
         ],
         "individual_urls": [
           {
-            "individual_url": "http://cell-kn-mvp.org/#/collections/<FIELD_TO_USE>",
+            "individual_url": "https://cell-kn-mvp.org/#/collections/<FIELD_TO_USE>",
             "field_to_use": "_id",
             "to_be_replaced": "",
             "replace_with": "",
