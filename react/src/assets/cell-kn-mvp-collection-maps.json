@@ -428,6 +428,12 @@
             "field_to_use": ""
           },
           {
+            "field_to_display": "F_beta_confidence_score",
+            "display_field_as": "F_beta_confidence_score",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
             "field_to_display": "Binary_genes",
             "display_field_as": "Binary_genes",
             "field_url": "",
