@@ -495,8 +495,8 @@
         ],
         "individual_urls": [
           {
-            "individual_url": "https://<FIELD_TO_USE>",
-            "field_to_use": "Link_to_CELLxGENE_dataset",
+            "individual_url": "https://cellxgene.cziscience.com/e/<FIELD_TO_USE>.cxg/",
+            "field_to_use": "Dataset_version_ID",
             "to_be_replaced": "",
             "replace_with": "",
             "make_lower_case": false
