@@ -182,6 +182,10 @@ if [ ! -f ".built" ] && [ $run_results == 1 ] \
     git stash
     git checkout $CELL_KN_MVP_ETL_RESULTS_VERSION
 
+    # Remove existing tuples
+    rm data/tuples/*.json
+    rm data/tumpes/summaries/*.json
+
     # Activate the Python environment, fetch external data, and write
     # all tuples. Note that the local .zshenv contains E-Utilities
     # credentials
@@ -192,7 +196,8 @@ if [ ! -f ".built" ] && [ $run_results == 1 ] \
     python NSForestResultsTupleWriter.py
     python AuthorToClResultsTupleWriter.py
     python ExternalApiResultsTupleWriter.py
-    python AnnotationResultsTupleWriter.py
+    # TODO: Remove when confirmed
+    # python AnnotationResultsTupleWriter.py
     popd
 
     # Make a clean package, then build the results and phenotype
