@@ -92,6 +92,7 @@ export const expandNode = createAsyncThunk(
     const expansionData = await fetchNodeExpansion(
       nodeIdToExpand,
       settings.graphType,
+      settings.allowedCollections,
       settings.includeInterNodeEdges ?? true,
     );
     return {
