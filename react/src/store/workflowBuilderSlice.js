@@ -1,0 +1,539 @@
+/**
+ * Redux slice for the Workflow Builder feature.
+ *
+ * Manages multi-phase workflow state including:
+ * - Workflow configuration (phases, settings)
+ * - Phase execution and results
+ * - Loading and saving presets
+ */
+
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createEmptyPhase, GRAPH_STATUS } from "../constants";
+import { fetchGraphData, fetchNodeDetailsByIds } from "../services";
+import { performSetOperation } from "../utils";
+
+/**
+ * Generates a unique ID for workflows and phases.
+ * @returns {string} A unique identifier.
+ */
+const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+
+/**
+ * Filters nodes from a phase result based on the filter type.
+ * @param {Array} nodes - Nodes from the phase result.
+ * @param {string} filter - Filter type: "all", "leafNodes", or "originNodes".
+ * @param {Array} originNodeIds - IDs of the origin nodes for the phase.
+ * @returns {Array<string>} Filtered node IDs.
+ */
+const filterNodesForNextPhase = (nodes, filter, originNodeIds = []) => {
+  if (!nodes || nodes.length === 0) return [];
+
+  switch (filter) {
+    case "leafNodes": {
+      // Leaf nodes are those that have no outgoing edges in the result
+      // For simplicity, we'll consider nodes that aren't origin nodes as leaves
+      const originSet = new Set(originNodeIds);
+      return nodes.filter((n) => !originSet.has(n._id)).map((n) => n._id);
+    }
+    case "originNodes": {
+      // Return only the origin nodes that appear in the result
+      const resultIds = new Set(nodes.map((n) => n._id));
+      return originNodeIds.filter((id) => resultIds.has(id));
+    }
+    default:
+      // "all" and any other value: return all node IDs
+      return nodes.map((n) => n._id);
+  }
+};
+
+/**
+ * Async thunk for executing a single phase.
+ * Takes phase config and optionally uses previous phase results for origin nodes.
+ */
+export const executePhase = createAsyncThunk(
+  "workflowBuilder/executePhase",
+  async ({ phaseIndex }, { getState }) => {
+    const { phases, phaseResults } = getState().workflowBuilder;
+    const phase = phases[phaseIndex];
+
+    if (!phase) {
+      throw new Error(`Phase at index ${phaseIndex} not found`);
+    }
+
+    // Determine origin node IDs
+    let originNodeIds;
+    if (phase.originSource === "previousPhase" && phase.previousPhaseId) {
+      const prevResult = phaseResults[phase.previousPhaseId];
+      if (!prevResult || !prevResult.nodes) {
+        throw new Error("Previous phase has no results. Execute it first.");
+      }
+      // Find the previous phase to get its origin node IDs for filtering
+      const prevPhase = phases.find((p) => p.id === phase.previousPhaseId);
+      const prevOriginIds = prevPhase?.originNodeIds || [];
+      originNodeIds = filterNodesForNextPhase(prevResult.nodes, phase.originFilter, prevOriginIds);
+    } else {
+      originNodeIds = phase.originNodeIds;
+    }
+
+    if (!originNodeIds || originNodeIds.length === 0) {
+      throw new Error("No origin nodes specified for this phase.");
+    }
+
+    // Get all available collections from graph state for the advanced settings
+    const graphState = getState().graph?.present;
+    const allCollections = graphState?.settings?.allCollections || [];
+    const availableCollections = graphState?.settings?.availableCollections || allCollections;
+
+    // Build per-node advanced settings
+    // Start with shared settings, then override with per-node settings if present
+    const advancedSettings = {};
+    const perNodeSettings = phase.perNodeSettings || {};
+
+    for (const nodeId of originNodeIds) {
+      // Get per-node overrides for this specific node
+      const nodeOverrides = perNodeSettings[nodeId] || {};
+
+      advancedSettings[nodeId] = {
+        // Use per-node override if available, otherwise use shared phase settings
+        depth: nodeOverrides.depth ?? phase.settings.depth,
+        edgeDirection: nodeOverrides.edgeDirection ?? phase.settings.edgeDirection,
+        setOperation: phase.settings.setOperation || "Union",
+        allowedCollections: nodeOverrides.allowedCollections ?? phase.settings.allowedCollections,
+        availableCollections,
+        allCollections,
+        nodeFontSize: 12,
+        edgeFontSize: 8,
+        nodeLimit: 5000,
+        labelStates: {
+          "collection-label": false,
+          "link-source": false,
+          "link-label": true,
+          "node-label": true,
+        },
+        findShortestPaths: false,
+        useFocusNodes: phase.settings.useFocusNodes ?? true,
+        collapseOnStart: phase.settings.collapseLeafNodes ?? false,
+        graphType: phase.settings.graphType,
+        includeInterNodeEdges: phase.settings.includeInterNodeEdges ?? true,
+        edgeFilters: nodeOverrides.edgeFilters ?? phase.settings.edgeFilters ?? { Label: [], Source: [] },
+        lastAppliedOriginNodeIds: [],
+        lastAppliedPerNodeSettings: null,
+      };
+    }
+
+    // Build params for the graph API using advancedSettings format
+    const params = {
+      nodeIds: originNodeIds,
+      advancedSettings,
+      graphType: phase.settings.graphType,
+      includeInterNodeEdges: phase.settings.includeInterNodeEdges ?? true,
+    };
+
+    // Fetch the raw data from API
+    const rawData = await fetchGraphData(params);
+
+    // The API returns { nodeId: { nodes: [], links: [] }, ... } for each origin node
+    // We need to merge these based on the set operation
+    const graphsArray = Object.values(rawData).map((data) => ({
+      nodes: data.nodes || [],
+      links: data.links || [],
+    }));
+
+    // Apply set operation to merge results
+    const mergedResult = performSetOperation(graphsArray, phase.settings.setOperation || "Union");
+
+    return {
+      phaseId: phase.id,
+      phaseIndex,
+      result: mergedResult,
+      originNodeIds, // Store which nodes were actually used
+    };
+  },
+);
+
+/**
+ * Async thunk for fetching node details (for display names).
+ */
+export const fetchNodeDetails = createAsyncThunk(
+  "workflowBuilder/fetchNodeDetails",
+  async ({ nodeIds, graphType = "ontologies" }, { getState }) => {
+    const { nodeDetails } = getState().workflowBuilder;
+    // Only fetch nodes we don't already have
+    const missingIds = nodeIds.filter((id) => !nodeDetails[id]);
+    if (missingIds.length === 0) {
+      return {};
+    }
+    const details = await fetchNodeDetailsByIds(missingIds, graphType);
+    // Convert array to map keyed by _id
+    const detailsMap = {};
+    for (const node of details) {
+      detailsMap[node._id] = node;
+    }
+    return detailsMap;
+  },
+);
+
+/**
+ * Async thunk for executing all phases in sequence.
+ */
+export const executeWorkflow = createAsyncThunk(
+  "workflowBuilder/executeWorkflow",
+  async (_, { getState, dispatch }) => {
+    const { phases } = getState().workflowBuilder;
+    const results = {};
+
+    for (let i = 0; i < phases.length; i++) {
+      const action = await dispatch(executePhase({ phaseIndex: i }));
+      if (executePhase.rejected.match(action)) {
+        throw new Error(`Phase ${i + 1} failed: ${action.error.message}`);
+      }
+      results[phases[i].id] = action.payload.result;
+    }
+
+    return results;
+  },
+);
+
+// Initial state
+const initialState = {
+  // Workflow metadata
+  workflowId: null,
+  workflowName: "",
+
+  // Phases configuration
+  phases: [createEmptyPhase(0)],
+
+  // Execution results keyed by phase ID
+  phaseResults: {},
+
+  // Node details cache (nodeId -> node object with label, etc.)
+  nodeDetails: {},
+
+  // Currently active phase (for display)
+  activePhaseId: null,
+
+  // The graph currently being displayed (from any phase)
+  activeGraph: null,
+
+  // Status tracking
+  status: GRAPH_STATUS.IDLE,
+  executingPhaseId: null,
+  error: null,
+
+  // UI state - show preset selector until user picks something
+  showPresetSelector: true,
+};
+
+const workflowBuilderSlice = createSlice({
+  name: "workflowBuilder",
+  initialState,
+  reducers: {
+    /**
+     * Initialize a new empty workflow.
+     */
+    initializeWorkflow: (state) => {
+      state.workflowId = generateId();
+      state.workflowName = "";
+      state.phases = [createEmptyPhase(0)];
+      state.phaseResults = {};
+      state.nodeDetails = {};
+      state.activePhaseId = null;
+      state.activeGraph = null;
+      state.status = GRAPH_STATUS.IDLE;
+      state.error = null;
+      state.showPresetSelector = false; // Hide presets after starting
+    },
+
+    /**
+     * Load a workflow (from preset or URL).
+     */
+    loadWorkflow: (state, action) => {
+      const workflow = action.payload;
+      state.workflowId = workflow.id || generateId();
+      state.workflowName = workflow.name || "";
+      // Deep clone phases to avoid mutation issues
+      state.phases = JSON.parse(JSON.stringify(workflow.phases || [createEmptyPhase(0)]));
+      state.phaseResults = {};
+      state.activePhaseId = null;
+      state.activeGraph = null;
+      state.status = GRAPH_STATUS.IDLE;
+      state.error = null;
+      state.showPresetSelector = false; // Hide presets after loading
+    },
+
+    /**
+     * Update workflow name.
+     */
+    setWorkflowName: (state, action) => {
+      state.workflowName = action.payload;
+    },
+
+    /**
+     * Add a new phase.
+     */
+    addPhase: (state) => {
+      const newPhase = createEmptyPhase(state.phases.length);
+      // Link to previous phase by default
+      if (state.phases.length > 0) {
+        newPhase.previousPhaseId = state.phases[state.phases.length - 1].id;
+      }
+      state.phases.push(newPhase);
+    },
+
+    /**
+     * Remove a phase by ID.
+     */
+    removePhase: (state, action) => {
+      const phaseId = action.payload;
+      const phaseIndex = state.phases.findIndex((p) => p.id === phaseId);
+      if (phaseIndex > 0) {
+        // Don't allow removing the first phase
+        // Update subsequent phases that reference this one
+        const removedPhaseId = state.phases[phaseIndex].id;
+        state.phases.splice(phaseIndex, 1);
+
+        // Fix references in phases that pointed to the removed phase
+        for (const phase of state.phases) {
+          if (phase.previousPhaseId === removedPhaseId) {
+            // Point to the phase before the removed one
+            phase.previousPhaseId = phaseIndex > 0 ? state.phases[phaseIndex - 1]?.id : null;
+          }
+        }
+
+        // Clean up results for removed phase
+        delete state.phaseResults[phaseId];
+      }
+    },
+
+    /**
+     * Update a phase's configuration.
+     */
+    updatePhase: (state, action) => {
+      const { phaseId, updates } = action.payload;
+      const phase = state.phases.find((p) => p.id === phaseId);
+      if (phase) {
+        Object.assign(phase, updates);
+        // Clear result when phase config changes
+        phase.result = null;
+        delete state.phaseResults[phaseId];
+      }
+    },
+
+    /**
+     * Update a phase's settings.
+     */
+    updatePhaseSettings: (state, action) => {
+      const { phaseId, setting, value } = action.payload;
+      const phase = state.phases.find((p) => p.id === phaseId);
+      if (phase) {
+        phase.settings[setting] = value;
+        // Clear result when settings change
+        phase.result = null;
+        delete state.phaseResults[phaseId];
+      }
+    },
+
+    /**
+     * Set origin nodes for a phase.
+     */
+    setPhaseOriginNodes: (state, action) => {
+      const { phaseId, nodeIds } = action.payload;
+      const phase = state.phases.find((p) => p.id === phaseId);
+      if (phase) {
+        phase.originNodeIds = nodeIds;
+        phase.result = null;
+        delete state.phaseResults[phaseId];
+      }
+    },
+
+    /**
+     * Add an origin node to a phase.
+     */
+    addPhaseOriginNode: (state, action) => {
+      const { phaseId, nodeId } = action.payload;
+      const phase = state.phases.find((p) => p.id === phaseId);
+      if (phase && !phase.originNodeIds.includes(nodeId)) {
+        phase.originNodeIds.push(nodeId);
+        phase.result = null;
+        delete state.phaseResults[phaseId];
+      }
+    },
+
+    /**
+     * Remove an origin node from a phase.
+     */
+    removePhaseOriginNode: (state, action) => {
+      const { phaseId, nodeId } = action.payload;
+      const phase = state.phases.find((p) => p.id === phaseId);
+      if (phase) {
+        phase.originNodeIds = phase.originNodeIds.filter((id) => id !== nodeId);
+        // Also remove per-node settings for this node
+        if (phase.perNodeSettings) {
+          delete phase.perNodeSettings[nodeId];
+        }
+        phase.result = null;
+        delete state.phaseResults[phaseId];
+      }
+    },
+
+    /**
+     * Toggle advanced (per-node) settings visibility for a phase.
+     */
+    toggleAdvancedSettings: (state, action) => {
+      const { phaseId } = action.payload;
+      const phase = state.phases.find((p) => p.id === phaseId);
+      if (phase) {
+        phase.showAdvancedSettings = !phase.showAdvancedSettings;
+        // Initialize perNodeSettings if enabling and empty
+        if (phase.showAdvancedSettings && !phase.perNodeSettings) {
+          phase.perNodeSettings = {};
+        }
+      }
+    },
+
+    /**
+     * Update a per-node setting for a specific node.
+     */
+    updatePerNodeSetting: (state, action) => {
+      const { phaseId, nodeId, setting, value } = action.payload;
+      const phase = state.phases.find((p) => p.id === phaseId);
+      if (phase) {
+        if (!phase.perNodeSettings) {
+          phase.perNodeSettings = {};
+        }
+        if (!phase.perNodeSettings[nodeId]) {
+          phase.perNodeSettings[nodeId] = {};
+        }
+        phase.perNodeSettings[nodeId][setting] = value;
+        phase.result = null;
+        delete state.phaseResults[phaseId];
+      }
+    },
+
+    /**
+     * Clear per-node settings (revert to shared settings).
+     */
+    clearPerNodeSettings: (state, action) => {
+      const { phaseId } = action.payload;
+      const phase = state.phases.find((p) => p.id === phaseId);
+      if (phase) {
+        phase.perNodeSettings = {};
+        phase.showAdvancedSettings = false;
+        phase.result = null;
+        delete state.phaseResults[phaseId];
+      }
+    },
+
+    /**
+     * Set the active graph to display.
+     */
+    setActiveGraph: (state, action) => {
+      const { phaseId, graph } = action.payload;
+      state.activePhaseId = phaseId;
+      state.activeGraph = graph;
+    },
+
+    /**
+     * Clear all results.
+     */
+    clearResults: (state) => {
+      state.phaseResults = {};
+      state.activeGraph = null;
+      state.activePhaseId = null;
+      for (const phase of state.phases) {
+        phase.result = null;
+      }
+    },
+
+    /**
+     * Show preset selector (to change workflow).
+     */
+    showPresets: (state) => {
+      state.showPresetSelector = true;
+    },
+
+    /**
+     * Clear error.
+     */
+    clearError: (state) => {
+      state.error = null;
+    },
+  },
+  extraReducers: (builder) => {
+    builder
+      // Execute single phase
+      .addCase(executePhase.pending, (state, action) => {
+        const { phaseIndex } = action.meta.arg;
+        state.status = GRAPH_STATUS.LOADING;
+        state.executingPhaseId = state.phases[phaseIndex]?.id;
+        state.error = null;
+      })
+      .addCase(executePhase.fulfilled, (state, action) => {
+        const { phaseId, result, originNodeIds } = action.payload;
+        state.status = GRAPH_STATUS.SUCCEEDED;
+        state.executingPhaseId = null;
+
+        // Store result
+        state.phaseResults[phaseId] = result;
+
+        // Update the phase with the result
+        const phase = state.phases.find((p) => p.id === phaseId);
+        if (phase) {
+          phase.result = result;
+          // Store the actual origin nodes used (important for chained phases)
+          phase._executedOriginNodeIds = originNodeIds;
+        }
+
+        // Set as active graph
+        state.activePhaseId = phaseId;
+        state.activeGraph = result;
+      })
+      .addCase(executePhase.rejected, (state, action) => {
+        state.status = GRAPH_STATUS.FAILED;
+        state.executingPhaseId = null;
+        state.error = action.error.message;
+      })
+
+      // Execute full workflow
+      .addCase(executeWorkflow.pending, (state) => {
+        state.status = GRAPH_STATUS.LOADING;
+        state.error = null;
+      })
+      .addCase(executeWorkflow.fulfilled, (state) => {
+        state.status = GRAPH_STATUS.SUCCEEDED;
+        // The last phase's result is set as active by the individual phase executions
+      })
+      .addCase(executeWorkflow.rejected, (state, action) => {
+        state.status = GRAPH_STATUS.FAILED;
+        state.error = action.error.message;
+      })
+
+      // Fetch node details
+      .addCase(fetchNodeDetails.fulfilled, (state, action) => {
+        // Merge new details into existing cache
+        Object.assign(state.nodeDetails, action.payload);
+      });
+  },
+});
+
+export const {
+  initializeWorkflow,
+  loadWorkflow,
+  setWorkflowName,
+  addPhase,
+  removePhase,
+  updatePhase,
+  updatePhaseSettings,
+  setPhaseOriginNodes,
+  addPhaseOriginNode,
+  removePhaseOriginNode,
+  toggleAdvancedSettings,
+  updatePerNodeSetting,
+  clearPerNodeSettings,
+  setActiveGraph,
+  clearResults,
+  showPresets,
+  clearError,
+} = workflowBuilderSlice.actions;
+
+export default workflowBuilderSlice.reducer;

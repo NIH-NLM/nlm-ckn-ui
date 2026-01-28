@@ -204,7 +204,7 @@ const graphSlice = createSlice({
       state.settings.allCollections = action.payload;
       state.lastActionType = "setAllCollections";
     },
-    // Updates user-selected edge filter for a specific field.
+    // Updates user-selected edge filter for a specific field (toggles single value).
     updateEdgeFilter: (state, action) => {
       const { field, value } = action.payload;
       const currentFilters = state.settings.edgeFilters[field] || [];
@@ -221,6 +221,11 @@ const graphSlice = createSlice({
       };
 
       state.lastActionType = "updateEdgeFilter";
+    },
+    // Sets edge filters directly (used by EdgeFilterSelector component).
+    setEdgeFilters: (state, action) => {
+      state.settings.edgeFilters = action.payload;
+      state.lastActionType = "setEdgeFilters";
     },
     // Updates a node's position, typically after user drag.
     updateNodePosition: (state, action) => {
@@ -404,6 +409,7 @@ export const {
   uncollapseNode,
   collapseNode,
   updateEdgeFilter,
+  setEdgeFilters,
   loadGraph,
   loadGraphFromJson,
 } = graphSlice.actions;

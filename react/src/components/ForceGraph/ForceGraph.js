@@ -58,6 +58,9 @@ const ForceGraph = ({
   const svgRef = useRef();
   const graphInstanceRef = useRef(null);
   const hasInitializedGraph = useRef(false);
+  // Track the node IDs we've rendered to prevent infinite loops when setGraphData triggers effect
+  // (simulation end dispatches setGraphData with same nodes, causing re-render loop)
+  const lastRenderedNodeIdsRef = useRef(null);
 
   // Selects origin node IDs from nodesSlice for NodesSlice driven graphs.
   const _nodesSliceOriginNodeIds = useSelector((state) => state.nodesSlice.originNodeIds);
@@ -333,6 +336,22 @@ const ForceGraph = ({
       for (const labelClass in settings.labelStates) {
         newGraphInstance.toggleLabels(settings.labelStates[labelClass], labelClass);
       }
+
+      // If graphData already exists when instance is created (e.g., from WorkflowBuilder),
+      // render it immediately since we won't get another action to trigger rendering.
+      // Use updateGraph (not restoreGraph) to run the simulation for fresh data.
+      if (graphData?.nodes?.length > 0) {
+        // Track rendered node IDs to prevent infinite loops from simulation end callback
+        lastRenderedNodeIdsRef.current = new Set(graphData.nodes.map((n) => n._id || n.id));
+        newGraphInstance.updateGraph({
+          newOriginNodeIds: originNodeIds,
+          newNodes: graphData.nodes,
+          newLinks: graphData.links,
+          resetData: true,
+          labelStates: settings.labelStates,
+        });
+        return; // Early return since we've handled rendering
+      }
     }
 
     if (isRestoring === true || lastActionType === "loadGraph") {
@@ -392,6 +411,44 @@ const ForceGraph = ({
 
           if (nodeToCenter) {
             dispatch(clearNodeToCenter());
+          }
+          break;
+        }
+        case "setGraphData": {
+          // Handle direct graph data setting (e.g., from WorkflowBuilder)
+          // Use graphInstanceRef.current since graphInstance may be stale if
+          // the instance was just created in this same effect run.
+          // Use updateGraph (not restoreGraph) to run the simulation for fresh data.
+          const currentInstance = graphInstanceRef.current;
+          if (currentInstance && graphData?.nodes?.length > 0) {
+            // Check if this is simulation-updated data (has x/y positions) vs fresh data
+            // Fresh data from API/workflow won't have positions set by simulation
+            const hasSimulationPositions = graphData.nodes.some(
+              (n) => typeof n.x === "number" && typeof n.y === "number" && !Number.isNaN(n.x),
+            );
+
+            // If nodes have simulation positions and IDs match what we rendered, skip
+            // This prevents infinite loop from simulation end callback
+            if (hasSimulationPositions) {
+              const currentNodeIds = new Set(graphData.nodes.map((n) => n._id || n.id));
+              const lastRendered = lastRenderedNodeIdsRef.current;
+              if (lastRendered && currentNodeIds.size === lastRendered.size) {
+                const allMatch = [...currentNodeIds].every((id) => lastRendered.has(id));
+                if (allMatch) {
+                  break; // Skip - this is simulation update for already rendered graph
+                }
+              }
+            }
+
+            // Track this render and update the graph
+            lastRenderedNodeIdsRef.current = new Set(graphData.nodes.map((n) => n._id || n.id));
+            currentInstance.updateGraph({
+              newOriginNodeIds: originNodeIds,
+              newNodes: graphData.nodes,
+              newLinks: graphData.links,
+              resetData: true,
+              labelStates: settings.labelStates,
+            });
           }
           break;
         }

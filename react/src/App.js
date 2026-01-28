@@ -15,6 +15,7 @@ import NotFoundPage from "./pages/NotFoundPage/NotFoundPage";
 import SearchPage from "./pages/SearchPage/SearchPage";
 import SunburstPage from "./pages/SunburstPage/SunburstPage";
 import TreePage from "./pages/TreePage/TreePage";
+import WorkflowBuilderPage from "./pages/WorkflowBuilderPage/WorkflowBuilderPage";
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
                   <Route path="/collections/:coll" element={<CollectionsPage />} />
                   <Route path="/collections" element={<CollectionsPage />} />
                   <Route path="/graph" element={<GraphPage />} />
+                  <Route path="/workflow-builder" element={<WorkflowBuilderPage />} />
                   <Route path="/ftu" element={<FTUExplorerPage />} />
                   <Route path="/about" element={<AboutPage />} />
                   <Route path="/tree" element={<TreePage />} />

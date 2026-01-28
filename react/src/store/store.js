@@ -13,6 +13,7 @@ import storage from "redux-persist/lib/storage";
 import graphReducer, { fetchAndProcessGraph } from "./graphSlice";
 import nodesSliceReducer from "./nodesSlice";
 import savedGraphsReducer from "./savedGraphsSlice";
+import workflowBuilderReducer from "./workflowBuilderSlice";
 
 const persistConfig = {
   key: "root",
@@ -24,6 +25,7 @@ const rootReducer = combineReducers({
   graph: graphReducer,
   nodesSlice: nodesSliceReducer,
   savedGraphs: savedGraphsReducer,
+  workflowBuilder: workflowBuilderReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

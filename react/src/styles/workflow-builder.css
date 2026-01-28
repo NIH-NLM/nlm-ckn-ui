@@ -1,0 +1,1166 @@
+/* Workflow Builder Styles */
+
+/* ==========================================================================
+   Page Layout
+   ========================================================================== */
+
+.workflow-builder-page {
+  max-width: 100%;
+  padding: var(--spacing-lg);
+}
+
+.workflow-builder-page-header {
+  margin-bottom: var(--spacing-xl);
+}
+
+.workflow-builder-page-header h1 {
+  margin-bottom: var(--spacing-sm);
+  color: var(--color-text);
+}
+
+.workflow-builder-page-header p {
+  color: var(--color-gray);
+  max-width: 800px;
+}
+
+.workflow-builder-layout {
+  display: grid;
+  grid-template-columns: minmax(400px, 500px) 1fr;
+  gap: var(--spacing-xl);
+  min-height: 600px;
+}
+
+@media (max-width: 1024px) {
+  .workflow-builder-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==========================================================================
+   Workflow Builder Component
+   ========================================================================== */
+
+.workflow-builder {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.workflow-builder-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex-shrink: 0;
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--color-gray-lighter);
+  margin-bottom: var(--spacing-md);
+}
+
+.workflow-name-section {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.back-to-presets-btn {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-white);
+  border: 1px solid var(--color-gray-lighter);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-dark);
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+.back-to-presets-btn:hover {
+  background: var(--color-gray-lightest);
+  border-color: var(--color-gray-light);
+  color: var(--color-primary);
+}
+
+.workflow-name-input {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-lg);
+  font-weight: 500;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--color-gray-lighter);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+}
+
+.workflow-name-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(0, 113, 188, 0.2);
+}
+
+.workflow-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.share-btn {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-gray-lightest);
+  border: 1px solid var(--color-gray-lighter);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  transition: background var(--transition-fast);
+}
+
+.share-btn:hover {
+  background: var(--color-gray-lighter);
+}
+
+/* ==========================================================================
+   Preset Selector
+   ========================================================================== */
+
+.preset-selector {
+  background: var(--color-gray-lightest);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+}
+
+.preset-selector-header h3 {
+  margin: 0 0 var(--spacing-sm) 0;
+  color: var(--color-text);
+  font-size: var(--font-size-lg);
+}
+
+.preset-description {
+  color: var(--color-gray);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.preset-categories {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.preset-category {
+  margin-bottom: var(--spacing-sm);
+}
+
+.category-label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-gray);
+  margin-bottom: var(--spacing-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.preset-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.preset-card {
+  flex: 1 1 calc(50% - var(--spacing-sm));
+  min-width: 200px;
+  max-width: 300px;
+  padding: var(--spacing-md);
+  background: var(--color-white);
+  border: 1px solid var(--color-gray-lighter);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-align: left;
+  transition: all var(--transition-fast);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.preset-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
+}
+
+.preset-card.custom {
+  border-style: dashed;
+  background: transparent;
+}
+
+.preset-card.custom:hover {
+  background: var(--color-white);
+}
+
+.preset-name {
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: var(--font-size-base);
+}
+
+.preset-card-description {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray);
+  line-height: var(--line-height-base);
+}
+
+.preset-phases-count {
+  font-size: var(--font-size-xs);
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.preset-custom {
+  margin-top: var(--spacing-md);
+}
+
+/* ==========================================================================
+   Phases Container
+   ========================================================================== */
+
+.phases-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: var(--spacing-sm);
+}
+
+.phase-wrapper {
+  position: relative;
+}
+
+.phase-connector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--spacing-sm) 0;
+  color: var(--color-gray);
+}
+
+.connector-arrow {
+  font-size: var(--font-size-xl);
+  line-height: 1;
+}
+
+.connector-label {
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ==========================================================================
+   Phase Editor
+   ========================================================================== */
+
+.phase-editor {
+  background: var(--color-white);
+  border: 1px solid var(--color-gray-lighter);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  transition: border-color var(--transition-fast);
+}
+
+.phase-editor:hover {
+  border-color: var(--color-gray-light);
+}
+
+.phase-editor.executing {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(0, 113, 188, 0.2);
+}
+
+.phase-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.phase-number {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-primary);
+  background: rgba(0, 113, 188, 0.1);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+.phase-name-input {
+  flex: 1;
+  font-size: var(--font-size-base);
+  padding: var(--spacing-sm);
+  border: 1px solid var(--color-gray-lighter);
+  border-radius: var(--radius-md);
+}
+
+.phase-name-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.phase-delete-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: var(--color-gray-lightest);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  font-size: var(--font-size-lg);
+  color: var(--color-gray);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.phase-delete-btn:hover {
+  background: var(--color-secondary-lightest);
+  color: var(--color-secondary);
+}
+
+/* Phase Sections */
+.phase-section {
+  margin-bottom: var(--spacing-lg);
+}
+
+.phase-section h4 {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-gray-dark);
+  margin-bottom: var(--spacing-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Origin Source Selector */
+.origin-source-selector {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.origin-source-selector label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+
+.origin-source-selector input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+}
+
+/* Manual Origin Nodes */
+.manual-origin-nodes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.origin-nodes-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+
+/* Origin node pills - colors applied inline from collection maps */
+.origin-node-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  border: 1px solid currentColor;
+}
+
+.origin-node-pill .node-label {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.origin-node-pill .pill-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: var(--font-size-base);
+  padding: 0;
+  opacity: 0.8;
+  line-height: 1;
+}
+
+.origin-node-pill .pill-remove:hover {
+  opacity: 1;
+}
+
+.add-node-input {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.add-node-input input {
+  padding: var(--spacing-sm);
+  border: 1px solid var(--color-gray-lighter);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+}
+
+.add-node-input input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.add-node-input .hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray);
+}
+
+/* Previous Phase Origin */
+.previous-phase-origin {
+  padding: var(--spacing-md);
+  background: var(--color-gray-lightest);
+  border-radius: var(--radius-md);
+}
+
+.previous-phase-info {
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  margin-bottom: var(--spacing-sm);
+}
+
+.previous-phase-warning {
+  font-size: var(--font-size-sm);
+  color: var(--color-gold);
+  font-style: italic;
+}
+
+.previous-phase-origin label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+}
+
+.previous-phase-origin select {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--color-gray-lighter);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+}
+
+/* Settings Grid */
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.setting-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.setting-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.setting-item label,
+.setting-item .setting-label {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-gray-dark);
+}
+
+.setting-item select,
+.setting-item input[type="text"],
+.setting-item input[type="number"] {
+  padding: var(--spacing-sm);
+  border: 1px solid var(--color-gray-lighter);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  background: var(--color-white);
+}
+
+.setting-item select:focus,
+.setting-item input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+}
+
+.toggle-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+}
+
+/* Phase Actions */
+.phase-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-gray-lightest);
+}
+
+.execute-phase-btn {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: var(--color-primary);
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  transition: background var(--transition-fast);
+}
+
+.execute-phase-btn:hover:not(:disabled) {
+  background: var(--color-primary-darker);
+}
+
+.execute-phase-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.phase-result-summary {
+  font-size: var(--font-size-sm);
+  color: var(--color-green);
+  font-weight: 500;
+}
+
+/* ==========================================================================
+   Workflow Footer
+   ========================================================================== */
+
+.workflow-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-gray-lighter);
+  margin-top: var(--spacing-md);
+  flex-shrink: 0;
+}
+
+.add-phase-btn {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: transparent;
+  color: var(--color-primary);
+  border: 1px dashed var(--color-primary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  transition: all var(--transition-fast);
+}
+
+.add-phase-btn:hover {
+  background: rgba(0, 113, 188, 0.1);
+}
+
+.execute-workflow-btn {
+  padding: var(--spacing-md) var(--spacing-xl);
+  background: var(--color-green);
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  transition: background var(--transition-fast);
+}
+
+.execute-workflow-btn:hover:not(:disabled) {
+  background: var(--color-green-light);
+}
+
+.execute-workflow-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ==========================================================================
+   Workflow Error
+   ========================================================================== */
+
+.workflow-error {
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--color-secondary-lightest);
+  border: 1px solid var(--color-secondary-light);
+  border-radius: var(--radius-md);
+  color: var(--color-secondary-dark);
+  font-size: var(--font-size-sm);
+}
+
+/* ==========================================================================
+   Graph Placeholder
+   ========================================================================== */
+
+.workflow-builder-graph-area {
+  min-height: 500px;
+  background: var(--color-gray-lightest);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.workflow-graph-placeholder {
+  height: 100%;
+  min-height: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.placeholder-content {
+  max-width: 400px;
+  padding: var(--spacing-xl);
+}
+
+.placeholder-content h3 {
+  color: var(--color-gray-dark);
+  margin-bottom: var(--spacing-sm);
+}
+
+.placeholder-content p {
+  color: var(--color-gray);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+}
+
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-lg);
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--color-gray-lighter);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ==========================================================================
+   Sidebar Scrolling
+   ========================================================================== */
+
+.workflow-builder-sidebar {
+  height: calc(100vh - 200px);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Custom scrollbar for phases container */
+.phases-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.phases-container::-webkit-scrollbar-track {
+  background: var(--color-gray-lightest);
+  border-radius: 3px;
+}
+
+.phases-container::-webkit-scrollbar-thumb {
+  background: var(--color-gray-lighter);
+  border-radius: 3px;
+}
+
+.phases-container::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gray-light);
+}
+
+/* ==========================================================================
+   Per-Node Settings
+   ========================================================================== */
+
+.per-node-settings {
+  border: 1px solid var(--color-gray-lighter);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  background: var(--color-gray-lightest);
+}
+
+.per-node-settings h5 {
+  margin: var(--spacing-md) 0 var(--spacing-sm) 0;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-gray-dark);
+}
+
+.per-node-setting-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+  background: var(--color-white);
+  border: 1px solid var(--color-gray-lighter);
+  border-radius: var(--radius-sm);
+}
+
+.per-node-setting-row:last-child {
+  margin-bottom: 0;
+}
+
+/* Per-node labels - colors applied inline from collection maps */
+.per-node-label {
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-full);
+  border: 1px solid currentColor;
+}
+
+.per-node-controls {
+  display: flex;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.per-node-controls label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-dark);
+}
+
+.per-node-controls select {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--color-gray-lighter);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  background: var(--color-white);
+}
+
+/* ==========================================================================
+   Results Area
+   ========================================================================== */
+
+.workflow-builder-results-area {
+  min-height: 500px;
+  background: var(--color-white);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-gray-lighter);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* View Tabs (Table / Graph) */
+.results-view-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--color-gray-lighter);
+  background: var(--color-gray-lightest);
+}
+
+.view-tab {
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  color: var(--color-gray);
+  transition: all var(--transition-fast);
+}
+
+.view-tab:hover {
+  color: var(--color-gray-darker);
+  background: var(--color-white);
+}
+
+.view-tab.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+  background: var(--color-white);
+}
+
+/* Results View Content */
+.results-view-content {
+  flex: 1;
+  overflow: auto;
+  padding: var(--spacing-md);
+}
+
+.results-view-content.graph-view {
+  padding: 0;
+  min-height: 500px;
+  height: 600px; /* Fixed height for graph container */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ensure ForceGraph fills the container */
+.results-view-content.graph-view .graph-component-wrapper {
+  flex: 1;
+  height: 100%;
+}
+
+.results-view-content.graph-view .graph-main-area {
+  height: 100%;
+}
+
+.results-view-content.graph-view #chart-container-wrapper {
+  height: 100%;
+}
+
+/* ==========================================================================
+   Results Table Component
+   ========================================================================== */
+
+.results-table-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Summary */
+.results-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) 0;
+  margin-bottom: var(--spacing-md);
+  font-size: var(--font-size-base);
+  color: var(--color-gray-dark);
+}
+
+.summary-item strong {
+  color: var(--color-gray-darker);
+}
+
+.summary-divider {
+  color: var(--color-gray-lighter);
+}
+
+/* Results Sub-Tabs (Nodes / Edges) */
+.results-tabs {
+  display: flex;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-md);
+}
+
+.results-tab {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-gray-lightest);
+  border: 1px solid var(--color-gray-lighter);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-gray-dark);
+  transition: all var(--transition-fast);
+}
+
+.results-tab:hover {
+  background: var(--color-gray-lighter);
+}
+
+.results-tab.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-white);
+}
+
+/* Table Wrapper */
+.results-table-wrapper {
+  flex: 1;
+  overflow: auto;
+  border: 1px solid var(--color-gray-lighter);
+  border-radius: var(--radius-md);
+}
+
+/* Table Styles */
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.results-table thead {
+  position: sticky;
+  top: 0;
+  background: var(--color-gray-lightest);
+  z-index: 1;
+}
+
+.results-table th {
+  padding: var(--spacing-sm) var(--spacing-md);
+  text-align: left;
+  font-weight: 600;
+  color: var(--color-gray-darker);
+  border-bottom: 2px solid var(--color-gray-lighter);
+}
+
+.results-table td {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--color-gray-lightest);
+  color: var(--color-gray-dark);
+}
+
+.results-table tbody tr:hover {
+  background: var(--color-gray-lightest);
+}
+
+.results-table .id-cell {
+  font-family: monospace;
+  font-size: var(--font-size-xs);
+  color: var(--color-gray);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.results-table .empty-message {
+  text-align: center;
+  color: var(--color-gray);
+  font-style: italic;
+  padding: var(--spacing-lg);
+}
+
+/* Collection Badge - colors applied inline from collection maps */
+.collection-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  border: 1px solid currentColor;
+}
+
+/* Edge Label */
+.edge-label {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  background: var(--color-gray-lightest);
+  color: var(--color-gray-dark);
+}
+
+/* Source Cell */
+.source-cell {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray);
+}
+
+/* ==========================================================================
+   Results Tabs Layout (with download button)
+   ========================================================================== */
+
+.results-tabs {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.results-tabs-left {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+/* Download CSV Button */
+.download-csv-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-white);
+  border: 1px solid var(--color-gray-lighter);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-gray-dark);
+  transition: all var(--transition-fast);
+}
+
+.download-csv-btn:hover {
+  background: var(--color-gray-lightest);
+  border-color: var(--color-gray-light);
+}
+
+.download-csv-btn svg {
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   Expandable Rows
+   ========================================================================== */
+
+.results-table .expand-col {
+  width: 32px;
+  padding: var(--spacing-xs);
+}
+
+.expand-btn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-gray-lightest);
+  border: 1px solid var(--color-gray-lighter);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--color-gray-dark);
+  transition: all var(--transition-fast);
+}
+
+.expand-btn:hover {
+  background: var(--color-gray-lighter);
+  color: var(--color-gray-darker);
+}
+
+.results-table tr.expanded {
+  background: var(--color-primary-lightest, rgba(0, 113, 188, 0.05));
+}
+
+.expanded-row {
+  background: var(--color-gray-lightest);
+}
+
+.expanded-row > td {
+  padding: 0;
+}
+
+.expanded-content {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-top: 1px solid var(--color-gray-lighter);
+}
+
+.expanded-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--spacing-sm) var(--spacing-lg);
+}
+
+.expanded-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.expanded-field .field-label {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-gray);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.expanded-field .field-value {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-darker);
+  word-break: break-word;
+}
+
+/* ==========================================================================
+   External Links
+   ========================================================================== */
+
+.external-link {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.external-link:hover {
+  text-decoration: underline;
+}
+
+/* ==========================================================================
+   Dynamic Columns
+   ========================================================================== */
+
+.dynamic-cell {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-dark);
+}
+
+/* ==========================================================================
+   Toast Notification
+   ========================================================================== */
+
+.workflow-toast {
+  position: fixed;
+  bottom: var(--spacing-xl);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: #1a1a2e;
+  color: #ffffff;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  animation: toast-fade-in 0.2s ease-out;
+}
+
+@keyframes toast-fade-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}

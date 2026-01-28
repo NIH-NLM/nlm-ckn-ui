@@ -43,3 +43,11 @@ export {
   GRAPH_STATUS,
   PHENOTYPES_ENABLED,
 } from "./graph";
+
+// Workflow builder presets and utilities
+export {
+  createEmptyPhase,
+  DEFAULT_PHASE_SETTINGS,
+  PRESET_CATEGORIES,
+  WORKFLOW_PRESETS,
+} from "./workflowPresets";

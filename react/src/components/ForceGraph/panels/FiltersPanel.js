@@ -1,6 +1,7 @@
-import { memo } from "react";
+import { memo, useCallback } from "react";
 import { useDispatch } from "react-redux";
-import { updateEdgeFilter } from "../../../store";
+import { setEdgeFilters } from "../../../store";
+import EdgeFilterSelector from "../../EdgeFilterSelector";
 import FilterableDropdown from "../../FilterableDropdown/FilterableDropdown";
 
 /**
@@ -15,6 +16,14 @@ const FiltersPanel = ({
   onCollectionChange,
 }) => {
   const dispatch = useDispatch();
+
+  // Handle edge filter changes from EdgeFilterSelector
+  const handleEdgeFilterChange = useCallback(
+    (propertyName, values) => {
+      dispatch(setEdgeFilters({ ...settings.edgeFilters, [propertyName]: values }));
+    },
+    [dispatch, settings.edgeFilters],
+  );
 
   return (
     // biome-ignore lint/correctness/useUniqueElementIds: legacy id
@@ -38,32 +47,15 @@ const FiltersPanel = ({
         />
       </div>
 
-      {edgeFilterStatus === "loading" && (
-        <output className="option-group" aria-live="polite">
-          Loading edge filters...
-        </output>
-      )}
-
-      {edgeFilterStatus === "failed" && (
-        <div className="option-group error-message" role="alert">
-          Failed to load edge filters.
-        </div>
-      )}
-
-      {edgeFilterStatus === "succeeded" && Object.keys(availableEdgeFilters).length > 0 && (
-        <div className="edge-filter-section">
-          <h3>Edge Filters:</h3>
-          {Object.entries(availableEdgeFilters).map(([field, values]) => (
-            <FilterableDropdown
-              key={field}
-              label={field}
-              options={values}
-              selectedOptions={settings.edgeFilters[field] || []}
-              onOptionToggle={(value) => dispatch(updateEdgeFilter({ field, value }))}
-            />
-          ))}
-        </div>
-      )}
+      <div className="edge-filter-section">
+        <h3>Edge Filters:</h3>
+        <EdgeFilterSelector
+          availableFilters={availableEdgeFilters}
+          selectedFilters={settings.edgeFilters}
+          onFilterChange={handleEdgeFilterChange}
+          status={edgeFilterStatus}
+        />
+      </div>
     </div>
   );
 };

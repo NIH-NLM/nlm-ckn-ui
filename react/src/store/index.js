@@ -15,6 +15,7 @@ export {
   setInitialCollapseList,
   uncollapseNode,
   updateEdgeFilter,
+  setEdgeFilters,
   updateNodePosition,
   updateSetting,
 } from "./graphSlice";
@@ -29,5 +30,29 @@ export {
 } from "./nodesSlice";
 // Saved graphs slice actions
 export { default as savedGraphsReducer, deleteGraph, saveGraph } from "./savedGraphsSlice";
+// Workflow builder slice actions
+export {
+  addPhase,
+  addPhaseOriginNode,
+  clearError,
+  clearPerNodeSettings,
+  clearResults,
+  executePhase,
+  executeWorkflow,
+  fetchNodeDetails,
+  initializeWorkflow,
+  loadWorkflow,
+  removePhase,
+  removePhaseOriginNode,
+  setActiveGraph,
+  setPhaseOriginNodes,
+  setWorkflowName,
+  showPresets,
+  toggleAdvancedSettings,
+  updatePerNodeSetting,
+  updatePhase,
+  updatePhaseSettings,
+  default as workflowBuilderReducer,
+} from "./workflowBuilderSlice";
 // Store configuration
 export { persistor, store } from "./store";
