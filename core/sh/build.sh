@@ -37,7 +37,7 @@ OPTIONS
     -A    Force -a
 
     -u    Upload the ArangoDB archive to cell-kn-mvp.org and
-          cell-kn-stg.org
+          cell-kn.org
 
     -h    Help
 
@@ -260,11 +260,11 @@ popd
 pushd "../../../cell-kn-mvp-etl-ontologies"
 if [ $upload_archive == 1 ]; then
 
-    # Upload the archive to cell-kn-mvp.org and cell-kn-stg.org, if it exists
+    # Upload the archive to cell-kn-mvp.org and cell-kn.org, if it exists
     pushd data
     if [ -f "$archive" ]; then
         scp $archive mvp:~
-        scp $archive stg:~
+        scp $archive ckn:~
 
     else
         echo "ArangoDB archive $archive does not exist"

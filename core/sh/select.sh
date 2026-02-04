@@ -73,7 +73,7 @@ public_ip=$(curl -s http://checkip.amazonaws.com)
 if [ $public_ip == 54.146.82.39 ]; then
     domain="cell-kn-mvp.org"
 elif [ $public_ip == 35.173.140.169 ]; then
-    domain="cell-kn-stg.org"
+    domain="cell-kn.org"
 else
     echo "Unknown public IP address"
     exit 1
@@ -89,7 +89,11 @@ if [ $do_list_configurations == 1 ]; then
 	# print enabled configurations, indicating default, if any
 	. conf/$conf
 	subdomain=$(echo $conf | sed s/\\./-/g)
-	site=/etc/apache2/sites-enabled/$subdomain-cell-kn-mvp.conf
+        if [ $public_ip == 54.146.82.39 ]; then
+	    site=/etc/apache2/sites-enabled/$subdomain-cell-kn-mvp.conf
+        elif [ $public_ip == 35.173.140.169 ]; then
+	    site=/etc/apache2/sites-enabled/$subdomain-cell-kn.conf
+        fi
 	if [ -f $site ]; then
 	    if [ $(grep ServerName $site | cut -d " " -f 6) == $domain ]; then
 		printf "  $conf *\n"
@@ -114,7 +118,11 @@ fi
 # the site has been enabled, exiting if not
 . conf/$CONF
 subdomain=$(echo $CONF | sed s/\\./-/g)
-site=/etc/apache2/sites-enabled/$subdomain-cell-kn-mvp.conf
+if [ $public_ip == 54.146.82.39 ]; then
+    site=/etc/apache2/sites-enabled/$subdomain-cell-kn-mvp.conf
+elif [ $public_ip == 35.173.140.169 ]; then
+    site=/etc/apache2/sites-enabled/$subdomain-cell-kn.conf
+fi
 if [ ! -f $site ]; then
     echo "Configuration $CONF not enabled"
     exit 1
@@ -128,7 +136,11 @@ for conf in $confs; do
     # ensure the site has been enabled, continuing if not
     . conf/$conf
     subdomain=$(echo $conf | sed s/\\./-/g)
-    site=/etc/apache2/sites-enabled/$subdomain-cell-kn-mvp.conf
+    if [ $public_ip == 54.146.82.39 ]; then
+        site=/etc/apache2/sites-enabled/$subdomain-cell-kn-mvp.conf
+    elif [ $public_ip == 35.173.140.169 ]; then
+        site=/etc/apache2/sites-enabled/$subdomain-cell-kn.conf
+    fi
     if [ ! -f $site ]; then
 	continue
     fi
@@ -158,7 +170,11 @@ for conf in $confs; do
     fi
 
     # Update, install, and enable the Apache site configuration
-    site=/etc/apache2/sites-available/$subdomain-cell-kn-mvp.conf
+    if [ $public_ip == 54.146.82.39 ]; then
+        site=/etc/apache2/sites-enabled/$subdomain-cell-kn-mvp.conf
+    elif [ $public_ip == 35.173.140.169 ]; then
+        site=/etc/apache2/sites-enabled/$subdomain-cell-kn.conf
+    fi
     if [ $conf == $CONF ]; then
 	sudo sed -i \
 	    "s/.*ServerName.*/    ServerName $domain/" \

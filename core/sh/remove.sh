@@ -83,7 +83,11 @@ archive+=".tar.gz"
 subdomain=$(echo $CONF | sed s/\\./-/g)
 
 # Disable the corresponding site, and remove it from available sites
-site=$subdomain-cell-kn-mvp.conf
+if [ $public_ip == 54.146.82.39 ]; then
+    site=$subdomain-cell-kn-mvp.conf
+elif [ $public_ip == 35.173.140.169 ]; then
+    site=$subdomain-cell-kn.conf
+fi
 sudo a2dissite $site
 sleep 1
 sudo rm /etc/apache2/sites-available/$site

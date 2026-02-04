@@ -85,8 +85,10 @@ fi
 public_ip=$(curl -s http://checkip.amazonaws.com)
 if [ $public_ip == 54.146.82.39 ]; then
     domain="cell-kn-mvp.org"
+    site=$subdomain-cell-kn-mvp.conf
 elif [ $public_ip == 35.173.140.169 ]; then
-    domain="cell-kn-stg.org"
+    domain="cell-kn.org"
+    site=$subdomain-cell-kn.conf
 else
     echo "Unknown public IP address"
     exit 1
@@ -114,7 +116,11 @@ fi
 subdomain=$(echo $CONF | sed s/\\./-/g)
 
 # Disable the corresponding site
-site=$subdomain-cell-kn-mvp.conf
+if [ $public_ip == 54.146.82.39 ]; then
+    site=$subdomain-cell-kn-mvp.conf
+elif [ $public_ip == 35.173.140.169 ]; then
+    site=$subdomain-cell-kn.conf
+fi
 echo "Disabling $site"
 sudo a2dissite $site &> /dev/null
 sleep 1
