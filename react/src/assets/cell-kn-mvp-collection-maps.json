@@ -1037,33 +1037,6 @@
       }
     ],
     [
-      "Orphanet",
-      {
-        "abbreviated_name": "Orphanet",
-        "display_name": "Rare disease",
-        "color": "#fffac8",
-        "individual_labels": [
-          {
-            "field_to_use": "_key",
-            "to_be_replaced": "",
-            "replace_with": "",
-            "make_lower_case": false
-          }
-        ],
-        "individual_urls": [
-          {
-            "individual_url": "http://purl.obolibrary.org/obo/<FIELD_TO_USE>",
-            "field_to_use": "_id",
-            "to_be_replaced": "/",
-            "replace_with": "_",
-            "make_lower_case": false
-          }
-        ],
-        "individual_fields": [],
-        "more_info": "Orphanet is a unique resource, gathering and improving knowledge on rare diseases so as to improve the diagnosis, care and treatment of patients with rare diseases. Orphanet aims to provide high-quality information on rare diseases, and ensure equal access to knowledge for all stakeholders. Orphanet also maintains the Orphanet rare disease nomenclature (ORPHAcode), essential in improving the visibility of rare diseases in health and research information systems."
-      }
-    ],
-    [
       "PATO",
       {
         "abbreviated_name": "PATO",
