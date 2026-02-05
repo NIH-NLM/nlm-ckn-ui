@@ -94,10 +94,10 @@ sudo rm /etc/apache2/sites-available/$site
 
 # Find the port corresponding to the configuration
 pushd ~
-port="$(ls -al | grep "\->.*$subdomain" | cut -d "-" -f 2 | sed "s/[[:space:]]*$//")"
+port=$(ls -al | grep "\->.*$subdomain" | cut -d "-" -f 2 | sed "s/[[:space:]]*$//")
 
 # Stop the corresponding ArangoDB container
-ARANGO_DB_PORT="$port" ./stop-arangodb.sh
+ARANGO_DB_PORT=$port ./stop-arangodb.sh
 
 # Remove Cell KN MVP versioned directory
 mvp_directory="cell-kn-mvp-ui-$CELL_KN_MVP_UI_VERSION-$subdomain"

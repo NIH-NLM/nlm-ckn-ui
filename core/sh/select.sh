@@ -151,6 +151,7 @@ for conf in $confs; do
     fi
 
     # Update, install, and enable the Apache site configuration
+    site="/etc/apache2/sites-available/$subdomain-$domain.conf"
     if [[ $conf == $CONF ]]; then
 	sudo sed -i \
 	    "s/.*ServerName.*/    ServerName $fqdn/" \

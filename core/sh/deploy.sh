@@ -89,7 +89,7 @@ archive+=".tar.gz"
 
 # Assign the port as one greater than the maximum in use, staying
 # within port range
-port="$(docker ps | grep arangodb | cut -d "-" -f 4 | sort | tail -n 1)"
+port=$(docker ps | grep arangodb | cut -d "-" -f 4 | sort | tail -n 1)
 if [[ -z $port ]]; then
     port=8529
 else
@@ -113,7 +113,7 @@ sudo a2dissite $site &> /dev/null
 sleep 1
 
 # Stop the corresponding ArangoDB container
-ARANGO_DB_PORT="$port" ~/stop-arangodb.sh
+ARANGO_DB_PORT=$port ~/stop-arangodb.sh
 
 # Clone Cell KN MVP repository into a versioned directory
 mvp_directory="cell-kn-mvp-ui-$CELL_KN_MVP_UI_VERSION-$subdomain"
@@ -190,7 +190,7 @@ sudo rm -rf $arangodb_link
 tar -zxvf $archive
 mv arangodb $arangodb_file
 sudo ln -sf $arangodb_file $arangodb_link
-ARANGO_DB_PORT="$port" ./start-arangodb.sh
+ARANGO_DB_PORT=$port ./start-arangodb.sh
 popd  # into script directory
 
  # Update, install, and enable the Apache site configuration
