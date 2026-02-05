@@ -170,40 +170,6 @@
       }
     ],
     [
-      "CHEBI",
-      {
-        "abbreviated_name": "CHEBI",
-        "display_name": "Molecular entity",
-        "color": "#3cb44b",
-        "individual_labels": [
-          {
-            "field_to_use": "label",
-            "to_be_replaced": "",
-            "replace_with": "",
-            "make_lower_case": false
-          }
-        ],
-        "individual_urls": [
-          {
-            "individual_url": "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=<FIELD_TO_USE>",
-            "field_to_use": "_key",
-            "to_be_replaced": "",
-            "replace_with": "",
-            "make_lower_case": false
-          }
-        ],
-        "individual_fields": [
-          {
-            "field_to_display": "label",
-            "display_field_as": "Label",
-            "field_url": "",
-            "field_to_use": ""
-          }
-        ],
-        "more_info": "A freely available dictionary of molecular entities focused on ‘small’ chemical compounds. The term ‘molecular entity’ refers to any constitutionally or isotopically distinct atom, molecule, ion, ion pair, radical, radical ion, complex, conformer, etc., identifiable as a separately distinguishable entity. The molecular entities in question are either products of nature or synthetic products used to intervene in the processes of living organisms."
-      }
-    ],
-    [
       "CHEMBL",
       {
         "abbreviated_name": "CHEMBL",
