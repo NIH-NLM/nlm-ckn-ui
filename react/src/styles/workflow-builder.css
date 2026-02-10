@@ -127,7 +127,28 @@
   background: var(--color-gray-lightest);
   border-radius: var(--radius-lg);
   padding: var(--spacing-lg);
-  margin-bottom: var(--spacing-lg);
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* Custom scrollbar for preset selector */
+.preset-selector::-webkit-scrollbar {
+  width: 6px;
+}
+
+.preset-selector::-webkit-scrollbar-track {
+  background: var(--color-gray-lighter);
+  border-radius: 3px;
+}
+
+.preset-selector::-webkit-scrollbar-thumb {
+  background: var(--color-gray-light);
+  border-radius: 3px;
+}
+
+.preset-selector::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gray);
 }
 
 .preset-selector-header h3 {
@@ -519,6 +540,13 @@
   width: 16px;
   height: 16px;
   accent-color: var(--color-primary);
+}
+
+.setting-hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray);
+  font-style: italic;
+  margin-top: var(--spacing-xs);
 }
 
 /* Phase Actions */

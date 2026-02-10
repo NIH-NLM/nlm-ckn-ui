@@ -18,6 +18,8 @@ export const DEFAULT_PHASE_SETTINGS = {
   collapseLeafNodes: true,
   useFocusNodes: true,
   includeInterNodeEdges: true,
+  // Filter results to only include nodes from these collections (empty = all)
+  returnCollections: [],
 };
 
 /**
@@ -165,6 +167,60 @@ export const WORKFLOW_PRESETS = [
       },
     ],
   },
+  {
+    id: "lung-markers-to-diseases",
+    name: "Lung marker genes to diseases",
+    description:
+      "Two-phase query: find marker genes in the lung, then discover diseases they are biomarkers for.",
+    category: "Disease Analysis",
+    phases: [
+      {
+        id: "preset-lung-disease-phase-1",
+        name: "Find lung marker genes",
+        originSource: "manual",
+        originNodeIds: ["UBERON/0002048"], // Lung
+        previousPhaseId: null,
+        originFilter: "all",
+        settings: {
+          depth: 2,
+          edgeDirection: "ANY",
+          allowedCollections: ["BMC", "UBERON"],
+          edgeFilters: { Label: [], Source: [] },
+          setOperation: "Union",
+          graphType: "ontologies",
+          collapseLeafNodes: false,
+          useFocusNodes: true,
+          includeInterNodeEdges: true,
+          returnCollections: ["BMC"], // Only return marker genes, not anatomy
+        },
+        perNodeSettings: {},
+        showAdvancedSettings: false,
+        result: null,
+      },
+      {
+        id: "preset-lung-disease-phase-2",
+        name: "Find associated diseases",
+        originSource: "previousPhase",
+        originNodeIds: [],
+        previousPhaseId: "preset-lung-disease-phase-1",
+        originFilter: "all",
+        settings: {
+          depth: 1,
+          edgeDirection: "ANY",
+          allowedCollections: ["BMC", "MONDO"],
+          edgeFilters: { Label: ["IS_BASIS_FOR_CONDITION"], Source: [] },
+          setOperation: "Union",
+          graphType: "ontologies",
+          collapseLeafNodes: false,
+          useFocusNodes: true,
+          includeInterNodeEdges: true,
+        },
+        perNodeSettings: {},
+        showAdvancedSettings: false,
+        result: null,
+      },
+    ],
+  },
 ];
 
 /**
@@ -173,5 +229,6 @@ export const WORKFLOW_PRESETS = [
 export const PRESET_CATEGORIES = [
   { id: "Cell Type Discovery", label: "Cell Type Discovery" },
   { id: "Marker Gene Analysis", label: "Marker Gene Analysis" },
+  { id: "Disease Analysis", label: "Disease Analysis" },
   { id: "Ontology Exploration", label: "Ontology Exploration" },
 ];

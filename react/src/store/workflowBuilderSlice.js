@@ -142,10 +142,34 @@ export const executePhase = createAsyncThunk(
     // Apply set operation to merge results
     const mergedResult = performSetOperation(graphsArray, phase.settings.setOperation || "Union");
 
+    // Filter results to only include nodes from specified collections (if set)
+    const returnCollections = phase.settings.returnCollections || [];
+    let finalResult = mergedResult;
+
+    if (returnCollections.length > 0) {
+      // Filter nodes to only those in returnCollections
+      const filteredNodes = mergedResult.nodes.filter((node) => {
+        const collection = node._id?.split("/")[0];
+        return returnCollections.includes(collection);
+      });
+
+      // Get the IDs of remaining nodes
+      const remainingNodeIds = new Set(filteredNodes.map((n) => n._id));
+
+      // Filter links to only those connecting remaining nodes
+      const filteredLinks = mergedResult.links.filter((link) => {
+        const sourceId = typeof link.source === "object" ? link.source._id : link.source;
+        const targetId = typeof link.target === "object" ? link.target._id : link.target;
+        return remainingNodeIds.has(sourceId) && remainingNodeIds.has(targetId);
+      });
+
+      finalResult = { nodes: filteredNodes, links: filteredLinks };
+    }
+
     return {
       phaseId: phase.id,
       phaseIndex,
-      result: mergedResult,
+      result: finalResult,
       originNodeIds, // Store which nodes were actually used
     };
   },

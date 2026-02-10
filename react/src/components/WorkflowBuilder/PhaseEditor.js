@@ -133,6 +133,18 @@ const PhaseEditor = ({
     [phase.settings.allowedCollections, onUpdateSettings],
   );
 
+  // Handle return collection toggle (filter which collections appear in results)
+  const handleReturnCollectionToggle = useCallback(
+    (collectionId) => {
+      const currentCollections = phase.settings.returnCollections || [];
+      const newCollections = currentCollections.includes(collectionId)
+        ? currentCollections.filter((c) => c !== collectionId)
+        : [...currentCollections, collectionId];
+      onUpdateSettings("returnCollections", newCollections);
+    },
+    [phase.settings.returnCollections, onUpdateSettings],
+  );
+
   // Handle edge filter change from EdgeFilterSelector
   const handleEdgeFilterChange = useCallback(
     (propertyName, values) => {
@@ -448,6 +460,20 @@ const PhaseEditor = ({
             selectedFilters={phase.settings.edgeFilters || {}}
             onFilterChange={handleEdgeFilterChange}
           />
+        </div>
+
+        {/* Return Collections (filter results to specific collections) */}
+        <div className="setting-item full-width">
+          <span className="setting-label">Return results from</span>
+          <FilterableDropdown
+            label="collections to include in results"
+            options={collections || allCollections}
+            selectedOptions={phase.settings.returnCollections || []}
+            onOptionToggle={handleReturnCollectionToggle}
+          />
+          <span className="setting-hint">
+            Leave empty to include all collections in results
+          </span>
         </div>
 
         {/* Collapse Leaf Nodes toggle */}
