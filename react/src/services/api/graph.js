@@ -79,17 +79,23 @@ export const fetchGraphData = async (params) => {
  * Expand a single node by fetching its neighbors.
  * @param {string} nodeId - The node ID to expand.
  * @param {string} graphType - Graph/database type.
+ * @param {Array<string>} allowedCollections - Collections to include in traversal.
  * @param {boolean} [includeInterNodeEdges=true] - Include edges between result nodes.
  * @returns {Promise<Object>} Expansion data with nodes and links.
  */
-export const fetchNodeExpansion = async (nodeId, graphType, includeInterNodeEdges = true) => {
+export const fetchNodeExpansion = async (
+  nodeId,
+  graphType,
+  allowedCollections,
+  includeInterNodeEdges = true,
+) => {
   return postJson(GRAPH_ENDPOINT, {
     node_ids: [nodeId],
     depth: EXPANSION_DEPTH,
     edge_direction: "ANY",
-    allowed_collections: [],
+    allowed_collections: allowedCollections,
     graph: graphType,
-    edge_filters: [],
+    edge_filters: {},
     include_inter_node_edges: includeInterNodeEdges,
   });
 };
