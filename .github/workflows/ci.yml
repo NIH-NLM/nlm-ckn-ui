@@ -43,6 +43,8 @@ jobs:
               - 'arango_api/**'
               - 'requirements.txt'
               - 'manage.py'
+              - 'Dockerfile'
+              - '.dockerignore'
             e2e:
               - 'react/src/**'
               - 'react/public/**'
@@ -308,6 +310,17 @@ jobs:
           DJANGO_SETTINGS_MODULE: core.settings
           ARANGO_TEST_MODE: 'true'
 
+  # Backend Docker build - verify the image builds successfully
+  backend-docker-build:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t cell-kn-backend .
+
   # Final status check - used for branch protection rules
   ci-passed:
     runs-on: ubuntu-latest
@@ -318,6 +331,7 @@ jobs:
       - frontend-e2e
       - backend-unit-tests
       - backend-integration-tests
+      - backend-docker-build
     if: always()
     steps:
       - name: Check all jobs passed
@@ -327,13 +341,15 @@ jobs:
           echo "Frontend E2E: ${{ needs.frontend-e2e.result }}"
           echo "Backend unit tests: ${{ needs.backend-unit-tests.result }}"
           echo "Backend integration tests: ${{ needs.backend-integration-tests.result }}"
+          echo "Backend Docker build: ${{ needs.backend-docker-build.result }}"
 
           # Check if any job failed - skipped jobs are OK due to path filtering
           if [[ "${{ needs.frontend-lint.result }}" == "failure" ]] || \
              [[ "${{ needs.frontend-unit-tests.result }}" == "failure" ]] || \
              [[ "${{ needs.frontend-e2e.result }}" == "failure" ]] || \
              [[ "${{ needs.backend-unit-tests.result }}" == "failure" ]] || \
-             [[ "${{ needs.backend-integration-tests.result }}" == "failure" ]]; then
+             [[ "${{ needs.backend-integration-tests.result }}" == "failure" ]] || \
+             [[ "${{ needs.backend-docker-build.result }}" == "failure" ]]; then
             echo "One or more jobs failed"
             exit 1
           fi

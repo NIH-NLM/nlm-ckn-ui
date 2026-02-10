@@ -14,10 +14,9 @@ The `cell-kn-mvp-ui` repository provides the user interface for querying, visual
 
 ## Requirements
 
-*   Python 3.13.x
 *   Node.js 22.15.x
 *   npm 11.x
-*   Docker
+*   Docker & Docker Compose
 
 ## Setup & Installation
 
@@ -28,20 +27,7 @@ git clone https://github.com/NIH-NLM/cell-kn-mvp-ui.git
 cd cell-kn-mvp-ui
 ```
 
-### 2. Backend Setup (Django)
-
-Create and activate Python virtual environment:
-```bash
-python -m venv env
-source env/bin/activate  # macOS/Linux
-```
-
-Install Python dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Frontend Setup (React)
+### 2. Frontend Setup (React)
 
 Navigate to `react/` directory and install npm packages:
 ```bash
@@ -51,35 +37,52 @@ npm install
 
 ## Running the Application
 
-### 1. Start ArangoDB
+### 1. Prepare ArangoDB Data
 
-Ensure Docker is running. Start ArangoDB container:
+The application requires pre-built ArangoDB data. Extract the database archive into the `data/` directory:
+
 ```bash
-docker run -d \
-  --name arangodb-cell-kn \
-  -e ARANGO_NO_AUTH=1 \
-  -p 8529:8529 \
-  arangodb/arangodb:latest
+# Extract the ArangoDB archive
+tar -xzf arangodb-v*.tar.gz -C data/
+
+# Create the arangodb-apps directory (can be empty)
+mkdir -p data/arangodb-apps
 ```
 
-This requires previous build of arangodb. See https://github.com/NIH-NLM/cell-kn-etl-results for more details.
-> **Note:** Stop/remove existing `arangodb-cell-kn` container or conflicting port usage if necessary.
-> 
-### 2. Build React frontend:
+After extraction, you should have:
+- `data/arangodb/` - Contains the database files (databases, engine-rocksdb, etc.)
+- `data/arangodb-apps/` - Empty directory for ArangoDB apps
 
-Navigate to `react/` directory and build React frontend:
+> **Note:** The ArangoDB data archive is generated from the ETL process. See https://github.com/NIH-NLM/cell-kn-etl-results for more details on creating the data build.
+
+### 2. Build React Frontend
+
+Navigate to `react/` directory and build the React app:
 ```bash
 cd react
-npm run build
+npm run build-react
 ```
 
-### 3. Run Django Development Server
+### 3. Start the Application
 
-From project root (`cell-kn-mvp-ui`) with virtual environment activated:
+From the project root, start ArangoDB and the Django backend using Docker Compose:
 ```bash
-python manage.py runserver
+docker compose up
 ```
+
+This starts both the ArangoDB database (port 8529) and the Django backend (port 8000), loading environment variables from `.env`.
+
 > Server available at `http://127.0.0.1:8000/`.
+
+### Frontend Development
+
+For frontend development with hot-reloading, run the React dev server alongside the backend:
+```bash
+cd react
+npm start
+```
+
+This starts a dev server on port 3000 that proxies API requests to the Django backend on port 8000.
 
 ## Environment Configuration
 

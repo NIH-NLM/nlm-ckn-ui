@@ -1,0 +1,37 @@
+# Frontend
+react/
+
+# Deployment/shell scripts
+core/sh/
+arango_api/sh/
+
+# Tests
+arango_api/tests/
+
+# Git
+.git/
+.github/
+.gitignore
+
+# Environment files
+.env*
+
+# Docs
+*.md
+
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+db.sqlite3
+staticfiles_collected/
+
+# Docker
+Dockerfile
+.dockerignore
+
+data/
+arangodb/
+*.gz
+*.pem

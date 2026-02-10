@@ -17,3 +17,7 @@ arango_api/tests/arangodb/
 .venv
 .zshenv
 venv/
+*.tar.gz
+*.pem
+/data
+/arangodb
