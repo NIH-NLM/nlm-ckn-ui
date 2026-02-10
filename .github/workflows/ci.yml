@@ -276,10 +276,10 @@ jobs:
         env:
           ARANGO_ROOT_PASSWORD: test
         options: >-
-          --health-cmd "wget -q --spider http://localhost:8529/_api/version || exit 1"
+          --health-cmd "arangosh --server.password test --javascript.execute-string 'db._version()'"
           --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-timeout 10s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
 
