@@ -53,7 +53,7 @@ After extraction, you should have:
 - `data/arangodb/` - Contains the database files (databases, engine-rocksdb, etc.)
 - `data/arangodb-apps/` - Empty directory for ArangoDB apps
 
-> **Note:** The ArangoDB data archive is generated from the ETL process. See https://github.com/NIH-NLM/cell-kn-etl-results for more details on creating the data build.
+> **Note:** The ArangoDB data archive is generated from the ETL process. See https://github.com/NIH-NLM/cell-kn-etl-results for more details on creating the data build. You will need to update your .env file with the exact password used during database creation.
 
 ### 2. Build React Frontend
 
