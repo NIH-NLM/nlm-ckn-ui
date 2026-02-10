@@ -262,6 +262,8 @@ jobs:
         run: python manage.py test --exclude-tag=integration --verbosity=2
         env:
           DJANGO_SETTINGS_MODULE: core.settings
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          ARANGO_TEST_MODE: 'true'
 
   # Backend integration tests - requires ArangoDB
   backend-integration-tests:
@@ -276,10 +278,10 @@ jobs:
         env:
           ARANGO_ROOT_PASSWORD: test
         options: >-
-          --health-cmd "wget -q --spider http://localhost:8529/_api/version || exit 1"
+          --health-cmd "arangosh --server.password test --javascript.execute-string 'db._version()'"
           --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-timeout 10s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
 
@@ -309,6 +311,7 @@ jobs:
         env:
           DJANGO_SETTINGS_MODULE: core.settings
           ARANGO_TEST_MODE: 'true'
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
 
   # Backend Docker build - verify the image builds successfully
   backend-docker-build:

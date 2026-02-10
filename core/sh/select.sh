@@ -120,6 +120,7 @@ if [ ! -f $site ]; then
     exit 1
 fi
 
+last_conf="v1.0.2"
 confs=$(ls conf/)
 for conf in $confs; do
     
@@ -132,16 +133,29 @@ for conf in $confs; do
 	continue
     fi
 
-    # Update allowed hosts
+    # Update allowed hosts ensuring backwards compatibility
     mvp_directory=cell-kn-mvp-ui-$CELL_KN_MVP_UI_VERSION-$subdomain
     if [ $conf == $CONF ]; then
-	allowed_hosts="\"$domain\""
+	allowed_host="$domain"
     else
-	allowed_hosts="\"$subdomain.$domain\""
+	allowed_host="$subdomain.$domain"
     fi
-    sed -i \
-	"s/.*ALLOWED_HOSTS.*/ALLOWED_HOSTS = [$allowed_hosts]/" \
-	~/$mvp_directory/core/settings.py
+    curr_conf=$(printf "%s\\n%s\\n" "$last_conf" "$conf" | sort -V | tail -n 1)
+    if [[ "$curr_conf" == "$last_conf" ]]; then
+
+        # Update allowed hosts in settings file
+        sed -i \
+	    "s/.*ALLOWED_HOSTS.*/ALLOWED_HOSTS = [\"$allowed_host\"]/" \
+	    ~/$mvp_directory/core/settings.py
+
+    else
+
+        # Update allowed hosts in environment file
+        sed -i \
+	    "s/.*ALLOWED_HOSTS.*/ALLOWED_HOSTS=localhost,$allowed_host/" \
+	    ~/$mvp_directory/.env
+
+    fi
 
     # Update, install, and enable the Apache site configuration
     site=/etc/apache2/sites-available/$subdomain-cell-kn-mvp.conf
