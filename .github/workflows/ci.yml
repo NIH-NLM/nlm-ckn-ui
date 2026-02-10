@@ -260,6 +260,7 @@ jobs:
         run: python manage.py test --exclude-tag=integration --verbosity=2
         env:
           DJANGO_SETTINGS_MODULE: core.settings
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
 
   # Backend integration tests - requires ArangoDB
   backend-integration-tests:
@@ -307,6 +308,7 @@ jobs:
         env:
           DJANGO_SETTINGS_MODULE: core.settings
           ARANGO_TEST_MODE: 'true'
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
 
   # Final status check - used for branch protection rules
   ci-passed:
