@@ -261,6 +261,7 @@ jobs:
         env:
           DJANGO_SETTINGS_MODULE: core.settings
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          ARANGO_TEST_MODE: 'true'
 
   # Backend integration tests - requires ArangoDB
   backend-integration-tests:
