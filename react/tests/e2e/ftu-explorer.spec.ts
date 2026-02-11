@@ -52,13 +52,16 @@ test("FTU web component script loads without module errors", async ({ page }) =>
   await page.goto("/#/ftu");
 
   // Wait for the web component to be defined
-  await page.waitForFunction(() => {
-    return customElements.get("hra-medical-illustration") !== undefined;
-  }, { timeout: 10000 });
+  await page.waitForFunction(
+    () => {
+      return customElements.get("hra-medical-illustration") !== undefined;
+    },
+    { timeout: 10000 },
+  );
 
   // Verify no ES module errors
   const moduleErrors = consoleErrors.filter(
-    (err) => err.includes("import.meta") || err.includes("Cannot use import")
+    (err) => err.includes("import.meta") || err.includes("Cannot use import"),
   );
   expect(moduleErrors).toHaveLength(0);
 });
