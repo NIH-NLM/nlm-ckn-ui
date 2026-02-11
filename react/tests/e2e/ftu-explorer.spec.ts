@@ -14,22 +14,6 @@ test("FTU Explorer page loads illustration component", async ({ page }) => {
   const ftuElement = page.locator("hra-medical-illustration");
   await expect(ftuElement).toBeAttached();
 
-  // Mock the illustrations JSON-LD to ensure it "loads" something
-  await page.route(
-    "https://cdn.humanatlas.io/digital-objects/graph/2d-ftu-illustrations/latest/assets/2d-ftu-illustrations.jsonld",
-    async (route) => {
-      return route.fulfill({
-        status: 200,
-        contentType: "application/ld+json",
-        body: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "ItemList",
-          itemListElement: [],
-        }),
-      });
-    },
-  );
-
   // Check for expand button
   const expandBtn = page.locator("button.expand-button");
   await expect(expandBtn).toBeVisible();
@@ -45,6 +29,49 @@ test("FTU Explorer page loads illustration component", async ({ page }) => {
   await expect(expandBtn).toHaveAttribute("title", "Expand");
   await expect(page.locator(".ftu-container")).not.toHaveClass(/fullscreen/);
 
-  // Verify no "split of undefined" errors occurred
-  expect(filterErrorsContaining(await getCollectedErrors(page), "split").length).toBe(0);
+  // Verify no critical errors occurred
+  const errors = await getCollectedErrors(page);
+  expect(filterErrorsContaining(errors, "split").length).toBe(0);
+  expect(filterErrorsContaining(errors, "import.meta").length).toBe(0);
+});
+
+test("FTU web component script loads without module errors", async ({ page }) => {
+  const consoleErrors: string[] = [];
+
+  // Collect console errors before navigation
+  page.on("console", (msg) => {
+    if (msg.type() === "error") {
+      consoleErrors.push(msg.text());
+    }
+  });
+
+  page.on("pageerror", (error) => {
+    consoleErrors.push(error.message);
+  });
+
+  await page.goto("/#/ftu");
+
+  // Wait for the web component to be defined
+  await page.waitForFunction(() => {
+    return customElements.get("hra-medical-illustration") !== undefined;
+  }, { timeout: 10000 });
+
+  // Verify no ES module errors
+  const moduleErrors = consoleErrors.filter(
+    (err) => err.includes("import.meta") || err.includes("Cannot use import")
+  );
+  expect(moduleErrors).toHaveLength(0);
+});
+
+test("FTU illustration container has valid dimensions", async ({ page }) => {
+  await page.goto("/#/ftu");
+
+  const ftuElement = page.locator("hra-medical-illustration");
+  await expect(ftuElement).toBeAttached();
+
+  // Verify the container has non-zero dimensions (catches CSS height issues)
+  const boundingBox = await ftuElement.boundingBox();
+  expect(boundingBox).not.toBeNull();
+  expect(boundingBox?.height).toBeGreaterThan(0);
+  expect(boundingBox?.width).toBeGreaterThan(0);
 });
