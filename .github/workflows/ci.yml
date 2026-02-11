@@ -312,6 +312,8 @@ jobs:
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
 
   # Final status check - used for branch protection rules
+  # Note: !cancelled() prevents orphaned status reports when workflow is cancelled
+  # due to new commits triggering cancel-in-progress
   ci-passed:
     runs-on: ubuntu-latest
     needs:
@@ -321,7 +323,7 @@ jobs:
       - frontend-e2e
       - backend-unit-tests
       - backend-integration-tests
-    if: always()
+    if: ${{ always() && !cancelled() }}
     steps:
       - name: Check all jobs passed
         run: |
