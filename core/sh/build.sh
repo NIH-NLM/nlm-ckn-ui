@@ -37,7 +37,7 @@ OPTIONS
     -A    Force -a
 
     -u    Upload the ArangoDB archive to cell-kn-mvp.org and
-          cell-kn-stg.org
+          cell-kn.org
 
     -h    Help
 
@@ -59,7 +59,7 @@ upload_archive=0
 while getopts ":c:oOrRaAuhex" opt; do
     case $opt in
 	c)
-	    CONF=${OPTARG}
+	    CONF="${OPTARG}"
             ;;
         o)
             run_ontology=1
@@ -107,16 +107,16 @@ done
 
 # Parse command line arguments
 shift `expr ${OPTIND} - 1`
-if [ "$#" -ne 0 ]; then
+if [[ "$#" -ne 0 ]]; then
     echo "No arguments required"
     exit 1
 fi
 
 # Source the configuration
-if [ -z "$CONF" ]; then
+if [[ -z "$CONF" ]]; then
     echo "No configuration specified"
     exit 0
-elif [ ! -f "conf/$CONF" ]; then
+elif [[ ! -f "conf/$CONF" ]]; then
     echo "Configuration not found"
     exit 1
 fi
@@ -124,8 +124,8 @@ fi
 
 # Build ontology graph, if specified
 pushd "../../../cell-kn-mvp-etl-ontologies"
-if [ ! -f ".built" ] && [ $run_ontology == 1 ] \
-       || [ $force_ontology == 1 ]; then
+if [[ ! -f ".built" ]] && [[ $run_ontology -eq 1 ]] \
+       || [[ $force_ontology -eq 1 ]]; then
 
     # Stop ArangoDB and remove the database
     pushd "src/main/shell"
@@ -141,7 +141,7 @@ if [ ! -f ".built" ] && [ $run_ontology == 1 ] \
     # Stash changes, set the current branch, checkout the version to
     # build
     git stash
-    current_branch=$(git branch --show-current)
+    current_branch="$(git branch --show-current)"
     git checkout $CELL_KN_MVP_ETL_ONTOLOGIES_VERSION
 
     # Activate the Python environment, update ontologies downloaded
@@ -173,14 +173,18 @@ popd
 
 # Build results and phenotype graphs, if specified
 pushd "../../../"
-if [ ! -f ".built" ] && [ $run_results == 1 ] \
-       || [ $force_results == 1 ]; then
+if [[ ! -f ".built" ]] && [[ $run_results -eq 1 ]] \
+       || [[ $force_results -eq 1 ]]; then
 
     # Stash changes, set the current branch, checkout the version to
     # build
-    current_branch=$(git branch --show-current)
+    current_branch="$(git branch --show-current)"
     git stash
     git checkout $CELL_KN_MVP_ETL_RESULTS_VERSION
+
+    # Remove existing tuples
+    rm data/tuples/*.json
+    rm data/tumpes/summaries/*.json
 
     # Activate the Python environment, fetch external data, and write
     # all tuples. Note that the local .zshenv contains E-Utilities
@@ -192,7 +196,8 @@ if [ ! -f ".built" ] && [ $run_results == 1 ] \
     python NSForestResultsTupleWriter.py
     python AuthorToClResultsTupleWriter.py
     python ExternalApiResultsTupleWriter.py
-    python AnnotationResultsTupleWriter.py
+    # TODO: Remove when confirmed
+    # python AnnotationResultsTupleWriter.py
     popd
 
     # Make a clean package, then build the results and phenotype
@@ -232,8 +237,8 @@ archive+=".tar.gz"
 
 # Make ArangoDB archive, if specified
 pushd "../../../cell-kn-mvp-etl-ontologies"
-if [ ! -f ".archived" ] && [ $make_archive == 1 ] \
-       || [ $force_archive == 1 ]; then
+if [[ ! -f ".archived" ]] && [[ $make_archive -eq 1 ]] \
+       || [[ $force_archive -eq 1 ]]; then
 
     # Make the archive
     pushd data
@@ -253,13 +258,13 @@ popd
 
 # Upload ArangoDB archive, if specified
 pushd "../../../cell-kn-mvp-etl-ontologies"
-if [ $upload_archive == 1 ]; then
+if [[ $upload_archive -eq 1 ]]; then
 
-    # Upload the archive to cell-kn-mvp.org and cell-kn-stg.org, if it exists
+    # Upload the archive to cell-kn-mvp.org and cell-kn.org, if it exists
     pushd data
-    if [ -f "$archive" ]; then
+    if [[ -f "$archive" ]]; then
         scp $archive mvp:~
-        scp $archive stg:~
+        scp $archive ckn:~
 
     else
         echo "ArangoDB archive $archive does not exist"

@@ -170,40 +170,6 @@
       }
     ],
     [
-      "CHEBI",
-      {
-        "abbreviated_name": "CHEBI",
-        "display_name": "Molecular entity",
-        "color": "#3cb44b",
-        "individual_labels": [
-          {
-            "field_to_use": "label",
-            "to_be_replaced": "",
-            "replace_with": "",
-            "make_lower_case": false
-          }
-        ],
-        "individual_urls": [
-          {
-            "individual_url": "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=<FIELD_TO_USE>",
-            "field_to_use": "_key",
-            "to_be_replaced": "",
-            "replace_with": "",
-            "make_lower_case": false
-          }
-        ],
-        "individual_fields": [
-          {
-            "field_to_display": "label",
-            "display_field_as": "Label",
-            "field_url": "",
-            "field_to_use": ""
-          }
-        ],
-        "more_info": "A freely available dictionary of molecular entities focused on ‘small’ chemical compounds. The term ‘molecular entity’ refers to any constitutionally or isotopically distinct atom, molecule, ion, ion pair, radical, radical ion, complex, conformer, etc., identifiable as a separately distinguishable entity. The molecular entities in question are either products of nature or synthetic products used to intervene in the processes of living organisms."
-      }
-    ],
-    [
       "CHEMBL",
       {
         "abbreviated_name": "CHEMBL",
@@ -428,6 +394,12 @@
             "field_to_use": ""
           },
           {
+            "field_to_display": "F_beta_confidence_score",
+            "display_field_as": "F_beta_confidence_score",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
             "field_to_display": "Binary_genes",
             "display_field_as": "Binary_genes",
             "field_url": "",
@@ -489,8 +461,8 @@
         ],
         "individual_urls": [
           {
-            "individual_url": "https://<FIELD_TO_USE>",
-            "field_to_use": "Link_to_CELLxGENE_dataset",
+            "individual_url": "https://cellxgene.cziscience.com/e/<FIELD_TO_USE>.cxg/",
+            "field_to_use": "Dataset_version_ID",
             "to_be_replaced": "",
             "replace_with": "",
             "make_lower_case": false
@@ -772,6 +744,52 @@
       }
     ],
     [
+      "HP",
+      {
+        "abbreviated_name": "HP",
+        "display_name": "Human Phenotype",
+        "color": "#fabed4",
+        "individual_labels": [
+          {
+            "field_to_use": "label",
+            "to_be_replaced": "",
+            "replace_with": "",
+            "make_lower_case": false
+          },
+          {
+            "field_to_use": "definition",
+            "to_be_replaced": "",
+            "replace_with": "",
+            "make_lower_case": false
+          }
+        ],
+        "individual_urls": [
+          {
+            "individual_url": "http://purl.obolibrary.org/obo/<FIELD_TO_USE>",
+            "field_to_use": "_id",
+            "to_be_replaced": "/",
+            "replace_with": "_",
+            "make_lower_case": false
+          }
+        ],
+        "individual_fields": [
+          {
+            "field_to_display": "label",
+            "display_field_as": "Label",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "definition",
+            "display_field_as": "Definition",
+            "field_url": "",
+            "field_to_use": ""
+          }
+        ],
+        "more_info": "The Human Phenotype Ontology (HPO) provides a standardized vocabulary of phenotypic abnormalities and clinical features encountered in human disease."
+      }
+    ],
+    [
       "MONDO",
       {
         "abbreviated_name": "MONDO",
@@ -982,33 +1000,6 @@
         ],
         "individual_fields": [],
         "more_info": "ClinicalTrials.gov identifiers"
-      }
-    ],
-    [
-      "Orphanet",
-      {
-        "abbreviated_name": "Orphanet",
-        "display_name": "Rare disease",
-        "color": "#fffac8",
-        "individual_labels": [
-          {
-            "field_to_use": "_key",
-            "to_be_replaced": "",
-            "replace_with": "",
-            "make_lower_case": false
-          }
-        ],
-        "individual_urls": [
-          {
-            "individual_url": "http://purl.obolibrary.org/obo/<FIELD_TO_USE>",
-            "field_to_use": "_id",
-            "to_be_replaced": "/",
-            "replace_with": "_",
-            "make_lower_case": false
-          }
-        ],
-        "individual_fields": [],
-        "more_info": "Orphanet is a unique resource, gathering and improving knowledge on rare diseases so as to improve the diagnosis, care and treatment of patients with rare diseases. Orphanet aims to provide high-quality information on rare diseases, and ensure equal access to knowledge for all stakeholders. Orphanet also maintains the Orphanet rare disease nomenclature (ORPHAcode), essential in improving the visibility of rare diseases in health and research information systems."
       }
     ],
     [
@@ -1313,58 +1304,6 @@
           }
         ],
         "more_info": "Identiers from dbSNP which contains human single nucleotide variations, microsatellites, and small-scale insertions and deletions along with publication, population frequency, molecular consequence, and genomic and RefSeq mapping information for both common variations and clinical mutations."
-      }
-    ],
-    [
-      "SO",
-      {
-        "abbreviated_name": "SO",
-        "display_name": "Sequence feature",
-        "color": "#000000",
-        "individual_labels": [
-          {
-            "field_to_use": "label",
-            "to_be_replaced": "",
-            "replace_with": "",
-            "make_lower_case": false
-          },
-          {
-            "field_to_use": "definition",
-            "to_be_replaced": "",
-            "replace_with": "",
-            "make_lower_case": false
-          }
-        ],
-        "individual_urls": [
-          {
-            "individual_url": "http://purl.obolibrary.org/obo/<FIELD_TO_USE>",
-            "field_to_use": "_id",
-            "to_be_replaced": "/",
-            "replace_with": "_",
-            "make_lower_case": false
-          }
-        ],
-        "individual_fields": [
-          {
-            "field_to_display": "label",
-            "display_field_as": "Label",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "definition",
-            "display_field_as": "Definition",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "hasOBONamespace",
-            "display_field_as": "OBO_namespace",
-            "field_url": "",
-            "field_to_use": ""
-          }
-        ],
-        "more_info": "The Sequence Ontology is a set of terms and relationships used to describe the features and attributes of biological sequence. SO includes different kinds of features which can be located on the sequence. Biological features are those which are defined by their disposition to be involved in a biological process. Examples are binding_site and exon. Biomaterial features are those which are intended for use in an experiment such as aptamer and PCR_product. There are also experimental features which are the result of an experiment. SO also provides a rich set of attributes to describe these features such as “polycistronic” and “maternally imprinted”."
       }
     ],
     [

@@ -600,11 +600,12 @@ a.document-popup-button {
 /* FTU Explorer */
 
 .max-height-limited {
-  max-height: 40vh;
+  height: 40vh;
   position: relative;
 }
 
 .ftu-container > hra-medical-illustration {
+  display: block;
   width: 100%;
   height: 100%;
 }

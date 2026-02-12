@@ -37,7 +37,7 @@ EOF
 while getopts ":c:hex" opt; do
     case $opt in
 	c)
-	    CONF=${OPTARG}
+	    CONF="${OPTARG}"
             ;;
 	h)
 	    usage
@@ -64,33 +64,22 @@ done
 
 # Parse command line arguments
 shift `expr ${OPTIND} - 1`
-if [ "$#" -ne 0 ]; then
+if [[ "$#" -ne 0 ]]; then
     echo "No arguments required"
     exit 1
 fi
 
 # Check command line arguments
-if [ -z "$CONF" ]; then
+if [[ -z "$CONF" ]]; then
     echo "No configuration specified"
     exit 0
-elif [ ! -f "conf/$CONF" ]; then
+elif [[ ! -f "conf/$CONF" ]]; then
     echo "Configuration not found"
     exit 1
 fi
 
 # Source the specified configuration
 . conf/$CONF
-
-# Identify the domain on which to deploy
-public_ip=$(curl -s http://checkip.amazonaws.com)
-if [ $public_ip == 54.146.82.39 ]; then
-    domain="cell-kn-mvp.org"
-elif [ $public_ip == 35.173.140.169 ]; then
-    domain="cell-kn-stg.org"
-else
-    echo "Unknown public IP address"
-    exit 1
-fi
 
 # Assign the archive
 archive="arangodb"
@@ -101,20 +90,24 @@ archive+=".tar.gz"
 # Assign the port as one greater than the maximum in use, staying
 # within port range
 port=$(docker ps | grep arangodb | cut -d "-" -f 4 | sort | tail -n 1)
-if [ -z $port ]; then
+if [[ -z $port ]]; then
     port=8529
 else
     port=$(($port + 1))
-    if [ $port -gt 8539 ]; then
+    if [[ $port -gt 8539 ]]; then
 	port=8529
     fi
 fi
 
+# Lookup the domain based on IP address
+domain="$(./lookup.sh)"
+fqdn="$domain.org"
+
 # Assign the subdomain based on the specified configuration
-subdomain=$(echo $CONF | sed s/\\./-/g)
+subdomain="$(echo $CONF | sed s/\\./-/g)"
 
 # Disable the corresponding site
-site=$subdomain-cell-kn-mvp.conf
+site="$subdomain-$domain.conf"
 echo "Disabling $site"
 sudo a2dissite $site &> /dev/null
 sleep 1
@@ -123,7 +116,7 @@ sleep 1
 ARANGO_DB_PORT=$port ~/stop-arangodb.sh
 
 # Clone Cell KN MVP repository into a versioned directory
-mvp_directory=cell-kn-mvp-ui-$CELL_KN_MVP_UI_VERSION-$subdomain
+mvp_directory="cell-kn-mvp-ui-$CELL_KN_MVP_UI_VERSION-$subdomain"
 rm -rf ~/$mvp_directory
 git clone git@github.com:NIH-NLM/cell-kn-mvp-ui.git ~/$mvp_directory
 
@@ -142,9 +135,9 @@ python -m pip install -r requirements.txt
 # Generate and set a secret key, set allowed hosts, set the ArangoDB
 # port, and set the ArangoDB password, which must be set in the
 # environment used to run this script
-secret_key=$(python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key().replace('&', '\&'))")
+secret_key="$(python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key().replace('&', '\&'))")"
 echo "secret_key: $secret_key"
-allowed_host="$subdomain.$domain"
+allowed_host="$subdomain.$fqdn"
 echo "allowed_host: $allowed_host"
 sed -i \
     "s/your-secret-key-here/$secret_key/" \
@@ -161,7 +154,7 @@ sed -i \
 
 # Ensure backwards compatibility
 last_conf="v1.0.2"
-curr_conf=$(printf "%s\\n%s\\n" "$last_conf" "$CONF" | sort -V | tail -n 1)
+curr_conf="$(printf "%s\\n%s\\n" "$last_conf" "$CONF" | sort -V | tail -n 1)"
 if [[ "$curr_conf" == "$last_conf" ]]; then
 
     # Copy in the application environment again
@@ -169,7 +162,7 @@ if [[ "$curr_conf" == "$last_conf" ]]; then
 
     # Update allowed hosts directly
     sed -i \
-	"s/.*ALLOWED_HOSTS.*/ALLOWED_HOSTS = [\"$allowed_host\"]/" \
+	"s/.*ALLOWED_HOSTS.*/ALLOWED_HOSTS = [[\"$allowed_host\"]]/" \
 	core/settings.py
 
 fi
@@ -190,8 +183,8 @@ popd  # into script directory
 
 # Extract, rename, and symbolically link the ArangoDB archive
 pushd ~
-arangodb_file=$(echo $archive | sed s/.tar.gz//)-$subdomain
-arangodb_link=arangodb-$port
+arangodb_file="$(echo $archive | sed s/.tar.gz//)-$subdomain"
+arangodb_link="arangodb-$port"
 rm -rf $arangodb_file
 sudo rm -rf $arangodb_link
 tar -zxvf $archive
@@ -203,7 +196,7 @@ popd  # into script directory
  # Update, install, and enable the Apache site configuration
 cat default-ssl.conf | \
     sed s/{subdomain}/$subdomain/ | \
-    sed s/{domain}/$domain/ | \
+    sed s/{fqdn}/$fqdn/ | \
     sed s/{server_admin}/$SERVER_ADMIN/ | \
     sed s/{cell_kn_mvp_ui_version}/$CELL_KN_MVP_UI_VERSION/ \
 	> $site
