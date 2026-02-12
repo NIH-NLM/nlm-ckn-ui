@@ -45,8 +45,8 @@ module "environment" {
   }
 
   # Shared resources
-  ecr_repository_url       = module.shared.ecr_repository_url
-  s3_arangodb_bucket_name  = module.shared.s3_arangodb_bucket_name
+  ecr_repository_url      = module.shared.ecr_repository_url
+  s3_arangodb_bucket_name = module.shared.s3_arangodb_bucket_name
 
   # Environment-specific config
   project_name          = var.project_name
