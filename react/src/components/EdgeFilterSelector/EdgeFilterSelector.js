@@ -165,7 +165,14 @@ const EdgeFilterSelector = ({
           {isDropdownOpen && (
             <>
               {/* Backdrop to close dropdown when clicking outside */}
-              <div className="dropdown-backdrop" onClick={() => setIsDropdownOpen(false)} />
+              <button
+                type="button"
+                className="dropdown-backdrop"
+                onClick={() => setIsDropdownOpen(false)}
+                onKeyDown={(e) => e.key === "Escape" && setIsDropdownOpen(false)}
+                tabIndex={-1}
+                aria-label="Close dropdown"
+              />
 
               <div className="value-dropdown">
                 {filteredValues.length === 0 ? (
