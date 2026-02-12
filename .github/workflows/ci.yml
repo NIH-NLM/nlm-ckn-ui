@@ -17,29 +17,6 @@ permissions:
   pull-requests: write
 
 jobs:
-  # Permission check for fork PRs - ensures maintainer approval before running with secrets
-  # For PRs from forks, this job will fail until a maintainer re-runs it
-  check-fork-permissions:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request_target'
-    steps:
-      - name: Get User Permission
-        id: checkAccess
-        uses: actions-cool/check-user-permission@v2
-        with:
-          require: write
-          username: ${{ github.triggering_actor }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Check User Permission
-        if: steps.checkAccess.outputs.require-result == 'false'
-        run: |
-          echo "${{ github.triggering_actor }} does not have permissions on this repo."
-          echo "Current permission level is ${{ steps.checkAccess.outputs.user-permission }}"
-          echo "Job originally triggered by ${{ github.actor }}"
-          exit 1
-
   # Detect which parts of the codebase changed to skip unnecessary tests
   detect-changes:
     runs-on: ubuntu-latest
@@ -76,6 +53,30 @@ jobs:
               - 'api/**'
               - 'core/**'
               - 'arango_api/**'
+
+  # Permission check for fork PRs - only runs when backend changes are detected
+  # For PRs from forks, this job will fail until a maintainer re-runs it
+  check-fork-permissions:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request_target' && needs.detect-changes.outputs.backend == 'true'
+    steps:
+      - name: Get User Permission
+        id: checkAccess
+        uses: actions-cool/check-user-permission@v2
+        with:
+          require: write
+          username: ${{ github.triggering_actor }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check User Permission
+        if: steps.checkAccess.outputs.require-result == 'false'
+        run: |
+          echo "${{ github.triggering_actor }} does not have permissions on this repo."
+          echo "Current permission level is ${{ steps.checkAccess.outputs.user-permission }}"
+          echo "Job originally triggered by ${{ github.actor }}"
+          exit 1
 
   # Frontend linting with Biome - auto-fixes and pushes on PRs
   frontend-lint:
