@@ -12,7 +12,7 @@
 import collMaps from "assets/cell-kn-mvp-collection-maps.json";
 import EdgeFilterSelector from "components/EdgeFilterSelector";
 import FilterableDropdown from "components/FilterableDropdown";
-import { memo, useCallback } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import NodeSearchInput from "./NodeSearchInput";
 
@@ -97,6 +97,19 @@ const PhaseEditor = ({
 }) => {
   // Get collection information for display
   const allCollections = useSelector((state) => state.graph.present.settings.allCollections || []);
+
+  // Track when result first appears or changes to show a completion flash
+  const [justCompleted, setJustCompleted] = useState(false);
+  const prevResultRef = useRef(phase.result);
+  useEffect(() => {
+    if (phase.result && phase.result !== prevResultRef.current) {
+      setJustCompleted(true);
+      const timer = setTimeout(() => setJustCompleted(false), 1500);
+      prevResultRef.current = phase.result;
+      return () => clearTimeout(timer);
+    }
+    prevResultRef.current = phase.result;
+  }, [phase.result]);
 
   // Handle name change
   const handleNameChange = useCallback(
@@ -497,18 +510,21 @@ const PhaseEditor = ({
       <div className="phase-actions">
         <button
           type="button"
-          className="execute-phase-btn"
+          className={`execute-phase-btn ${justCompleted ? "completed" : ""}`}
           onClick={onExecute}
           disabled={!canExecute}
         >
-          {isExecuting ? "Executing..." : `Execute Phase ${phaseIndex + 1}`}
+          {isExecuting
+            ? "Executing..."
+            : justCompleted
+              ? "\u2713 Done"
+              : `Execute Phase ${phaseIndex + 1}`}
         </button>
 
         {/* Result Summary */}
         {phase.result && (
-          <div className="phase-result-summary">
-            <strong>Result:</strong> {phase.result.nodes?.length || 0} nodes,{" "}
-            {phase.result.links?.length || 0} edges
+          <div className={`phase-result-summary ${justCompleted ? "flash" : ""}`}>
+            {phase.result.nodes?.length || 0} nodes, {phase.result.links?.length || 0} edges
           </div>
         )}
       </div>

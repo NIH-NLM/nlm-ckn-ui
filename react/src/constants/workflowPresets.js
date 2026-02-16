@@ -130,7 +130,7 @@ export const WORKFLOW_PRESETS = [
           collapseLeafNodes: false,
           useFocusNodes: true,
           includeInterNodeEdges: true,
-          returnCollections: ["GS"],
+          returnCollections: ["BMC"],
         },
         perNodeSettings: {},
         showAdvancedSettings: false,

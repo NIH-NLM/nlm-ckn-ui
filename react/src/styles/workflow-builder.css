@@ -647,10 +647,28 @@
   cursor: not-allowed;
 }
 
+.execute-phase-btn.completed {
+  background: var(--color-green, #2e7d32);
+}
+
 .phase-result-summary {
   font-size: var(--font-size-sm);
   color: var(--color-green);
   font-weight: 500;
+}
+
+.phase-result-summary.flash {
+  animation: result-flash 1.5s ease-out;
+}
+
+@keyframes result-flash {
+  0% {
+    background-color: rgba(46, 125, 50, 0.15);
+    border-radius: 4px;
+  }
+  100% {
+    background-color: transparent;
+  }
 }
 
 /* ==========================================================================
