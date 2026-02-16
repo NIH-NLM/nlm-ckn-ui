@@ -60,6 +60,18 @@ export const executePhase = createAsyncThunk(
       throw new Error(`Phase at index ${phaseIndex} not found`);
     }
 
+    // Return cached result if available (cache is cleared when settings change)
+    const cachedResult = phaseResults[phase.id];
+    if (cachedResult) {
+      return {
+        phaseId: phase.id,
+        phaseIndex,
+        result: cachedResult,
+        originNodeIds: phase._executedOriginNodeIds || phase.originNodeIds,
+        cached: true,
+      };
+    }
+
     // Determine origin node IDs
     let originNodeIds;
     if (phase.originSource === "previousPhase" && phase.previousPhaseId) {
@@ -491,12 +503,15 @@ const workflowBuilderSlice = createSlice({
       // Execute single phase
       .addCase(executePhase.pending, (state, action) => {
         const { phaseIndex } = action.meta.arg;
+        const phase = state.phases[phaseIndex];
+        // Skip loading state if we have a cached result
+        if (phase && state.phaseResults[phase.id]) return;
         state.status = GRAPH_STATUS.LOADING;
-        state.executingPhaseId = state.phases[phaseIndex]?.id;
+        state.executingPhaseId = phase?.id;
         state.error = null;
       })
       .addCase(executePhase.fulfilled, (state, action) => {
-        const { phaseId, result, originNodeIds } = action.payload;
+        const { phaseId, result, originNodeIds, cached } = action.payload;
         state.status = GRAPH_STATUS.SUCCEEDED;
         state.executingPhaseId = null;
 
@@ -509,6 +524,19 @@ const workflowBuilderSlice = createSlice({
           phase.result = result;
           // Store the actual origin nodes used (important for chained phases)
           phase._executedOriginNodeIds = originNodeIds;
+        }
+
+        // If this was a fresh fetch (not cached), clear downstream phase caches
+        // since their inputs may have changed
+        if (!cached) {
+          const phaseIndex = state.phases.findIndex((p) => p.id === phaseId);
+          for (let i = phaseIndex + 1; i < state.phases.length; i++) {
+            const downstreamPhase = state.phases[i];
+            if (downstreamPhase.previousPhaseId === phaseId) {
+              delete state.phaseResults[downstreamPhase.id];
+              downstreamPhase.result = null;
+            }
+          }
         }
 
         // Set as active graph
