@@ -339,7 +339,7 @@ const PhaseEditor = ({
                 value={phase.settings.depth}
                 onChange={(e) => handleSettingChange("depth", Number.parseInt(e.target.value, 10))}
               >
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => (
+                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => (
                   <option key={d} value={d}>
                     {d}
                   </option>
@@ -429,7 +429,7 @@ const PhaseEditor = ({
                           )
                         }
                       >
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => (
+                        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => (
                           <option key={d} value={d}>
                             {d}
                           </option>

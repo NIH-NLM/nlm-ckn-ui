@@ -72,8 +72,10 @@ const WorkflowBuilderPage = () => {
         // Extract node IDs for the ForceGraph
         const nodeIds = graphData.nodes.map((n) => n._id);
 
-        // Disable donut nodes for workflow results since all nodes are origin nodes
+        // Set graph settings to reflect what's actually shown:
+        // depth 0 since we're displaying results directly, not traversing
         dispatch(updateSetting({ setting: "useFocusNodes", value: false }));
+        dispatch(updateSetting({ setting: "depth", value: 0 }));
 
         // Initialize the main graph with this data
         dispatch(initializeGraph({ nodeIds }));
