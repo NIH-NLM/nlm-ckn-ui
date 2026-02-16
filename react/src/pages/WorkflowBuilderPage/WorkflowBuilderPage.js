@@ -17,7 +17,7 @@ import { GRAPH_STATUS } from "constants/index";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
-import { initializeGraph, loadWorkflow, setGraphData } from "store";
+import { initializeGraph, loadWorkflow, setActiveGraph, setGraphData, updateSetting } from "store";
 
 const WorkflowBuilderPage = () => {
   const dispatch = useDispatch();
@@ -30,7 +30,9 @@ const WorkflowBuilderPage = () => {
   const [activeView, setActiveView] = useState("table"); // "table" | "graph"
 
   // Workflow builder state
-  const { activeGraph, status } = useSelector((state) => state.workflowBuilder);
+  const { activeGraph, activePhaseId, phases, phaseResults, status } = useSelector(
+    (state) => state.workflowBuilder,
+  );
 
   // Load workflow from URL on mount
   useEffect(() => {
@@ -49,12 +51,29 @@ const WorkflowBuilderPage = () => {
     }
   }, [dispatch, location.search, location.pathname, navigate]);
 
+  // Phases that have cached results
+  const phasesWithResults = phases.filter((p) => phaseResults[p.id]);
+
+  // Handle switching to a different phase's results
+  const handlePhaseSelect = useCallback(
+    (phaseId) => {
+      const graph = phaseResults[phaseId];
+      if (graph) {
+        dispatch(setActiveGraph({ phaseId, graph }));
+      }
+    },
+    [dispatch, phaseResults],
+  );
+
   // Handle when a graph result is ready from the workflow builder
   const handleGraphReady = useCallback(
     (graphData) => {
       if (graphData?.nodes?.length > 0) {
         // Extract node IDs for the ForceGraph
         const nodeIds = graphData.nodes.map((n) => n._id);
+
+        // Disable donut nodes for workflow results since all nodes are origin nodes
+        dispatch(updateSetting({ setting: "useFocusNodes", value: false }));
 
         // Initialize the main graph with this data
         dispatch(initializeGraph({ nodeIds }));
@@ -76,13 +95,6 @@ const WorkflowBuilderPage = () => {
     [dispatch],
   );
 
-  // Also watch activeGraph changes from workflow execution
-  useEffect(() => {
-    if (activeGraph?.nodes?.length > 0) {
-      handleGraphReady(activeGraph);
-    }
-  }, [activeGraph, handleGraphReady]);
-
   return (
     <div className="workflow-builder-page">
       <div className="workflow-builder-page-header">
@@ -103,6 +115,26 @@ const WorkflowBuilderPage = () => {
         <main className="workflow-builder-results-area" ref={resultsAreaRef}>
           {hasResults ? (
             <>
+              {/* Phase Tabs - show when multiple phases have results */}
+              {phasesWithResults.length > 1 && (
+                <div className="results-phase-tabs">
+                  {phasesWithResults.map((phase) => {
+                    const phaseIndex = phases.indexOf(phase);
+                    return (
+                      <button
+                        type="button"
+                        key={phase.id}
+                        className={`phase-tab ${activePhaseId === phase.id ? "active" : ""}`}
+                        onClick={() => handlePhaseSelect(phase.id)}
+                      >
+                        Phase {phaseIndex + 1}
+                        {phase.name ? `: ${phase.name}` : ""}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
               {/* View Tabs */}
               <div className="results-view-tabs">
                 <button

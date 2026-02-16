@@ -10,6 +10,7 @@
 import { GRAPH_STATUS } from "constants/index";
 import { memo, useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { fetchCollections } from "services";
 import {
   addPhase,
   addPhaseOriginNode,
@@ -21,6 +22,8 @@ import {
   loadWorkflow,
   removePhase,
   removePhaseOriginNode,
+  setAllCollections,
+  setAvailableCollections,
   setWorkflowName,
   showPresets,
   toggleAdvancedSettings,
@@ -28,6 +31,7 @@ import {
   updatePhase,
   updatePhaseSettings,
 } from "store";
+import { parseCollections } from "utils";
 import PhaseEditor from "./PhaseEditor";
 import PresetSelector from "./PresetSelector";
 
@@ -75,6 +79,18 @@ const WorkflowBuilder = ({ onGraphReady }) => {
       dispatch(fetchEdgeFilterOptions());
     }
   }, [dispatch, edgeFilterStatus]);
+
+  // Fetch collections if not already loaded
+  useEffect(() => {
+    if (collections.length === 0) {
+      fetchCollections("phenotypes").then((data) => {
+        dispatch(setAvailableCollections(parseCollections(data)));
+      });
+      fetchCollections("ontologies").then((data) => {
+        dispatch(setAllCollections(parseCollections(data)));
+      });
+    }
+  }, [dispatch, collections.length]);
 
   // Fetch node details when origin nodes change
   useEffect(() => {
@@ -232,7 +248,10 @@ const WorkflowBuilder = ({ onGraphReady }) => {
   if (showPresetSelector) {
     return (
       <div className="workflow-builder">
-        <PresetSelector onSelectPreset={handleSelectPreset} onStartFromScratch={handleStartFromScratch} />
+        <PresetSelector
+          onSelectPreset={handleSelectPreset}
+          onStartFromScratch={handleStartFromScratch}
+        />
       </div>
     );
   }

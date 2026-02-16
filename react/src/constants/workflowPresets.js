@@ -130,6 +130,7 @@ export const WORKFLOW_PRESETS = [
           collapseLeafNodes: false,
           useFocusNodes: true,
           includeInterNodeEdges: true,
+          returnCollections: ["GS"],
         },
         perNodeSettings: {},
         showAdvancedSettings: false,

@@ -55,10 +55,14 @@ const FilterableDropdown = ({
     if (!searchTerm) return processedOptions;
     const normalizedSearchTerm = searchTerm.toLowerCase();
 
-    // Filter based on display label.
+    // Filter based on display label or original value (e.g. abbreviation).
     return processedOptions.filter((option) => {
       const normalizedOptionDisplay = option.display.toLowerCase().replaceAll("_", " ");
-      return normalizedOptionDisplay.includes(normalizedSearchTerm);
+      const normalizedOriginal = option.original.toLowerCase().replaceAll("_", " ");
+      return (
+        normalizedOptionDisplay.includes(normalizedSearchTerm) ||
+        normalizedOriginal.includes(normalizedSearchTerm)
+      );
     });
   }, [processedOptions, searchTerm]);
 

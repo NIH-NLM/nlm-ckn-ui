@@ -98,7 +98,9 @@ const getNodeExternalUrl = (node, collection) => {
 const formatFieldValue = (value) => {
   if (value === null || value === undefined) return "-";
   if (Array.isArray(value)) {
-    return value.length > 3 ? `${value.slice(0, 3).join(", ")}... (+${value.length - 3})` : value.join(", ");
+    return value.length > 3
+      ? `${value.slice(0, 3).join(", ")}... (+${value.length - 3})`
+      : value.join(", ");
   }
   if (typeof value === "object") return JSON.stringify(value);
   if (typeof value === "boolean") return value ? "Yes" : "No";
@@ -116,7 +118,16 @@ const generateNodesCsv = (nodes) => {
   for (const node of nodes) {
     for (const key of Object.keys(node)) {
       // Skip internal/display fields
-      if (!key.startsWith("__") && key !== "x" && key !== "y" && key !== "vx" && key !== "vy" && key !== "fx" && key !== "fy" && key !== "index") {
+      if (
+        !key.startsWith("__") &&
+        key !== "x" &&
+        key !== "y" &&
+        key !== "vx" &&
+        key !== "vy" &&
+        key !== "fx" &&
+        key !== "fy" &&
+        key !== "index"
+      ) {
         allFields.add(key);
       }
     }
@@ -315,7 +326,12 @@ const ResultsTable = ({ graphData }) => {
             Edges ({links.length})
           </button>
         </div>
-        <button type="button" className="download-csv-btn" onClick={handleDownloadCsv} title="Download as CSV">
+        <button
+          type="button"
+          className="download-csv-btn"
+          onClick={handleDownloadCsv}
+          title="Download as CSV"
+        >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
             <path d="M8 12l-4-4h2.5V3h3v5H12L8 12z" />
             <path d="M14 13v1H2v-1h12z" />
@@ -365,7 +381,12 @@ const ResultsTable = ({ graphData }) => {
                       </td>
                       <td className="id-cell" title={node._id}>
                         {externalUrl ? (
-                          <a href={externalUrl} target="_blank" rel="noopener noreferrer" className="external-link">
+                          <a
+                            href={externalUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="external-link"
+                          >
                             {node._id}
                           </a>
                         ) : (
@@ -387,7 +408,11 @@ const ResultsTable = ({ graphData }) => {
                         </span>
                       </td>
                       {dynamicColumns.map((col) => (
-                        <td key={col.fieldName} className="dynamic-cell" title={String(node[col.fieldName] || "")}>
+                        <td
+                          key={col.fieldName}
+                          className="dynamic-cell"
+                          title={String(node[col.fieldName] || "")}
+                        >
                           {formatFieldValue(node[col.fieldName])}
                         </td>
                       ))}
@@ -397,16 +422,19 @@ const ResultsTable = ({ graphData }) => {
                         <td colSpan={4 + dynamicColumns.length}>
                           <div className="expanded-content">
                             <div className="expanded-fields">
-                              {collectionFields.map(({ fieldName, displayName: fieldDisplayName }) => {
-                                const value = node[fieldName];
-                                if (value === undefined || value === null || value === "") return null;
-                                return (
-                                  <div key={fieldName} className="expanded-field">
-                                    <span className="field-label">{fieldDisplayName}:</span>
-                                    <span className="field-value">{formatFieldValue(value)}</span>
-                                  </div>
-                                );
-                              })}
+                              {collectionFields.map(
+                                ({ fieldName, displayName: fieldDisplayName }) => {
+                                  const value = node[fieldName];
+                                  if (value === undefined || value === null || value === "")
+                                    return null;
+                                  return (
+                                    <div key={fieldName} className="expanded-field">
+                                      <span className="field-label">{fieldDisplayName}:</span>
+                                      <span className="field-value">{formatFieldValue(value)}</span>
+                                    </div>
+                                  );
+                                },
+                              )}
                             </div>
                           </div>
                         </td>
@@ -441,7 +469,8 @@ const ResultsTable = ({ graphData }) => {
             </thead>
             <tbody>
               {links.map((link, index) => {
-                const fromId = typeof link._from === "string" ? link._from : link._from?._id || link.source;
+                const fromId =
+                  typeof link._from === "string" ? link._from : link._from?._id || link.source;
                 const toId = typeof link._to === "string" ? link._to : link._to?._id || link.target;
                 const edgeLabel = link.Label || link.label || "-";
                 const edgeSource = link.Source || link.source_info || "-";

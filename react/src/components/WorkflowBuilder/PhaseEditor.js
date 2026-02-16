@@ -14,6 +14,7 @@ import EdgeFilterSelector from "components/EdgeFilterSelector";
 import FilterableDropdown from "components/FilterableDropdown";
 import { memo, useCallback } from "react";
 import { useSelector } from "react-redux";
+import NodeSearchInput from "./NodeSearchInput";
 
 // Build collection config map from collection maps JSON (module-level for efficiency)
 const collectionConfigMap = new Map();
@@ -29,6 +30,14 @@ for (const [key, value] of collMaps.maps) {
 const getCollectionColor = (nodeId) => {
   const collection = nodeId?.split("/")[0] || "";
   return collectionConfigMap.get(collection)?.color || "#666666";
+};
+
+const getCollectionColorByKey = (collectionKey) => {
+  return collectionConfigMap.get(collectionKey)?.color || null;
+};
+
+const getCollectionDisplayName = (collectionKey) => {
+  return collectionConfigMap.get(collectionKey)?.display_name || collectionKey;
 };
 
 /**
@@ -259,20 +268,7 @@ const PhaseEditor = ({
                 );
               })}
             </div>
-            {/* Simple input to add node IDs */}
-            <div className="add-node-input">
-              <input
-                type="text"
-                placeholder="Enter node ID (e.g., CL/0000540)"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && e.target.value.trim()) {
-                    onAddOriginNode(e.target.value.trim());
-                    e.target.value = "";
-                  }
-                }}
-              />
-              <span className="hint">Press Enter to add</span>
-            </div>
+            <NodeSearchInput onSelectNode={onAddOriginNode} existingNodeIds={phase.originNodeIds} />
           </div>
         )}
 
@@ -413,7 +409,11 @@ const PhaseEditor = ({
                       <select
                         value={getNodeDepth(nodeId)}
                         onChange={(e) =>
-                          onUpdatePerNodeSetting(nodeId, "depth", Number.parseInt(e.target.value, 10))
+                          onUpdatePerNodeSetting(
+                            nodeId,
+                            "depth",
+                            Number.parseInt(e.target.value, 10),
+                          )
                         }
                       >
                         {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => (
@@ -427,7 +427,9 @@ const PhaseEditor = ({
                       Direction:
                       <select
                         value={getNodeDirection(nodeId)}
-                        onChange={(e) => onUpdatePerNodeSetting(nodeId, "edgeDirection", e.target.value)}
+                        onChange={(e) =>
+                          onUpdatePerNodeSetting(nodeId, "edgeDirection", e.target.value)
+                        }
                       >
                         <option value="ANY">ANY</option>
                         <option value="INBOUND">INBOUND</option>
@@ -449,6 +451,8 @@ const PhaseEditor = ({
             options={collections || allCollections}
             selectedOptions={phase.settings.allowedCollections || []}
             onOptionToggle={handleCollectionToggle}
+            getOptionLabel={getCollectionDisplayName}
+            getColorForOption={getCollectionColorByKey}
           />
         </div>
 
@@ -470,10 +474,10 @@ const PhaseEditor = ({
             options={collections || allCollections}
             selectedOptions={phase.settings.returnCollections || []}
             onOptionToggle={handleReturnCollectionToggle}
+            getOptionLabel={getCollectionDisplayName}
+            getColorForOption={getCollectionColorByKey}
           />
-          <span className="setting-hint">
-            Leave empty to include all collections in results
-          </span>
+          <span className="setting-hint">Leave empty to include all collections in results</span>
         </div>
 
         {/* Collapse Leaf Nodes toggle */}

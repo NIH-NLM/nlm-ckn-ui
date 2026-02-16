@@ -68,8 +68,10 @@ export const executePhase = createAsyncThunk(
         throw new Error("Previous phase has no results. Execute it first.");
       }
       // Find the previous phase to get its origin node IDs for filtering
+      // Prefer _executedOriginNodeIds (set during execution) over originNodeIds
+      // because chained phases have empty originNodeIds
       const prevPhase = phases.find((p) => p.id === phase.previousPhaseId);
-      const prevOriginIds = prevPhase?.originNodeIds || [];
+      const prevOriginIds = prevPhase?._executedOriginNodeIds || prevPhase?.originNodeIds || [];
       originNodeIds = filterNodesForNextPhase(prevResult.nodes, phase.originFilter, prevOriginIds);
     } else {
       originNodeIds = phase.originNodeIds;
@@ -115,7 +117,8 @@ export const executePhase = createAsyncThunk(
         collapseOnStart: phase.settings.collapseLeafNodes ?? false,
         graphType: phase.settings.graphType,
         includeInterNodeEdges: phase.settings.includeInterNodeEdges ?? true,
-        edgeFilters: nodeOverrides.edgeFilters ?? phase.settings.edgeFilters ?? { Label: [], Source: [] },
+        edgeFilters: nodeOverrides.edgeFilters ??
+          phase.settings.edgeFilters ?? { Label: [], Source: [] },
         lastAppliedOriginNodeIds: [],
         lastAppliedPerNodeSettings: null,
       };
