@@ -482,6 +482,13 @@ const ForceGraph = ({
     }
   }, [settings.labelStates]);
 
+  // Toggles donut rendering on origin nodes when setting changes.
+  useEffect(() => {
+    if (graphInstanceRef.current?.toggleFocusNodes) {
+      graphInstanceRef.current.toggleFocusNodes(settings.useFocusNodes);
+    }
+  }, [settings.useFocusNodes]);
+
   // --- History & Save/Load Handlers ---
   const handleUndo = useCallback(() => {
     setIsRestoring(true);
@@ -552,6 +559,7 @@ const ForceGraph = ({
   const handleEdgeFontSizeChange = (e) =>
     handleSettingChange("edgeFontSize", Number.parseInt(e.target.value, 10));
   const handleLeafToggle = (e) => handleSettingChange("collapseOnStart", e.target.checked);
+  const handleFocusNodesToggle = (e) => handleSettingChange("useFocusNodes", e.target.checked);
   const handleGraphToggle = () =>
     handleSettingChange(
       "graphType",
@@ -789,6 +797,7 @@ const ForceGraph = ({
                     onEdgeFontSizeChange={handleEdgeFontSizeChange}
                     onLabelToggle={handleLabelToggle}
                     onLeafToggle={handleLeafToggle}
+                    onFocusNodesToggle={handleFocusNodesToggle}
                     onGraphToggle={handleGraphToggle}
                     onSimulationRestart={handleSimulationRestart}
                   />

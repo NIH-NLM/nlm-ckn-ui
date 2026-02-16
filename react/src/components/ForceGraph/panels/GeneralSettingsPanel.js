@@ -13,6 +13,7 @@ const GeneralSettingsPanel = ({
   onEdgeFontSizeChange,
   onLabelToggle,
   onLeafToggle,
+  onFocusNodesToggle,
   onGraphToggle,
   onSimulationRestart,
 }) => {
@@ -108,6 +109,20 @@ const GeneralSettingsPanel = ({
         <div className="labels-toggle graph-source-toggle">
           <label className="switch">
             <input type="checkbox" checked={settings.collapseOnStart} onChange={onLeafToggle} />
+            <span className="slider round" />
+          </label>
+        </div>
+      </div>
+
+      <div className="option-group labels-toggle-container">
+        <h3 className="group-label">Highlight Origin Nodes:</h3>
+        <div className="labels-toggle graph-source-toggle">
+          <label className="switch">
+            <input
+              type="checkbox"
+              checked={settings.useFocusNodes}
+              onChange={onFocusNodesToggle}
+            />
             <span className="slider round" />
           </label>
         </div>

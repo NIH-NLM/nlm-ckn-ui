@@ -6,6 +6,45 @@
 import { truncateString } from "../../utils";
 
 /**
+ * Toggles donut appearance on origin nodes without recreating the graph.
+ * Adds or removes the inner white circle on origin nodes.
+ * @param {Object} d3 - D3 library reference
+ * @param {Object} nodeContainer - D3 selection for node container
+ * @param {boolean} useFocusNodes - Whether to show donuts
+ * @param {Array} originNodeIds - IDs of origin nodes
+ * @param {number} nodeRadius - Node radius for sizing inner circle
+ */
+export function toggleFocusNodeRendering(d3, nodeContainer, useFocusNodes, originNodeIds, nodeRadius) {
+  const originSet = new Set(originNodeIds || []);
+
+  nodeContainer.selectAll("g.node").each(function (d) {
+    const nodeG = d3.select(this);
+    const innerCircle = nodeG.select("circle.donut-inner");
+
+    if (useFocusNodes && originSet.has(d.id)) {
+      // Add inner circle if not present
+      if (innerCircle.empty()) {
+        // Insert before text elements so it renders under labels
+        const firstText = nodeG.select("title");
+        nodeG
+          .insert("circle", firstText.empty() ? null : "title")
+          .attr("class", "donut-inner")
+          .attr("r", nodeRadius * 0.7)
+          .attr("fill", "white")
+          .on("contextmenu", (event, d) => {
+            event.preventDefault();
+          });
+      }
+    } else {
+      // Remove inner circle if present
+      if (!innerCircle.empty()) {
+        innerCircle.remove();
+      }
+    }
+  });
+}
+
+/**
  * Renders graph nodes and links using D3 data join pattern.
  * Handles enter, update, and exit selections for dynamic updates.
  * @param {Object} _simulation - D3 force simulation (unused but kept for API consistency)
@@ -42,6 +81,7 @@ export function renderGraph(_simulation, nodes, links, d3, containers, options) 
       // Inner circle for donut effect.
       nodeG
         .append("circle")
+        .attr("class", "donut-inner")
         .attr("r", options.nodeRadius * 0.7)
         .attr("fill", "white")
         .on("contextmenu", (event, d) => {
