@@ -50,7 +50,7 @@ export const WORKFLOW_PRESETS = [
     id: "cell-types-in-lung",
     name: "Cell types in the lung",
     description:
-      "Find all cell types located in the lung by traversing inbound ontology relationships.",
+      "Returns all cell types that are part of or subclasses of lung-associated cells.",
     category: "Cell Type Discovery",
     phases: [
       {
@@ -61,7 +61,7 @@ export const WORKFLOW_PRESETS = [
         previousPhaseId: null,
         originFilter: "all",
         settings: {
-          depth: 2,
+          depth: 9,
           edgeDirection: "INBOUND",
           allowedCollections: ["CL"],
           edgeFilters: { Label: ["PART_OF", "SUB_CLASS_OF"], Source: [] },
@@ -70,6 +70,7 @@ export const WORKFLOW_PRESETS = [
           collapseLeafNodes: true,
           useFocusNodes: true,
           includeInterNodeEdges: true,
+          returnCollections: ["CL"],
         },
         perNodeSettings: {},
         showAdvancedSettings: false,
@@ -81,7 +82,7 @@ export const WORKFLOW_PRESETS = [
     id: "epithelial-cells-lung",
     name: "Epithelial cells in the lung",
     description:
-      "Find cell types that are both epithelial AND located in the lung using intersection.",
+      "Intersects the epithelial cell hierarchy with lung anatomy to find shared cell types.",
     category: "Cell Type Discovery",
     phases: [
       {
@@ -116,7 +117,7 @@ export const WORKFLOW_PRESETS = [
     id: "dendritic-marker-genes",
     name: "Marker genes for lung dendritic cells",
     description:
-      "Two-phase query: first find dendritic cells in lung, then expand to their marker genes.",
+      "First finds dendritic cells in lung via intersection, then expands to their biomarker combinations.",
     category: "Marker Gene Analysis",
     phases: [
       {
@@ -173,7 +174,7 @@ export const WORKFLOW_PRESETS = [
     id: "lung-marker-gene-panel",
     name: "Lung cell type marker gene panel",
     description:
-      "Find marker gene combinations that distinguish cell types in the lung, suitable for spatial transcriptomics probe panel design.",
+      "Returns gene symbols linked to lung cell types via evidence-based relationships.",
     category: "Marker Gene Analysis",
     phases: [
       {
@@ -193,6 +194,7 @@ export const WORKFLOW_PRESETS = [
           collapseLeafNodes: true,
           useFocusNodes: true,
           includeInterNodeEdges: true,
+          returnCollections: ["GS"],
         },
         perNodeSettings: {},
         showAdvancedSettings: false,
@@ -203,7 +205,8 @@ export const WORKFLOW_PRESETS = [
   {
     id: "cell-type-hierarchy",
     name: "Explore cell type hierarchy",
-    description: "Start from a cell type and explore its parent/child relationships.",
+    description:
+      "Traverses subclass relationships to show parent and child cell types. Add your own starting cell type.",
     category: "Ontology Exploration",
     phases: [
       {
@@ -234,7 +237,7 @@ export const WORKFLOW_PRESETS = [
     id: "lung-markers-to-diseases",
     name: "Lung marker genes to diseases",
     description:
-      "Two-phase query: find marker genes in the lung, then discover diseases they are biomarkers for.",
+      "First finds biomarker combinations in the lung, then traces those markers to associated diseases.",
     category: "Disease Analysis",
     phases: [
       {
@@ -289,7 +292,7 @@ export const WORKFLOW_PRESETS = [
     id: "disease-cellular-pathogenesis",
     name: "Disease cellular pathogenesis",
     description:
-      "Two-phase query: find genes associated with a disease, then explore the cell types, proteins, and bioactive molecules involved in pathogenesis.",
+      "Starts from pulmonary hypertension to find associated genes, then identifies the cell types involved. Swap in any disease to explore.",
     category: "Disease Analysis",
     phases: [
       {
@@ -331,6 +334,7 @@ export const WORKFLOW_PRESETS = [
           collapseLeafNodes: false,
           useFocusNodes: true,
           includeInterNodeEdges: true,
+          returnCollections: ["CL"],
         },
         perNodeSettings: {},
         showAdvancedSettings: false,
