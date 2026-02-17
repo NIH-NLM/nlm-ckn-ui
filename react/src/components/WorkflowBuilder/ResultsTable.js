@@ -402,9 +402,9 @@ const ResultsTable = ({ graphData }) => {
                             color: collectionColor,
                             borderColor: collectionColor,
                           }}
-                          title={displayName}
+                          title={collection}
                         >
-                          {collection}
+                          {displayName}
                         </span>
                       </td>
                       {dynamicColumns.map((col) => (
