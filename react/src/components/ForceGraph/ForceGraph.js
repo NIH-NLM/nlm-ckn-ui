@@ -341,8 +341,11 @@ const ForceGraph = ({
       // render it immediately since we won't get another action to trigger rendering.
       // Use updateGraph (not restoreGraph) to run the simulation for fresh data.
       if (graphData?.nodes?.length > 0) {
-        // Track rendered node IDs to prevent infinite loops from simulation end callback
+        // Track rendered node IDs to prevent duplicate renders (StrictMode, simulation end)
         lastRenderedNodeIdsRef.current = new Set(graphData.nodes.map((n) => n._id || n.id));
+        // Mark as initialized to prevent the initialization effect from triggering
+        // fetchAndProcessGraph — we already have the data we need.
+        hasInitializedGraph.current = true;
         newGraphInstance.updateGraph({
           newOriginNodeIds: originNodeIds,
           newNodes: graphData.nodes,
@@ -415,33 +418,25 @@ const ForceGraph = ({
           break;
         }
         case "setGraphData": {
-          // Handle direct graph data setting (e.g., from WorkflowBuilder)
+          // Handle direct graph data setting (e.g., from WorkflowBuilder).
           // Use graphInstanceRef.current since graphInstance may be stale if
           // the instance was just created in this same effect run.
-          // Use updateGraph (not restoreGraph) to run the simulation for fresh data.
           const currentInstance = graphInstanceRef.current;
           if (currentInstance && graphData?.nodes?.length > 0) {
-            // Check if this is simulation-updated data (has x/y positions) vs fresh data
-            // Fresh data from API/workflow won't have positions set by simulation
-            const hasSimulationPositions = graphData.nodes.some(
-              (n) => typeof n.x === "number" && typeof n.y === "number" && !Number.isNaN(n.x),
-            );
-
-            // If nodes have simulation positions and IDs match what we rendered, skip
-            // This prevents infinite loop from simulation end callback
-            if (hasSimulationPositions) {
-              const currentNodeIds = new Set(graphData.nodes.map((n) => n._id || n.id));
-              const lastRendered = lastRenderedNodeIdsRef.current;
-              if (lastRendered && currentNodeIds.size === lastRendered.size) {
-                const allMatch = [...currentNodeIds].every((id) => lastRendered.has(id));
-                if (allMatch) {
-                  break; // Skip - this is simulation update for already rendered graph
-                }
+            // Skip if we already rendered this exact set of nodes.
+            // Prevents duplicate renders from: StrictMode double-mount,
+            // simulation end callback, and redundant effect triggers.
+            const currentNodeIds = new Set(graphData.nodes.map((n) => n._id || n.id));
+            const lastRendered = lastRenderedNodeIdsRef.current;
+            if (lastRendered && currentNodeIds.size === lastRendered.size) {
+              const allMatch = [...currentNodeIds].every((id) => lastRendered.has(id));
+              if (allMatch) {
+                break;
               }
             }
 
             // Track this render and update the graph
-            lastRenderedNodeIdsRef.current = new Set(graphData.nodes.map((n) => n._id || n.id));
+            lastRenderedNodeIdsRef.current = currentNodeIds;
             currentInstance.updateGraph({
               newOriginNodeIds: originNodeIds,
               newNodes: graphData.nodes,
