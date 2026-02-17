@@ -326,7 +326,14 @@ const WorkflowBuilder = ({ onGraphReady }) => {
           onClick={handleExecuteWorkflow}
           disabled={!canExecuteWorkflow}
         >
-          {status === GRAPH_STATUS.LOADING ? "Executing..." : "Execute Workflow"}
+          {status === GRAPH_STATUS.LOADING ? (
+            <>
+              <span className="spinner" />
+              Executing...
+            </>
+          ) : (
+            "Execute Workflow"
+          )}
         </button>
       </div>
 

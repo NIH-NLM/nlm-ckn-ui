@@ -30,7 +30,7 @@ const WorkflowBuilderPage = () => {
   const [activeView, setActiveView] = useState("table"); // "table" | "graph"
 
   // Workflow builder state
-  const { activeGraph, activePhaseId, phases, phaseResults, status } = useSelector(
+  const { activeGraph, activePhaseId, phases, phaseResults, status, executingPhaseId } = useSelector(
     (state) => state.workflowBuilder,
   );
 
@@ -113,20 +113,24 @@ const WorkflowBuilderPage = () => {
         <main className="workflow-builder-results-area" ref={resultsAreaRef}>
           {hasResults ? (
             <>
-              {/* Phase Tabs - show when multiple phases have results */}
-              {phasesWithResults.length > 1 && (
+              {/* Phase Tabs - show when multiple phases exist and execution has started */}
+              {phases.length > 1 && (hasResults || status === GRAPH_STATUS.LOADING) && (
                 <div className="results-phase-tabs">
-                  {phasesWithResults.map((phase) => {
-                    const phaseIndex = phases.indexOf(phase);
+                  {phases.map((phase, index) => {
+                    const hasPhaseResults = !!phaseResults[phase.id];
+                    const isExecuting = executingPhaseId === phase.id;
+                    const isPending = !hasPhaseResults && !isExecuting;
                     return (
                       <button
                         type="button"
                         key={phase.id}
-                        className={`phase-tab ${activePhaseId === phase.id ? "active" : ""}`}
+                        className={`phase-tab${activePhaseId === phase.id ? " active" : ""}${isExecuting ? " executing" : ""}${isPending ? " pending" : ""}`}
                         onClick={() => handlePhaseSelect(phase.id)}
+                        disabled={isPending}
                       >
-                        Phase {phaseIndex + 1}
+                        Phase {index + 1}
                         {phase.name ? `: ${phase.name}` : ""}
+                        {isExecuting && <span className="spinner" />}
                       </button>
                     );
                   })}

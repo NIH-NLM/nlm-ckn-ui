@@ -636,6 +636,9 @@
   font-size: var(--font-size-sm);
   font-weight: 500;
   transition: background var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
 }
 
 .execute-phase-btn:hover:not(:disabled) {
@@ -711,6 +714,9 @@
   font-size: var(--font-size-base);
   font-weight: 600;
   transition: background var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
 }
 
 .execute-workflow-btn:hover:not(:disabled) {
@@ -794,6 +800,21 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+/* White spinner variant for use inside colored buttons */
+.execute-phase-btn .spinner,
+.execute-workflow-btn .spinner {
+  width: 14px;
+  height: 14px;
+  border-color: rgba(255, 255, 255, 0.3);
+  border-top-color: var(--color-white);
+}
+
+/* Smaller spinner inside phase tabs */
+.phase-tab .spinner {
+  width: 12px;
+  height: 12px;
 }
 
 /* ==========================================================================
@@ -938,6 +959,22 @@
   color: var(--color-primary);
   background: var(--color-white);
   border-color: var(--color-primary);
+}
+
+.phase-tab.executing {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.phase-tab.pending {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.phase-tab.pending:hover {
+  background: transparent;
+  color: var(--color-gray);
 }
 
 /* View Tabs (Table / Graph) */

@@ -514,11 +514,16 @@ const PhaseEditor = ({
           onClick={onExecute}
           disabled={!canExecute}
         >
-          {isExecuting
-            ? "Executing..."
-            : justCompleted
-              ? "\u2713 Done"
-              : `Execute Phase ${phaseIndex + 1}`}
+          {isExecuting ? (
+            <>
+              <span className="spinner" />
+              Executing...
+            </>
+          ) : justCompleted ? (
+            "\u2713 Done"
+          ) : (
+            `Execute Phase ${phaseIndex + 1}`
+          )}
         </button>
 
         {/* Result Summary */}
