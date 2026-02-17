@@ -220,6 +220,11 @@ const ForceGraph = ({
 
   // Triggers new data fetch when graph is explicitly initialized in the slice.
   useEffect(() => {
+    // Skip if we already have graph data (e.g., from WorkflowBuilder).
+    if (graphData?.nodes?.length > 0) return;
+    // Skip if a fetch is already in progress (prevents StrictMode double-fire).
+    if (status === "loading") return;
+
     if (
       (lastActionType === "initializeGraph" && settings.allowedCollections.length > 0) ||
       (!hasInitializedGraph.current && lastActionType === "updateSetting")
@@ -346,6 +351,9 @@ const ForceGraph = ({
         // Mark as initialized to prevent the initialization effect from triggering
         // fetchAndProcessGraph — we already have the data we need.
         hasInitializedGraph.current = true;
+        // Set display settings to reflect workflow results (depth 0, no donuts)
+        dispatch(updateSetting({ setting: "useFocusNodes", value: false }));
+        dispatch(updateSetting({ setting: "depth", value: 0 }));
         newGraphInstance.updateGraph({
           newOriginNodeIds: originNodeIds,
           newNodes: graphData.nodes,
@@ -411,6 +419,12 @@ const ForceGraph = ({
             centerNodeId: nodeToCenter,
             labelStates: settings.labelStates,
           });
+
+          // Track rendered node IDs so the subsequent setGraphData from
+          // onSimulationEnd doesn't trigger a redundant updateGraph call.
+          lastRenderedNodeIdsRef.current = new Set(
+            processedData.nodes.map((n) => n._id || n.id),
+          );
 
           if (nodeToCenter) {
             dispatch(clearNodeToCenter());

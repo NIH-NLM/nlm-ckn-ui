@@ -30,8 +30,13 @@ const GraphPage = () => {
   }, [nodeIds, lastAppliedOriginNodeIds, showGraph]);
 
   // Init graph on component load.
+  // Ref prevents StrictMode from dispatching initializeGraph twice.
+  const hasInitializedRef = useRef(false);
   useEffect(() => {
-    dispatch(initializeGraph({}));
+    if (!hasInitializedRef.current) {
+      dispatch(initializeGraph({}));
+      hasInitializedRef.current = true;
+    }
   }, [dispatch]);
 
   // Effect to synchronize local objects with global node IDs.

@@ -170,8 +170,18 @@ const graphSlice = createSlice({
       state.lastActionType = "updateSetting";
     },
     // Sets final, processed graph data, including node positions.
+    // Accepts either {nodes, links} directly, or {graphData, originNodeIds}
+    // for workflow-style initialization that also sets origin nodes.
     setGraphData: (state, action) => {
-      state.graphData = action.payload;
+      if (action.payload.graphData) {
+        state.graphData = action.payload.graphData;
+        if (action.payload.originNodeIds) {
+          state.originNodeIds = action.payload.originNodeIds;
+          state.lastAppliedOriginNodeIds = action.payload.originNodeIds;
+        }
+      } else {
+        state.graphData = action.payload;
+      }
       state.status = GRAPH_STATUS.SUCCEEDED;
       state.lastActionType = "setGraphData";
     },

@@ -122,6 +122,9 @@
   right: 0;
   bottom: 0;
   z-index: 99;
+  background: transparent;
+  border: none;
+  cursor: default;
 }
 
 /* Value Dropdown */

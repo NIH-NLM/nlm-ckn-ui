@@ -47,6 +47,37 @@ export const createEmptyPhase = (index) => ({
  */
 export const WORKFLOW_PRESETS = [
   {
+    id: "cell-types-in-lung",
+    name: "Cell types in the lung",
+    description:
+      "Find all cell types located in the lung by traversing inbound ontology relationships.",
+    category: "Cell Type Discovery",
+    phases: [
+      {
+        id: "preset-lung-cells-phase-1",
+        name: "Cell types in lung",
+        originSource: "manual",
+        originNodeIds: ["UBERON/0002048"], // Lung
+        previousPhaseId: null,
+        originFilter: "all",
+        settings: {
+          depth: 2,
+          edgeDirection: "INBOUND",
+          allowedCollections: ["CL"],
+          edgeFilters: { Label: ["PART_OF", "SUB_CLASS_OF"], Source: [] },
+          setOperation: "Union",
+          graphType: "ontologies",
+          collapseLeafNodes: true,
+          useFocusNodes: true,
+          includeInterNodeEdges: true,
+        },
+        perNodeSettings: {},
+        showAdvancedSettings: false,
+        result: null,
+      },
+    ],
+  },
+  {
     id: "epithelial-cells-lung",
     name: "Epithelial cells in the lung",
     description:
@@ -139,6 +170,37 @@ export const WORKFLOW_PRESETS = [
     ],
   },
   {
+    id: "lung-marker-gene-panel",
+    name: "Lung cell type marker gene panel",
+    description:
+      "Find marker gene combinations that distinguish cell types in the lung, suitable for spatial transcriptomics probe panel design.",
+    category: "Marker Gene Analysis",
+    phases: [
+      {
+        id: "preset-lung-panel-phase-1",
+        name: "Lung cell type markers",
+        originSource: "manual",
+        originNodeIds: ["UBERON/0002048"], // Lung
+        previousPhaseId: null,
+        originFilter: "all",
+        settings: {
+          depth: 2,
+          edgeDirection: "ANY",
+          allowedCollections: ["CL", "BMC", "GS"],
+          edgeFilters: { Label: [], Source: [] },
+          setOperation: "Union",
+          graphType: "phenotypes",
+          collapseLeafNodes: true,
+          useFocusNodes: true,
+          includeInterNodeEdges: true,
+        },
+        perNodeSettings: {},
+        showAdvancedSettings: false,
+        result: null,
+      },
+    ],
+  },
+  {
     id: "cell-type-hierarchy",
     name: "Explore cell type hierarchy",
     description: "Start from a cell type and explore its parent/child relationships.",
@@ -185,7 +247,7 @@ export const WORKFLOW_PRESETS = [
         settings: {
           depth: 2,
           edgeDirection: "ANY",
-          allowedCollections: ["BMC", "UBERON"],
+          allowedCollections: ["BMC", "CS", "UBERON"],
           edgeFilters: { Label: [], Source: [] },
           setOperation: "Union",
           graphType: "ontologies",
@@ -206,10 +268,64 @@ export const WORKFLOW_PRESETS = [
         previousPhaseId: "preset-lung-disease-phase-1",
         originFilter: "all",
         settings: {
+          depth: 2,
+          edgeDirection: "ANY",
+          allowedCollections: ["BMC", "GS", "MONDO"],
+          edgeFilters: { Label: [], Source: [] },
+          setOperation: "Union",
+          graphType: "ontologies",
+          collapseLeafNodes: false,
+          useFocusNodes: true,
+          includeInterNodeEdges: true,
+          returnCollections: ["MONDO"],
+        },
+        perNodeSettings: {},
+        showAdvancedSettings: false,
+        result: null,
+      },
+    ],
+  },
+  {
+    id: "disease-cellular-pathogenesis",
+    name: "Disease cellular pathogenesis",
+    description:
+      "Two-phase query: find genes associated with a disease, then explore the cell types, proteins, and bioactive molecules involved in pathogenesis.",
+    category: "Disease Analysis",
+    phases: [
+      {
+        id: "preset-pathogenesis-phase-1",
+        name: "Find disease-associated genes",
+        originSource: "manual",
+        originNodeIds: ["MONDO/0005149"], // Pulmonary hypertension
+        previousPhaseId: null,
+        originFilter: "all",
+        settings: {
+          depth: 9,
+          edgeDirection: "INBOUND",
+          allowedCollections: ["MONDO", "GS"],
+          edgeFilters: { Label: ["SUB_CLASS_OF", "GENETIC_BASIS_FOR"], Source: [] },
+          setOperation: "Union",
+          graphType: "ontologies",
+          collapseLeafNodes: false,
+          useFocusNodes: true,
+          includeInterNodeEdges: true,
+        },
+        perNodeSettings: {},
+        showAdvancedSettings: false,
+        result: null,
+      },
+      {
+        id: "preset-pathogenesis-phase-2",
+        name: "Explore cellular contributions",
+        originSource: "previousPhase",
+        originNodeIds: [],
+        previousPhaseId: "preset-pathogenesis-phase-1",
+        originFilter: "all",
+        settings: {
           depth: 1,
           edgeDirection: "ANY",
-          allowedCollections: ["BMC", "MONDO"],
-          edgeFilters: { Label: ["IS_BASIS_FOR_CONDITION"], Source: [] },
+          allowedCollections: ["BMC", "CHEBI", "CL", "GS", "PR"],
+          edgeFilters: { Label: [], Source: [] },
           setOperation: "Union",
           graphType: "ontologies",
           collapseLeafNodes: false,

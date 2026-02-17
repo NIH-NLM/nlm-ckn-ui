@@ -17,7 +17,7 @@ import { GRAPH_STATUS } from "constants/index";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
-import { initializeGraph, loadWorkflow, setActiveGraph, setGraphData, updateSetting } from "store";
+import { loadWorkflow, setActiveGraph, setGraphData } from "store";
 
 const WorkflowBuilderPage = () => {
   const dispatch = useDispatch();
@@ -69,17 +69,13 @@ const WorkflowBuilderPage = () => {
   const handleGraphReady = useCallback(
     (graphData) => {
       if (graphData?.nodes?.length > 0) {
-        // Extract node IDs for the ForceGraph
         const nodeIds = graphData.nodes.map((n) => n._id);
 
-        // Set graph settings to reflect what's actually shown:
-        // depth 0 since we're displaying results directly, not traversing
-        dispatch(updateSetting({ setting: "useFocusNodes", value: false }));
-        dispatch(updateSetting({ setting: "depth", value: 0 }));
-
-        // Initialize the main graph with this data
-        dispatch(initializeGraph({ nodeIds }));
-        dispatch(setGraphData(graphData));
+        // Set graph data and origin node IDs in a single dispatch.
+        // Settings like depth and useFocusNodes are applied in ForceGraph's
+        // constructor path to avoid updateSetting dispatches that set
+        // lastActionType="updateSetting" and trigger fetchAndProcessGraph.
+        dispatch(setGraphData({ graphData, originNodeIds: nodeIds }));
 
         setHasResults(true);
 
