@@ -1,0 +1,140 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Shared resources for Cell-KN - ECR repository and S3 bucket for ArangoDB datasets (shared across all environments)'
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: cell-kn
+    Description: Project name for resource naming
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Project Configuration
+        Parameters:
+          - ProjectName
+
+Resources:
+  # ============================================================================
+  # ECR Repository for Backend Docker Images
+  # ============================================================================
+  BackendRepository:
+    Type: AWS::ECR::Repository
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      RepositoryName: !Sub '${ProjectName}-backend'
+      ImageTagMutability: MUTABLE
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      EncryptionConfiguration:
+        EncryptionType: AES256
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Keep last 30 images",
+                "selection": {
+                  "tagStatus": "any",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 30
+                },
+                "action": {
+                  "type": "expire"
+                }
+              }
+            ]
+          }
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Name
+          Value: !Sub '${ProjectName}-backend'
+        - Key: Shared
+          Value: 'true'
+        - Key: Purpose
+          Value: Backend Docker images for all environments
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  # ============================================================================
+  # S3 Bucket for ArangoDB Datasets
+  # ============================================================================
+  ArangoDbDataBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub '${ProjectName}-arangodb-data'
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          # Archive old datasets
+          - Id: ArchiveOldDatasets
+            Status: Enabled
+            Prefix: datasets/
+            Transitions:
+              - TransitionInDays: 90
+                StorageClass: GLACIER
+              - TransitionInDays: 180
+                StorageClass: DEEP_ARCHIVE
+          # Expire old backups
+          - Id: ExpireOldBackups
+            Status: Enabled
+            Prefix: backups/
+            ExpirationInDays: 30
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Name
+          Value: !Sub '${ProjectName}-arangodb-data'
+        - Key: Shared
+          Value: 'true'
+        - Key: Purpose
+          Value: ArangoDB datasets for all environments
+        - Key: ManagedBy
+          Value: CloudFormation
+
+Outputs:
+  EcrRepositoryUrl:
+    Description: ECR repository URL for backend Docker images
+    Value: !GetAtt BackendRepository.RepositoryUri
+    Export:
+      Name: !Sub '${ProjectName}-shared-ecr-url'
+
+  EcrRepositoryArn:
+    Description: ECR repository ARN
+    Value: !GetAtt BackendRepository.Arn
+    Export:
+      Name: !Sub '${ProjectName}-shared-ecr-arn'
+
+  EcrRepositoryName:
+    Description: ECR repository name
+    Value: !Ref BackendRepository
+    Export:
+      Name: !Sub '${ProjectName}-shared-ecr-name'
+
+  ArangoDbS3BucketName:
+    Description: S3 bucket name for ArangoDB datasets
+    Value: !Ref ArangoDbDataBucket
+    Export:
+      Name: !Sub '${ProjectName}-shared-arangodb-bucket'
+
+  ArangoDbS3BucketArn:
+    Description: S3 bucket ARN for ArangoDB datasets
+    Value: !GetAtt ArangoDbDataBucket.Arn
+    Export:
+      Name: !Sub '${ProjectName}-shared-arangodb-bucket-arn'
