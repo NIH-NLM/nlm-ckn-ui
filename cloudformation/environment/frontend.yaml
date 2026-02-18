@@ -134,7 +134,15 @@ Resources:
           Value: !Sub '${ProjectName}-${Environment}-cert'
         - Key: ManagedBy
           Value: CloudFormation
-
+  CertificateValidationRecord:
+      Type: AWS::Route53::RecordSet
+      Properties:
+        HostedZoneId: !Ref HostedZoneId
+        Name: !GetAtt Certificate.DomainValidationOptions[0].ResourceRecordName
+        Type: !GetAtt Certificate.DomainValidationOptions[0].ResourceRecordType
+        ResourceRecords:
+          - !GetAtt Certificate.DomainValidationOptions[0].ResourceRecordValue
+        TTL: '60'
   # ============================================================================
   # CloudFront Origin Access Control
   # ============================================================================
@@ -170,7 +178,7 @@ Resources:
         Origins:
           # S3 Origin for frontend
           - Id: S3Origin
-            DomainName: !GetAtt FrontendBucket.RegionalDomainName
+            DomainName: !GetAtt FrontendBucket.DomainName
             OriginAccessControlId: !Ref CloudFrontOAC
             S3OriginConfig: {}
 
@@ -254,6 +262,7 @@ Resources:
 
           - PathPattern: /_api/*
             TargetOriginId: ArangoDbOrigin
+            OriginRequestPolicyId: !Ref ArangoDbOriginRequestPolicy
             ViewerProtocolPolicy: redirect-to-https
             AllowedMethods:
               - GET
@@ -317,6 +326,24 @@ Resources:
           Value: CloudFormation
 
   # ============================================================================
+  # CloudFront OriginRequestPolicy
+  # ============================================================================
+  ArangoDbOriginRequestPolicy:
+      Type: AWS::CloudFront::OriginRequestPolicy
+      Properties:
+        OriginRequestPolicyConfig:
+          Name: !Sub '${ProjectName}-${Environment}-arangodb-policy'
+          Comment: 'Forwards Host header for ArangoDB redirects'
+          HeadersConfig:
+            HeaderBehavior: whitelist
+            Headers:
+              - Host
+              - X-Forwarded-Host
+          CookiesConfig:
+            CookieBehavior: all
+          QueryStringsConfig:
+            QueryStringBehavior: all
+  # ============================================================================
   # Route 53 Record
   # ============================================================================
   DnsRecord:
@@ -362,3 +389,7 @@ Outputs:
           - !Sub '${Environment}.${DomainName}'
     Export:
       Name: !Sub '${ProjectName}-${Environment}-frontend-url'
+  CertificateArn:
+    Value: !Ref Certificate
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-acm-cert-arn'

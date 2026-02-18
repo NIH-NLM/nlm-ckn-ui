@@ -15,7 +15,7 @@
 #   - AWS CLI configured with appropriate credentials
 #   - Docker installed and running
 #   - Node.js and npm installed
-#   - Terraform infrastructure deployed (terraform apply)
+#   - Infrastructure deployed
 #
 # TYPICAL USE CASES:
 #   - First time deployment after infrastructure setup

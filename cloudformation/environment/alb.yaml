@@ -36,6 +36,10 @@ Parameters:
       (X-Custom-Origin-Header). Requests missing this header are rejected
       with 403, preventing direct ALB access that bypasses CloudFront.
 
+CertificateArn:
+    Type: String
+    Description: ARN of the ACM certificate (must be in us-east-1)
+
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -99,6 +103,11 @@ Resources:
           - Effect: Allow
             Principal:
               Service: logdelivery.elasticloadbalancing.amazonaws.com
+            Action: s3:PutObject
+            Resource: !Sub '${AlbLogsBucket.Arn}/*'
+          - Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root' 
             Action: s3:PutObject
             Resource: !Sub '${AlbLogsBucket.Arn}/*'
 
@@ -220,7 +229,9 @@ Resources:
     Properties:
       LoadBalancerArn: !Ref ApplicationLoadBalancer
       Port: 8000
-      Protocol: HTTP
+      Protocol: HTTPS
+      Certificates:
+        - CertificateArn: !Ref CertificateArn
       # Default action: reject anything that didn't match the header rule
       DefaultActions:
         - Type: fixed-response

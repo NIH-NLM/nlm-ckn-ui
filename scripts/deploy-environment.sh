@@ -8,7 +8,7 @@
 #   ./deploy-environment.sh <environment>
 #
 # ARGUMENTS:
-#   environment    Environment name: dev, sandbox, or prod
+#   environment    Environment name: dev, staging, or prod
 #
 # WHAT IT DOES:
 #   1. Validates parameters file exists
@@ -30,7 +30,7 @@
 #
 # EXAMPLES:
 #   ./deploy-environment.sh dev
-#   ./deploy-environment.sh sandbox
+#   ./deploy-environment.sh staging
 #   ./deploy-environment.sh prod
 # ==============================================================================
 set -e
@@ -56,8 +56,8 @@ PARAMETERS_FILE="cloudformation/parameters/${ENVIRONMENT}.json"
 TEMPLATES_BUCKET="${PROJECT_NAME}-cfn-templates"
 
 # Validate environment
-if [[ ! "$ENVIRONMENT" =~ ^(dev|sandbox|prod)$ ]]; then
-  echo -e "${RED}Error: Environment must be dev, sandbox, or prod${NC}"
+if [[ ! "$ENVIRONMENT" =~ ^(dev|staging|prod)$ ]]; then
+  echo -e "${RED}Error: Environment must be dev, staging, or prod${NC}"
   exit 1
 fi
 
@@ -90,15 +90,33 @@ aws s3 sync cloudformation/ s3://${TEMPLATES_BUCKET}/ \
 
 echo -e "${GREEN}✓ Templates uploaded${NC}\n"
 
+# Validate templates with cfn-lint if available
+if command -v cfn-lint &> /dev/null; then
+  echo -e "${GREEN}==> Validating templates with cfn-lint${NC}"
+  cfn-lint cloudformation/environment/*.yaml cloudformation/bootstrap/*.yaml cloudformation/shared/*.yaml || {
+    echo -e "${YELLOW}⚠ cfn-lint found warnings (non-blocking)${NC}"
+  }
+  echo ""
+fi
+
 # Deploy stack
 echo -e "${GREEN}==> Deploying ${ENVIRONMENT} environment stack${NC}"
-echo -e "${YELLOW}This will create nested stacks and may take 15-20 minutes...${NC}\n"
+echo -e "${YELLOW}This will create nested stacks and may take 15-20 minutes...${NC}"
+echo -e "${YELLOW}IMPORTANT: This stack MUST be deployed in us-east-1 (CloudFront ACM cert requirement)${NC}\n"
+
+# Convert JSON parameters file to key=value pairs for 'aws cloudformation deploy'
+PARAM_OVERRIDES=$(python3 -c "
+import json, sys
+with open('${PARAMETERS_FILE}') as f:
+    params = json.load(f)
+print(' '.join(f\"{p['ParameterKey']}={p['ParameterValue']}\" for p in params))
+")
 
 aws cloudformation deploy \
   --template-file cloudformation/environment/main.yaml \
   --stack-name ${PROJECT_NAME}-${ENVIRONMENT} \
   --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
-  --parameter-overrides file://${PARAMETERS_FILE} \
+  --parameter-overrides ${PARAM_OVERRIDES} \
   --region $AWS_REGION
 
 if [ $? -eq 0 ]; then

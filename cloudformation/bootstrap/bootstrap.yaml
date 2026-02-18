@@ -10,7 +10,7 @@ Parameters:
   GitHubOrg:
     Type: String
     Description: GitHub organization name
-    Default: your-github-org
+    Default: NIH-NLM
 
   GitHubRepo:
     Type: String
@@ -330,4 +330,4 @@ Outputs:
       1. Upload environment templates to S3: aws s3 sync cloudformation/ s3://${TemplatesBucket}/
       2. Configure GitHub Actions to use role: ${GitHubActionsRole.Arn}
       3. Deploy shared resources: aws cloudformation deploy --template-file cloudformation/shared/shared-resources.yaml --stack-name ${ProjectName}-shared
-      4. Deploy environment: See cloudformation/environment/README.md
+      4. Deploy environment: See cloudformation/DEPLOYMENT.md

@@ -107,21 +107,21 @@ ECR_REPO=$(aws ssm get-parameter \
 }
 
 # Read ECS cluster and service names from CloudFormation stack outputs
-ECS_CLUSTER=$(aws cloudformation describe-stacks \
+# Fetch outputs as "Key=Value" lines
+STACK_DATA=$(aws cloudformation describe-stacks \
   --stack-name "$STACK_NAME" \
   --region "$AWS_REGION" \
-  --query 'Stacks[0].Outputs[?OutputKey==`EcsClusterName`].OutputValue' \
-  --output text 2>/dev/null) || {
-  echo -e "${RED}Error: Could not read ECS cluster name from stack ${STACK_NAME}.${NC}"
-  echo "Make sure the environment stack is deployed."
-  exit 1
-}
+  --query 'Stacks[0].Outputs[?OutputKey==`EcsClusterName` || OutputKey==`BackendServiceName`].[OutputKey,OutputValue]' \
+  --output text)
 
-SERVICE_NAME=$(aws cloudformation describe-stacks \
-  --stack-name "$STACK_NAME" \
-  --region "$AWS_REGION" \
-  --query 'Stacks[0].Outputs[?OutputKey==`BackendServiceName`].OutputValue' \
-  --output text 2>/dev/null)
+# Loop through the lines and assign variables
+while read -r key value; do
+  declare "$key=$value"
+done <<< "$STACK_DATA"
+
+# Now you can use them safely
+echo "Cluster: $EcsClusterName"
+echo "Service: $BackendServiceName"
 
 TASK_FAMILY="${PROJECT_NAME}-${ENVIRONMENT}-backend"
 

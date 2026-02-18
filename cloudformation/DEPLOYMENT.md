@@ -110,7 +110,7 @@ aws cloudformation deploy \
   --capabilities CAPABILITY_IAM \
   --parameter-overrides \
     ProjectName=cell-kn \
-    GitHubOrg=your-github-org \
+    GitHubOrg=NIH-NLM \
     GitHubRepo=cell-kn-mvp-ui
 ```
 

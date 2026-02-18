@@ -2,29 +2,23 @@
 # ==============================================================================
 # deploy-frontend.sh - Deploy Frontend Application
 # ==============================================================================
-# Builds the React frontend with the correct API URL and deploys to S3/CloudFront.
+# Builds the React frontend and deploys to S3/CloudFront.
 #
 # USAGE:
-#   ./deploy-frontend.sh
+#   ./deploy-frontend.sh <environment>
 #
 # WHAT IT DOES:
-#   1. Gets ALB DNS name from Terraform
-#   2. Builds React app with REACT_APP_API_URL set to backend
-#   3. Syncs build files to S3
-#   4. Creates CloudFront invalidation
-#   5. Shows application URLs
+#   1. Gets ALB DNS name from CloudFormation Stack
+#   2. Syncs build files to S3
+#   3. Creates CloudFront invalidation
+#   4. Shows application URLs
 #
 # PREREQUISITES:
 #   - AWS CLI configured with appropriate credentials
 #   - Node.js and npm installed
-#   - Terraform infrastructure deployed (terraform apply)
+#   - Infrastructure deployed (deploy-environment.sh)
 #   - React application in ../react directory
 #
-# WITH CUSTOM DOMAIN:
-#   If using custom domain, React uses relative URLs and doesn't need
-#   REACT_APP_API_URL. Just run:
-#     npm run build
-#     aws s3 sync build/ s3://bucket/ --delete
 #
 # ROLLBACK:
 #   S3 versioning is enabled. Use AWS Console to restore previous version.
@@ -47,38 +41,64 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Change to terraform directory
-cd "$(dirname "$0")/../terraform"
 
-echo -e "${GREEN}Getting infrastructure details from Terraform...${NC}"
-
-# Get Terraform outputs
-ALB_DNS=$(terraform output -raw alb_dns_name 2>/dev/null)
-S3_BUCKET=$(terraform output -raw s3_bucket_name 2>/dev/null)
-CF_DIST_ID=$(terraform output -raw cloudfront_distribution_id 2>/dev/null)
-
-if [ -z "$ALB_DNS" ] || [ -z "$S3_BUCKET" ] || [ -z "$CF_DIST_ID" ]; then
-    echo -e "${RED}Error: Could not get Terraform outputs. Make sure infrastructure is deployed.${NC}"
-    exit 1
+# Check arguments
+if [ $# -ne 1 ]; then
+  echo "Usage: $0 <environment>"
+  echo "Example: $0 dev"
+  exit 1
 fi
 
-echo "  ALB DNS: $ALB_DNS"
+ENVIRONMENT=$1
+PROJECT_NAME="cell-kn"
+AWS_REGION=${AWS_REGION:-us-east-1}
+STACK_NAME="${PROJECT_NAME}-${ENVIRONMENT}"
+
+# Validate environment
+if [[ ! "$ENVIRONMENT" =~ ^(dev|sandbox|prod)$ ]]; then
+  echo -e "${RED}Error: Environment must be dev, sandbox, or prod${NC}"
+  exit 1
+fi
+
+echo -e "${GREEN}Getting infrastructure details from CloudFormation / SSM...${NC}"
+# Fetch outputs as "Key=Value" lines
+STACK_DATA=$(aws cloudformation describe-stacks \
+  --stack-name "$STACK_NAME" \
+  --region "$AWS_REGION" \
+  --query 'Stacks[0].Outputs[?OutputKey==`FrontendBucketName` || OutputKey==`CloudFrontDistributionId` || OutputKey==`FrontendUrl`].[OutputKey,OutputValue]' \
+  --output text)
+
+# Check if we got anything back at all
+if [ -z "$STACK_DATA" ]; then
+  echo -e "${RED}Error: Stack $STACK_NAME not found or has no outputs.${NC}"
+  exit 1
+fi
+
+# Loop through the lines and assign variables
+while read -r key value; do
+  declare "$key=$value"
+done <<< "$STACK_DATA"
+
+# Map to shorter internal script variables
+S3_BUCKET=$FrontendBucketName
+CF_DIST_ID=$CloudFrontDistributionId
+
+# Verify critical variables are actually set
+: "${S3_BUCKET:?Error: FrontendBucketName output is missing from stack.}"
+: "${CF_DIST_ID:?Error: CloudFrontDistributionId output is missing from stack.}"
+
 echo "  S3 Bucket: $S3_BUCKET"
 echo "  CloudFront Distribution: $CF_DIST_ID"
 
-# Build the API URL
-API_URL="http://${ALB_DNS}:8000"
-echo -e "\n${GREEN}Building frontend with API URL: $API_URL${NC}"
 
 # Change to react directory
 cd ../react
-
 # Build the frontend
 echo -e "${YELLOW}Running npm install (if needed)...${NC}"
-npm install --silent
+npm ci --prefer-offline --no-audit
 
 echo -e "${YELLOW}Building React application...${NC}"
-REACT_APP_API_URL=$API_URL npm run build
+npm run build
 
 if [ ! -d "build" ]; then
     echo -e "${RED}Error: Build directory not found!${NC}"
@@ -99,11 +119,7 @@ INVALIDATION_ID=$(aws cloudfront create-invalidation \
 
 echo "  Invalidation ID: $INVALIDATION_ID"
 
-# Get CloudFront URL
-CF_URL=$(cd ../terraform && terraform output -raw cloudfront_domain_name)
-
 echo -e "\n${GREEN}✓ Deployment complete!${NC}"
-echo -e "\n${GREEN}Frontend URL: https://$CF_URL${NC}"
-echo -e "${GREEN}Backend URL: http://$ALB_DNS:8000${NC}"
-echo -e "${GREEN}ArangoDB URL: http://$ALB_DNS:8529${NC}"
+echo -e "\n${GREEN}Frontend URL: $FrontendUrl${NC}"
+echo -e "${GREEN}ArangoDB URL: $FrontendUrl:8529${NC}"
 echo -e "\n${YELLOW}Note: CloudFront invalidation may take a few minutes to propagate.${NC}"
