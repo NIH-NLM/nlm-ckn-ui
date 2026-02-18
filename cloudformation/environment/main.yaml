@@ -216,6 +216,8 @@ Resources:
           - IsDev
           - !GetAtt SecurityGroupsStack.Outputs.AlbSecurityGroupId
           - !Sub '{{resolve:ssm:/${ProjectName}/${Environment}/prereqs/sg-alb}}'
+        # Enforced on all ALB listeners - only CloudFront requests carry this header
+        CloudFrontSecret: !GetAtt SecretsStack.Outputs.CloudFrontSecret
       Tags:
         - Key: Project
           Value: !Ref ProjectName

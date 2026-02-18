@@ -10,10 +10,10 @@ Parameters:
   Environment:
     Type: String
     Default: dev
-    Description: Environment name (dev, staging, prod)
+    Description: Environment name (dev, sandbox, prod)
     AllowedValues:
       - dev
-      - staging
+      - sandbox
       - prod
 
   VpcId:
@@ -27,6 +27,14 @@ Parameters:
   AlbSecurityGroupId:
     Type: String
     Description: Security group ID for ALB
+
+  CloudFrontSecret:
+    Type: String
+    NoEcho: true
+    Description: >
+      Secret header value set by CloudFront on all origin requests
+      (X-Custom-Origin-Header). Requests missing this header are rejected
+      with 403, preventing direct ALB access that bypasses CloudFront.
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -42,6 +50,10 @@ Metadata:
           - VpcId
           - PublicSubnetIds
           - AlbSecurityGroupId
+      - Label:
+          default: Security
+        Parameters:
+          - CloudFrontSecret
 
 Resources:
   # ============================================================================
@@ -177,7 +189,18 @@ Resources:
 
   # ============================================================================
   # ALB Listeners
+  #
+  # All listeners enforce the CloudFront origin secret header. Requests that
+  # arrive without the correct X-Custom-Origin-Header value are rejected with
+  # 403, preventing direct ALB access that bypasses CloudFront (and its TLS,
+  # caching, and WAF protections).
+  #
+  # Rule evaluation order (priority lowest = evaluated first):
+  #   Priority 1: header present and correct → forward to target group
+  #   Default:    everything else → 403 Forbidden
   # ============================================================================
+
+  # Port 80 — redirect to HTTPS hint; kept for health checks from AWS services
   HttpListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
@@ -187,27 +210,67 @@ Resources:
       DefaultActions:
         - Type: fixed-response
           FixedResponseConfig:
-            StatusCode: 200
+            StatusCode: '403'
             ContentType: text/plain
-            MessageBody: Cell-KN ALB
+            MessageBody: Forbidden
 
+  # Port 8000 — Backend API (CloudFront → ALB → ECS backend)
   BackendHttpListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
       LoadBalancerArn: !Ref ApplicationLoadBalancer
       Port: 8000
       Protocol: HTTP
+      # Default action: reject anything that didn't match the header rule
       DefaultActions:
+        - Type: fixed-response
+          FixedResponseConfig:
+            StatusCode: '403'
+            ContentType: text/plain
+            MessageBody: Forbidden
+
+  BackendHeaderRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref BackendHttpListener
+      Priority: 1
+      Conditions:
+        - Field: http-header
+          HttpHeaderConfig:
+            HttpHeaderName: X-Custom-Origin-Header
+            Values:
+              - !Ref CloudFrontSecret
+      Actions:
         - Type: forward
           TargetGroupArn: !Ref BackendTargetGroup
 
+  # Port 8529 — ArangoDB web UI and API (CloudFront → ALB → ECS arangodb)
   ArangoDbHttpListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
       LoadBalancerArn: !Ref ApplicationLoadBalancer
       Port: 8529
       Protocol: HTTP
+      # Default action: reject anything that didn't match the header rule
       DefaultActions:
+        - Type: fixed-response
+          FixedResponseConfig:
+            StatusCode: '403'
+            ContentType: text/plain
+            MessageBody: Forbidden
+
+  ArangoDbHeaderRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref ArangoDbHttpListener
+      Priority: 1
+      Conditions:
+        - Field: http-header
+          HttpHeaderConfig:
+            HttpHeaderName: X-Custom-Origin-Header
+            Values:
+              - !Ref CloudFrontSecret
+      Actions:
         - Type: forward
           TargetGroupArn: !Ref ArangoDbTargetGroup
 

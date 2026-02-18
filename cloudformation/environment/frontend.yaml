@@ -174,11 +174,23 @@ Resources:
             OriginAccessControlId: !Ref CloudFrontOAC
             S3OriginConfig: {}
 
-          # ALB Origin for backend API
+          # ALB Origin for backend API (port 8000)
           - Id: ALBOrigin
             DomainName: !Ref AlbDnsName
             CustomOriginConfig:
               HTTPPort: 8000
+              OriginProtocolPolicy: http-only
+              OriginSSLProtocols:
+                - TLSv1.2
+            OriginCustomHeaders:
+              - HeaderName: X-Custom-Origin-Header
+                HeaderValue: !Ref CloudFrontSecret
+
+          # ALB Origin for ArangoDB web UI (port 8529)
+          - Id: ArangoDbOrigin
+            DomainName: !Ref AlbDnsName
+            CustomOriginConfig:
+              HTTPPort: 8529
               OriginProtocolPolicy: http-only
               OriginSSLProtocols:
                 - TLSv1.2
@@ -200,10 +212,66 @@ Resources:
           Compress: true
           CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6  # Managed-CachingOptimized
 
-        # Backend API behavior
+        # Cache behaviors (evaluated in order; most specific paths first)
         CacheBehaviors:
+          # Backend API
           - PathPattern: /arango_api/*
             TargetOriginId: ALBOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+              - PUT
+              - POST
+              - PATCH
+              - DELETE
+            CachedMethods:
+              - GET
+              - HEAD
+            Compress: true
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad  # Managed-CachingDisabled
+            OriginRequestPolicyId: 216adef6-5c7f-47e4-b989-5492eafa07d3  # Managed-AllViewer
+
+          # ArangoDB web UI and REST API paths
+          - PathPattern: /_db/*
+            TargetOriginId: ArangoDbOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+              - PUT
+              - POST
+              - PATCH
+              - DELETE
+            CachedMethods:
+              - GET
+              - HEAD
+            Compress: true
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad  # Managed-CachingDisabled
+            OriginRequestPolicyId: 216adef6-5c7f-47e4-b989-5492eafa07d3  # Managed-AllViewer
+
+          - PathPattern: /_api/*
+            TargetOriginId: ArangoDbOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+              - PUT
+              - POST
+              - PATCH
+              - DELETE
+            CachedMethods:
+              - GET
+              - HEAD
+            Compress: true
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad  # Managed-CachingDisabled
+            OriginRequestPolicyId: 216adef6-5c7f-47e4-b989-5492eafa07d3  # Managed-AllViewer
+
+          - PathPattern: /_admin/*
+            TargetOriginId: ArangoDbOrigin
             ViewerProtocolPolicy: redirect-to-https
             AllowedMethods:
               - GET
