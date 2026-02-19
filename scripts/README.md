@@ -64,10 +64,10 @@ Deploys both backend and frontend in sequence.
 
 ### `backup-arangodb.sh` - Create Backup
 ```bash
-./scripts/backup-arangodb.sh [backup-name]
+./scripts/backup-arangodb.sh <environment> [backup-name]
 ```
 
-Creates backup of ArangoDB data.
+Creates backup of ArangoDB data and uploads it to S3.
 
 ## Deployment Order
 
@@ -95,7 +95,7 @@ cp cloudformation/parameters/dev.json.example cloudformation/parameters/dev.json
 # Deploy only what changed
 ./scripts/deploy-backend.sh   # Backend only
 ./scripts/deploy-frontend.sh  # Frontend only
-./scripts/deploy-dataset.sh datasets/new.tar.gz  # Dataset only
+./scripts/deploy-dataset.sh dev datasets/new.tar.gz  # Dataset only
 ```
 
 ## Documentation

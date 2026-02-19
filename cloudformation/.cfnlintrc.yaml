@@ -1,0 +1,9 @@
+# cfn-lint configuration for cell-kn CloudFormation templates
+# https://github.com/aws-cloudformation/cfn-lint
+
+# Suppress W1030 for parameters that are intentionally empty in dev and
+# conditionally resolved to a real ARN in sandbox/prod via !If.
+# cfn-lint cannot evaluate !If conditions at lint time so it flags the
+# empty-string Default as non-matching against the ARN property schema.
+ignore_checks:
+  - W1030

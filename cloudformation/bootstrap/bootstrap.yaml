@@ -39,7 +39,7 @@ Resources:
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
     Properties:
-      BucketName: !Sub '${ProjectName}-cfn-templates'
+      BucketName: !Sub '${ProjectName}-cfn-templates-${AWS::AccountId}'
       VersioningConfiguration:
         Status: Enabled
       PublicAccessBlockConfiguration:
@@ -60,7 +60,7 @@ Resources:
         - Key: Project
           Value: !Ref ProjectName
         - Key: Name
-          Value: !Sub '${ProjectName}-cfn-templates'
+          Value: !Sub '${ProjectName}-cfn-templates-${AWS::AccountId}'
         - Key: Purpose
           Value: CloudFormation template storage
         - Key: ManagedBy
@@ -75,7 +75,7 @@ Resources:
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
     Properties:
-      BucketName: !Sub '${ProjectName}-cfn-state'
+      BucketName: !Sub '${ProjectName}-cfn-state-${AWS::AccountId}'
       VersioningConfiguration:
         Status: Enabled
       PublicAccessBlockConfiguration:
@@ -98,7 +98,7 @@ Resources:
         - Key: Project
           Value: !Ref ProjectName
         - Key: Name
-          Value: !Sub '${ProjectName}-cfn-state'
+          Value: !Sub '${ProjectName}-cfn-state-${AWS::AccountId}'
         - Key: Purpose
           Value: CloudFormation state and outputs
         - Key: ManagedBy
@@ -327,7 +327,6 @@ Outputs:
     Description: Next steps for deployment
     Value: !Sub |
       Bootstrap complete! Next steps:
-      1. Upload environment templates to S3: aws s3 sync cloudformation/ s3://${TemplatesBucket}/
-      2. Configure GitHub Actions to use role: ${GitHubActionsRole.Arn}
-      3. Deploy shared resources: aws cloudformation deploy --template-file cloudformation/shared/shared-resources.yaml --stack-name ${ProjectName}-shared
-      4. Deploy environment: See cloudformation/DEPLOYMENT.md
+      1. Configure GitHub Actions to use role: ${GitHubActionsRole.Arn}
+      2. Deploy an environment: ./scripts/deploy-environment.sh dev
+      See cloudformation/DEPLOYMENT.md for full details.

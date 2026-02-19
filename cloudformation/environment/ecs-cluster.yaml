@@ -10,10 +10,10 @@ Parameters:
   Environment:
     Type: String
     Default: dev
-    Description: Environment name (dev, staging, prod)
+    Description: Environment name (dev, sandbox, prod)
     AllowedValues:
       - dev
-      - staging
+      - sandbox
       - prod
 
 Metadata:

@@ -68,7 +68,7 @@ Resources:
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
     Properties:
-      BucketName: !Sub '${ProjectName}-arangodb-data'
+      BucketName: !Sub '${ProjectName}-arangodb-data-${AWS::AccountId}'
       VersioningConfiguration:
         Status: Enabled
       PublicAccessBlockConfiguration:
@@ -100,7 +100,7 @@ Resources:
         - Key: Project
           Value: !Ref ProjectName
         - Key: Name
-          Value: !Sub '${ProjectName}-arangodb-data'
+          Value: !Sub '${ProjectName}-arangodb-data-${AWS::AccountId}'
         - Key: Shared
           Value: 'true'
         - Key: Purpose

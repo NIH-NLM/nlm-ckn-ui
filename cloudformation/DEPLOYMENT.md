@@ -99,34 +99,28 @@ aws ec2 describe-subnets \
 aws route53 list-hosted-zones --query 'HostedZones[*].[Id,Name]' --output table
 ```
 
-### 2. Deploy Bootstrap Infrastructure
+### 2. Account Setup (one-time per account)
 
-One-time setup. Run once in the dev account to create the S3 template bucket and GitHub Actions OIDC role.
+Creates the S3 template bucket, GitHub Actions OIDC role, ECR repository, and ArangoDB dataset S3 bucket. Run once per AWS account.
 
-```bash
-aws cloudformation deploy \
-  --template-file cloudformation/bootstrap/bootstrap.yaml \
-  --stack-name cell-kn-bootstrap \
-  --capabilities CAPABILITY_IAM \
-  --parameter-overrides \
-    ProjectName=cell-kn \
-    GitHubOrg=NIH-NLM \
-    GitHubRepo=cell-kn-mvp-ui
-```
-
-
-### 3. Deploy Shared Resources
-
-One-time setup. Creates the ECR repository and ArangoDB dataset S3 bucket shared across all environments.
+> **Note**: Edit `GITHUB_ORG` in `scripts/deploy-account-setup.sh` before running.
 
 ```bash
-aws cloudformation deploy \
-  --template-file cloudformation/shared/shared-resources.yaml \
-  --stack-name cell-kn-shared \
-  --parameter-overrides \
-    ProjectName=cell-kn
+./scripts/deploy-account-setup.sh
 ```
 
+The script displays the target account and prompts for confirmation before deploying anything.
+
+
+### 3. Push Initial Backend Image
+
+The environment stack creates the ECS service referencing `${ECR_URL}:latest`. If no image exists in ECR when the stack deploys, the service will start but tasks will immediately fail — the app won't be reachable until an image is pushed. Push the image first so the service comes up healthy on the first deploy.
+
+```bash
+./scripts/push-backend-image.sh
+```
+
+This only requires the account setup to be complete (ECR URL is read from SSM). It does not require the environment stack. Builds the image from the current git SHA, pushes it, and also tags it as `latest`.
 
 ### 4. Deploy Environment Stack
 
@@ -153,7 +147,7 @@ cp cloudformation/parameters/dev.json.example cloudformation/parameters/sandbox.
 
 ### 5. Deploy Backend Application
 
-After the environment stack is up, build and push the backend Docker image:
+For subsequent deploys, build and push an updated backend image:
 
 ```bash
 ./scripts/deploy-backend.sh dev   # or sandbox / prod
@@ -164,18 +158,13 @@ This builds with the current git SHA as the image tag, pushes to ECR, and update
 ### 6. Deploy Frontend Application
 
 ```bash
-cd react && npm run build
+./scripts/deploy-frontend.sh dev   # or sandbox / prod
+```
 
-# Sync built assets to S3
-aws s3 sync build/ s3://cell-kn-dev-frontend/ --delete
+**Tip**: To deploy both backend and frontend together, use:
 
-# Invalidate CloudFront cache
-aws cloudfront create-invalidation \
-  --distribution-id $(aws cloudformation describe-stacks \
-    --stack-name cell-kn-dev \
-    --query 'Stacks[0].Outputs[?OutputKey==`CloudFrontDistributionId`].OutputValue' \
-    --output text) \
-  --paths "/*"
+```bash
+./scripts/deploy-all.sh
 ```
 
 ### 7. Deploy Dataset (optional)

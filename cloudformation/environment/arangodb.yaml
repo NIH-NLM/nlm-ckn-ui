@@ -68,6 +68,7 @@ Parameters:
   TaskExecutionRoleArn:
     Type: String
     Default: ''
+    AllowedPattern: '^(arn:(aws[a-zA-Z-]*)?:iam::\d{12}:role/[a-zA-Z_0-9+=,.@\-_/]+)?$'
     Description: >
       Pre-existing ECS task execution role ARN (sandbox/prod only).
       Leave empty in dev - the role will be created by this template.
@@ -322,6 +323,11 @@ Resources:
   # ============================================================================
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
+    Metadata:
+      cfn-lint:
+        config:
+          ignore_checks:
+            - W1030  # TaskExecutionRoleArn is intentionally empty in dev (conditional)
     Properties:
       Family: !Sub '${ProjectName}-${Environment}-arangodb'
       NetworkMode: awsvpc
@@ -470,7 +476,7 @@ Resources:
       DesiredCount: 1
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: DISABLED
+          AssignPublicIp: !If [IsDev, ENABLED, DISABLED]
           Subnets: !Ref PrivateSubnetIds
           SecurityGroups:
             - !Ref ArangoDbSecurityGroupId

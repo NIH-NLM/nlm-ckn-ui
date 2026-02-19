@@ -9,27 +9,27 @@
   },
   {
     "ParameterKey": "VpcId",
-    "ParameterValue": "vpc-0abc123def456789"
+    "ParameterValue": "vpc-8b3fe4ec"
   },
   {
     "ParameterKey": "VpcCidr",
-    "ParameterValue": "10.0.0.0/16"
+    "ParameterValue": "172.31.0.0/16"
   },
   {
     "ParameterKey": "PublicSubnetIds",
-    "ParameterValue": "subnet-0abc123,subnet-0def456"
+    "ParameterValue": "subnet-0031722a,subnet-c2f261a7"
   },
   {
     "ParameterKey": "PrivateSubnetIds",
-    "ParameterValue": "subnet-0ghi789,subnet-0jkl012"
+    "ParameterValue": "subnet-4f2db143,subnet-caffd7f7"
   },
   {
     "ParameterKey": "DomainName",
-    "ParameterValue": "cell-kn-mvp.org"
+    "ParameterValue": "cell-kn.org"
   },
   {
     "ParameterKey": "HostedZoneId",
-    "ParameterValue": "Z018047920VCMG6465Q74"
+    "ParameterValue": "Z0441030102JW92C98Q3U"
   },
   {
     "ParameterKey": "ArangoDbUser",

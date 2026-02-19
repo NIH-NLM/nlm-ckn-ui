@@ -53,15 +53,14 @@ ENVIRONMENT=$1
 PROJECT_NAME="cell-kn"
 AWS_REGION=${AWS_REGION:-us-east-1}
 PARAMETERS_FILE="cloudformation/parameters/${ENVIRONMENT}.json"
-TEMPLATES_BUCKET="${PROJECT_NAME}-cfn-templates"
 
-# Validate environment
+# Validate environment early (before any AWS calls)
 if [[ ! "$ENVIRONMENT" =~ ^(dev|staging|prod)$ ]]; then
   echo -e "${RED}Error: Environment must be dev, staging, or prod${NC}"
   exit 1
 fi
 
-# Check parameters file
+# Check parameters file early
 if [ ! -f "$PARAMETERS_FILE" ]; then
   echo -e "${RED}Error: Parameters file not found: $PARAMETERS_FILE${NC}"
   echo "Create it from the example:"
@@ -70,25 +69,34 @@ if [ ! -f "$PARAMETERS_FILE" ]; then
   exit 1
 fi
 
-echo -e "${BLUE}========================================${NC}"
-echo -e "${BLUE}  Cell-KN Environment Deployment${NC}"
-echo -e "${BLUE}========================================${NC}\n"
-echo "  Project: $PROJECT_NAME"
-echo "  Environment: $ENVIRONMENT"
-echo "  Region: $AWS_REGION"
-echo "  Parameters: $PARAMETERS_FILE"
+# Resolve current AWS identity
+AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+AWS_ACCOUNT_ALIAS=$(aws iam list-account-aliases --query 'AccountAliases[0]' --output text 2>/dev/null || echo "(no alias)")
+AWS_IAM_ARN=$(aws sts get-caller-identity --query Arn --output text)
+
+TEMPLATES_BUCKET=$(aws cloudformation describe-stacks \
+  --stack-name ${PROJECT_NAME}-bootstrap \
+  --region $AWS_REGION \
+  --query 'Stacks[0].Outputs[?OutputKey==`TemplatesBucketName`].OutputValue' \
+  --output text)
+
+if [ -z "$TEMPLATES_BUCKET" ]; then
+  echo -e "${RED}Error: Could not read TemplatesBucketName from ${PROJECT_NAME}-bootstrap stack${NC}"
+  echo "Ensure the bootstrap stack is deployed first: ./scripts/deploy-bootstrap.sh"
+  exit 1
+fi
+
+echo -e "${YELLOW}========================================${NC}"
+echo -e "${YELLOW}  Deployment Target${NC}"
+echo -e "${YELLOW}========================================${NC}"
+echo "  Account ID:    $AWS_ACCOUNT_ID"
+echo "  Account Alias: $AWS_ACCOUNT_ALIAS"
+echo "  IAM Principal: $AWS_IAM_ARN"
+echo "  Region:        $AWS_REGION"
+echo "  Stack:         ${PROJECT_NAME}-${ENVIRONMENT}"
+echo "  Templates:     s3://${TEMPLATES_BUCKET}/"
+echo -e "${YELLOW}========================================${NC}"
 echo ""
-
-# Upload templates to S3
-echo -e "${GREEN}==> Uploading templates to S3${NC}"
-aws s3 sync cloudformation/ s3://${TEMPLATES_BUCKET}/ \
-  --exclude ".git/*" \
-  --exclude "scripts/*" \
-  --exclude "parameters/*" \
-  --exclude "*.md" \
-  --region $AWS_REGION
-
-echo -e "${GREEN}✓ Templates uploaded${NC}\n"
 
 # Validate templates with cfn-lint if available
 if command -v cfn-lint &> /dev/null; then
@@ -99,46 +107,175 @@ if command -v cfn-lint &> /dev/null; then
   echo ""
 fi
 
-# Deploy stack
-echo -e "${GREEN}==> Deploying ${ENVIRONMENT} environment stack${NC}"
-echo -e "${YELLOW}This will create nested stacks and may take 15-20 minutes...${NC}"
-echo -e "${YELLOW}IMPORTANT: This stack MUST be deployed in us-east-1 (CloudFront ACM cert requirement)${NC}\n"
+# Upload templates to S3 (required for nested stack TemplateURLs)
+echo -e "${GREEN}==> Uploading templates to S3${NC}"
+aws s3 sync cloudformation/ s3://${TEMPLATES_BUCKET}/ \
+  --exclude ".git/*" \
+  --exclude "scripts/*" \
+  --exclude "parameters/*" \
+  --exclude "*.md" \
+  --region $AWS_REGION
+echo -e "${GREEN}✓ Templates uploaded${NC}\n"
 
-# Convert JSON parameters file to key=value pairs for 'aws cloudformation deploy'
-PARAM_OVERRIDES=$(python3 -c "
+# Write parameters to a temp JSON file so comma-containing values (e.g. subnet
+# lists) are passed safely without shell word-splitting or CSV ambiguity.
+CFN_PARAMS_FILE=$(mktemp /tmp/cfn-params-XXXXXX.json)
+trap 'rm -f "$CFN_PARAMS_FILE"' EXIT
+
+python3 -c "
 import json, sys
-with open('${PARAMETERS_FILE}') as f:
-    params = json.load(f)
-print(' '.join(f\"{p['ParameterKey']}={p['ParameterValue']}\" for p in params))
-")
+params = json.load(open('${PARAMETERS_FILE}'))
+params.append({'ParameterKey': 'TemplatesBucketName', 'ParameterValue': '${TEMPLATES_BUCKET}'})
+print(json.dumps(params))
+" > "$CFN_PARAMS_FILE"
 
-aws cloudformation deploy \
-  --template-file cloudformation/environment/main.yaml \
-  --stack-name ${PROJECT_NAME}-${ENVIRONMENT} \
+STACK_NAME="${PROJECT_NAME}-${ENVIRONMENT}"
+CHANGESET_NAME="${STACK_NAME}-$(date +%Y%m%d%H%M%S)"
+
+# Determine if this is a create or update
+STACK_STATUS=$(aws cloudformation describe-stacks \
+  --stack-name "$STACK_NAME" \
+  --region $AWS_REGION \
+  --query 'Stacks[0].StackStatus' \
+  --output text 2>/dev/null || echo "DOES_NOT_EXIST")
+
+if [ "$STACK_STATUS" = "DOES_NOT_EXIST" ] || [ "$STACK_STATUS" = "REVIEW_IN_PROGRESS" ]; then
+  CHANGESET_TYPE="CREATE"
+else
+  CHANGESET_TYPE="UPDATE"
+fi
+
+# Create the changeset
+echo -e "${GREEN}==> Creating changeset (${CHANGESET_TYPE})...${NC}"
+aws cloudformation create-change-set \
+  --stack-name "$STACK_NAME" \
+  --change-set-name "$CHANGESET_NAME" \
+  --change-set-type "$CHANGESET_TYPE" \
+  --template-body file://cloudformation/environment/main.yaml \
   --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
-  --parameter-overrides ${PARAM_OVERRIDES} \
+  --parameters "file://${CFN_PARAMS_FILE}" \
   --region $AWS_REGION
 
-if [ $? -eq 0 ]; then
+# Wait for changeset to finish computing
+echo -e "${GREEN}==> Waiting for changeset to be ready...${NC}"
+aws cloudformation wait change-set-create-complete \
+  --stack-name "$STACK_NAME" \
+  --change-set-name "$CHANGESET_NAME" \
+  --region $AWS_REGION 2>/dev/null || true
+
+# Check changeset status
+CHANGESET_STATUS=$(aws cloudformation describe-change-set \
+  --stack-name "$STACK_NAME" \
+  --change-set-name "$CHANGESET_NAME" \
+  --region $AWS_REGION \
+  --query 'Status' \
+  --output text)
+
+CHANGESET_REASON=$(aws cloudformation describe-change-set \
+  --stack-name "$STACK_NAME" \
+  --change-set-name "$CHANGESET_NAME" \
+  --region $AWS_REGION \
+  --query 'StatusReason' \
+  --output text 2>/dev/null || echo "")
+
+if [ "$CHANGESET_STATUS" = "FAILED" ]; then
+  if echo "$CHANGESET_REASON" | grep -q "The submitted information didn't contain changes"; then
+    echo -e "${YELLOW}No changes to deploy — stack is already up to date.${NC}"
+    aws cloudformation delete-change-set \
+      --stack-name "$STACK_NAME" \
+      --change-set-name "$CHANGESET_NAME" \
+      --region $AWS_REGION
+    exit 0
+  else
+    echo -e "${RED}✗ Changeset failed: ${CHANGESET_REASON}${NC}"
+    aws cloudformation delete-change-set \
+      --stack-name "$STACK_NAME" \
+      --change-set-name "$CHANGESET_NAME" \
+      --region $AWS_REGION
+    exit 1
+  fi
+fi
+
+# Display the changeset
+echo ""
+echo -e "${BLUE}========================================${NC}"
+echo -e "${BLUE}  Proposed Changes${NC}"
+echo -e "${BLUE}========================================${NC}"
+aws cloudformation describe-change-set \
+  --stack-name "$STACK_NAME" \
+  --change-set-name "$CHANGESET_NAME" \
+  --region $AWS_REGION \
+  --query 'Changes[*].ResourceChange.{Action:Action,Resource:LogicalResourceId,Type:ResourceType,Replace:Replacement}' \
+  --output table
+echo ""
+
+# Warn on any replacements
+REPLACEMENTS=$(aws cloudformation describe-change-set \
+  --stack-name "$STACK_NAME" \
+  --change-set-name "$CHANGESET_NAME" \
+  --region $AWS_REGION \
+  --query 'Changes[?ResourceChange.Replacement==`True`].ResourceChange.LogicalResourceId' \
+  --output text)
+
+if [ -n "$REPLACEMENTS" ]; then
+  echo -e "${RED}⚠  WARNING: The following resources will be REPLACED (deleted and recreated):${NC}"
+  for r in $REPLACEMENTS; do
+    echo -e "${RED}   - $r${NC}"
+  done
+  echo ""
+fi
+
+read -r -p "Execute this changeset? [y/N] " confirm
+if [[ ! "$confirm" =~ ^[yY]$ ]]; then
+  echo "Aborted. Deleting changeset..."
+  aws cloudformation delete-change-set \
+    --stack-name "$STACK_NAME" \
+    --change-set-name "$CHANGESET_NAME" \
+    --region $AWS_REGION
+  exit 0
+fi
+
+# Execute the changeset
+echo ""
+echo -e "${GREEN}==> Executing changeset...${NC}"
+echo -e "${YELLOW}This may take 15-20 minutes for nested stacks.${NC}"
+echo -e "${YELLOW}IMPORTANT: Stack MUST be deployed in us-east-1 (CloudFront ACM cert requirement)${NC}\n"
+aws cloudformation execute-change-set \
+  --stack-name "$STACK_NAME" \
+  --change-set-name "$CHANGESET_NAME" \
+  --region $AWS_REGION
+
+# Wait for completion
+WAIT_ACTION=$(echo "$CHANGESET_TYPE" | tr '[:upper:]' '[:lower:]')
+aws cloudformation wait "stack-${WAIT_ACTION}-complete" \
+  --stack-name "$STACK_NAME" \
+  --region $AWS_REGION
+
+FINAL_STATUS=$(aws cloudformation describe-stacks \
+  --stack-name "$STACK_NAME" \
+  --region $AWS_REGION \
+  --query 'Stacks[0].StackStatus' \
+  --output text)
+
+if [[ "$FINAL_STATUS" == *"COMPLETE"* ]] && [[ "$FINAL_STATUS" != *"ROLLBACK"* ]]; then
   echo -e "\n${GREEN}✓ Environment stack deployed successfully!${NC}\n"
 
   # Get outputs
   echo -e "${GREEN}Stack Outputs:${NC}"
   aws cloudformation describe-stacks \
-    --stack-name ${PROJECT_NAME}-${ENVIRONMENT} \
+    --stack-name "$STACK_NAME" \
     --region $AWS_REGION \
     --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' \
     --output table
 
-  # Get key URLs
   FRONTEND_URL=$(aws cloudformation describe-stacks \
-    --stack-name ${PROJECT_NAME}-${ENVIRONMENT} \
+    --stack-name "$STACK_NAME" \
     --region $AWS_REGION \
     --query 'Stacks[0].Outputs[?OutputKey==`FrontendUrl`].OutputValue' \
     --output text)
 
   BACKEND_URL=$(aws cloudformation describe-stacks \
-    --stack-name ${PROJECT_NAME}-${ENVIRONMENT} \
+    --stack-name "$STACK_NAME" \
     --region $AWS_REGION \
     --query 'Stacks[0].Outputs[?OutputKey==`BackendUrl`].OutputValue' \
     --output text)
@@ -146,26 +283,17 @@ if [ $? -eq 0 ]; then
   echo -e "\n${BLUE}========================================${NC}"
   echo -e "${GREEN}✓ Deployment Complete!${NC}"
   echo -e "${BLUE}========================================${NC}\n"
-
   echo -e "${GREEN}Application URLs:${NC}"
   echo "  Frontend: $FRONTEND_URL"
   echo "  Backend:  $BACKEND_URL"
   echo ""
-
   echo -e "${YELLOW}Next steps:${NC}"
-  echo "1. Deploy backend Docker image:"
-  echo "   cd /path/to/cell-kn-mvp-ui"
-  echo "   ./scripts/deploy-backend.sh"
+  echo "1. Deploy backend Docker image:  ./scripts/deploy-backend.sh ${ENVIRONMENT}"
+  echo "2. Deploy frontend:              ./scripts/deploy-frontend.sh ${ENVIRONMENT}"
+  echo "3. (Optional) Deploy dataset:    ./scripts/deploy-dataset.sh ${ENVIRONMENT} datasets/your-file.tar.gz"
   echo ""
-  echo "2. Deploy frontend:"
-  echo "   ./scripts/deploy-frontend.sh"
-  echo ""
-  echo "3. (Optional) Deploy dataset:"
-  echo "   ./scripts/deploy-dataset.sh datasets/your-file.tar.gz"
-  echo ""
-
 else
-  echo -e "${RED}✗ Environment stack deployment failed${NC}"
+  echo -e "${RED}✗ Deployment failed with status: ${FINAL_STATUS}${NC}"
   echo -e "${YELLOW}Check CloudFormation console for details:${NC}"
   echo "  https://console.aws.amazon.com/cloudformation/home?region=${AWS_REGION}#/stacks"
   exit 1

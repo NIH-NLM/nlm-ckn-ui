@@ -2,43 +2,34 @@
 # ==============================================================================
 # backup-arangodb.sh - Create ArangoDB Backup
 # ==============================================================================
-# Creates a backup of ArangoDB data and prepares it for S3 upload.
+# Creates a backup of ArangoDB data and uploads it to S3.
 # Uses ECS Exec to create a tar.gz archive inside the ArangoDB container.
 #
 # USAGE:
-#   ./backup-arangodb.sh [backup-name]
+#   ./scripts/backup-arangodb.sh <environment> [backup-name]
 #
 # ARGUMENTS:
+#   environment    Environment name: dev, sandbox, or prod
 #   backup-name    Optional. Name for the backup file
 #                  Default: arangodb-backup-YYYYMMDD-HHMMSS
 #
 # WHAT IT DOES:
-#   1. Finds running ArangoDB task
-#   2. Executes tar command inside container to create backup
-#   3. Shows manual steps to upload to S3
+#   1. Reads ECS cluster/service names from CloudFormation stack outputs
+#   2. Reads S3 bucket name from SSM Parameter Store
+#   3. Finds the running ArangoDB task
+#   4. Executes tar command inside container to create backup archive
+#   5. Uploads the archive from the container to S3
 #
 # PREREQUISITES:
 #   - AWS CLI configured with appropriate credentials
-#   - ECS Exec enabled on the ArangoDB service (requires update)
-#   - Terraform infrastructure deployed (terraform apply)
+#   - CloudFormation environment stack deployed
+#   - ECS Exec enabled on the ArangoDB service (see below)
 #
 # ENABLE ECS EXEC (one-time setup):
 #   aws ecs update-service \
-#     --cluster cell-kn-dev-cluster \
-#     --service cell-kn-dev-arangodb \
+#     --cluster cell-kn-<env>-cluster \
+#     --service cell-kn-<env>-arangodb \
 #     --enable-execute-command
-#
-# COMPLETE BACKUP PROCESS:
-#   # 1. Run this script
-#   ./backup-arangodb.sh my-backup
-#
-#   # 2. Upload from container to S3
-#   aws ecs execute-command \
-#     --cluster cell-kn-dev-cluster \
-#     --task <TASK_ARN> \
-#     --container arangodb \
-#     --interactive \
-#     --command "aws s3 cp /tmp/my-backup.tar.gz s3://cell-kn-arangodb-data/backups/"
 #
 # ALTERNATIVE BACKUP METHODS:
 #   - Use arangodump for database-level backups
@@ -46,7 +37,7 @@
 #   - Use ArangoDB Hot Backups (commercial feature)
 #
 # RESTORE FROM BACKUP:
-#   See VERSIONED_DEPLOYMENTS.md for restore instructions
+#   ./scripts/deploy-dataset.sh <environment> backups/<backup-name>.tar.gz
 # ==============================================================================
 set -e
 
@@ -56,36 +47,77 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Default values
-BACKUP_NAME=${1:-"arangodb-backup-$(date +%Y%m%d-%H%M%S)"}
-
-# Change to terraform directory
-cd "$(dirname "$0")/../terraform"
-
-echo -e "${GREEN}ArangoDB Backup Script${NC}"
-
-# Get Terraform outputs
-S3_BUCKET=$(terraform output -raw s3_arangodb_bucket_name 2>/dev/null)
-ECS_CLUSTER=$(terraform output -raw ecs_cluster_name 2>/dev/null)
-AWS_REGION=${AWS_REGION:-us-east-1}
-
-if [ -z "$S3_BUCKET" ] || [ -z "$ECS_CLUSTER" ]; then
-    echo -e "${RED}Error: Could not get Terraform outputs.${NC}"
-    exit 1
+# Check arguments
+if [ $# -lt 1 ]; then
+  echo "Usage: $0 <environment> [backup-name]"
+  echo "Example: $0 dev"
+  echo "Example: $0 dev my-backup-name"
+  exit 1
 fi
 
-echo "  S3 Bucket: $S3_BUCKET"
+ENVIRONMENT=$1
+BACKUP_NAME=${2:-"arangodb-backup-$(date +%Y%m%d-%H%M%S)"}
+PROJECT_NAME="cell-kn"
+AWS_REGION=${AWS_REGION:-us-east-1}
+STACK_NAME="${PROJECT_NAME}-${ENVIRONMENT}"
+
+# Validate environment
+if [[ ! "$ENVIRONMENT" =~ ^(dev|sandbox|prod)$ ]]; then
+  echo -e "${RED}Error: Environment must be dev, sandbox, or prod${NC}"
+  exit 1
+fi
+
+echo -e "${GREEN}ArangoDB Backup Script${NC}"
+echo "  Environment: $ENVIRONMENT"
 echo "  Backup Name: $BACKUP_NAME"
+echo ""
+
+echo "==> Getting infrastructure details from CloudFormation / SSM..."
+
+# Read ECS cluster name from stack outputs
+CLUSTER=$(aws cloudformation describe-stacks \
+  --stack-name "$STACK_NAME" \
+  --region "$AWS_REGION" \
+  --query 'Stacks[0].Outputs[?OutputKey==`EcsClusterName`].OutputValue' \
+  --output text 2>/dev/null) || {
+  echo -e "${RED}Error: Could not read stack outputs from ${STACK_NAME}.${NC}"
+  echo "Make sure the environment stack is deployed."
+  exit 1
+}
+
+SERVICE=$(aws cloudformation describe-stacks \
+  --stack-name "$STACK_NAME" \
+  --region "$AWS_REGION" \
+  --query 'Stacks[0].Outputs[?OutputKey==`ArangoDbServiceName`].OutputValue' \
+  --output text 2>/dev/null)
+
+# Read S3 bucket name from SSM (written by shared-resources stack)
+S3_BUCKET=$(aws ssm get-parameter \
+  --name "/${PROJECT_NAME}/shared/arangodb-bucket-name" \
+  --query 'Parameter.Value' \
+  --output text \
+  --region "$AWS_REGION" 2>/dev/null) || {
+  echo -e "${RED}Error: Could not read S3 bucket name from SSM.${NC}"
+  echo "Make sure the shared-resources stack is deployed."
+  exit 1
+}
+
+if [ -z "$CLUSTER" ] || [ -z "$SERVICE" ]; then
+  echo -e "${RED}Error: Could not read required values from stack ${STACK_NAME}.${NC}"
+  exit 1
+fi
+
+echo "  ECS Cluster: $CLUSTER"
+echo "  ECS Service: $SERVICE"
+echo "  S3 Bucket:   $S3_BUCKET"
 
 # Get running ArangoDB task
-SERVICE_NAME="${ECS_CLUSTER%-cluster}-arangodb"
-
 echo -e "\n${GREEN}Finding ArangoDB task...${NC}"
 TASK_ARN=$(aws ecs list-tasks \
-    --cluster $ECS_CLUSTER \
-    --service-name $SERVICE_NAME \
+    --cluster "$CLUSTER" \
+    --service-name "$SERVICE" \
     --desired-status RUNNING \
-    --region $AWS_REGION \
+    --region "$AWS_REGION" \
     --query 'taskArns[0]' \
     --output text)
 
@@ -97,37 +129,31 @@ fi
 echo "  Task ARN: $TASK_ARN"
 
 # Execute backup command in the container
-echo -e "\n${GREEN}Creating backup archive...${NC}"
-echo -e "${YELLOW}This will run inside the ArangoDB container${NC}"
-
-# Create tar.gz archive
+echo -e "\n${GREEN}Creating backup archive inside container...${NC}"
 aws ecs execute-command \
-    --cluster $ECS_CLUSTER \
-    --task $TASK_ARN \
+    --cluster "$CLUSTER" \
+    --task "$TASK_ARN" \
     --container arangodb \
-    --region $AWS_REGION \
+    --region "$AWS_REGION" \
     --interactive \
     --command "tar -czf /tmp/${BACKUP_NAME}.tar.gz -C / var/lib/arangodb3 var/lib/arangodb3-apps"
 
+# Upload backup from container to S3
 echo -e "\n${GREEN}Uploading backup to S3...${NC}"
+aws ecs execute-command \
+    --cluster "$CLUSTER" \
+    --task "$TASK_ARN" \
+    --container arangodb \
+    --region "$AWS_REGION" \
+    --interactive \
+    --command "aws s3 cp /tmp/${BACKUP_NAME}.tar.gz s3://${S3_BUCKET}/backups/${BACKUP_NAME}.tar.gz"
 
-# Copy from container to S3 (requires ECS Exec enabled)
-# Alternative: Use EFS mount from another instance or use a separate backup container
-
-echo -e "${YELLOW}Manual backup process:${NC}"
-echo -e "  1. The backup file is created at /tmp/${BACKUP_NAME}.tar.gz inside the container"
-echo -e "  2. Use ECS Exec or copy to EFS then upload to S3:"
-echo -e ""
-echo -e "     # Option A: If you have ECS Exec enabled:"
-echo -e "     aws ecs execute-command --cluster $ECS_CLUSTER \\"
-echo -e "       --task $TASK_ARN --container arangodb --interactive \\"
-echo -e "       --command \"aws s3 cp /tmp/${BACKUP_NAME}.tar.gz s3://${S3_BUCKET}/backups/${BACKUP_NAME}.tar.gz\""
-echo -e ""
-echo -e "     # Option B: Mount EFS on an EC2 instance and upload from there"
-echo -e ""
-echo -e "${YELLOW}To restore from this backup, update terraform.tfvars:${NC}"
-echo -e "  arangodb_restore_file = \"backups/${BACKUP_NAME}.tar.gz\""
-
-echo -e "\n${GREEN}Note: For production, consider using ArangoDB's built-in backup tools:${NC}"
+echo -e "\n${GREEN}✓ Backup complete!${NC}"
+echo "  S3 location: s3://${S3_BUCKET}/backups/${BACKUP_NAME}.tar.gz"
+echo ""
+echo -e "${YELLOW}To restore from this backup:${NC}"
+echo "  ./scripts/deploy-dataset.sh ${ENVIRONMENT} backups/${BACKUP_NAME}.tar.gz"
+echo ""
+echo -e "${GREEN}Note: For production, consider using ArangoDB's built-in backup tools:${NC}"
 echo -e "  - arangodump for database-level backups"
 echo -e "  - Hot backups for full data backups"

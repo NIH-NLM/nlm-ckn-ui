@@ -28,7 +28,7 @@
 #
 # EXAMPLES:
 #   # Upload dataset to S3
-#   aws s3 cp my-data.tar.gz s3://cell-kn-arangodb-data/datasets/2024-02-11-v1.2.3.tar.gz
+#   aws s3 cp my-data.tar.gz s3://cell-kn-arangodb-data-<account-id>/datasets/2024-02-11-v1.2.3.tar.gz
 #
 #   # Deploy the dataset
 #   ./scripts/deploy-dataset.sh dev datasets/2024-02-11-v1.2.3.tar.gz

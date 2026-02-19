@@ -36,9 +36,13 @@ Parameters:
       (X-Custom-Origin-Header). Requests missing this header are rejected
       with 403, preventing direct ALB access that bypasses CloudFront.
 
-CertificateArn:
+  DomainName:
     Type: String
-    Description: ARN of the ACM certificate (must be in us-east-1)
+    Description: Base domain name (e.g., cell-kn-mvp.org)
+
+  HostedZoneId:
+    Type: String
+    Description: Route 53 hosted zone ID for DNS validation of the ALB ACM certificate
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -55,11 +59,50 @@ Metadata:
           - PublicSubnetIds
           - AlbSecurityGroupId
       - Label:
+          default: Domain Configuration
+        Parameters:
+          - DomainName
+          - HostedZoneId
+      - Label:
           default: Security
         Parameters:
           - CloudFrontSecret
 
+Conditions:
+  IsProd: !Equals [!Ref Environment, 'prod']
+
 Resources:
+  # ============================================================================
+  # ACM Certificate
+  #
+  # Single certificate shared by both ALB HTTPS listeners (port 8000 and 8529)
+  # and by CloudFront (passed as a parameter to frontend.yaml).
+  # When the ALB is in us-east-1, this cert satisfies both requirements.
+  # ============================================================================
+  AlbCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !If
+        - IsProd
+        - !Ref DomainName
+        - !Sub '${Environment}.${DomainName}'
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: !If
+            - IsProd
+            - !Ref DomainName
+            - !Sub '${Environment}.${DomainName}'
+          HostedZoneId: !Ref HostedZoneId
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-alb-cert'
+        - Key: ManagedBy
+          Value: CloudFormation
+
   # ============================================================================
   # S3 Bucket for ALB Access Logs
   # ============================================================================
@@ -68,7 +111,7 @@ Resources:
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
     Properties:
-      BucketName: !Sub '${ProjectName}-${Environment}-alb-logs'
+      BucketName: !Sub '${ProjectName}-${Environment}-alb-logs-${AWS::AccountId}'
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
@@ -89,7 +132,7 @@ Resources:
         - Key: Environment
           Value: !Ref Environment
         - Key: Name
-          Value: !Sub '${ProjectName}-${Environment}-alb-logs'
+          Value: !Sub '${ProjectName}-${Environment}-alb-logs-${AWS::AccountId}'
         - Key: ManagedBy
           Value: CloudFormation
 
@@ -100,16 +143,13 @@ Resources:
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
+          # ELB service account for the region — required for ALB access logs.
+          # Account IDs are fixed per region: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/enable-access-logging.html
           - Effect: Allow
             Principal:
-              Service: logdelivery.elasticloadbalancing.amazonaws.com
+              AWS: arn:aws:iam::127311923021:root
             Action: s3:PutObject
-            Resource: !Sub '${AlbLogsBucket.Arn}/*'
-          - Effect: Allow
-            Principal:
-              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root' 
-            Action: s3:PutObject
-            Resource: !Sub '${AlbLogsBucket.Arn}/*'
+            Resource: !Sub '${AlbLogsBucket.Arn}/AWSLogs/${AWS::AccountId}/*'
 
   # ============================================================================
   # Application Load Balancer
@@ -231,7 +271,7 @@ Resources:
       Port: 8000
       Protocol: HTTPS
       Certificates:
-        - CertificateArn: !Ref CertificateArn
+        - CertificateArn: !Ref AlbCertificate
       # Default action: reject anything that didn't match the header rule
       DefaultActions:
         - Type: fixed-response
@@ -261,7 +301,9 @@ Resources:
     Properties:
       LoadBalancerArn: !Ref ApplicationLoadBalancer
       Port: 8529
-      Protocol: HTTP
+      Protocol: HTTPS
+      Certificates:
+        - CertificateArn: !Ref AlbCertificate
       # Default action: reject anything that didn't match the header rule
       DefaultActions:
         - Type: fixed-response
@@ -286,6 +328,12 @@ Resources:
           TargetGroupArn: !Ref ArangoDbTargetGroup
 
 Outputs:
+  CertificateArn:
+    Description: ACM certificate ARN (shared with CloudFront via frontend.yaml)
+    Value: !Ref AlbCertificate
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-acm-cert-arn'
+
   LoadBalancerArn:
     Description: ALB ARN
     Value: !Ref ApplicationLoadBalancer
@@ -318,12 +366,12 @@ Outputs:
 
   BackendUrl:
     Description: Backend API URL
-    Value: !Sub 'http://${ApplicationLoadBalancer.DNSName}:8000'
+    Value: !Sub 'https://${ApplicationLoadBalancer.DNSName}:8000'
     Export:
       Name: !Sub '${ProjectName}-${Environment}-backend-url'
 
   ArangoDbUrl:
     Description: ArangoDB web UI URL
-    Value: !Sub 'http://${ApplicationLoadBalancer.DNSName}:8529'
+    Value: !Sub 'https://${ApplicationLoadBalancer.DNSName}:8529'
     Export:
       Name: !Sub '${ProjectName}-${Environment}-arangodb-url'
