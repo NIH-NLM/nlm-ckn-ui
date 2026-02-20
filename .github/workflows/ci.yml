@@ -361,7 +361,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build Docker image
-        run: docker build -t cell-kn-backend .
+        run: docker build -t nlm-ckn-backend .
 
   # Final status check - used for branch protection rules
   # Note: !cancelled() prevents orphaned status reports when workflow is cancelled

@@ -1,4 +1,4 @@
-# Cell KN MVP UI - Playwright E2E Testing
+# NLM-CKN MVP UI - Playwright E2E Testing
 
 ## Overview
 
@@ -426,5 +426,5 @@ test("Feature description", async ({ page }) => {
 ---
 
 **Last Updated**: Dec 2025  
-**Maintained by**: Cell KN Team  
+**Maintained by**: NLM-CKN Team  
 **Framework**: Playwright 1.56+
