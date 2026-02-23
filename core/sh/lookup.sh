@@ -23,7 +23,6 @@ EOF
 }
 
 # Parse command line options
-do_list_configurations=0
 while getopts ":lc:hex" opt; do
     case $opt in
 	h)
@@ -59,9 +58,9 @@ fi
 # Lookup second level domain based on IP address
 public_ip="$(curl -s http://checkip.amazonaws.com)"
 if [[ "$public_ip" == "54.146.82.39" ]]; then
-    domain="nlm-ckn"
+    domain="cell-kn-mvp"
 elif [[ "$public_ip" == "98.90.109.85" ]]; then
-    domain="nlm-ckn"
+    domain="cell-kn"
 else
     echo "Unknown public IP address"
     exit 1
