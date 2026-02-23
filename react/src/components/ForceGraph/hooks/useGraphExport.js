@@ -14,7 +14,7 @@ export function useGraphExport(wrapperRef, graphData, originNodeIds) {
       if (Array.isArray(originNodeIds) && originNodeIds.length > 0) {
         nodeIdsString = originNodeIds.map((id) => id.replaceAll("/", "-")).join("-");
       }
-      const filenameStem = `cell-kn-mvp-${nodeIdsString}-graph`;
+      const filenameStem = `nlm-ckn-${nodeIdsString}-graph`;
 
       if (format === "json") {
         if (!graphData) {

@@ -58,9 +58,9 @@ fi
 # Lookup second level domain based on IP address
 public_ip="$(curl -s http://checkip.amazonaws.com)"
 if [[ "$public_ip" == "54.146.82.39" ]]; then
-    domain="cell-kn-mvp"
+    domain="nlm-ckn"
 elif [[ "$public_ip" == "98.90.109.85" ]]; then
-    domain="cell-kn"
+    domain="nlm-ckn"
 else
     echo "Unknown public IP address"
     exit 1

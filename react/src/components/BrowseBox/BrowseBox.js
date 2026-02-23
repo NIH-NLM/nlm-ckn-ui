@@ -1,4 +1,4 @@
-import collMaps from "assets/cell-kn-mvp-collection-maps.json";
+import collMaps from "assets/nlm-ckn-collection-maps.json";
 import ListDocuments from "components/ListDocuments";
 import { DEFAULT_GRAPH_TYPE } from "constants/index";
 import { useCallback, useEffect, useRef, useState } from "react";

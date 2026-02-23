@@ -1,15 +1,15 @@
 # == Launch instance
 
-Name: cell-kn-mvp-v0.1.0
+Name: nlm-ckn-v0.1.0
 OS Image: Ubuntu 24.04 LTS
 Instance type: t2.xlarge
-Key pair: cell-kn-mvp-v0.1.0.pem
+Key pair: nlm-ckn-v0.1.0.pem
 Network settings: Allow SSH and HTTP traffic from the internet
 Configure storage: 64 GiB
 
 # == Associate Elastic IP address
 
-Name: cell-kn-mvp-v0.1.0
+Name: nlm-ckn-v0.1.0
 
 # == Install Emacs
 
@@ -62,9 +62,9 @@ See: https://www.digitalocean.com/community/tutorials/how-to-install-node-js-on-
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
 nvm install v22.15.1
 
-# == Clone cell-kn-mvp-ui
+# == Clone nlm-ckn-ui
 
-git clone git@github.com:NIH-NLM/cell-kn-mvp-ui.git
+git clone git@github.com:NIH-NLM/nlm-ckn-ui.git
 
 python3.13 -m venv .venv
 . .venv/bin/activate
@@ -77,9 +77,9 @@ npm run build
 
 DEBUG=True
 ARANGO_DB_HOST=http://127.0.0.1:8529
-ARANGO_DB_NAME_ONTOLOGIES=Cell-KN-Ontologies
-ARANGO_DB_NAME_PHENOTYPES=Cell-KN-Phenotypes
-ARANGO_DB_SCHEMA_NAME=Cell-KN-Schema
+ARANGO_DB_NAME_ONTOLOGIES=NLM-CKN-Ontologies
+ARANGO_DB_NAME_PHENOTYPES=NLM-CKN-Phenotypes
+ARANGO_DB_SCHEMA_NAME=NLM-CKN-Schema
 ARANGO_DB_USER=root
 ARANGO_DB_PASSWORD=7mtgagy6hFx46ASX
 GRAPH_NAME_ONTOLOGIES=KN-Ontologies-v2.0

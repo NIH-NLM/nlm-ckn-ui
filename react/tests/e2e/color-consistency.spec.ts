@@ -7,7 +7,7 @@ import {
 import { deepChildren, smallGraphWithEdges, sunburstRoot, treeApiWrapper } from "./utils/testSeeds";
 
 const COLL = "TEST_DOCUMENT_COLLECTION";
-// This color is defined in cell-kn-mvp-collection-maps.json for TEST_DOCUMENT_COLLECTION
+// This color is defined in nlm-ckn-collection-maps.json for TEST_DOCUMENT_COLLECTION
 const EXPECTED_COLOR = "#777777";
 
 function buildRawGraph(originId: string) {
