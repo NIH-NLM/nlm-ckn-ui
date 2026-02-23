@@ -39,6 +39,9 @@ Metadata:
           - VpcId
           - VpcCidr
 
+Conditions:
+  IsDev: !Equals [!Ref Environment, 'dev']
+
 Resources:
   # ============================================================================
   # ALB Security Group
@@ -148,38 +151,6 @@ Resources:
         - Key: ManagedBy
           Value: CloudFormation
 
-  # ============================================================================
-  # EFS Security Group
-  # ============================================================================
-  EfsSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupName: !Sub '${ProjectName}-${Environment}-efs-sg'
-      GroupDescription: Security group for EFS mount targets
-      VpcId: !Ref VpcId
-      SecurityGroupIngress:
-        # NFS from VPC (ECS tasks)
-        - IpProtocol: tcp
-          FromPort: 2049
-          ToPort: 2049
-          CidrIp: !Ref VpcCidr
-          Description: NFS from VPC
-      SecurityGroupEgress:
-        - IpProtocol: -1
-          CidrIp: 0.0.0.0/0
-          Description: Allow all outbound traffic
-      Tags:
-        - Key: Project
-          Value: !Ref ProjectName
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: Name
-          Value: !Sub '${ProjectName}-${Environment}-efs-sg'
-        - Key: ManagedBy
-          Value: CloudFormation
-
-Conditions:
-  IsDev: !Equals [!Ref Environment, 'dev']
 
 Outputs:
   AlbSecurityGroupId:
@@ -195,13 +166,7 @@ Outputs:
       Name: !Sub '${ProjectName}-${Environment}-backend-sg-id'
 
   ArangoDbSecurityGroupId:
-    Description: Security group ID for ArangoDB ECS tasks
+    Description: Security group ID for ArangoDB EC2 instance
     Value: !Ref ArangoDbSecurityGroup
     Export:
       Name: !Sub '${ProjectName}-${Environment}-arangodb-sg-id'
-
-  EfsSecurityGroupId:
-    Description: Security group ID for EFS mount targets
-    Value: !Ref EfsSecurityGroup
-    Export:
-      Name: !Sub '${ProjectName}-${Environment}-efs-sg-id'

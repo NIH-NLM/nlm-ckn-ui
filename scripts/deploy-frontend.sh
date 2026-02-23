@@ -52,7 +52,7 @@ fi
 ENVIRONMENT=$1
 PROJECT_NAME="cell-kn"
 AWS_REGION=${AWS_REGION:-us-east-1}
-STACK_NAME="${PROJECT_NAME}-${ENVIRONMENT}"
+STACK_NAME="${PROJECT_NAME}-${ENVIRONMENT}-frontend"
 
 # Validate environment
 if [[ ! "$ENVIRONMENT" =~ ^(dev|sandbox|prod)$ ]]; then
@@ -65,7 +65,7 @@ echo -e "${GREEN}Getting infrastructure details from CloudFormation / SSM...${NC
 STACK_DATA=$(aws cloudformation describe-stacks \
   --stack-name "$STACK_NAME" \
   --region "$AWS_REGION" \
-  --query 'Stacks[0].Outputs[?OutputKey==`FrontendBucketName` || OutputKey==`CloudFrontDistributionId` || OutputKey==`FrontendUrl`].[OutputKey,OutputValue]' \
+  --query 'Stacks[0].Outputs[?OutputKey==`BucketName` || OutputKey==`CloudFrontDistributionId` || OutputKey==`FrontendUrl`].[OutputKey,OutputValue]' \
   --output text)
 
 # Check if we got anything back at all
@@ -80,11 +80,11 @@ while read -r key value; do
 done <<< "$STACK_DATA"
 
 # Map to shorter internal script variables
-S3_BUCKET=$FrontendBucketName
+S3_BUCKET=$BucketName
 CF_DIST_ID=$CloudFrontDistributionId
 
 # Verify critical variables are actually set
-: "${S3_BUCKET:?Error: FrontendBucketName output is missing from stack.}"
+: "${S3_BUCKET:?Error: BucketName output is missing from stack.}"
 : "${CF_DIST_ID:?Error: CloudFrontDistributionId output is missing from stack.}"
 
 echo "  S3 Bucket: $S3_BUCKET"
@@ -98,7 +98,7 @@ echo -e "${YELLOW}Running npm install (if needed)...${NC}"
 npm ci --prefer-offline --no-audit
 
 echo -e "${YELLOW}Building React application...${NC}"
-npm run build
+npm run build-react
 
 if [ ! -d "build" ]; then
     echo -e "${RED}Error: Build directory not found!${NC}"

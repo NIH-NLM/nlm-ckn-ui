@@ -108,8 +108,8 @@ Resources:
   # ============================================================================
   AlbLogsBucket:
     Type: AWS::S3::Bucket
-    DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain
+    DeletionPolicy: !If [IsProd, Retain, Delete]
+    UpdateReplacePolicy: !If [IsProd, Retain, Delete]
     Properties:
       BucketName: !Sub '${ProjectName}-${Environment}-alb-logs-${AWS::AccountId}'
       PublicAccessBlockConfiguration:
@@ -192,7 +192,7 @@ Resources:
       TargetType: ip
       HealthCheckEnabled: true
       HealthCheckProtocol: HTTP
-      HealthCheckPath: /
+      HealthCheckPath: /health/
       HealthCheckIntervalSeconds: 30
       HealthCheckTimeoutSeconds: 5
       HealthyThresholdCount: 2
@@ -216,10 +216,10 @@ Resources:
       Port: 8529
       Protocol: HTTP
       VpcId: !Ref VpcId
-      TargetType: ip
+      TargetType: instance
       HealthCheckEnabled: true
       HealthCheckProtocol: HTTP
-      HealthCheckPath: /_api/version
+      HealthCheckPath: /_admin/server/availability
       HealthCheckIntervalSeconds: 30
       HealthCheckTimeoutSeconds: 5
       HealthyThresholdCount: 2

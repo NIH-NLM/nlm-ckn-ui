@@ -21,7 +21,7 @@
   },
   {
     "ParameterKey": "PrivateSubnetIds",
-    "ParameterValue": "subnet-4f2db143,subnet-caffd7f7"
+    "ParameterValue": "subnet-0031722a,subnet-c2f261a7"
   },
   {
     "ParameterKey": "DomainName",

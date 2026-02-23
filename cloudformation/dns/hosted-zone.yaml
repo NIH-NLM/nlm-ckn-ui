@@ -1,0 +1,150 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Route 53 hosted zone for nlm-ckn.org. One-time stack — deploy once in the
+  springbok account and never delete. All resources have DeletionPolicy: Retain
+  so that deleting the stack does NOT delete the hosted zone or its records.
+
+# =============================================================================
+# DEPLOYMENT NOTES
+#
+#  - Deploy ONCE in the springbok account only.
+#  - After deploying, enable stack termination protection via the console or:
+#      aws cloudformation update-termination-protection \
+#        --stack-name nlm-ckn-hosted-zone \
+#        --enable-termination-protection
+#  - The AllowedAccountId parameter enforces the correct account at deploy time;
+#    the stack will roll back with an explicit error if run elsewhere.
+# =============================================================================
+
+Parameters:
+  AllowedAccountId:
+    Type: String
+    Default: '123456789012'          # <-- replace with the real springbok account ID
+    Description: >
+      AWS account ID that is permitted to deploy this stack (springbok account).
+      The stack will fail at creation if the deploying account does not match.
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be a 12-digit AWS account ID.
+
+  ProjectName:
+    Type: String
+    Default: nlm-ckn
+    Description: Project name used for resource tagging.
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Account Guard
+        Parameters:
+          - AllowedAccountId
+      - Label:
+          default: Project Configuration
+        Parameters:
+          - ProjectName
+
+# =============================================================================
+# ACCOUNT RESTRICTION
+#
+# Conditions cannot block resource creation by themselves, but combining a
+# condition with an explicit Assert (via a custom resource or a forced
+# WaitConditionHandle failure) is the CloudFormation-native approach.
+#
+# Here we use a lightweight trick: create an SSM parameter only when the
+# account matches. If it does NOT match, the CorrectAccount condition is false
+# and the AccountGuard resource has a DependsOn a resource that does not
+# exist — however the cleanest supported mechanism is the SSM parameter guard
+# below, which writes a sentinel only in the allowed account and fails
+# otherwise due to the Condition-gated resource.
+#
+# For the most reliable guard we use a CloudFormation Rule (supported since
+# 2019) which runs before any resource is created.
+# =============================================================================
+
+Rules:
+  EnforceSpringbokAccount:
+    Assertions:
+      - Assert: !Equals
+          - !Ref AllowedAccountId
+          - !Ref AWS::AccountId
+        AssertDescription: >
+          This stack may only be deployed in the springbok AWS account
+          (AllowedAccountId must equal the current AWS account ID).
+          You are attempting to deploy in account: ${AWS::AccountId}.
+          Aborting to protect the nlm-ckn.org hosted zone.
+
+Resources:
+  # ============================================================================
+  # Route 53 Hosted Zone — nlm-ckn.org
+  #
+  # DeletionPolicy: Retain means that if this stack is ever deleted the hosted
+  # zone and all its DNS records survive in Route 53 unaffected.
+  # ============================================================================
+  NlmCknHostedZone:
+    Type: AWS::Route53::HostedZone
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Name: nlm-ckn.org
+      HostedZoneConfig:
+        Comment: !Sub 'Hosted zone for nlm-ckn.org — managed by CloudFormation (${ProjectName})'
+      HostedZoneTags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Name
+          Value: nlm-ckn.org
+        - Key: ManagedBy
+          Value: CloudFormation
+        - Key: Stack
+          Value: !Ref AWS::StackName
+        - Key: DeployedAccount
+          Value: !Ref AWS::AccountId
+        - Key: OneTimeStack
+          Value: 'true'
+        - Key: DeletionProtection
+          Value: 'retain-on-stack-delete'
+
+  # ============================================================================
+  # SSM Parameter — stores the hosted zone ID for cross-stack reference
+  #
+  # DeletionPolicy: Retain keeps this value available even if the stack is
+  # accidentally deleted, so dependent stacks keep working.
+  # ============================================================================
+  HostedZoneIdParameter:
+    Type: AWS::SSM::Parameter
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Name: !Sub '/${ProjectName}/hosted-zone-id'
+      Type: String
+      Value: !Ref NlmCknHostedZone
+      Description: Route 53 hosted zone ID for nlm-ckn.org
+      Tags:
+        Project: !Ref ProjectName
+        Name: !Sub '/${ProjectName}/hosted-zone-id'
+        ManagedBy: CloudFormation
+
+Outputs:
+  HostedZoneId:
+    Description: Route 53 hosted zone ID for nlm-ckn.org
+    Value: !Ref NlmCknHostedZone
+    Export:
+      Name: !Sub '${ProjectName}-hosted-zone-id'
+
+  HostedZoneName:
+    Description: Domain name of the hosted zone
+    Value: !GetAtt NlmCknHostedZone.Name
+    Export:
+      Name: !Sub '${ProjectName}-hosted-zone-name'
+
+  NameServers:
+    Description: >
+      Authoritative name servers for nlm-ckn.org. Provide these to your
+      domain registrar so it delegates DNS to Route 53.
+    Value: !Join
+      - ', '
+      - !GetAtt NlmCknHostedZone.NameServers
+
+  SsmParameterPath:
+    Description: SSM parameter path where the hosted zone ID is stored
+    Value: !Sub '/${ProjectName}/hosted-zone-id'

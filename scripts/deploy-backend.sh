@@ -106,27 +106,27 @@ ECR_REPO=$(aws ssm get-parameter \
   exit 1
 }
 
-# Read ECS cluster and service names from CloudFormation stack outputs
-# Fetch outputs as "Key=Value" lines
-STACK_DATA=$(aws cloudformation describe-stacks \
-  --stack-name "$STACK_NAME" \
+# Read service name from the backend service stack (cell-kn-<env>-backend)
+BACKEND_STACK="${PROJECT_NAME}-${ENVIRONMENT}-backend"
+SERVICE_NAME=$(aws cloudformation describe-stacks \
+  --stack-name "$BACKEND_STACK" \
   --region "$AWS_REGION" \
-  --query 'Stacks[0].Outputs[?OutputKey==`EcsClusterName` || OutputKey==`BackendServiceName`].[OutputKey,OutputValue]' \
-  --output text)
+  --query 'Stacks[0].Outputs[?OutputKey==`ServiceName`].OutputValue' \
+  --output text 2>/dev/null) || SERVICE_NAME=""
 
-# Loop through the lines and assign variables
-while read -r key value; do
-  declare "$key=$value"
-done <<< "$STACK_DATA"
-
-# Now you can use them safely
-echo "Cluster: $EcsClusterName"
-echo "Service: $BackendServiceName"
+# Read ECS cluster name from the infra stack exports (set by ecs-cluster.yaml nested stack)
+ECS_CLUSTER=$(aws cloudformation list-exports \
+  --region "$AWS_REGION" \
+  --query "Exports[?Name=='${PROJECT_NAME}-${ENVIRONMENT}-cluster-name'].Value" \
+  --output text 2>/dev/null) || ECS_CLUSTER=""
 
 TASK_FAMILY="${PROJECT_NAME}-${ENVIRONMENT}-backend"
 
 if [ -z "$ECR_REPO" ] || [ -z "$ECS_CLUSTER" ] || [ -z "$SERVICE_NAME" ]; then
-  echo -e "${RED}Error: Could not read required values. Make sure the environment stack is deployed.${NC}"
+  echo -e "${RED}Error: Could not read required values.${NC}"
+  echo "  ECR Repo:    ${ECR_REPO:-(empty)} — needs shared stack deployed"
+  echo "  ECS Cluster: ${ECS_CLUSTER:-(empty)} — needs infra stack (cell-kn-${ENVIRONMENT}) deployed"
+  echo "  ECS Service: ${SERVICE_NAME:-(empty)} — needs backend stack (${BACKEND_STACK}) deployed"
   exit 1
 fi
 
@@ -156,8 +156,10 @@ if aws ecr describe-images \
   echo -e "${YELLOW}To force a rebuild, commit new changes or set IMAGE_TAG to a different value.${NC}"
 else
   # Build Docker image
-  echo -e "\n${GREEN}Building Docker image...${NC}"
-  docker build -t "$FULL_IMAGE_URI" .
+  # Explicitly target linux/amd64 — ECS Fargate runs on x86_64.
+  # Required when building on ARM64 hosts (Apple M-series).
+  echo -e "\n${GREEN}Building Docker image (linux/amd64)...${NC}"
+  docker build --platform linux/amd64 -t "$FULL_IMAGE_URI" .
 
   # Push to ECR
   echo -e "\n${GREEN}Pushing image to ECR...${NC}"
@@ -240,9 +242,10 @@ aws ecs describe-services \
   --query 'services[0].{Status:status,Desired:desiredCount,Running:runningCount,Pending:pendingCount,TaskDef:taskDefinition}' \
   --output table
 
-# Show backend URL from stack outputs
+# Show backend URL from infra stack outputs (BackendUrl lives in cell-kn-<env>)
+INFRA_STACK="${PROJECT_NAME}-${ENVIRONMENT}"
 BACKEND_URL=$(aws cloudformation describe-stacks \
-  --stack-name "$STACK_NAME" \
+  --stack-name "$INFRA_STACK" \
   --region "$AWS_REGION" \
   --query 'Stacks[0].Outputs[?OutputKey==`BackendUrl`].OutputValue' \
   --output text 2>/dev/null)

@@ -73,7 +73,7 @@ if aws ecr describe-images \
   echo -e "${YELLOW}Image ${FULL_IMAGE_URI} already exists in ECR - skipping build and push.${NC}"
 else
   echo -e "\n${GREEN}Building Docker image...${NC}"
-  docker build -t "$FULL_IMAGE_URI" .
+  docker build --platform linux/amd64 -t "$FULL_IMAGE_URI" .
 
   echo -e "\n${GREEN}Pushing image to ECR...${NC}"
   docker push "$FULL_IMAGE_URI"

@@ -17,8 +17,11 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include, re_path
 from django.views.generic import TemplateView
+from django.http import HttpResponse
 
 urlpatterns = [
+    # Health check (used by ALB)
+    path("health/", lambda request: HttpResponse("ok"), name="health"),
     # Django URL patterns
     path("admin/", admin.site.urls),
     path("arango_api/", include("arango_api.urls")),

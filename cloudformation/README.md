@@ -97,7 +97,7 @@ cloudformation/
 | Parameter | Default | Description |
 |-----------|---------|-------------|
 | `ArangoDbUser` | `root` | ArangoDB username |
-| `PrivateSubnetCount` | `2` | Number of private subnets (1 or 2, for EFS mount targets) |
+| `PrivateSubnetCount` | `2` | Number of private subnets (1 or 2) |
 
 ## Stack Exports
 

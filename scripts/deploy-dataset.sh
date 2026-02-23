@@ -3,7 +3,7 @@
 # deploy-dataset.sh - Deploy ArangoDB Dataset Version
 # ==============================================================================
 # Deploys a new ArangoDB dataset version using SSM parameter-based versioning.
-# The init container automatically detects version changes and restores only
+# The EC2 instance startup script detects version changes and restores only
 # when the version differs from the currently deployed dataset.
 #
 # USAGE:
@@ -18,8 +18,8 @@
 #   1. Reads stack outputs from CloudFormation and bucket name from SSM
 #   2. Validates dataset exists in S3
 #   3. Updates SSM parameter with new dataset version
-#   4. Forces ArangoDB service restart
-#   5. Init container detects version change and restores new dataset
+#   4. Reboots the ArangoDB EC2 instance via SSM
+#   5. On reboot, the UserData script detects the version change and restores
 #
 # PREREQUISITES:
 #   - AWS CLI configured with appropriate credentials
@@ -41,6 +41,7 @@ set -e
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 if [ $# -ne 2 ]; then
@@ -53,7 +54,7 @@ ENVIRONMENT=$1
 DATASET_S3_KEY=$2
 PROJECT_NAME="cell-kn"
 AWS_REGION=${AWS_REGION:-us-east-1}
-STACK_NAME="${PROJECT_NAME}-${ENVIRONMENT}"
+STACK_NAME="${PROJECT_NAME}-${ENVIRONMENT}-arangodb"
 
 # Validate environment
 if [[ ! "$ENVIRONMENT" =~ ^(dev|sandbox|prod)$ ]]; then
@@ -70,20 +71,14 @@ SSM_PARAMETER=$(aws cloudformation describe-stacks \
   --query 'Stacks[0].Outputs[?OutputKey==`DatasetVersionParameter`].OutputValue' \
   --output text 2>/dev/null) || {
   echo -e "${RED}Error: Could not read stack outputs from ${STACK_NAME}.${NC}"
-  echo "Make sure the environment stack is deployed."
+  echo "Make sure the arangodb stack is deployed."
   exit 1
 }
 
-CLUSTER=$(aws cloudformation describe-stacks \
+INSTANCE_ID=$(aws cloudformation describe-stacks \
   --stack-name "$STACK_NAME" \
   --region "$AWS_REGION" \
-  --query 'Stacks[0].Outputs[?OutputKey==`EcsClusterName`].OutputValue' \
-  --output text 2>/dev/null)
-
-SERVICE=$(aws cloudformation describe-stacks \
-  --stack-name "$STACK_NAME" \
-  --region "$AWS_REGION" \
-  --query 'Stacks[0].Outputs[?OutputKey==`ArangoDbServiceName`].OutputValue' \
+  --query 'Stacks[0].Outputs[?OutputKey==`InstanceId`].OutputValue' \
   --output text 2>/dev/null)
 
 # Read S3 bucket name from SSM (written by shared-resources stack)
@@ -97,15 +92,16 @@ S3_BUCKET=$(aws ssm get-parameter \
   exit 1
 }
 
-if [ -z "$SSM_PARAMETER" ] || [ -z "$CLUSTER" ] || [ -z "$SERVICE" ]; then
+if [ -z "$SSM_PARAMETER" ] || [ -z "$INSTANCE_ID" ]; then
   echo -e "${RED}Error: Could not read required values from stack ${STACK_NAME}.${NC}"
+  echo "  SSM_PARAMETER: ${SSM_PARAMETER:-(empty)}"
+  echo "  INSTANCE_ID:   ${INSTANCE_ID:-(empty)}"
   exit 1
 fi
 
 echo "  Environment:   $ENVIRONMENT"
 echo "  SSM Parameter: $SSM_PARAMETER"
-echo "  ECS Cluster:   $CLUSTER"
-echo "  ECS Service:   $SERVICE"
+echo "  EC2 Instance:  $INSTANCE_ID"
 echo "  S3 Bucket:     $S3_BUCKET"
 
 echo ""
@@ -134,23 +130,28 @@ aws ssm put-parameter \
   --region "$AWS_REGION"
 
 echo ""
-echo "==> Restarting ArangoDB service..."
-aws ecs update-service \
-  --cluster "$CLUSTER" \
-  --service "$SERVICE" \
-  --force-new-deployment \
+echo "==> Rebooting ArangoDB EC2 instance ($INSTANCE_ID)..."
+aws ssm send-command \
+  --instance-ids "$INSTANCE_ID" \
+  --document-name "AWS-RunShellScript" \
+  --parameters '{"commands":["reboot"]}' \
   --region "$AWS_REGION" \
-  --query 'service.{Status:status,DesiredCount:desiredCount}' \
-  --output table
+  --output table \
+  --query 'Command.{CommandId:CommandId,Status:Status}'
 
 echo ""
 echo -e "${GREEN}==> Deployment initiated!${NC}"
+echo -e "${YELLOW}The instance will reboot, restore the new dataset, and restart ArangoDB.${NC}"
+echo -e "${YELLOW}This typically takes 5-15 minutes depending on dataset size.${NC}"
 echo ""
-echo "Monitor deployment:"
-echo "  aws ecs describe-services --cluster $CLUSTER --services $SERVICE --region $AWS_REGION"
+echo "Monitor instance state:"
+echo "  aws ec2 describe-instance-status --instance-ids $INSTANCE_ID --region $AWS_REGION"
 echo ""
-echo "Watch logs:"
-echo "  aws logs tail /ecs/${PROJECT_NAME}-${ENVIRONMENT}-arangodb --follow --region $AWS_REGION"
+echo "Watch setup logs (once instance is back up):"
+echo "  aws logs tail /ec2/${PROJECT_NAME}-${ENVIRONMENT}-arangodb --follow --region $AWS_REGION"
 echo ""
 echo "Check current version after deployment:"
 echo "  aws ssm get-parameter --name $SSM_PARAMETER --query 'Parameter.Value' --output text"
+echo ""
+echo "Connect via Session Manager:"
+echo "  aws ssm start-session --target $INSTANCE_ID --region $AWS_REGION"
