@@ -33,11 +33,11 @@ Shared Resources Stack (one-time, shared across environments)
 
 Environment Stack (per environment: dev, sandbox, prod)
 ├── Secrets (Lambda generates ArangoDB password, Django key, CloudFront secret)
-├── Security Groups (ALB, backend, ArangoDB, EFS)  ← must be pre-created in NIH accounts
+├── Security Groups (ALB, backend, ArangoDB EC2)  ← must be pre-created in NIH accounts
 ├── ECS Cluster
 ├── Service Discovery (Cloud Map)
 ├── Application Load Balancer
-├── ArangoDB ECS Service (EFS persistence, S3 restore)
+├── ArangoDB EC2 Instance (EBS persistence, S3 restore via UserData)
 ├── Backend ECS Service (auto-scaling 2-10 tasks)
 └── Frontend (S3, CloudFront, ACM certificate)
 
@@ -64,7 +64,7 @@ cloudformation/
 │   ├── ecs-cluster.yaml                # ECS cluster
 │   ├── service-discovery.yaml          # Cloud Map
 │   ├── alb.yaml                        # Load balancer
-│   ├── arangodb.yaml                   # ArangoDB service + EFS
+│   ├── arangodb.yaml                   # ArangoDB EC2 instance + EBS
 │   ├── backend.yaml                    # Backend service + auto-scaling
 │   └── frontend.yaml                   # S3 + CloudFront + ACM
 ├── scripts/
@@ -114,12 +114,16 @@ cell-kn-shared-arangodb-bucket-arn  # S3 bucket ARN
 ### From Environment Stack
 
 ```
-cell-kn-<env>-vpc-id                # VPC ID
-cell-kn-<env>-ecs-cluster-name      # ECS cluster name
-cell-kn-<env>-alb-dns-name          # ALB DNS name
-cell-kn-<env>-cloudfront-domain     # CloudFront domain name
-cell-kn-<env>-backend-url           # Backend URL
-cell-kn-<env>-frontend-url          # Frontend URL
+cell-kn-<env>-vpc-id                    # VPC ID
+cell-kn-<env>-ecs-cluster-name          # ECS cluster name (backend only)
+cell-kn-<env>-alb-dns-name              # ALB DNS name
+cell-kn-<env>-cloudfront-domain         # CloudFront domain name
+cell-kn-<env>-backend-url               # Backend URL
+cell-kn-<env>-frontend-url              # Frontend URL
+cell-kn-<env>-arangodb-instance-id      # ArangoDB EC2 instance ID
+cell-kn-<env>-arangodb-private-ip       # ArangoDB EC2 private IP
+cell-kn-<env>-arangodb-dns              # ArangoDB Cloud Map DNS name
+cell-kn-<env>-dataset-version-param     # SSM parameter name for dataset version
 ```
 
 
@@ -131,7 +135,7 @@ cell-kn-<env>-frontend-url          # Frontend URL
 All public traffic enters through CloudFront (HTTPS). The ALB is internet-facing but protected by a shared secret header — requests without the correct `X-Custom-Origin-Header` value are rejected with `403 Forbidden` at the listener level before reaching any ECS task.
 
 ```
-Browser → CloudFront (HTTPS) → ALB (HTTP, header-gated) → ECS tasks (private subnet)
+Browser → CloudFront (HTTPS) → ALB (HTTP, header-gated) → ECS tasks / EC2 instance (private subnet)
 ```
 
 ### Origin secret enforcement
@@ -148,9 +152,9 @@ The ArangoDB web UI and REST API are routed through CloudFront at `/_db/*`, `/_a
 |-------|-----------|
 | In transit (browser → CloudFront) | TLS 1.2+ enforced by CloudFront viewer policy |
 | In transit (CloudFront → ALB) | HTTP within AWS network; protected by origin secret |
-| In transit (ALB → ECS tasks) | HTTP within private VPC subnet |
-| In transit (ECS → EFS) | NFS within private VPC subnet |
-| EFS at rest | AWS-managed encryption key |
+| In transit (ALB → backend ECS tasks) | HTTP within private VPC subnet |
+| In transit (ALB → ArangoDB EC2) | HTTP within private VPC subnet |
+| EBS at rest (ArangoDB data volume) | AWS-managed encryption key (gp3, `Encrypted: true`) |
 | S3 at rest | AES-256 |
 | ECR at rest | AES-256 |
 | SSM parameters | Standard (plaintext); `NoEcho` prevents console display |
@@ -163,14 +167,14 @@ All application secrets (ArangoDB password, Django secret key, CloudFront origin
 
 ## Cost
 
-Estimated monthly cost per environment: **~$72-128/month**
+Estimated monthly cost per environment: **~$83-139/month**
 
 | Service | Estimated Cost |
 |---------|----------------|
 | ECS Fargate (backend, 2-10 tasks auto-scaling) | $35-80/month |
-| ECS Fargate (ArangoDB, 1 task) | $18/month |
+| EC2 t4g.medium (ArangoDB, 1 instance) | ~$25/month |
+| EBS gp3 50 GB (ArangoDB data volume) | ~$4/month |
 | Application Load Balancer | $16/month |
-| EFS (depends on data size) | $0.30/GB/month |
 | S3 (frontend + datasets) | $1-5/month |
 | CloudFront | $1-5/month |
 | CloudWatch Logs | $1-3/month |
