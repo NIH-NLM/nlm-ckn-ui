@@ -215,17 +215,31 @@ docker run -d --name arango-reset \
   -v "$APPS_DIR:/var/lib/arangodb3-apps" \
   arangodb:3.12
 
+ARANGO_READY=0
 for i in $(seq 1 60); do
   if curl -sf http://localhost:8529/_admin/server/availability > /dev/null 2>&1; then
     echo "==> Ready for password reset (attempt $i)"
+    ARANGO_READY=1
     break
   fi
   sleep 5
 done
+if [ "$ARANGO_READY" = "0" ]; then
+  echo "ERROR: arango-reset container did not become ready after 5 minutes"
+  docker logs arango-reset --tail 20 || true
+  docker stop arango-reset && docker rm arango-reset || true
+  exit 1
+fi
 
-curl -X PATCH http://localhost:8529/_api/user/root \
+PATCH_RESPONSE=$(curl -s -X PATCH http://localhost:8529/_api/user/root \
   -H "Content-Type: application/json" \
-  -d "{\"passwd\": \"$ARANGO_PASSWORD\"}"
+  -d "{\"passwd\": \"$ARANGO_PASSWORD\"}")
+echo "==> Password reset response: $PATCH_RESPONSE"
+if echo "$PATCH_RESPONSE" | grep -q '"error":true'; then
+  echo "ERROR: Password reset failed: $PATCH_RESPONSE"
+  exit 1
+fi
+echo "==> Password reset successful"
 
 docker stop arango-reset && docker rm arango-reset
 
@@ -279,7 +293,13 @@ echo ""
 echo "Check current version after restore:"
 echo "  aws ssm get-parameter --name $SSM_PARAMETER --query 'Parameter.Value' --output text --region $AWS_REGION"
 echo ""
-echo "Connect via Session Manager:"
-echo "  aws ssm start-session --target $INSTANCE_ID --region $AWS_REGION"  --document-name AWS-StartPortForwardingSession  --parameters '{"portNumber":["8529"],"localPortNumber":["8529"]}'
-echo "Management Console: https://localhost:8529"
-echo "Using password https://us-east-1.console.aws.amazon.com/systems-manager/parameters/%252Fcell-kn%252Fdev%252Farango%252Fdb-password/description?region=us-east-1&tab=Table"
+echo "Connect via Session Manager (use 8530 to avoid conflicts with local dev):"
+echo "  aws ssm start-session --target $INSTANCE_ID --region $AWS_REGION --document-name AWS-StartPortForwardingSession --parameters '{\"portNumber\":[\"8529\"],\"localPortNumber\":[\"8530\"]}'"
+echo ""
+echo "Once connected, verify with curl:"
+echo "  ARANGO_PASS=\$(aws ssm get-parameter --name /${PROJECT_NAME}/${ENVIRONMENT}/arango/db-password --query 'Parameter.Value' --output text --region $AWS_REGION)"
+echo "  curl -u \"root:\$ARANGO_PASS\" http://localhost:8530/_api/database"
+echo "  curl -u \"root:\$ARANGO_PASS\" http://localhost:8530/_api/version"
+echo ""
+echo "ArangoDB Web UI: http://localhost:8530"
+echo "Password: aws ssm get-parameter --name /${PROJECT_NAME}/${ENVIRONMENT}/arango/db-password --query 'Parameter.Value' --output text --region $AWS_REGION"
