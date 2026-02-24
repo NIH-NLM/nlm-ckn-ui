@@ -12,7 +12,7 @@ import {
 
 // Mock the collectionsMapData import
 jest.mock(
-  "../assets/cell-kn-mvp-collection-maps.json",
+  "../assets/nlm-ckn-collection-maps.json",
   () => ({
     maps: [
       [
@@ -189,14 +189,14 @@ describe("Utils Module", () => {
 
     it("should sort collections using display_name from map (case-insensitive)", () => {
       // Use the mocked collectionsMapData via the Map constructor
-      const collectionMaps = new Map(require("../assets/cell-kn-mvp-collection-maps.json").maps);
+      const collectionMaps = new Map(require("../assets/nlm-ckn-collection-maps.json").maps);
       const input = ["nodes_b", "nodes_a"]; // Based on mock display names: Nodes B, Nodes A
       const expected = ["nodes_a", "nodes_b"]; // Sorted: Nodes A, Nodes B
       expect(parseCollections(input, collectionMaps)).toEqual(expected);
     });
 
     it("should fallback to collection key for sorting if display_name is missing", () => {
-      const collectionMaps = new Map(require("../assets/cell-kn-mvp-collection-maps.json").maps);
+      const collectionMaps = new Map(require("../assets/nlm-ckn-collection-maps.json").maps);
       // nodes_c has no display_name in mock, nodes_a has "Nodes A"
       const input = ["nodes_c", "nodes_a"];
       // Expected: nodes_a ("Nodes A"), nodes_c (key)
@@ -205,7 +205,7 @@ describe("Utils Module", () => {
     });
 
     it("should fallback to collection key for sorting if collection not in map", () => {
-      const collectionMaps = new Map(require("../assets/cell-kn-mvp-collection-maps.json").maps);
+      const collectionMaps = new Map(require("../assets/nlm-ckn-collection-maps.json").maps);
       // nodes_x not in mock map, nodes_a has "Nodes A"
       const input = ["nodes_x", "nodes_a"];
       // Expected: nodes_a ("Nodes A"), nodes_x (key)
@@ -214,7 +214,7 @@ describe("Utils Module", () => {
     });
 
     it("should handle mixed cases with and without map entries", () => {
-      const collectionMaps = new Map(require("../assets/cell-kn-mvp-collection-maps.json").maps);
+      const collectionMaps = new Map(require("../assets/nlm-ckn-collection-maps.json").maps);
       // nodes_a: "Nodes A", nodes_b: "Nodes B", nodes_c: no display, nodes_x: no entry
       const input = ["nodes_x", "nodes_c", "nodes_b", "nodes_a"];
       const expected = ["nodes_a", "nodes_b", "nodes_c", "nodes_x"];

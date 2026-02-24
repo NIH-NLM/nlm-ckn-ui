@@ -1,7 +1,7 @@
 /**
  * Collection and label utilities for processing collection data and generating labels/URLs.
  */
-import collMaps from "../assets/cell-kn-mvp-collection-maps.json";
+import collMaps from "../assets/nlm-ckn-collection-maps.json";
 import { capitalCase } from "./strings";
 
 /**

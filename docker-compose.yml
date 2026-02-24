@@ -1,0 +1,27 @@
+services:
+# Step 2: Run ArangoDB
+  arangodb:
+    image: arangodb:3.12
+    container_name: arango_db
+    restart: always    
+    ports:
+      - "8529:8529"
+    env_file:
+      - .env
+    environment:
+      - ARANGO_ROOT_PASSWORD=${ARANGO_DB_PASSWORD}    
+    volumes:
+      - ${DATA_PATH}/arangodb:/var/lib/arangodb3
+      - ${DATA_PATH}/arangodb/data/arangodb-apps:/var/lib/arangodb3-apps
+    command: arangod 
+# Step 3: Run the backend
+  backend:
+    build: .
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    command: python manage.py runserver 0.0.0.0:8000
+    depends_on:
+      - arangodb

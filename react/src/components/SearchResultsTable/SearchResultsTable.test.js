@@ -14,7 +14,7 @@ const createTestStore = () =>
   });
 
 // Mock collection maps
-jest.mock("../../assets/cell-kn-mvp-collection-maps.json", () => ({
+jest.mock("../../assets/nlm-ckn-collection-maps.json", () => ({
   maps: [
     ["CL", { display_name: "Cell Types" }],
     ["GO", { display_name: "Gene Ontology" }],

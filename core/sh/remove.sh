@@ -7,7 +7,7 @@ NAME
     remove - Remove a specified configuration of the Cell KN MVP
 
 SYNOPSIS
-    remove [OPTIONS]
+    remove [OPTIONS]]
 
 DESCRIPTION
     TBC
@@ -29,7 +29,7 @@ EOF
 while getopts ":c:hex" opt; do
     case $opt in
 	c)
-	    CONF=${OPTARG}
+	    CONF="${OPTARG}"
             ;;
 	h)
 	    usage
@@ -56,16 +56,16 @@ done
 
 # Parse command line arguments
 shift `expr ${OPTIND} - 1`
-if [ "$#" -ne 0 ]; then
+if [[ "$#" -ne 0 ]]; then
     echo "No arguments required"
     exit 1
 fi
 
 # Check command line arguments
-if [ -z "$CONF" ]; then
+if [[ -z "$CONF" ]]; then
     echo "No configuration specified"
     exit 0
-elif [ ! -f "conf/$CONF" ]; then
+elif [[ ! -f "conf/$CONF" ]]; then
     echo "Configuration not found"
     exit 1
 fi
@@ -79,11 +79,15 @@ archive+="-$CELL_KN_MVP_ETL_ONTOLOGIES_VERSION"
 archive+="-$CELL_KN_MVP_ETL_RESULTS_VERSION"
 archive+=".tar.gz"
 
+# Lookup the domain based on IP address
+domain="$(./lookup.sh)"
+fqdn="$domain.org"
+
 # Assign the subdomain based on the specified configuration
-subdomain=$(echo $CONF | sed s/\\./-/g)
+subdomain="$(echo $CONF | sed s/\\./-/g)"
 
 # Disable the corresponding site, and remove it from available sites
-site=$subdomain-cell-kn-mvp.conf
+site="$subdomain-$domain.conf"
 sudo a2dissite $site
 sleep 1
 sudo rm /etc/apache2/sites-available/$site
@@ -96,12 +100,12 @@ port=$(ls -al | grep "\->.*$subdomain" | cut -d "-" -f 2 | sed "s/[[:space:]]*$/
 ARANGO_DB_PORT=$port ./stop-arangodb.sh
 
 # Remove Cell KN MVP versioned directory
-mvp_directory=cell-kn-mvp-ui-$CELL_KN_MVP_UI_VERSION-$subdomain
+mvp_directory="cell-kn-mvp-ui-$CELL_KN_MVP_UI_VERSION-$subdomain"
 rm -rf $mvp_directory
 
 # Remove ArangoDB archive file and symbolic link
-arangodb_file=$(echo $archive | sed s/.tar.gz//)-$subdomain
-arangodb_link=arangodb-$port
+arangodb_file="$(echo $archive | sed s/.tar.gz//)-$subdomain"
+arangodb_link="arangodb-$port"
 sudo rm $arangodb_link
 sudo rm -rf $arangodb_file
 popd

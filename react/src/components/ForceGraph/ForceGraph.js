@@ -1,4 +1,4 @@
-import collMaps from "assets/cell-kn-mvp-collection-maps.json";
+import collMaps from "assets/nlm-ckn-collection-maps.json";
 import AddToGraphButton from "components/AddToGraphButton";
 import DocumentPopup from "components/DocumentPopup";
 import ForceGraphConstructor from "components/ForceGraphConstructor/ForceGraphConstructor";

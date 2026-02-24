@@ -1,15 +1,15 @@
 name: CI
 
 on:
-  pull_request:
+  pull_request_target:
     branches: [main]
   push:
     branches: [main]
   workflow_dispatch:
 
-# Cancel in-progress runs for the same branch
+# Cancel in-progress runs for the same PR or branch
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -17,6 +17,29 @@ permissions:
   pull-requests: write
 
 jobs:
+  # Permission check for fork PRs - ensures maintainer approval before running with secrets
+  # For PRs from forks, this job will fail until a maintainer re-runs it
+  check-fork-permissions:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request_target'
+    steps:
+      - name: Get User Permission
+        id: checkAccess
+        uses: actions-cool/check-user-permission@v2
+        with:
+          require: write
+          username: ${{ github.triggering_actor }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check User Permission
+        if: steps.checkAccess.outputs.require-result == 'false'
+        run: |
+          echo "${{ github.triggering_actor }} does not have permissions on this repo."
+          echo "Current permission level is ${{ steps.checkAccess.outputs.user-permission }}"
+          echo "Job originally triggered by ${{ github.actor }}"
+          exit 1
+
   # Detect which parts of the codebase changed to skip unnecessary tests
   detect-changes:
     runs-on: ubuntu-latest
@@ -26,6 +49,8 @@ jobs:
       e2e: ${{ steps.filter.outputs.e2e }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: dorny/paths-filter@v3
         id: filter
         with:
@@ -43,6 +68,8 @@ jobs:
               - 'arango_api/**'
               - 'requirements.txt'
               - 'manage.py'
+              - 'Dockerfile'
+              - '.dockerignore'
             e2e:
               - 'react/src/**'
               - 'react/public/**'
@@ -63,7 +90,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref || github.ref }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 2
 
       - name: Check if last commit was auto-fix
@@ -102,7 +129,7 @@ jobs:
         continue-on-error: true
 
       - name: Check for changes and push
-        if: steps.check-autofix.outputs.skip != 'true' && github.event_name == 'pull_request'
+        if: steps.check-autofix.outputs.skip != 'true' && github.event_name == 'pull_request_target'
         run: |
           cd ..
           git config user.name "github-actions[bot]"
@@ -132,6 +159,8 @@ jobs:
         working-directory: react
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -175,6 +204,8 @@ jobs:
         working-directory: react
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -240,11 +271,16 @@ jobs:
 
   # Backend unit tests - no database required
   backend-unit-tests:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
+    needs: [detect-changes, check-fork-permissions]
+    if: |
+      always() &&
+      (needs.detect-changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch') &&
+      (needs.check-fork-permissions.result == 'success' || needs.check-fork-permissions.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -261,11 +297,15 @@ jobs:
         env:
           DJANGO_SETTINGS_MODULE: core.settings
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          ARANGO_TEST_MODE: 'true'
 
   # Backend integration tests - requires ArangoDB
   backend-integration-tests:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
+    needs: [detect-changes, check-fork-permissions]
+    if: |
+      always() &&
+      (needs.detect-changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch') &&
+      (needs.check-fork-permissions.result == 'success' || needs.check-fork-permissions.result == 'skipped')
     runs-on: ubuntu-latest
     services:
       arangodb:
@@ -275,12 +315,14 @@ jobs:
         env:
           ARANGO_ROOT_PASSWORD: test
         options: >-
-          --health-cmd "wget -q --spider http://localhost:8529/_api/version || exit 1"
+          --health-cmd "arangosh --server.password test --javascript.execute-string 'db._version()'"
           --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-timeout 10s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -310,32 +352,50 @@ jobs:
           ARANGO_TEST_MODE: 'true'
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
 
+  # Backend Docker build - verify the image builds successfully
+  backend-docker-build:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t nlm-ckn-backend .
+
   # Final status check - used for branch protection rules
+  # Note: !cancelled() prevents orphaned status reports when workflow is cancelled
+  # due to new commits triggering cancel-in-progress
   ci-passed:
     runs-on: ubuntu-latest
     needs:
       - detect-changes
+      - check-fork-permissions
       - frontend-lint
       - frontend-unit-tests
       - frontend-e2e
       - backend-unit-tests
       - backend-integration-tests
-    if: always()
+    if: ${{ always() && !cancelled() }}
     steps:
       - name: Check all jobs passed
         run: |
+          echo "Fork permissions: ${{ needs.check-fork-permissions.result }}"
           echo "Frontend lint: ${{ needs.frontend-lint.result }}"
           echo "Frontend unit tests: ${{ needs.frontend-unit-tests.result }}"
           echo "Frontend E2E: ${{ needs.frontend-e2e.result }}"
           echo "Backend unit tests: ${{ needs.backend-unit-tests.result }}"
           echo "Backend integration tests: ${{ needs.backend-integration-tests.result }}"
+          echo "Backend Docker build: ${{ needs.backend-docker-build.result }}"
 
           # Check if any job failed - skipped jobs are OK due to path filtering
-          if [[ "${{ needs.frontend-lint.result }}" == "failure" ]] || \
+          if [[ "${{ needs.check-fork-permissions.result }}" == "failure" ]] || \
+             [[ "${{ needs.frontend-lint.result }}" == "failure" ]] || \
              [[ "${{ needs.frontend-unit-tests.result }}" == "failure" ]] || \
              [[ "${{ needs.frontend-e2e.result }}" == "failure" ]] || \
              [[ "${{ needs.backend-unit-tests.result }}" == "failure" ]] || \
-             [[ "${{ needs.backend-integration-tests.result }}" == "failure" ]]; then
+             [[ "${{ needs.backend-integration-tests.result }}" == "failure" ]] || \
+             [[ "${{ needs.backend-docker-build.result }}" == "failure" ]]; then
             echo "One or more jobs failed"
             exit 1
           fi

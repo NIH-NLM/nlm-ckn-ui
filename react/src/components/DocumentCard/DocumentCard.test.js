@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import DocumentCard from "./DocumentCard";
 
 // Mock the collection maps to provide predictable test data
-jest.mock("../../assets/cell-kn-mvp-collection-maps.json", () => ({
+jest.mock("../../assets/nlm-ckn-collection-maps.json", () => ({
   maps: [
     [
       "CL",
