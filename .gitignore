@@ -21,3 +21,4 @@ venv/
 *.pem
 /data
 /arangodb
+/core/sh/build-*
