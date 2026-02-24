@@ -212,7 +212,10 @@ Resources:
               - Effect: Allow
                 Action:
                   - route53:ChangeResourceRecordSets
-                Resource: 'arn:aws:route53:::hostedzone/*'
+                  - route53:CreateHealthCheck
+                  - route53:DeleteHealthCheck
+                  - route53:UpdateHealthCheck
+                Resource: '*'
         - PolicyName: AlbTargetRegistration
           PolicyDocument:
             Version: '2012-10-17'
@@ -417,7 +420,16 @@ Resources:
             aws s3 cp "s3://$ARANGODB_S3_BUCKET/$CURRENT_VERSION" /tmp/restore.tar.gz
 
             echo "Extracting backup..."
-            tar -xzf /tmp/restore.tar.gz -C /
+            # Auto-detect tar structure: some archives use var/lib/arangodb3/...
+            # (created with -C /), others use arangodb/... (created with -C /var/lib).
+            # Strip the top-level prefix and always extract into DATA_DIR.
+            FIRST_ENTRY=$(tar -tzf /tmp/restore.tar.gz | head -1 || true)
+            echo "Detected tar prefix: $FIRST_ENTRY"
+            if echo "$FIRST_ENTRY" | grep -q "^var/lib/arangodb3"; then
+              tar -xzf /tmp/restore.tar.gz -C /
+            else
+              tar -xzf /tmp/restore.tar.gz -C "$DATA_DIR" --strip-components=1
+            fi
             rm -f /tmp/restore.tar.gz
 
             # Restore ownership after extraction

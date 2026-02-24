@@ -282,13 +282,14 @@ Resources:
         Fn::Sub: '${ProjectName}-${Environment}-cluster-name'
       TaskDefinition: !Ref TaskDefinition
       LaunchType: FARGATE
-      DesiredCount: 2
+      DesiredCount: 0
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: !If [IsDev, ENABLED, DISABLED]
-          Subnets:
-            - subnet-0031722a
-            - subnet-c2f261a7
+          Subnets: !Split
+            - ','
+            - !ImportValue
+                Fn::Sub: '${ProjectName}-${Environment}-private-subnet-ids'
           SecurityGroups:
             - !Ref BackendSecurityGroupId
       LoadBalancers:
@@ -313,7 +314,10 @@ Resources:
     Type: AWS::ApplicationAutoScaling::ScalableTarget
     Properties:
       ServiceNamespace: ecs
-      ResourceId: !Sub 'service/${EcsService.Cluster}/${EcsService.Name}'
+      ResourceId: !Sub
+        - 'service/${ClusterName}/${EcsService.Name}'
+        - ClusterName: !ImportValue
+            Fn::Sub: '${ProjectName}-${Environment}-cluster-name'
       ScalableDimension: ecs:service:DesiredCount
       MinCapacity: 2
       MaxCapacity: 10
