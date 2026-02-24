@@ -75,7 +75,7 @@ export const WORKFLOW_PRESETS = [
         originFilter: "all",
         settings: {
           depth: 3,
-          edgeDirection: "ANY",
+          edgeDirection: "INBOUND",
           allowedCollections: ["CL"],
           edgeFilters: { Label: ["SUB_CLASS_OF"], Source: [] },
           setOperation: "Union",
