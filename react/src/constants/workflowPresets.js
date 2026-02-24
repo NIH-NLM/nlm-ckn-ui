@@ -70,7 +70,7 @@ export const WORKFLOW_PRESETS = [
         id: "preset-hierarchy-phase-1",
         name: "Traverse cell type subclass hierarchy",
         originSource: "manual",
-        originNodeIds: [], // User will fill this in
+        originNodeIds: ["CL/0000235"], // Macrophage
         previousPhaseId: null,
         originFilter: "all",
         settings: {
