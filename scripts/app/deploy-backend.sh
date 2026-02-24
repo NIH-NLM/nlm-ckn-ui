@@ -79,8 +79,8 @@ if [[ ! "$ENVIRONMENT" =~ ^(dev|sandbox|prod)$ ]]; then
   exit 1
 fi
 
-# Change to project root (script lives in scripts/)
-cd "$(dirname "$0")/.."
+# Change to project root (script lives in scripts/app/)
+cd "$(dirname "$0")/../.."
 
 # Determine image tag (immutable git SHA, overridable for CI)
 if [ -n "$IMAGE_TAG" ]; then

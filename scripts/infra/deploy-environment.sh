@@ -17,7 +17,7 @@
 # Each service stack can be redeployed independently without touching the others.
 #
 # USAGE:
-#   ./scripts/deploy-environment.sh <environment> [--infra-only|--services-only] [--auto-approve]
+#   ./scripts/infra/deploy-environment.sh <environment> [--infra-only|--services-only] [--auto-approve]
 #
 # ARGUMENTS:
 #   environment    Environment name: dev, sandbox, or prod
@@ -29,7 +29,7 @@
 #   (default: deploy both phases, prompt before each changeset execution)
 #
 # PREREQUISITES:
-#   - Bootstrap stack deployed (./scripts/deploy-account-setup.sh)
+#   - Bootstrap stack deployed (./scripts/infra/deploy-account-setup.sh)
 #   - Parameters file: cloudformation/parameters/<env>.json
 #   - AWS CLI configured with appropriate credentials
 #   - Templates bucket in S3 (from bootstrap stack)
@@ -69,8 +69,8 @@ PROJECT_NAME="cell-kn"
 AWS_REGION=${AWS_REGION:-us-east-1}
 PARAMETERS_FILE="cloudformation/parameters/${ENVIRONMENT}.json"
 
-# Change to project root (script lives in scripts/)
-cd "$(dirname "$0")/.."
+# Change to project root (script lives in scripts/infra/)
+cd "$(dirname "$0")/../.."
 
 # Validate environment
 if [[ ! "$ENVIRONMENT" =~ ^(dev|sandbox|prod)$ ]]; then
@@ -102,7 +102,7 @@ TEMPLATES_BUCKET=$(aws cloudformation describe-stacks \
 
 if [ -z "$TEMPLATES_BUCKET" ]; then
   echo -e "${RED}Error: Could not read TemplatesBucketName from ${PROJECT_NAME}-bootstrap stack${NC}"
-  echo "Ensure the bootstrap stack is deployed first: ./scripts/deploy-account-setup.sh"
+  echo "Ensure the bootstrap stack is deployed first: ./scripts/infra/deploy-account-setup.sh"
   exit 1
 fi
 
@@ -607,7 +607,7 @@ if [ "$DEPLOY_MODE" != "--infra-only" ]; then
   echo ""
   echo -e "${YELLOW}Next steps:${NC}"
   echo "1. Build and push backend Docker image:"
-  echo "   ./scripts/deploy-backend.sh ${ENVIRONMENT}"
+  echo "   ./scripts/app/deploy-backend.sh ${ENVIRONMENT}"
   echo ""
   echo "2. Build and deploy frontend:"
   echo "   cd react && npm run build"
@@ -615,5 +615,5 @@ if [ "$DEPLOY_MODE" != "--infra-only" ]; then
   echo "   aws cloudfront create-invalidation --distribution-id ${CF_ID} --paths \"/*\""
   echo ""
   echo "3. (Optional) Deploy dataset:"
-  echo "   ./scripts/deploy-dataset.sh ${ENVIRONMENT} datasets/your-file.tar.gz"
+  echo "   ./scripts/app/deploy-dataset.sh ${ENVIRONMENT} datasets/your-file.tar.gz"
 fi

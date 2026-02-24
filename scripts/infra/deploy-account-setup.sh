@@ -6,7 +6,7 @@
 # before deploying any environments.
 #
 # USAGE:
-#   ./scripts/deploy-account-setup.sh
+#   ./scripts/infra/deploy-account-setup.sh
 #
 # WHAT IT DOES:
 #   1. Deploys bootstrap stack (S3 buckets, GitHub OIDC, IAM role)
@@ -134,4 +134,4 @@ echo "1. Configure GitHub Actions to use the IAM role:"
 echo "   $GITHUB_ACTIONS_ROLE"
 echo ""
 echo "2. Deploy an environment:"
-echo "   ./scripts/deploy-environment.sh dev"
+echo "   ./scripts/infra/deploy-environment.sh dev"

@@ -37,7 +37,7 @@
 #   - Use ArangoDB Hot Backups (commercial feature)
 #
 # RESTORE FROM BACKUP:
-#   ./scripts/deploy-dataset.sh <environment> backups/<backup-name>.tar.gz
+#   ./scripts/app/deploy-dataset.sh <environment> backups/<backup-name>.tar.gz
 # ==============================================================================
 set -e
 
@@ -152,7 +152,7 @@ echo -e "\n${GREEN}✓ Backup complete!${NC}"
 echo "  S3 location: s3://${S3_BUCKET}/backups/${BACKUP_NAME}.tar.gz"
 echo ""
 echo -e "${YELLOW}To restore from this backup:${NC}"
-echo "  ./scripts/deploy-dataset.sh ${ENVIRONMENT} backups/${BACKUP_NAME}.tar.gz"
+echo "  ./scripts/app/deploy-dataset.sh ${ENVIRONMENT} backups/${BACKUP_NAME}.tar.gz"
 echo ""
 echo -e "${GREEN}Note: For production, consider using ArangoDB's built-in backup tools:${NC}"
 echo -e "  - arangodump for database-level backups"

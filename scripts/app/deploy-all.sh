@@ -5,11 +5,11 @@
 # Deploys both backend and frontend to AWS in sequence.
 #
 # USAGE:
-#   ./deploy-all.sh
+#   ./scripts/app/deploy-all.sh
 #
 # WHAT IT DOES:
-#   1. Runs deploy-backend.sh (builds Docker image, pushes to ECR, updates ECS)
-#   2. Runs deploy-frontend.sh (builds React app, uploads to S3, invalidates CloudFront)
+#   1. Runs app/deploy-backend.sh (builds Docker image, pushes to ECR, updates ECS)
+#   2. Runs app/deploy-frontend.sh (builds React app, uploads to S3, invalidates CloudFront)
 #
 # PREREQUISITES:
 #   - AWS CLI configured with appropriate credentials
@@ -24,8 +24,8 @@
 #
 # INDIVIDUAL DEPLOYMENTS:
 #   For faster deployments when only one component changed:
-#     ./deploy-backend.sh   # Backend only
-#     ./deploy-frontend.sh  # Frontend only
+#     ./scripts/app/deploy-backend.sh <env>   # Backend only
+#     ./scripts/app/deploy-frontend.sh <env>  # Frontend only
 #
 # MONITORING:
 #   The script shows all application URLs at completion.
@@ -70,11 +70,3 @@ fi
 echo -e "\n${BLUE}========================================${NC}"
 echo -e "${GREEN}✓ Full deployment complete!${NC}"
 echo -e "${BLUE}========================================${NC}\n"
-
-# Show all URLs
-cd $SCRIPT_DIR/../terraform
-echo -e "${GREEN}Application URLs:${NC}"
-echo -e "  Frontend:  https://$(terraform output -raw cloudfront_domain_name)"
-echo -e "  Backend:   $(terraform output -raw backend_url)"
-echo -e "  ArangoDB:  $(terraform output -raw arangodb_url)"
-echo ""

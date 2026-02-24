@@ -5,7 +5,7 @@
 # Builds the React frontend and deploys to S3/CloudFront.
 #
 # USAGE:
-#   ./deploy-frontend.sh <environment>
+#   ./scripts/app/deploy-frontend.sh <environment>
 #
 # WHAT IT DOES:
 #   1. Gets ALB DNS name from CloudFormation Stack
@@ -16,7 +16,7 @@
 # PREREQUISITES:
 #   - AWS CLI configured with appropriate credentials
 #   - Node.js and npm installed
-#   - Infrastructure deployed (deploy-environment.sh)
+#   - Infrastructure deployed (scripts/infra/deploy-environment.sh)
 #   - React application in ../react directory
 #
 #
@@ -91,8 +91,8 @@ echo "  S3 Bucket: $S3_BUCKET"
 echo "  CloudFront Distribution: $CF_DIST_ID"
 
 
-# Change to react directory
-cd ../react
+# Change to react directory (script lives in scripts/app/)
+cd "$(dirname "$0")/../../react"
 # Build the frontend
 echo -e "${YELLOW}Running npm install (if needed)...${NC}"
 npm ci --prefer-offline --no-audit

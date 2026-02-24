@@ -26,8 +26,8 @@ NC='\033[0m' # No Color
 PROJECT_NAME="cell-kn"
 AWS_REGION=${AWS_REGION:-us-east-1}
 
-# Change to project root (script lives in scripts/)
-cd "$(dirname "$0")/.."
+# Change to project root (script lives in scripts/app/)
+cd "$(dirname "$0")/../.."
 
 # Determine image tag (immutable git SHA, overridable for CI)
 if [ -n "$IMAGE_TAG" ]; then
@@ -40,14 +40,14 @@ else
   }
 fi
 
-# Read ECR URL from SSM (written by deploy-account-setup.sh)
+# Read ECR URL from SSM (written by scripts/infra/deploy-account-setup.sh)
 ECR_REPO=$(aws ssm get-parameter \
   --name "/${PROJECT_NAME}/shared/ecr-url" \
   --query 'Parameter.Value' \
   --output text \
   --region "$AWS_REGION" 2>/dev/null) || {
   echo -e "${RED}Error: Could not read ECR URL from SSM (/${PROJECT_NAME}/shared/ecr-url).${NC}"
-  echo "Run ./scripts/deploy-account-setup.sh first."
+  echo "Run ./scripts/infra/deploy-account-setup.sh first."
   exit 1
 }
 
@@ -86,4 +86,4 @@ docker tag "$FULL_IMAGE_URI" "${ECR_REPO}:latest"
 docker push "${ECR_REPO}:latest"
 
 echo -e "\n${GREEN}✓ Done. You can now run:${NC}"
-echo "   ./scripts/deploy-environment.sh <environment>"
+echo "   ./scripts/infra/deploy-environment.sh <environment>"

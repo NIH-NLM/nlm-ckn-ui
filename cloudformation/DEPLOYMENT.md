@@ -53,7 +53,7 @@ All security groups must be created in the NIH-provided VPC. Replace `<VPC_CIDR>
 
 When `Environment` is not `dev`, the templates skip creating IAM roles and security groups and instead read the pre-created resource IDs/ARNs from SSM Parameter Store. **The stack will fail at deploy time if any of these SSM parameters are missing**, which acts as an explicit pre-flight check.
 
-Populate the following SSM parameters in the NIH account **before** running `deploy-environment.sh`:
+Populate the following SSM parameters in the NIH account **before** running `deploy-environment.sh` (in `scripts/infra/`):
 
 ```bash
 ENV=sandbox   # or prod
@@ -73,7 +73,7 @@ aws ssm put-parameter --name "/${PROJECT}/${ENV}/prereqs/iam-backend-task-arn"  
 aws ssm put-parameter --name "/${PROJECT}/${ENV}/prereqs/iam-random-secret-fn-arn" --value "arn:aws:iam::ACCOUNT:role/cell-kn-${ENV}-random-secret-fn" --type String
 ```
 
-Once all 9 parameters exist, `deploy-environment.sh sandbox` (or `prod`) will proceed without attempting to create any IAM or security group resources.
+Once all 9 parameters exist, `scripts/infra/deploy-environment.sh sandbox` (or `prod`) will proceed without attempting to create any IAM or security group resources.
 
 
 
@@ -103,10 +103,10 @@ aws route53 list-hosted-zones --query 'HostedZones[*].[Id,Name]' --output table
 
 Creates the S3 template bucket, GitHub Actions OIDC role, ECR repository, and ArangoDB dataset S3 bucket. Run once per AWS account.
 
-> **Note**: Edit `GITHUB_ORG` in `scripts/deploy-account-setup.sh` before running.
+> **Note**: Edit `GITHUB_ORG` in `scripts/infra/deploy-account-setup.sh` before running.
 
 ```bash
-./scripts/deploy-account-setup.sh
+./scripts/infra/deploy-account-setup.sh
 ```
 
 The script displays the target account and prompts for confirmation before deploying anything.
@@ -117,7 +117,7 @@ The script displays the target account and prompts for confirmation before deplo
 The environment stack creates the ECS service referencing `${ECR_URL}:latest`. If no image exists in ECR when the stack deploys, the service will start but tasks will immediately fail — the app won't be reachable until an image is pushed. Push the image first so the service comes up healthy on the first deploy.
 
 ```bash
-./scripts/push-backend-image.sh
+./scripts/app/push-backend-image.sh
 ```
 
 This only requires the account setup to be complete (ECR URL is read from SSM). It does not require the environment stack. Builds the image from the current git SHA, pushes it, and also tags it as `latest`.
@@ -131,7 +131,7 @@ This only requires the account setup to be complete (ECR URL is read from SSM). 
 ```bash
 cp cloudformation/parameters/dev.json.example cloudformation/parameters/dev.json
 # Edit dev.json with your VPC/subnet/domain values, then:
-./scripts/deploy-environment.sh dev
+./scripts/infra/deploy-environment.sh dev
 ```
 
 #### sandbox / prod (NIH restricted accounts)
@@ -141,7 +141,7 @@ Before deploying to a restricted account, IAM roles and security groups must be 
 ```bash
 cp cloudformation/parameters/dev.json.example cloudformation/parameters/sandbox.json
 # Edit sandbox.json with NIH VPC/subnet/domain values, then:
-./scripts/deploy-environment.sh sandbox
+./scripts/infra/deploy-environment.sh sandbox
 ```
 
 
@@ -150,7 +150,7 @@ cp cloudformation/parameters/dev.json.example cloudformation/parameters/sandbox.
 For subsequent deploys, build and push an updated backend image:
 
 ```bash
-./scripts/deploy-backend.sh dev   # or sandbox / prod
+./scripts/app/deploy-backend.sh dev   # or sandbox / prod
 ```
 
 This builds with the current git SHA as the image tag, pushes to ECR, and updates the ECS service.
@@ -158,13 +158,13 @@ This builds with the current git SHA as the image tag, pushes to ECR, and update
 ### 6. Deploy Frontend Application
 
 ```bash
-./scripts/deploy-frontend.sh dev   # or sandbox / prod
+./scripts/app/deploy-frontend.sh dev   # or sandbox / prod
 ```
 
 **Tip**: To deploy both backend and frontend together, use:
 
 ```bash
-./scripts/deploy-all.sh
+./scripts/app/deploy-all.sh
 ```
 
 ### 7. Deploy Dataset (optional)
@@ -172,7 +172,7 @@ This builds with the current git SHA as the image tag, pushes to ECR, and update
 To load an ArangoDB dataset from S3:
 
 ```bash
-./scripts/deploy-dataset.sh dev datasets/your-file.tar.gz
+./scripts/app/deploy-dataset.sh dev datasets/your-file.tar.gz
 ```
 
 ### 8. Validate Deployment
