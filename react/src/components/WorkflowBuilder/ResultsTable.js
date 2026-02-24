@@ -6,7 +6,7 @@
  * Supports CSV download of results.
  */
 
-import collMaps from "assets/cell-kn-mvp-collection-maps.json";
+import collMaps from "assets/nlm-ckn-collection-maps.json";
 import React, { memo, useCallback, useMemo, useState } from "react";
 
 // Build collection config map from collection maps JSON (module-level for efficiency)

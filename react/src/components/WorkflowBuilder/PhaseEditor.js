@@ -9,7 +9,7 @@
  * - Execute action
  */
 
-import collMaps from "assets/cell-kn-mvp-collection-maps.json";
+import collMaps from "assets/nlm-ckn-collection-maps.json";
 import EdgeFilterSelector from "components/EdgeFilterSelector";
 import FilterableDropdown from "components/FilterableDropdown";
 import { memo, useCallback, useEffect, useRef, useState } from "react";

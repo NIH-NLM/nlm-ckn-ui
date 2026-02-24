@@ -1,4 +1,4 @@
-import collMaps from "assets/cell-kn-mvp-collection-maps.json";
+import collMaps from "assets/nlm-ckn-collection-maps.json";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { searchDocuments } from "services";
 import { getAllSearchableFields, getLabel } from "utils";
