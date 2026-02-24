@@ -1,8 +1,12 @@
 /**
- * Pre-built workflow examples (recipes) for the Workflow Builder.
+ * Pre-built workflow presets for the Workflow Builder.
  *
- * These presets help users understand how to use the workflow builder
- * by providing real-world examples they can load, explore, and modify.
+ * Organized into categories (simple → complex):
+ * - Ontology Exploration: navigate ontology hierarchies
+ * - Cell Type Discovery: identify cell types within anatomical structures
+ * - Marker Gene Analysis: find biomarker and gene associations for cell types
+ * - Disease Analysis: trace disease–gene–drug–cell relationships
+ * - Example: Pulmonary Hypertension: progressive multi-phase example using PH
  */
 
 /**
@@ -32,7 +36,13 @@ export const createEmptyPhase = (index) => ({
   name: "",
   originSource: index === 0 ? "manual" : "previousPhase",
   originNodeIds: [],
+  // For "collection" origin: which collection to use as source
+  originCollection: null,
   previousPhaseId: null,
+  // For "multiplePhases" origin: IDs of upstream phases to combine
+  previousPhaseIds: [],
+  // Set operation for combining multiple phase results
+  phaseCombineOperation: "Intersection",
   originFilter: "all",
   settings: { ...DEFAULT_PHASE_SETTINGS },
   // Per-node settings overrides (nodeId -> settings object)
@@ -46,16 +56,54 @@ export const createEmptyPhase = (index) => ({
  * Pre-built workflow presets.
  */
 export const WORKFLOW_PRESETS = [
+  // ---------------------------------------------------------------------------
+  // Ontology Exploration
+  // ---------------------------------------------------------------------------
+  {
+    id: "cell-type-hierarchy",
+    name: "Cell type hierarchy",
+    description:
+      "Navigates SUB_CLASS_OF relationships to display parent and child cell types. Add a starting cell type to begin.",
+    category: "Ontology Exploration",
+    phases: [
+      {
+        id: "preset-hierarchy-phase-1",
+        name: "Traverse cell type subclass hierarchy",
+        originSource: "manual",
+        originNodeIds: [], // User will fill this in
+        previousPhaseId: null,
+        originFilter: "all",
+        settings: {
+          depth: 3,
+          edgeDirection: "ANY",
+          allowedCollections: ["CL"],
+          edgeFilters: { Label: ["SUB_CLASS_OF"], Source: [] },
+          setOperation: "Union",
+          graphType: "ontologies",
+          collapseLeafNodes: true,
+          useFocusNodes: true,
+          includeInterNodeEdges: true,
+        },
+        perNodeSettings: {},
+        showAdvancedSettings: false,
+        result: null,
+      },
+    ],
+  },
+
+  // ---------------------------------------------------------------------------
+  // Cell Type Discovery
+  // ---------------------------------------------------------------------------
   {
     id: "cell-types-in-lung",
     name: "Cell types in the lung",
     description:
-      "Returns all cell types that are part of or subclasses of lung-associated cells.",
+      "Retrieves all cell types associated with lung anatomy via PART_OF and SUB_CLASS_OF relationships.",
     category: "Cell Type Discovery",
     phases: [
       {
         id: "preset-lung-cells-phase-1",
-        name: "Cell types in lung",
+        name: "Traverse lung cell type hierarchy",
         originSource: "manual",
         originNodeIds: ["UBERON/0002048"], // Lung
         previousPhaseId: null,
@@ -82,12 +130,12 @@ export const WORKFLOW_PRESETS = [
     id: "epithelial-cells-lung",
     name: "Epithelial cells in the lung",
     description:
-      "Intersects the epithelial cell hierarchy with lung anatomy to find shared cell types.",
+      "Intersects the epithelial cell hierarchy with lung anatomy to identify shared cell types.",
     category: "Cell Type Discovery",
     phases: [
       {
         id: "preset-epithelial-phase-1",
-        name: "Intersect Lung + Epithelium",
+        name: "Intersect lung and epithelial hierarchies",
         originSource: "manual",
         originNodeIds: ["CL/0000066", "UBERON/0002048"], // Epithelial cell + Lung
         previousPhaseId: null,
@@ -103,7 +151,6 @@ export const WORKFLOW_PRESETS = [
           useFocusNodes: true,
           includeInterNodeEdges: true,
         },
-        // Per-node settings - different depths for each origin node
         perNodeSettings: {
           "CL/0000066": { depth: 9 },
           "UBERON/0002048": { depth: 1 },
@@ -113,16 +160,52 @@ export const WORKFLOW_PRESETS = [
       },
     ],
   },
+
+  // ---------------------------------------------------------------------------
+  // Marker Gene Analysis
+  // ---------------------------------------------------------------------------
+  {
+    id: "lung-marker-gene-panel",
+    name: "Lung cell type marker gene panel",
+    description:
+      "Returns gene symbols linked to lung cell types through evidence-based biomarker relationships.",
+    category: "Marker Gene Analysis",
+    phases: [
+      {
+        id: "preset-lung-panel-phase-1",
+        name: "Retrieve lung cell type marker genes",
+        originSource: "manual",
+        originNodeIds: ["UBERON/0002048"], // Lung
+        previousPhaseId: null,
+        originFilter: "all",
+        settings: {
+          depth: 2,
+          edgeDirection: "ANY",
+          allowedCollections: ["CL", "BMC", "GS"],
+          edgeFilters: { Label: [], Source: [] },
+          setOperation: "Union",
+          graphType: "ontologies",
+          collapseLeafNodes: true,
+          useFocusNodes: true,
+          includeInterNodeEdges: true,
+          returnCollections: ["GS"],
+        },
+        perNodeSettings: {},
+        showAdvancedSettings: false,
+        result: null,
+      },
+    ],
+  },
   {
     id: "dendritic-marker-genes",
     name: "Marker genes for lung dendritic cells",
     description:
-      "First finds dendritic cells in lung via intersection, then expands to their biomarker combinations.",
+      "Identifies dendritic cells in the lung via intersection, then retrieves their associated biomarker combinations.",
     category: "Marker Gene Analysis",
     phases: [
       {
         id: "preset-dendritic-phase-1",
-        name: "Find dendritic cells in lung",
+        name: "Identify dendritic cells in lung",
         originSource: "manual",
         originNodeIds: ["CL/0000451", "UBERON/0002048"], // Dendritic cell + Lung
         previousPhaseId: null,
@@ -147,7 +230,7 @@ export const WORKFLOW_PRESETS = [
       },
       {
         id: "preset-dendritic-phase-2",
-        name: "Expand to marker genes",
+        name: "Retrieve biomarker combinations",
         originSource: "previousPhase",
         originNodeIds: [],
         previousPhaseId: "preset-dendritic-phase-1",
@@ -170,79 +253,20 @@ export const WORKFLOW_PRESETS = [
       },
     ],
   },
-  {
-    id: "lung-marker-gene-panel",
-    name: "Lung cell type marker gene panel",
-    description:
-      "Returns gene symbols linked to lung cell types via evidence-based relationships.",
-    category: "Marker Gene Analysis",
-    phases: [
-      {
-        id: "preset-lung-panel-phase-1",
-        name: "Lung cell type markers",
-        originSource: "manual",
-        originNodeIds: ["UBERON/0002048"], // Lung
-        previousPhaseId: null,
-        originFilter: "all",
-        settings: {
-          depth: 2,
-          edgeDirection: "ANY",
-          allowedCollections: ["CL", "BMC", "GS"],
-          edgeFilters: { Label: [], Source: [] },
-          setOperation: "Union",
-          graphType: "phenotypes",
-          collapseLeafNodes: true,
-          useFocusNodes: true,
-          includeInterNodeEdges: true,
-          returnCollections: ["GS"],
-        },
-        perNodeSettings: {},
-        showAdvancedSettings: false,
-        result: null,
-      },
-    ],
-  },
-  {
-    id: "cell-type-hierarchy",
-    name: "Explore cell type hierarchy",
-    description:
-      "Traverses subclass relationships to show parent and child cell types. Add your own starting cell type.",
-    category: "Ontology Exploration",
-    phases: [
-      {
-        id: "preset-hierarchy-phase-1",
-        name: "Cell type hierarchy",
-        originSource: "manual",
-        originNodeIds: [], // User will fill this in
-        previousPhaseId: null,
-        originFilter: "all",
-        settings: {
-          depth: 3,
-          edgeDirection: "ANY",
-          allowedCollections: ["CL"],
-          edgeFilters: { Label: ["SUB_CLASS_OF"], Source: [] },
-          setOperation: "Union",
-          graphType: "ontologies",
-          collapseLeafNodes: true,
-          useFocusNodes: true,
-          includeInterNodeEdges: true,
-        },
-        perNodeSettings: {},
-        showAdvancedSettings: false,
-        result: null,
-      },
-    ],
-  },
+
+  // ---------------------------------------------------------------------------
+  // Disease Analysis
+  // ---------------------------------------------------------------------------
   {
     id: "lung-markers-to-diseases",
-    name: "Lung marker genes to diseases",
+    name: "Lung biomarkers to diseases",
     description:
-      "First finds biomarker combinations in the lung, then traces those markers to associated diseases.",
+      "Identifies biomarker combinations in the lung, then traces them to associated disease entities.",
     category: "Disease Analysis",
     phases: [
       {
         id: "preset-lung-disease-phase-1",
-        name: "Find lung marker genes",
+        name: "Identify lung biomarkers",
         originSource: "manual",
         originNodeIds: ["UBERON/0002048"], // Lung
         previousPhaseId: null,
@@ -257,7 +281,7 @@ export const WORKFLOW_PRESETS = [
           collapseLeafNodes: false,
           useFocusNodes: true,
           includeInterNodeEdges: true,
-          returnCollections: ["BMC"], // Only return marker genes, not anatomy
+          returnCollections: ["BMC"],
         },
         perNodeSettings: {},
         showAdvancedSettings: false,
@@ -265,7 +289,7 @@ export const WORKFLOW_PRESETS = [
       },
       {
         id: "preset-lung-disease-phase-2",
-        name: "Find associated diseases",
+        name: "Trace to associated diseases",
         originSource: "previousPhase",
         originNodeIds: [],
         previousPhaseId: "preset-lung-disease-phase-1",
@@ -290,14 +314,14 @@ export const WORKFLOW_PRESETS = [
   },
   {
     id: "disease-cellular-pathogenesis",
-    name: "Disease cellular pathogenesis",
+    name: "Disease to cell type involvement",
     description:
-      "Starts from pulmonary hypertension to find associated genes, then identifies the cell types involved. Swap in any disease to explore.",
+      "Starting from a disease, identifies associated genes and the cell types involved. Uses pulmonary hypertension as a default; replace with any disease of interest.",
     category: "Disease Analysis",
     phases: [
       {
         id: "preset-pathogenesis-phase-1",
-        name: "Find disease-associated genes",
+        name: "Identify disease-associated genes",
         originSource: "manual",
         originNodeIds: ["MONDO/0005149"], // Pulmonary hypertension
         previousPhaseId: null,
@@ -319,7 +343,7 @@ export const WORKFLOW_PRESETS = [
       },
       {
         id: "preset-pathogenesis-phase-2",
-        name: "Explore cellular contributions",
+        name: "Identify involved cell types",
         originSource: "previousPhase",
         originNodeIds: [],
         previousPhaseId: "preset-pathogenesis-phase-1",
@@ -327,7 +351,7 @@ export const WORKFLOW_PRESETS = [
         settings: {
           depth: 1,
           edgeDirection: "ANY",
-          allowedCollections: ["BMC", "CHEBI", "CL", "GS", "PR"],
+          allowedCollections: ["BMC", "CL", "GS", "PR"],
           edgeFilters: { Label: [], Source: [] },
           setOperation: "Union",
           graphType: "ontologies",
@@ -343,15 +367,104 @@ export const WORKFLOW_PRESETS = [
     ],
   },
   {
-    id: "ph-drugs",
-    name: "Drugs for pulmonary hypertension",
+    id: "druggable-disease-genes",
+    name: "Druggable disease genes (EGL input)",
     description:
-      "What drugs are used to treat pulmonary hypertension? Finds molecular entities and bioactive molecules associated with the disease.",
+      "Identifies genes that both underlie a disease (GENETIC_BASIS_FOR) and are targeted by compounds that treat it. Combines two independent traversals across all MONDO diseases and intersects the results.",
     category: "Disease Analysis",
     phases: [
       {
-        id: "preset-ph-drugs-phase-1",
-        name: "Find drugs for pulmonary hypertension",
+        id: "preset-druggable-genes-phase-1",
+        name: "Disease-associated genes (all diseases)",
+        originSource: "collection",
+        originNodeIds: [],
+        originCollection: "MONDO",
+        previousPhaseId: null,
+        previousPhaseIds: [],
+        phaseCombineOperation: "Intersection",
+        originFilter: "all",
+        settings: {
+          depth: 1,
+          edgeDirection: "INBOUND",
+          allowedCollections: ["GS"],
+          edgeFilters: { Label: ["GENETIC_BASIS_FOR"], Source: [] },
+          setOperation: "Union",
+          graphType: "ontologies",
+          collapseLeafNodes: false,
+          useFocusNodes: true,
+          includeInterNodeEdges: true,
+          returnCollections: ["GS"],
+        },
+        perNodeSettings: {},
+        showAdvancedSettings: false,
+        result: null,
+      },
+      {
+        id: "preset-druggable-genes-phase-2",
+        name: "Drug gene targets (all diseases)",
+        originSource: "collection",
+        originNodeIds: [],
+        originCollection: "MONDO",
+        previousPhaseId: null,
+        previousPhaseIds: [],
+        phaseCombineOperation: "Intersection",
+        originFilter: "all",
+        settings: {
+          depth: 3,
+          edgeDirection: "ANY",
+          allowedCollections: ["CHEMBL", "GS", "PR"],
+          edgeFilters: { Label: ["IS_SUBSTANCE_THAT_TREATS", "PRODUCES", "MOLECULARLY_INTERACTS_WITH"], Source: [] },
+          setOperation: "Union",
+          graphType: "ontologies",
+          collapseLeafNodes: false,
+          useFocusNodes: true,
+          includeInterNodeEdges: true,
+          returnCollections: ["GS"],
+        },
+        perNodeSettings: {},
+        showAdvancedSettings: false,
+        result: null,
+      },
+      {
+        id: "preset-druggable-genes-phase-3",
+        name: "Intersect druggable disease genes",
+        originSource: "multiplePhases",
+        originNodeIds: [],
+        previousPhaseId: null,
+        previousPhaseIds: [
+          "preset-druggable-genes-phase-1",
+          "preset-druggable-genes-phase-2",
+        ],
+        phaseCombineOperation: "Intersection",
+        originFilter: "all",
+        settings: {
+          ...DEFAULT_PHASE_SETTINGS,
+          returnCollections: ["GS"],
+        },
+        perNodeSettings: {},
+        showAdvancedSettings: false,
+        result: null,
+      },
+    ],
+  },
+
+  // ---------------------------------------------------------------------------
+  // Example: Pulmonary Hypertension
+  //
+  // A progressive series of workflows that build on each other, demonstrating
+  // how to chain phases for increasingly complex queries. Each preset extends
+  // the previous one with an additional phase.
+  // ---------------------------------------------------------------------------
+  {
+    id: "ph-subtypes",
+    name: "Disease subtypes",
+    description:
+      "Collects all pulmonary hypertension subtypes by traversing the SUB_CLASS_OF hierarchy inward from the root disease term.",
+    category: "Example: Pulmonary Hypertension",
+    phases: [
+      {
+        id: "preset-ph-subtypes-phase-1",
+        name: "Collect PH disease subtypes",
         originSource: "manual",
         originNodeIds: ["MONDO/0005149"], // Pulmonary hypertension
         previousPhaseId: null,
@@ -359,14 +472,67 @@ export const WORKFLOW_PRESETS = [
         settings: {
           depth: 9,
           edgeDirection: "INBOUND",
-          allowedCollections: ["MONDO", "CHEBI", "CHEMBL"],
-          edgeFilters: { Label: ["SUB_CLASS_OF", "HAS_ROLE"], Source: [] },
+          allowedCollections: ["MONDO"],
+          edgeFilters: { Label: ["SUB_CLASS_OF"], Source: [] },
           setOperation: "Union",
           graphType: "ontologies",
           collapseLeafNodes: false,
           useFocusNodes: true,
           includeInterNodeEdges: true,
-          returnCollections: ["CHEBI", "CHEMBL"],
+        },
+        perNodeSettings: {},
+        showAdvancedSettings: false,
+        result: null,
+      },
+    ],
+  },
+  {
+    id: "ph-drugs",
+    name: "Therapeutic compounds",
+    description:
+      "Extends the disease subtypes workflow by identifying compounds used to treat each subtype.",
+    category: "Example: Pulmonary Hypertension",
+    phases: [
+      {
+        id: "preset-ph-drugs-phase-1",
+        name: "Collect PH disease subtypes",
+        originSource: "manual",
+        originNodeIds: ["MONDO/0005149"], // Pulmonary hypertension
+        previousPhaseId: null,
+        originFilter: "all",
+        settings: {
+          depth: 9,
+          edgeDirection: "INBOUND",
+          allowedCollections: ["MONDO"],
+          edgeFilters: { Label: ["SUB_CLASS_OF"], Source: [] },
+          setOperation: "Union",
+          graphType: "ontologies",
+          collapseLeafNodes: false,
+          useFocusNodes: true,
+          includeInterNodeEdges: true,
+        },
+        perNodeSettings: {},
+        showAdvancedSettings: false,
+        result: null,
+      },
+      {
+        id: "preset-ph-drugs-phase-2",
+        name: "Identify therapeutic compounds",
+        originSource: "previousPhase",
+        originNodeIds: [],
+        previousPhaseId: "preset-ph-drugs-phase-1",
+        originFilter: "all",
+        settings: {
+          depth: 1,
+          edgeDirection: "ANY",
+          allowedCollections: ["CHEMBL"],
+          edgeFilters: { Label: ["IS_SUBSTANCE_THAT_TREATS"], Source: [] },
+          setOperation: "Union",
+          graphType: "ontologies",
+          collapseLeafNodes: false,
+          useFocusNodes: true,
+          includeInterNodeEdges: true,
+          returnCollections: ["CHEMBL"],
         },
         perNodeSettings: {},
         showAdvancedSettings: false,
@@ -376,14 +542,14 @@ export const WORKFLOW_PRESETS = [
   },
   {
     id: "ph-drug-targets",
-    name: "Drug targets for PH drugs",
+    name: "Drug molecular targets",
     description:
-      "What are the gene/protein targets of pulmonary hypertension drugs? First finds drugs, then traces to their molecular targets.",
-    category: "Disease Analysis",
+      "Extends the therapeutic compounds workflow by tracing each drug to its gene and protein targets via molecular interaction and production relationships.",
+    category: "Example: Pulmonary Hypertension",
     phases: [
       {
         id: "preset-ph-targets-phase-1",
-        name: "Find drugs for pulmonary hypertension",
+        name: "Collect PH disease subtypes",
         originSource: "manual",
         originNodeIds: ["MONDO/0005149"], // Pulmonary hypertension
         previousPhaseId: null,
@@ -391,14 +557,13 @@ export const WORKFLOW_PRESETS = [
         settings: {
           depth: 9,
           edgeDirection: "INBOUND",
-          allowedCollections: ["MONDO", "CHEBI", "CHEMBL"],
-          edgeFilters: { Label: ["SUB_CLASS_OF", "HAS_ROLE"], Source: [] },
+          allowedCollections: ["MONDO"],
+          edgeFilters: { Label: ["SUB_CLASS_OF"], Source: [] },
           setOperation: "Union",
           graphType: "ontologies",
           collapseLeafNodes: false,
           useFocusNodes: true,
           includeInterNodeEdges: true,
-          returnCollections: ["CHEBI", "CHEMBL"],
         },
         perNodeSettings: {},
         showAdvancedSettings: false,
@@ -406,7 +571,7 @@ export const WORKFLOW_PRESETS = [
       },
       {
         id: "preset-ph-targets-phase-2",
-        name: "Find gene/protein targets",
+        name: "Identify therapeutic compounds",
         originSource: "previousPhase",
         originNodeIds: [],
         previousPhaseId: "preset-ph-targets-phase-1",
@@ -414,8 +579,31 @@ export const WORKFLOW_PRESETS = [
         settings: {
           depth: 1,
           edgeDirection: "ANY",
-          allowedCollections: ["CHEBI", "CHEMBL", "GS", "PR"],
-          edgeFilters: { Label: [], Source: [] },
+          allowedCollections: ["CHEMBL"],
+          edgeFilters: { Label: ["IS_SUBSTANCE_THAT_TREATS"], Source: [] },
+          setOperation: "Union",
+          graphType: "ontologies",
+          collapseLeafNodes: false,
+          useFocusNodes: true,
+          includeInterNodeEdges: true,
+          returnCollections: ["CHEMBL"],
+        },
+        perNodeSettings: {},
+        showAdvancedSettings: false,
+        result: null,
+      },
+      {
+        id: "preset-ph-targets-phase-3",
+        name: "Trace to gene/protein targets",
+        originSource: "previousPhase",
+        originNodeIds: [],
+        previousPhaseId: "preset-ph-targets-phase-2",
+        originFilter: "all",
+        settings: {
+          depth: 2,
+          edgeDirection: "ANY",
+          allowedCollections: ["GS", "PR"],
+          edgeFilters: { Label: ["MOLECULARLY_INTERACTS_WITH", "PRODUCES"], Source: [] },
           setOperation: "Union",
           graphType: "ontologies",
           collapseLeafNodes: false,
@@ -431,14 +619,14 @@ export const WORKFLOW_PRESETS = [
   },
   {
     id: "ph-drug-target-cell-types",
-    name: "Cell types expressing PH drug targets",
+    name: "Cell types expressing drug targets",
     description:
-      "Which cell types express the gene/protein targets of PH drugs? Chains drugs → targets → cell types in three phases.",
-    category: "Disease Analysis",
+      "Extends the drug molecular targets workflow by identifying the cell types that express those gene and protein targets.",
+    category: "Example: Pulmonary Hypertension",
     phases: [
       {
         id: "preset-ph-cells-phase-1",
-        name: "Find drugs for pulmonary hypertension",
+        name: "Collect PH disease subtypes",
         originSource: "manual",
         originNodeIds: ["MONDO/0005149"], // Pulmonary hypertension
         previousPhaseId: null,
@@ -446,14 +634,13 @@ export const WORKFLOW_PRESETS = [
         settings: {
           depth: 9,
           edgeDirection: "INBOUND",
-          allowedCollections: ["MONDO", "CHEBI", "CHEMBL"],
-          edgeFilters: { Label: ["SUB_CLASS_OF", "HAS_ROLE"], Source: [] },
+          allowedCollections: ["MONDO"],
+          edgeFilters: { Label: ["SUB_CLASS_OF"], Source: [] },
           setOperation: "Union",
           graphType: "ontologies",
           collapseLeafNodes: false,
           useFocusNodes: true,
           includeInterNodeEdges: true,
-          returnCollections: ["CHEBI", "CHEMBL"],
         },
         perNodeSettings: {},
         showAdvancedSettings: false,
@@ -461,7 +648,7 @@ export const WORKFLOW_PRESETS = [
       },
       {
         id: "preset-ph-cells-phase-2",
-        name: "Find gene/protein targets",
+        name: "Identify therapeutic compounds",
         originSource: "previousPhase",
         originNodeIds: [],
         previousPhaseId: "preset-ph-cells-phase-1",
@@ -469,14 +656,14 @@ export const WORKFLOW_PRESETS = [
         settings: {
           depth: 1,
           edgeDirection: "ANY",
-          allowedCollections: ["CHEBI", "CHEMBL", "GS", "PR"],
-          edgeFilters: { Label: [], Source: [] },
+          allowedCollections: ["CHEMBL"],
+          edgeFilters: { Label: ["IS_SUBSTANCE_THAT_TREATS"], Source: [] },
           setOperation: "Union",
           graphType: "ontologies",
           collapseLeafNodes: false,
           useFocusNodes: true,
           includeInterNodeEdges: true,
-          returnCollections: ["GS", "PR"],
+          returnCollections: ["CHEMBL"],
         },
         perNodeSettings: {},
         showAdvancedSettings: false,
@@ -484,71 +671,16 @@ export const WORKFLOW_PRESETS = [
       },
       {
         id: "preset-ph-cells-phase-3",
-        name: "Find cell types expressing targets",
+        name: "Trace to gene/protein targets",
         originSource: "previousPhase",
         originNodeIds: [],
         previousPhaseId: "preset-ph-cells-phase-2",
         originFilter: "all",
         settings: {
-          depth: 1,
+          depth: 2,
           edgeDirection: "ANY",
-          allowedCollections: ["BMC", "CL", "GS", "PR"],
-          edgeFilters: { Label: [], Source: [] },
-          setOperation: "Union",
-          graphType: "ontologies",
-          collapseLeafNodes: false,
-          useFocusNodes: true,
-          includeInterNodeEdges: true,
-          returnCollections: ["CL"],
-        },
-        perNodeSettings: {},
-        showAdvancedSettings: false,
-        result: null,
-      },
-    ],
-  },
-  {
-    id: "ph-full-pipeline",
-    name: "PH: drugs → targets → cells → pathogenesis",
-    description:
-      "Full pipeline: find PH drugs, their gene/protein targets, the cell types expressing them, and the cellular contribution to pathogenesis.",
-    category: "Disease Analysis",
-    phases: [
-      {
-        id: "preset-ph-full-phase-1",
-        name: "Find drugs for pulmonary hypertension",
-        originSource: "manual",
-        originNodeIds: ["MONDO/0005149"], // Pulmonary hypertension
-        previousPhaseId: null,
-        originFilter: "all",
-        settings: {
-          depth: 9,
-          edgeDirection: "INBOUND",
-          allowedCollections: ["MONDO", "CHEBI", "CHEMBL"],
-          edgeFilters: { Label: ["SUB_CLASS_OF", "HAS_ROLE"], Source: [] },
-          setOperation: "Union",
-          graphType: "ontologies",
-          collapseLeafNodes: false,
-          useFocusNodes: true,
-          includeInterNodeEdges: true,
-          returnCollections: ["CHEBI", "CHEMBL"],
-        },
-        perNodeSettings: {},
-        showAdvancedSettings: false,
-        result: null,
-      },
-      {
-        id: "preset-ph-full-phase-2",
-        name: "Find gene/protein targets",
-        originSource: "previousPhase",
-        originNodeIds: [],
-        previousPhaseId: "preset-ph-full-phase-1",
-        originFilter: "all",
-        settings: {
-          depth: 1,
-          edgeDirection: "ANY",
-          allowedCollections: ["CHEBI", "CHEMBL", "GS", "PR"],
-          edgeFilters: { Label: [], Source: [] },
+          allowedCollections: ["GS", "PR"],
+          edgeFilters: { Label: ["MOLECULARLY_INTERACTS_WITH", "PRODUCES"], Source: [] },
           setOperation: "Union",
           graphType: "ontologies",
           collapseLeafNodes: false,
@@ -561,16 +693,16 @@ export const WORKFLOW_PRESETS = [
         result: null,
       },
       {
-        id: "preset-ph-full-phase-3",
-        name: "Find cell types expressing targets",
+        id: "preset-ph-cells-phase-4",
+        name: "Identify expressing cell types",
         originSource: "previousPhase",
         originNodeIds: [],
-        previousPhaseId: "preset-ph-full-phase-2",
+        previousPhaseId: "preset-ph-cells-phase-3",
         originFilter: "all",
         settings: {
           depth: 1,
           edgeDirection: "ANY",
-          allowedCollections: ["BMC", "CL", "GS", "PR"],
+          allowedCollections: ["CL"],
           edgeFilters: { Label: [], Source: [] },
           setOperation: "Union",
           graphType: "ontologies",
@@ -578,29 +710,6 @@ export const WORKFLOW_PRESETS = [
           useFocusNodes: true,
           includeInterNodeEdges: true,
           returnCollections: ["CL"],
-        },
-        perNodeSettings: {},
-        showAdvancedSettings: false,
-        result: null,
-      },
-      {
-        id: "preset-ph-full-phase-4",
-        name: "Cellular contribution to pathogenesis",
-        originSource: "previousPhase",
-        originNodeIds: [],
-        previousPhaseId: "preset-ph-full-phase-3",
-        originFilter: "all",
-        settings: {
-          depth: 1,
-          edgeDirection: "ANY",
-          allowedCollections: ["BMC", "CL", "GS", "MONDO", "PR"],
-          edgeFilters: { Label: [], Source: [] },
-          setOperation: "Union",
-          graphType: "ontologies",
-          collapseLeafNodes: false,
-          useFocusNodes: true,
-          includeInterNodeEdges: true,
-          returnCollections: ["MONDO"],
         },
         perNodeSettings: {},
         showAdvancedSettings: false,
@@ -614,8 +723,9 @@ export const WORKFLOW_PRESETS = [
  * Categories for organizing presets in the UI.
  */
 export const PRESET_CATEGORIES = [
+  { id: "Ontology Exploration", label: "Ontology Exploration" },
   { id: "Cell Type Discovery", label: "Cell Type Discovery" },
   { id: "Marker Gene Analysis", label: "Marker Gene Analysis" },
-  { id: "Ontology Exploration", label: "Ontology Exploration" },
   { id: "Disease Analysis", label: "Disease Analysis" },
+  { id: "Example: Pulmonary Hypertension", label: "Example: Pulmonary Hypertension" },
 ];

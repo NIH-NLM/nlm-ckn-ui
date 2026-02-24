@@ -49,6 +49,7 @@ export {
   removePhaseOriginNode,
   setActiveGraph,
   setPhaseOriginNodes,
+  setWorkflowDescription,
   setWorkflowName,
   showPresets,
   toggleAdvancedSettings,

@@ -8,8 +8,8 @@
  */
 
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { createEmptyPhase, GRAPH_STATUS } from "../constants";
-import { fetchGraphData, fetchNodeDetailsByIds } from "../services";
+import { createEmptyPhase, DEFAULT_GRAPH_TYPE, GRAPH_STATUS } from "../constants";
+import { fetchCollectionDocuments, fetchGraphData, fetchNodeDetailsByIds } from "../services";
 import { performSetOperation } from "../utils";
 
 /**
@@ -72,9 +72,78 @@ export const executePhase = createAsyncThunk(
       };
     }
 
+    // Handle "collection" origin — fetch all node IDs from a collection
+    let collectionOriginNodeIds = null;
+    if (phase.originSource === "collection" && phase.originCollection) {
+      const graphType = phase.settings.graphType || DEFAULT_GRAPH_TYPE;
+      const docs = await fetchCollectionDocuments(phase.originCollection, graphType);
+      collectionOriginNodeIds = Object.values(docs).map((doc) => doc._id).filter(Boolean);
+      if (collectionOriginNodeIds.length === 0) {
+        throw new Error(`No nodes found in collection "${phase.originCollection}".`);
+      }
+      // Falls through to normal execution below using collectionOriginNodeIds
+    }
+
+    // Handle "multiplePhases" combine origin — no API call, pure set operation
+    if (phase.originSource === "multiplePhases") {
+      const sourcePhaseIds = phase.previousPhaseIds || [];
+      if (sourcePhaseIds.length < 2) {
+        throw new Error("Combine phase requires at least 2 source phases.");
+      }
+
+      // Collect results from each source phase, applying originFilter per source
+      const sourceGraphs = [];
+      for (const srcId of sourcePhaseIds) {
+        const srcResult = phaseResults[srcId];
+        if (!srcResult || !srcResult.nodes) {
+          throw new Error(`Source phase has no results. Execute it first.`);
+        }
+        const srcPhase = phases.find((p) => p.id === srcId);
+        const srcOriginIds = srcPhase?._executedOriginNodeIds || srcPhase?.originNodeIds || [];
+        const filteredIds = filterNodesForNextPhase(srcResult.nodes, phase.originFilter, srcOriginIds);
+        const filteredIdSet = new Set(filteredIds);
+        const filteredNodes = srcResult.nodes.filter((n) => filteredIdSet.has(n._id));
+        const filteredLinks = (srcResult.links || []).filter((link) => {
+          const from = link?._from;
+          const to = link?._to;
+          return filteredIdSet.has(from) && filteredIdSet.has(to);
+        });
+        sourceGraphs.push({ nodes: filteredNodes, links: filteredLinks });
+      }
+
+      // Apply combine set operation
+      const combineOp = phase.phaseCombineOperation || "Intersection";
+      let combinedResult = performSetOperation(sourceGraphs, combineOp);
+
+      // Apply returnCollections filter
+      const returnCollections = phase.settings.returnCollections || [];
+      if (returnCollections.length > 0) {
+        const filteredNodes = combinedResult.nodes.filter((node) => {
+          const collection = node._id?.split("/")[0];
+          return returnCollections.includes(collection);
+        });
+        const remainingIds = new Set(filteredNodes.map((n) => n._id));
+        const filteredLinks = combinedResult.links.filter((link) => {
+          const fromId = link._from || (typeof link.source === "object" ? link.source._id : link.source);
+          const toId = link._to || (typeof link.target === "object" ? link.target._id : link.target);
+          return remainingIds.has(fromId) && remainingIds.has(toId);
+        });
+        combinedResult = { nodes: filteredNodes, links: filteredLinks };
+      }
+
+      return {
+        phaseId: phase.id,
+        phaseIndex,
+        result: combinedResult,
+        originNodeIds: sourcePhaseIds,
+      };
+    }
+
     // Determine origin node IDs
     let originNodeIds;
-    if (phase.originSource === "previousPhase" && phase.previousPhaseId) {
+    if (collectionOriginNodeIds) {
+      originNodeIds = collectionOriginNodeIds;
+    } else if (phase.originSource === "previousPhase" && phase.previousPhaseId) {
       const prevResult = phaseResults[phase.previousPhaseId];
       if (!prevResult || !prevResult.nodes) {
         throw new Error("Previous phase has no results. Execute it first.");
@@ -171,11 +240,11 @@ export const executePhase = createAsyncThunk(
       // Get the IDs of remaining nodes
       const remainingNodeIds = new Set(filteredNodes.map((n) => n._id));
 
-      // Filter links to only those connecting remaining nodes
+      // Filter links to only those where both endpoints are in the return collections
       const filteredLinks = mergedResult.links.filter((link) => {
-        const sourceId = typeof link.source === "object" ? link.source._id : link.source;
-        const targetId = typeof link.target === "object" ? link.target._id : link.target;
-        return remainingNodeIds.has(sourceId) && remainingNodeIds.has(targetId);
+        const fromId = link._from || (typeof link.source === "object" ? link.source._id : link.source);
+        const toId = link._to || (typeof link.target === "object" ? link.target._id : link.target);
+        return remainingNodeIds.has(fromId) && remainingNodeIds.has(toId);
       });
 
       finalResult = { nodes: filteredNodes, links: filteredLinks };
@@ -195,7 +264,7 @@ export const executePhase = createAsyncThunk(
  */
 export const fetchNodeDetails = createAsyncThunk(
   "workflowBuilder/fetchNodeDetails",
-  async ({ nodeIds, graphType = "ontologies" }, { getState }) => {
+  async ({ nodeIds, graphType = DEFAULT_GRAPH_TYPE }, { getState }) => {
     const { nodeDetails } = getState().workflowBuilder;
     // Only fetch nodes we don't already have
     const missingIds = nodeIds.filter((id) => !nodeDetails[id]);
@@ -238,6 +307,7 @@ const initialState = {
   // Workflow metadata
   workflowId: null,
   workflowName: "",
+  workflowDescription: "",
 
   // Phases configuration
   phases: [createEmptyPhase(0)],
@@ -273,6 +343,7 @@ const workflowBuilderSlice = createSlice({
     initializeWorkflow: (state) => {
       state.workflowId = generateId();
       state.workflowName = "";
+      state.workflowDescription = "";
       state.phases = [createEmptyPhase(0)];
       state.phaseResults = {};
       state.nodeDetails = {};
@@ -290,8 +361,16 @@ const workflowBuilderSlice = createSlice({
       const workflow = action.payload;
       state.workflowId = workflow.id || generateId();
       state.workflowName = workflow.name || "";
+      state.workflowDescription = workflow.description || "";
       // Deep clone phases to avoid mutation issues
-      state.phases = JSON.parse(JSON.stringify(workflow.phases || [createEmptyPhase(0)]));
+      const rawPhases = JSON.parse(JSON.stringify(workflow.phases || [createEmptyPhase(0)]));
+      // Normalize phases to include new fields with defaults (backward compat)
+      state.phases = rawPhases.map((p) => ({
+        ...p,
+        originCollection: p.originCollection || null,
+        previousPhaseIds: p.previousPhaseIds || [],
+        phaseCombineOperation: p.phaseCombineOperation || "Intersection",
+      }));
       state.phaseResults = {};
       state.activePhaseId = null;
       state.activeGraph = null;
@@ -305,6 +384,13 @@ const workflowBuilderSlice = createSlice({
      */
     setWorkflowName: (state, action) => {
       state.workflowName = action.payload;
+    },
+
+    /**
+     * Update workflow description.
+     */
+    setWorkflowDescription: (state, action) => {
+      state.workflowDescription = action.payload;
     },
 
     /**
@@ -336,6 +422,10 @@ const workflowBuilderSlice = createSlice({
           if (phase.previousPhaseId === removedPhaseId) {
             // Point to the phase before the removed one
             phase.previousPhaseId = phaseIndex > 0 ? state.phases[phaseIndex - 1]?.id : null;
+          }
+          // Clean up previousPhaseIds references for combine phases
+          if (phase.previousPhaseIds && phase.previousPhaseIds.length > 0) {
+            phase.previousPhaseIds = phase.previousPhaseIds.filter((id) => id !== removedPhaseId);
           }
         }
 
@@ -532,7 +622,10 @@ const workflowBuilderSlice = createSlice({
           const phaseIndex = state.phases.findIndex((p) => p.id === phaseId);
           for (let i = phaseIndex + 1; i < state.phases.length; i++) {
             const downstreamPhase = state.phases[i];
-            if (downstreamPhase.previousPhaseId === phaseId) {
+            const dependsOnThis =
+              downstreamPhase.previousPhaseId === phaseId ||
+              (downstreamPhase.previousPhaseIds && downstreamPhase.previousPhaseIds.includes(phaseId));
+            if (dependsOnThis) {
               delete state.phaseResults[downstreamPhase.id];
               downstreamPhase.result = null;
             }
@@ -575,6 +668,7 @@ export const {
   initializeWorkflow,
   loadWorkflow,
   setWorkflowName,
+  setWorkflowDescription,
   addPhase,
   removePhase,
   updatePhase,

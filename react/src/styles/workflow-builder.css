@@ -100,6 +100,30 @@
   box-shadow: 0 0 0 2px rgba(0, 113, 188, 0.2);
 }
 
+.workflow-description-input {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--color-gray-lighter);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-dark);
+  background: var(--color-white);
+  resize: vertical;
+  font-family: inherit;
+  margin-bottom: var(--spacing-md);
+  box-sizing: border-box;
+}
+
+.workflow-description-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(0, 113, 188, 0.2);
+}
+
+.workflow-description-input::placeholder {
+  color: var(--color-gray-light);
+}
+
 .workflow-actions {
   display: flex;
   gap: var(--spacing-sm);
@@ -520,6 +544,74 @@
   font-family: monospace;
   font-size: var(--font-size-xs);
   color: var(--color-gray);
+}
+
+/* Multi-Phase (Combine) Origin */
+.multi-phase-origin {
+  padding: var(--spacing-md);
+  background: var(--color-gray-lightest);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--color-gold, #f59e0b);
+}
+
+.multi-phase-selection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.multi-phase-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  padding: var(--spacing-xs) 0;
+}
+
+.multi-phase-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+}
+
+/* Combine phase visual distinction */
+.phase-editor.combine-phase {
+  border-left: 3px solid var(--color-gold, #f59e0b);
+}
+
+/* Combine connector */
+.phase-connector.combine-connector .connector-label {
+  color: var(--color-gold, #f59e0b);
+  font-weight: 600;
+}
+
+.phase-connector.combine-connector .connector-arrow {
+  color: var(--color-gold, #f59e0b);
+}
+
+/* Collection Origin */
+.collection-origin {
+  padding: var(--spacing-md);
+  background: var(--color-gray-lightest);
+  border-radius: var(--radius-md);
+}
+
+.collection-origin label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+}
+
+.collection-origin select {
+  flex: 1;
+  padding: var(--spacing-sm);
+  border: 1px solid var(--color-gray-lighter);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  background: var(--color-white);
 }
 
 /* Previous Phase Origin */

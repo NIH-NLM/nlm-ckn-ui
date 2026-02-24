@@ -21,6 +21,7 @@ import {
   initializeWorkflow,
   loadWorkflow,
   removePhase,
+  setWorkflowDescription,
   removePhaseOriginNode,
   setAllCollections,
   setAvailableCollections,
@@ -45,6 +46,7 @@ const WorkflowBuilder = ({ onGraphReady }) => {
   const {
     workflowId,
     workflowName,
+    workflowDescription,
     phases,
     phaseResults,
     activeGraph,
@@ -136,6 +138,14 @@ const WorkflowBuilder = ({ onGraphReady }) => {
     [dispatch],
   );
 
+  // Handle workflow description change
+  const handleDescriptionChange = useCallback(
+    (e) => {
+      dispatch(setWorkflowDescription(e.target.value));
+    },
+    [dispatch],
+  );
+
   // Handle adding a new phase
   const handleAddPhase = useCallback(() => {
     dispatch(addPhase());
@@ -215,6 +225,7 @@ const WorkflowBuilder = ({ onGraphReady }) => {
     const workflowData = {
       id: workflowId,
       name: workflowName,
+      description: workflowDescription,
       phases: phases.map((p) => ({
         ...p,
         result: null, // Don't include results in shared URL
@@ -231,7 +242,7 @@ const WorkflowBuilder = ({ onGraphReady }) => {
       console.error("Failed to create shareable URL:", err);
       setToastMessage("Failed to create shareable URL");
     }
-  }, [workflowId, workflowName, phases]);
+  }, [workflowId, workflowName, workflowDescription, phases]);
 
   // Check if all phases have origin nodes configured
   const hasPhases = phases.length > 0;
@@ -241,7 +252,9 @@ const WorkflowBuilder = ({ onGraphReady }) => {
     phases.every(
       (p, i) =>
         (p.originSource === "manual" && p.originNodeIds.length > 0) ||
-        (p.originSource === "previousPhase" && i > 0),
+        (p.originSource === "collection" && !!p.originCollection) ||
+        (p.originSource === "previousPhase" && i > 0) ||
+        (p.originSource === "multiplePhases" && (p.previousPhaseIds || []).length >= 2),
     );
 
   // Show preset selector view
@@ -280,39 +293,58 @@ const WorkflowBuilder = ({ onGraphReady }) => {
         </div>
       </div>
 
+      {/* Description */}
+      <textarea
+        className="workflow-description-input"
+        value={workflowDescription}
+        onChange={handleDescriptionChange}
+        placeholder="Describe this workflow..."
+        rows={2}
+      />
+
       {/* Phases */}
       <div className="phases-container">
-        {phases.map((phase, index) => (
-          <div key={phase.id} className="phase-wrapper">
-            {index > 0 && (
-              <div className="phase-connector">
-                <span className="connector-arrow">&#8595;</span>
-                <span className="connector-label">feeds into</span>
-              </div>
-            )}
-            <PhaseEditor
-              phase={phase}
-              phaseIndex={index}
-              previousPhaseResult={index > 0 ? phaseResults[phases[index - 1].id] : null}
-              onUpdate={(updates) => handleUpdatePhase(phase.id, updates)}
-              onUpdateSettings={(setting, value) =>
-                handleUpdatePhaseSettings(phase.id, setting, value)
-              }
-              onAddOriginNode={(nodeId) => handleAddOriginNode(phase.id, nodeId)}
-              onRemoveOriginNode={(nodeId) => handleRemoveOriginNode(phase.id, nodeId)}
-              onToggleAdvancedSettings={() => handleToggleAdvancedSettings(phase.id)}
-              onUpdatePerNodeSetting={(nodeId, setting, value) =>
-                handleUpdatePerNodeSetting(phase.id, nodeId, setting, value)
-              }
-              onExecute={() => handleExecutePhase(index)}
-              onDelete={() => handleRemovePhase(phase.id)}
-              isExecuting={executingPhaseId === phase.id}
-              collections={collections}
-              edgeFilterOptions={availableEdgeFilters}
-              nodeDetails={nodeDetails}
-            />
-          </div>
-        ))}
+        {phases.map((phase, index) => {
+          const isCombine = phase.originSource === "multiplePhases";
+          return (
+            <div key={phase.id} className="phase-wrapper">
+              {index > 0 && (
+                <div className={`phase-connector ${isCombine ? "combine-connector" : ""}`}>
+                  <span className="connector-arrow">&#8595;</span>
+                  {phase.originSource === "previousPhase" && (
+                    <span className="connector-label">feeds into</span>
+                  )}
+                  {isCombine && (
+                    <span className="connector-label">combines</span>
+                  )}
+                </div>
+              )}
+              <PhaseEditor
+                phase={phase}
+                phaseIndex={index}
+                previousPhaseResult={index > 0 ? phaseResults[phases[index - 1].id] : null}
+                allPhases={phases}
+                allPhaseResults={phaseResults}
+                onUpdate={(updates) => handleUpdatePhase(phase.id, updates)}
+                onUpdateSettings={(setting, value) =>
+                  handleUpdatePhaseSettings(phase.id, setting, value)
+                }
+                onAddOriginNode={(nodeId) => handleAddOriginNode(phase.id, nodeId)}
+                onRemoveOriginNode={(nodeId) => handleRemoveOriginNode(phase.id, nodeId)}
+                onToggleAdvancedSettings={() => handleToggleAdvancedSettings(phase.id)}
+                onUpdatePerNodeSetting={(nodeId, setting, value) =>
+                  handleUpdatePerNodeSetting(phase.id, nodeId, setting, value)
+                }
+                onExecute={() => handleExecutePhase(index)}
+                onDelete={() => handleRemovePhase(phase.id)}
+                isExecuting={executingPhaseId === phase.id}
+                collections={collections}
+                edgeFilterOptions={availableEdgeFilters}
+                nodeDetails={nodeDetails}
+              />
+            </div>
+          );
+        })}
       </div>
 
       {/* Add Phase / Execute Workflow */}
