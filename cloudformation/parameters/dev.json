@@ -25,11 +25,11 @@
   },
   {
     "ParameterKey": "DomainName",
-    "ParameterValue": "cell-kn.org"
+    "ParameterValue": "nlm-ckn.org"
   },
   {
     "ParameterKey": "HostedZoneId",
-    "ParameterValue": "Z0441030102JW92C98Q3U"
+    "ParameterValue": "Z05089951YM1345O1XAHB"
   },
   {
     "ParameterKey": "ArangoDbUser",

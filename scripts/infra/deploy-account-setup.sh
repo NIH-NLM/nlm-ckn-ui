@@ -31,6 +31,9 @@ GITHUB_ORG="NIH-NLM"
 GITHUB_REPO="cell-kn-mvp-ui"
 AWS_REGION=${AWS_REGION:-us-east-1}
 
+# Change to project root (script lives in scripts/infra/)
+cd "$(dirname "$0")/../.."
+
 # Resolve current AWS identity
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 AWS_ACCOUNT_ALIAS=$(aws iam list-account-aliases --query 'AccountAliases[0]' --output text 2>/dev/null || echo "(no alias)")
