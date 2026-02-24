@@ -2,7 +2,7 @@ import collectionDefaults from "assets/collection-defaults.json";
 import DocumentCard from "components/DocumentCard";
 import ForceGraph from "components/ForceGraph/ForceGraph";
 import FTUIllustration from "components/FTUIllustration";
-import { FTU_ILLUSTRATIONS_JSONLD_URL, PHENOTYPES_ENABLED } from "constants/index";
+import { FTU_ILLUSTRATIONS_JSONLD_URL } from "constants/index";
 import { useFtuParts } from "contexts";
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch } from "react-redux";
@@ -66,10 +66,8 @@ const DocumentPage = () => {
       base.depth = 0;
     }
 
-    // Override graphType to ontologies when phenotypes is disabled
-    if (!PHENOTYPES_ENABLED && base.graphType === "phenotypes") {
-      base.graphType = "ontologies";
-    }
+    // Always use phenotypes graph
+    base.graphType = "phenotypes";
 
     return base;
   }, [coll, nodeIds]);
