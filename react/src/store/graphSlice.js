@@ -175,12 +175,14 @@ const graphSlice = createSlice({
     setGraphData: (state, action) => {
       if (action.payload.graphData) {
         state.graphData = action.payload.graphData;
+        state.rawData = action.payload.graphData;
         if (action.payload.originNodeIds) {
           state.originNodeIds = action.payload.originNodeIds;
           state.lastAppliedOriginNodeIds = action.payload.originNodeIds;
         }
       } else {
         state.graphData = action.payload;
+        state.rawData = action.payload;
       }
       state.status = GRAPH_STATUS.SUCCEEDED;
       state.lastActionType = "setGraphData";
