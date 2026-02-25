@@ -242,7 +242,8 @@ Resources:
               Value: KN-Phenotypes-v2.0
           Secrets:
             - Name: SECRET_KEY
-              ValueFrom: !Sub 'arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ProjectName}/${Environment}/secrets/django-secret-key'
+              ValueFrom: !ImportValue
+                Fn::Sub: '${ProjectName}-${Environment}-django-secret-key-arn'
             - Name: ALLOWED_HOSTS
               ValueFrom: !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/django/allowed-hosts'
             - Name: CORS_ALLOWED_ORIGINS
@@ -250,7 +251,8 @@ Resources:
             - Name: ARANGO_DB_USER
               ValueFrom: !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/arango/db-user'
             - Name: ARANGO_DB_PASSWORD
-              ValueFrom: !Sub 'arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ProjectName}/${Environment}/secrets/arangodb-password'
+              ValueFrom: !ImportValue
+                Fn::Sub: '${ProjectName}-${Environment}-arango-password-secret-arn'
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -278,7 +280,7 @@ Resources:
         Fn::Sub: '${ProjectName}-${Environment}-cluster-name'
       TaskDefinition: !Ref TaskDefinition
       LaunchType: FARGATE
-      DesiredCount: 0
+      DesiredCount: 2
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: !If [IsDev, ENABLED, DISABLED]

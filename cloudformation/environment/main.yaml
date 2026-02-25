@@ -288,6 +288,20 @@ Outputs:
     Description: Backend API URL
     Value: !GetAtt AlbStack.Outputs.BackendUrl
 
+  # Secrets Manager ARNs — consumed by the tier-2 service stacks so they can
+  # reference the full ARN (including the 6-char random suffix that SM appends).
+  ArangoDbPasswordSecretArn:
+    Description: ARN of the ArangoDB root password secret in Secrets Manager
+    Value: !GetAtt SecretsStack.Outputs.ArangoDbPasswordSecretArn
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-arango-password-secret-arn'
+
+  DjangoSecretKeySecretArn:
+    Description: ARN of the Django SECRET_KEY secret in Secrets Manager
+    Value: !GetAtt SecretsStack.Outputs.DjangoSecretKeySecretArn
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-django-secret-key-arn'
+
   ArangoDbUrl:
     Description: ArangoDB web UI URL
     Value: !GetAtt AlbStack.Outputs.ArangoDbUrl

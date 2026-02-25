@@ -161,9 +161,9 @@ VERSION=$(aws ssm get-parameter \
   --name "/$PROJECT_NAME/$ENVIRONMENT/arango/dataset-version" \
   --query 'Parameter.Value' --output text --region "$REGION")
 
-ARANGO_PASSWORD=$(aws ssm get-parameter \
-  --name "/$PROJECT_NAME/$ENVIRONMENT/arango/db-password" \
-  --query 'Parameter.Value' --output text --region "$REGION")
+ARANGO_PASSWORD=$(aws secretsmanager get-secret-value \
+  --secret-id "/$PROJECT_NAME/$ENVIRONMENT/secrets/arangodb-password" \
+  --query 'SecretString' --output text --region "$REGION")
 
 LAST_RESTORED=$(cat "$DATA_DIR/.dataset-version" 2>/dev/null || echo "none")
 echo "Target version : $VERSION"
@@ -207,7 +207,7 @@ echo "==> Extraction complete"
 # ARANGO_ROOT_PASSWORD is only honoured on a fresh empty data directory.
 # A restored backup has its own credentials baked in, so we must reset
 # the password explicitly using a temporary no-auth container.
-echo "==> Resetting root password to match SSM..."
+echo "==> Resetting root password to match Secrets Manager..."
 docker run -d --name arango-reset \
   -e ARANGO_NO_AUTH=1 \
   -p 8529:8529 \
@@ -297,9 +297,9 @@ echo "Connect via Session Manager (use 8530 to avoid conflicts with local dev):"
 echo "  aws ssm start-session --target $INSTANCE_ID --region $AWS_REGION --document-name AWS-StartPortForwardingSession --parameters '{\"portNumber\":[\"8529\"],\"localPortNumber\":[\"8530\"]}'"
 echo ""
 echo "Once connected, verify with curl:"
-echo "  ARANGO_PASS=\$(aws ssm get-parameter --name /${PROJECT_NAME}/${ENVIRONMENT}/arango/db-password --query 'Parameter.Value' --output text --region $AWS_REGION)"
+echo "  ARANGO_PASS=\$(aws secretsmanager get-secret-value --secret-id /${PROJECT_NAME}/${ENVIRONMENT}/secrets/arangodb-password --query 'SecretString' --output text --region $AWS_REGION)"
 echo "  curl -u \"root:\$ARANGO_PASS\" http://localhost:8530/_api/database"
 echo "  curl -u \"root:\$ARANGO_PASS\" http://localhost:8530/_api/version"
 echo ""
 echo "ArangoDB Web UI: http://localhost:8530"
-echo "Password: aws ssm get-parameter --name /${PROJECT_NAME}/${ENVIRONMENT}/arango/db-password --query 'Parameter.Value' --output text --region $AWS_REGION"
+echo "Password: aws secretsmanager get-secret-value --secret-id /${PROJECT_NAME}/${ENVIRONMENT}/secrets/arangodb-password --query 'SecretString' --output text --region $AWS_REGION"
