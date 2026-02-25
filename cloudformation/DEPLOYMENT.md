@@ -29,8 +29,8 @@ All ECS roles use a trust policy for `ecs-tasks.amazonaws.com`. The Lambda role 
 | Role Name | Used By | Trust Policy | Required Permissions |
 |-----------|---------|--------------|----------------------|
 | `cell-kn-<env>-arangodb-exec` | `arangodb.yaml` ECS task execution | `ecs-tasks.amazonaws.com` | AWS managed: `AmazonECSTaskExecutionRolePolicy`; inline: `ssm:GetParameter`, `ssm:GetParameters` on `arn:aws:ssm:*:*:parameter/cell-kn/<env>/*` |
-| `cell-kn-<env>-arangodb-task` | `arangodb.yaml` ArangoDB container runtime | `ecs-tasks.amazonaws.com` | `s3:GetObject`, `s3:PutObject`, `s3:ListBucket` on the ArangoDB data bucket; `ssm:GetParameter` on `arn:aws:ssm:*:*:parameter/cell-kn/<env>/arango/*` |
-| `cell-kn-<env>-backend-exec` | `backend.yaml` ECS task execution | `ecs-tasks.amazonaws.com` | AWS managed: `AmazonECSTaskExecutionRolePolicy`; inline: `ssm:GetParameter`, `ssm:GetParameters` on `arn:aws:ssm:*:*:parameter/cell-kn/<env>/*` |
+| `cell-kn-<env>-arangodb-task` | `arangodb.yaml` ArangoDB EC2 instance runtime | `ec2.amazonaws.com` | `s3:GetObject`, `s3:PutObject`, `s3:ListBucket` on the ArangoDB data bucket; `ssm:GetParameter` on `arn:aws:ssm:*:*:parameter/cell-kn/<env>/arango/*` and `cell-kn/shared/arangodb-bucket-name`; `secretsmanager:GetSecretValue` on `arn:aws:secretsmanager:*:*:secret:/cell-kn/<env>/secrets/*` |
+| `cell-kn-<env>-backend-exec` | `backend.yaml` ECS task execution | `ecs-tasks.amazonaws.com` | AWS managed: `AmazonECSTaskExecutionRolePolicy`; inline: `ssm:GetParameter`, `ssm:GetParameters` on `arn:aws:ssm:*:*:parameter/cell-kn/<env>/*`; `secretsmanager:GetSecretValue` on `arn:aws:secretsmanager:*:*:secret:/cell-kn/<env>/secrets/*` |
 | `cell-kn-<env>-backend-task` | `backend.yaml` backend container runtime | `ecs-tasks.amazonaws.com` | No additional permissions required |
 | `cell-kn-<env>-random-secret-fn` | `secrets.yaml` Lambda for secret generation | `lambda.amazonaws.com` | AWS managed: `AWSLambdaBasicExecutionRole` |
 
@@ -227,7 +227,8 @@ Your NIH AWS account may have restricted IAM permissions. The deployment user/ro
 | IAM | Create service roles (dev only; sandbox/prod use pre-created roles) |
 | CloudWatch | Create log groups |
 | Lambda | Create functions (for secrets generation) |
-| SSM | Read/write parameters |
+| SSM | Read/write parameters (non-sensitive config: prereqs, hostnames, image tags, dataset versions) |
+| Secrets Manager | Create/read secrets (sensitive credentials: passwords, keys) |
 
 ### Data residency
 

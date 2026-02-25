@@ -28,14 +28,6 @@ Parameters:
     Type: String
     Description: Security group ID for ALB
 
-  CloudFrontSecret:
-    Type: String
-    NoEcho: true
-    Description: >
-      Secret header value set by CloudFront on all origin requests
-      (X-Custom-Origin-Header). Requests missing this header are rejected
-      with 403, preventing direct ALB access that bypasses CloudFront.
-
   DomainName:
     Type: String
     Description: Base domain name (e.g., cell-kn-mvp.org)
@@ -63,11 +55,6 @@ Metadata:
         Parameters:
           - DomainName
           - HostedZoneId
-      - Label:
-          default: Security
-        Parameters:
-          - CloudFrontSecret
-
 Conditions:
   IsProd: !Equals [!Ref Environment, 'prod']
 
@@ -290,7 +277,7 @@ Resources:
           HttpHeaderConfig:
             HttpHeaderName: X-Custom-Origin-Header
             Values:
-              - !Ref CloudFrontSecret
+              - !Sub '{{resolve:secretsmanager:/${ProjectName}/${Environment}/secrets/cloudfront-secret:SecretString}}'
       Actions:
         - Type: forward
           TargetGroupArn: !Ref BackendTargetGroup
@@ -322,7 +309,7 @@ Resources:
           HttpHeaderConfig:
             HttpHeaderName: X-Custom-Origin-Header
             Values:
-              - !Ref CloudFrontSecret
+              - !Sub '{{resolve:secretsmanager:/${ProjectName}/${Environment}/secrets/cloudfront-secret:SecretString}}'
       Actions:
         - Type: forward
           TargetGroupArn: !Ref ArangoDbTargetGroup

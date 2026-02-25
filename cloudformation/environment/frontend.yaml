@@ -21,7 +21,7 @@ Parameters:
   #   HostedZoneId    → ${ProjectName}-${Environment}-hosted-zone-id
   #   AlbDnsName      → ${ProjectName}-${Environment}-alb-dns
   #   CertificateArn  → ${ProjectName}-${Environment}-acm-cert-arn
-  #   CloudFrontSecret → {{resolve:ssm:/${ProjectName}/${Environment}/secrets/cloudfront-secret}}
+  #   CloudFrontSecret → {{resolve:secretsmanager:/${ProjectName}/${Environment}/secrets/cloudfront-secret:SecretString}}
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -144,7 +144,7 @@ Resources:
                 - TLSv1.2
             OriginCustomHeaders:
               - HeaderName: X-Custom-Origin-Header
-                HeaderValue: !Sub '{{resolve:ssm:/${ProjectName}/${Environment}/secrets/cloudfront-secret}}'
+                HeaderValue: !Sub '{{resolve:secretsmanager:/${ProjectName}/${Environment}/secrets/cloudfront-secret:SecretString}}'
 
           # ALB Origin for ArangoDB web UI (port 8529)
           - Id: ArangoDbOrigin
@@ -157,7 +157,7 @@ Resources:
                 - TLSv1.2
             OriginCustomHeaders:
               - HeaderName: X-Custom-Origin-Header
-                HeaderValue: !Sub '{{resolve:ssm:/${ProjectName}/${Environment}/secrets/cloudfront-secret}}'
+                HeaderValue: !Sub '{{resolve:secretsmanager:/${ProjectName}/${Environment}/secrets/cloudfront-secret:SecretString}}'
 
         # Default behavior (S3)
         DefaultCacheBehavior:

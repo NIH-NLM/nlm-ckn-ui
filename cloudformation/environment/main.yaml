@@ -218,8 +218,6 @@ Resources:
         # Used to create the ACM certificate for ALB HTTPS listeners
         DomainName: !Ref DomainName
         HostedZoneId: !Ref HostedZoneId
-        # Enforced on all ALB listeners - only CloudFront requests carry this header
-        CloudFrontSecret: !GetAtt SecretsStack.Outputs.CloudFrontSecret
       Tags:
         - Key: Project
           Value: !Ref ProjectName

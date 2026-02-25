@@ -106,19 +106,6 @@ Resources:
         Name: !Sub '${ProjectName}-${Environment}-arango-user'
         ManagedBy: CloudFormation
 
-  ArangoDbPasswordParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub '/${ProjectName}/${Environment}/arango/db-password'
-      Type: String
-      Value: !Sub '{{resolve:ssm:/${ProjectName}/${Environment}/secrets/arangodb-password}}'
-      Description: ArangoDB password (mirrored from secrets stack SSM path)
-      Tags:
-        Project: !Ref ProjectName
-        Environment: !Ref Environment
-        Name: !Sub '${ProjectName}-${Environment}-arango-password'
-        ManagedBy: CloudFormation
-
   # Dataset version parameter - managed out-of-band by deploy-dataset.sh.
   # Always set to 'none' here so CloudFormation never overwrites a live value
   # on subsequent stack updates, preventing unintended dataset restores.
@@ -189,6 +176,14 @@ Resources:
                 Resource:
                   - !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/arango/*'
                   - !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/shared/arangodb-bucket-name'
+        - PolicyName: SecretsManagerAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Sub 'arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${ProjectName}/${Environment}/secrets/*'
         - PolicyName: CloudWatchLogsAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -278,7 +273,6 @@ Resources:
   ArangoDbInstance:
     Type: AWS::EC2::Instance
     DependsOn:
-      - ArangoDbPasswordParameter
       - ArangoDbUserParameter
       - DatasetVersionParameter
       - LogGroup
@@ -443,9 +437,9 @@ Resources:
           systemctl enable docker
           systemctl start docker
 
-          ARANGO_PASSWORD=$(aws ssm get-parameter \
-            --name "/$PROJECT_NAME/$ENVIRONMENT/arango/db-password" \
-            --query 'Parameter.Value' \
+          ARANGO_PASSWORD=$(aws secretsmanager get-secret-value \
+            --secret-id "/$PROJECT_NAME/$ENVIRONMENT/secrets/arangodb-password" \
+            --query 'SecretString' \
             --output text \
             --region "$REGION")
 
