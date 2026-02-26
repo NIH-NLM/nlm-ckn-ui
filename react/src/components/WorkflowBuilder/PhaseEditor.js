@@ -12,6 +12,7 @@
 import collMaps from "assets/nlm-ckn-collection-maps.json";
 import EdgeFilterSelector from "components/EdgeFilterSelector";
 import FilterableDropdown from "components/FilterableDropdown";
+import { PHENOTYPES_ENABLED } from "constants/index";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import NodeSearchInput from "./NodeSearchInput";
@@ -444,8 +445,8 @@ const PhaseEditor = ({
       <div className="phase-section">
         <h4>{isCombinePhase ? "Output Settings" : "Settings"}</h4>
 
-        {/* Graph Type toggle */}
-        {!isCombinePhase && (
+        {/* Graph Type toggle - only visible when phenotypes graph is enabled */}
+        {!isCombinePhase && PHENOTYPES_ENABLED && (
           <div className="setting-item full-width" style={{ marginBottom: "var(--spacing-md)" }}>
             <label htmlFor={`graph-type-${phase.id}`}>Graph</label>
             <select
