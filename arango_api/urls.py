@@ -16,6 +16,7 @@ from arango_api.views import (
     SunburstView,
     EdgeFilterOptionsView,
     DocumentsView,
+    WorkflowExecuteView,
     WorkflowPresetsView,
 )
 
@@ -52,6 +53,7 @@ urlpatterns = [
         EdgeFilterOptionsView.as_view(),
         name="get_edge_filter_options",
     ),
-    # Workflow presets
+    # Workflow endpoints
+    path("workflow/execute/", WorkflowExecuteView.as_view(), name="workflow_execute"),
     path("workflow_presets/", WorkflowPresetsView.as_view(), name="workflow_presets"),
 ]

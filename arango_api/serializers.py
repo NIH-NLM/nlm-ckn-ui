@@ -222,3 +222,59 @@ class DocumentsRequestSerializer(serializers.Serializer):
         min_length=1,
         help_text="List of document IDs to fetch",
     )
+
+
+class PhaseSerializer(serializers.Serializer):
+    """Serializer for a single workflow phase."""
+
+    id = serializers.CharField(required=True)
+    originSource = serializers.ChoiceField(
+        choices=["manual", "collection", "previousPhase", "multiplePhases"],
+        required=False,
+        default="manual",
+    )
+    originNodeIds = serializers.ListField(
+        child=serializers.CharField(),
+        required=False,
+        default=[],
+    )
+    originCollection = serializers.CharField(required=False, allow_null=True, default=None)
+    previousPhaseId = serializers.CharField(required=False, allow_null=True, default=None)
+    previousPhaseIds = serializers.ListField(
+        child=serializers.CharField(),
+        required=False,
+        default=[],
+    )
+    phaseCombineOperation = serializers.CharField(required=False, default="Intersection")
+    originFilter = serializers.ChoiceField(
+        choices=["all", "leafNodes", "originNodes"],
+        required=False,
+        default="all",
+    )
+    settings = serializers.DictField(required=False, default=dict)
+    perNodeSettings = serializers.DictField(required=False, default=dict)
+
+
+class WorkflowExecuteSerializer(serializers.Serializer):
+    """Serializer for workflow execution requests."""
+
+    preset_id = serializers.CharField(required=False, allow_null=True, default=None)
+    phases = PhaseSerializer(many=True, required=False, default=None)
+    origin_overrides = serializers.DictField(
+        required=False,
+        allow_null=True,
+        default=None,
+        help_text="Dict of {phase_id: [node_ids]} to override origins in a preset",
+    )
+    graph = serializers.ChoiceField(
+        choices=["ontologies", "phenotypes"],
+        required=False,
+        default="ontologies",
+    )
+
+    def validate(self, data):
+        if not data.get("preset_id") and not data.get("phases"):
+            raise serializers.ValidationError(
+                "Either 'preset_id' or 'phases' must be provided."
+            )
+        return data
