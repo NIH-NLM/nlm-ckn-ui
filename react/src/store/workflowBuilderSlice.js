@@ -8,7 +8,7 @@
  */
 
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { createEmptyPhase, DEFAULT_GRAPH_TYPE, GRAPH_STATUS } from "../constants";
+import { createEmptyPhase, DEFAULT_GRAPH_TYPE, GRAPH_STATUS, UI_DEFAULTS } from "../constants";
 import { fetchCollectionDocuments, fetchGraphData, fetchNodeDetailsByIds } from "../services";
 import { performSetOperation } from "../utils";
 
@@ -364,12 +364,16 @@ const workflowBuilderSlice = createSlice({
       state.workflowDescription = workflow.description || "";
       // Deep clone phases to avoid mutation issues
       const rawPhases = JSON.parse(JSON.stringify(workflow.phases || [createEmptyPhase(0)]));
-      // Normalize phases to include new fields with defaults (backward compat)
+      // Normalize phases: apply UI defaults and runtime state for phases from
+      // presets or backend (which only contain query-semantic fields)
       state.phases = rawPhases.map((p) => ({
         ...p,
         originCollection: p.originCollection || null,
         previousPhaseIds: p.previousPhaseIds || [],
         phaseCombineOperation: p.phaseCombineOperation || "Intersection",
+        showAdvancedSettings: p.showAdvancedSettings ?? (Object.keys(p.perNodeSettings || {}).length > 0),
+        result: null,
+        settings: { ...UI_DEFAULTS, ...p.settings },
       }));
       state.phaseResults = {};
       state.activePhaseId = null;

@@ -244,3 +244,12 @@ class DocumentsView(APIView):
             graph_name=data.get("db", "ontologies"),
         )
         return Response(results)
+
+
+class WorkflowPresetsView(APIView):
+    """Return pre-built workflow presets (query-only schema)."""
+
+    def get(self, request):
+        from arango_api.workflow_presets import WORKFLOW_PRESETS
+
+        return Response(WORKFLOW_PRESETS)

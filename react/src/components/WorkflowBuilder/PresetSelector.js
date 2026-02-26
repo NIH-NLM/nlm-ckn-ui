@@ -2,19 +2,41 @@
  * PresetSelector component for displaying and selecting workflow presets.
  *
  * Shows pre-built workflow examples that users can load, explore, and modify.
+ * Fetches presets from the backend API, falling back to local constants on error.
  */
 
 import { PRESET_CATEGORIES, WORKFLOW_PRESETS } from "constants/index";
-import { memo, useMemo } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
+import { fetchWorkflowPresets } from "services";
 
 /**
  * PresetSelector displays available workflow presets grouped by category.
  */
 const PresetSelector = ({ onSelectPreset, onStartFromScratch }) => {
+  const [presets, setPresets] = useState(WORKFLOW_PRESETS);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchWorkflowPresets()
+      .then((data) => {
+        if (!cancelled && Array.isArray(data) && data.length > 0) {
+          setPresets(data);
+        }
+      })
+      .catch(() => {
+        // Fall back to local WORKFLOW_PRESETS (already set as initial state)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
   // Group presets by category
   const groupedPresets = useMemo(() => {
     const groups = {};
-    for (const preset of WORKFLOW_PRESETS) {
+    for (const preset of presets) {
       const category = preset.category || "Other";
       if (!groups[category]) {
         groups[category] = [];
@@ -22,7 +44,7 @@ const PresetSelector = ({ onSelectPreset, onStartFromScratch }) => {
       groups[category].push(preset);
     }
     return groups;
-  }, []);
+  }, [presets]);
 
   return (
     <div className="preset-selector">
@@ -34,34 +56,38 @@ const PresetSelector = ({ onSelectPreset, onStartFromScratch }) => {
         </p>
       </div>
 
-      <div className="preset-categories">
-        {PRESET_CATEGORIES.map((category) => {
-          const presets = groupedPresets[category.id];
-          if (!presets || presets.length === 0) return null;
+      {loading ? (
+        <div className="preset-loading">Loading presets...</div>
+      ) : (
+        <div className="preset-categories">
+          {PRESET_CATEGORIES.map((category) => {
+            const categoryPresets = groupedPresets[category.id];
+            if (!categoryPresets || categoryPresets.length === 0) return null;
 
-          return (
-            <div key={category.id} className="preset-category">
-              <h4 className="category-label">{category.label}</h4>
-              <div className="preset-cards">
-                {presets.map((preset) => (
-                  <button
-                    type="button"
-                    key={preset.id}
-                    className="preset-card"
-                    onClick={() => onSelectPreset(preset)}
-                  >
-                    <span className="preset-name">{preset.name}</span>
-                    <span className="preset-card-description">{preset.description}</span>
-                    <span className="preset-phases-count">
-                      {preset.phases.length} phase{preset.phases.length > 1 ? "s" : ""}
-                    </span>
-                  </button>
-                ))}
+            return (
+              <div key={category.id} className="preset-category">
+                <h4 className="category-label">{category.label}</h4>
+                <div className="preset-cards">
+                  {categoryPresets.map((preset) => (
+                    <button
+                      type="button"
+                      key={preset.id}
+                      className="preset-card"
+                      onClick={() => onSelectPreset(preset)}
+                    >
+                      <span className="preset-name">{preset.name}</span>
+                      <span className="preset-card-description">{preset.description}</span>
+                      <span className="preset-phases-count">
+                        {preset.phases.length} phase{preset.phases.length > 1 ? "s" : ""}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       <div className="preset-custom">
         <button type="button" className="preset-card custom" onClick={onStartFromScratch}>
