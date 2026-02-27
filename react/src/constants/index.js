@@ -40,9 +40,13 @@ export {
   DEFAULT_NODE_LIMIT,
   DEFAULT_SET_OPERATION,
   DEFAULT_USE_FOCUS_NODES,
+  DEPTH_OPTIONS,
+  DIRECTION_OPTIONS,
   EXPANSION_DEPTH,
   GRAPH_STATUS,
+  ORIGIN_FILTER_OPTIONS,
   PHENOTYPES_ENABLED,
+  SET_OPERATION_OPTIONS,
 } from "./graph";
 
 // Workflow builder utilities (presets are fetched from the backend API)

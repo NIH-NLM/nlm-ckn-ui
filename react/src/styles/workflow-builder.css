@@ -37,6 +37,21 @@
 }
 
 /* ==========================================================================
+   Shared Focus Styles
+   ========================================================================== */
+
+.workflow-name-input:focus,
+.workflow-description-input:focus,
+.phase-name-input:focus,
+.node-search-input input:focus,
+.setting-item select:focus,
+.setting-item input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(0, 113, 188, 0.2);
+}
+
+/* ==========================================================================
    Workflow Builder Component
    ========================================================================== */
 
@@ -94,12 +109,6 @@
   background: var(--color-white);
 }
 
-.workflow-name-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(0, 113, 188, 0.2); /* --color-primary with alpha */
-}
-
 .workflow-description-input {
   width: 100%;
   padding: var(--spacing-sm) var(--spacing-md);
@@ -112,12 +121,6 @@
   font-family: inherit;
   margin-bottom: var(--spacing-md);
   box-sizing: border-box;
-}
-
-.workflow-description-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(0, 113, 188, 0.2); /* --color-primary with alpha */
 }
 
 .workflow-description-input::placeholder {
@@ -156,28 +159,45 @@
   min-height: 0;
 }
 
-/* Custom scrollbar for preset selector */
-.preset-selector::-webkit-scrollbar {
+/* Shared custom scrollbar */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-gray-light) var(--color-gray-lighter);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
 
-.preset-selector::-webkit-scrollbar-track {
+.custom-scrollbar::-webkit-scrollbar-track {
   background: var(--color-gray-lighter);
   border-radius: 3px;
 }
 
-.preset-selector::-webkit-scrollbar-thumb {
+.custom-scrollbar::-webkit-scrollbar-thumb {
   background: var(--color-gray-light);
   border-radius: 3px;
 }
 
-.preset-selector::-webkit-scrollbar-thumb:hover {
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: var(--color-gray);
 }
 
-.preset-selector {
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-gray-light) var(--color-gray-lighter);
+/* Phases container scrollbar color overrides */
+.phases-container {
+  scrollbar-color: var(--color-gray-lighter) var(--color-gray-lightest);
+}
+
+.phases-container::-webkit-scrollbar-track {
+  background: var(--color-gray-lightest);
+}
+
+.phases-container::-webkit-scrollbar-thumb {
+  background: var(--color-gray-lighter);
+}
+
+.phases-container::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gray-light);
 }
 
 .preset-selector-header h3 {
@@ -351,12 +371,6 @@
   border-radius: var(--radius-md);
 }
 
-.phase-name-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(0, 113, 188, 0.2); /* --color-primary with alpha */
-}
-
 .phase-delete-btn {
   width: 28px;
   height: 28px;
@@ -472,12 +486,6 @@
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
   box-sizing: border-box;
-}
-
-.node-search-input input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(0, 113, 188, 0.2); /* --color-primary with alpha */
 }
 
 .node-search-dropdown {
@@ -692,13 +700,6 @@
   background: var(--color-white);
 }
 
-.setting-item select:focus,
-.setting-item input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(0, 113, 188, 0.2); /* --color-primary with alpha */
-}
-
 .toggle-label {
   display: flex;
   align-items: center;
@@ -748,7 +749,8 @@
   background: var(--color-primary-darker);
 }
 
-.execute-phase-btn:disabled {
+.execute-phase-btn:disabled,
+.execute-workflow-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -826,11 +828,6 @@
   background: var(--color-green-light);
 }
 
-.execute-workflow-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 /* ==========================================================================
    Workflow Error
    ========================================================================== */
@@ -848,13 +845,6 @@
 /* ==========================================================================
    Graph Placeholder
    ========================================================================== */
-
-.workflow-builder-graph-area {
-  min-height: 500px;
-  background: var(--color-gray-lightest);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-}
 
 .workflow-graph-placeholder {
   height: 100%;
@@ -928,30 +918,6 @@
   height: calc(100vh - 200px); /* 200px accounts for header + nav + spacing */
   display: flex;
   flex-direction: column;
-}
-
-/* Custom scrollbar for phases container */
-.phases-container::-webkit-scrollbar {
-  width: 6px;
-}
-
-.phases-container::-webkit-scrollbar-track {
-  background: var(--color-gray-lightest);
-  border-radius: 3px;
-}
-
-.phases-container::-webkit-scrollbar-thumb {
-  background: var(--color-gray-lighter);
-  border-radius: 3px;
-}
-
-.phases-container::-webkit-scrollbar-thumb:hover {
-  background: var(--color-gray-light);
-}
-
-.phases-container {
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-gray-light) var(--color-gray-lighter);
 }
 
 /* ==========================================================================

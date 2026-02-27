@@ -10,7 +10,13 @@
  */
 
 import FilterableDropdown from "components/FilterableDropdown";
-import { PHENOTYPES_ENABLED } from "constants/index";
+import {
+  DEPTH_OPTIONS,
+  DIRECTION_OPTIONS,
+  ORIGIN_FILTER_OPTIONS,
+  PHENOTYPES_ENABLED,
+  SET_OPERATION_OPTIONS,
+} from "constants/index";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import {
@@ -20,6 +26,36 @@ import {
   getNodeLabel,
 } from "utils";
 import NodeSearchInput from "./NodeSearchInput";
+
+/**
+ * Builds an inline style object for a node color pill/badge.
+ */
+const nodeColorStyle = (color) => ({
+  backgroundColor: `${color}20`,
+  borderColor: color,
+  color: color,
+});
+
+/**
+ * Renders a labeled <select> dropdown. Used for depth, direction,
+ * set operation, and origin filter selects throughout the editor.
+ */
+const SettingsSelect = ({ id, label, value, options, onChange }) => (
+  <div className="setting-item">
+    <label htmlFor={id}>{label}</label>
+    <select id={id} value={value} onChange={onChange}>
+      {options.map((opt) => {
+        const optValue = typeof opt === "object" ? opt.value : opt;
+        const optLabel = typeof opt === "object" ? opt.label : opt;
+        return (
+          <option key={optValue} value={optValue}>
+            {optLabel}
+          </option>
+        );
+      })}
+    </select>
+  </div>
+);
 
 /**
  * PhaseEditor displays and manages settings for a single workflow phase.
@@ -91,16 +127,30 @@ const PhaseEditor = ({
     [onUpdate],
   );
 
-  // Handle toggling a source phase in multiplePhases mode
-  const handlePreviousPhaseIdToggle = useCallback(
-    (sourcePhaseId) => {
-      const current = phase.previousPhaseIds || [];
-      const newIds = current.includes(sourcePhaseId)
-        ? current.filter((id) => id !== sourcePhaseId)
-        : [...current, sourcePhaseId];
-      onUpdate({ previousPhaseIds: newIds });
+  // Generic array toggle: adds item if absent, removes if present
+  const makeArrayToggle = useCallback(
+    (currentArray, updater) => (item) => {
+      const next = currentArray.includes(item)
+        ? currentArray.filter((v) => v !== item)
+        : [...currentArray, item];
+      updater(next);
     },
-    [phase.previousPhaseIds, onUpdate],
+    [],
+  );
+
+  const handlePreviousPhaseIdToggle = makeArrayToggle(
+    phase.previousPhaseIds || [],
+    (ids) => onUpdate({ previousPhaseIds: ids }),
+  );
+
+  const handleCollectionToggle = makeArrayToggle(
+    phase.settings.allowedCollections || [],
+    (cols) => onUpdateSettings("allowedCollections", cols),
+  );
+
+  const handleReturnCollectionToggle = makeArrayToggle(
+    phase.settings.returnCollections || [],
+    (cols) => onUpdateSettings("returnCollections", cols),
   );
 
   // Handle combine operation change
@@ -109,38 +159,6 @@ const PhaseEditor = ({
       onUpdate({ phaseCombineOperation: e.target.value });
     },
     [onUpdate],
-  );
-
-  // Handle setting changes
-  const handleSettingChange = useCallback(
-    (setting, value) => {
-      onUpdateSettings(setting, value);
-    },
-    [onUpdateSettings],
-  );
-
-  // Handle collection toggle
-  const handleCollectionToggle = useCallback(
-    (collectionId) => {
-      const currentCollections = phase.settings.allowedCollections || [];
-      const newCollections = currentCollections.includes(collectionId)
-        ? currentCollections.filter((c) => c !== collectionId)
-        : [...currentCollections, collectionId];
-      onUpdateSettings("allowedCollections", newCollections);
-    },
-    [phase.settings.allowedCollections, onUpdateSettings],
-  );
-
-  // Handle return collection toggle (filter which collections appear in results)
-  const handleReturnCollectionToggle = useCallback(
-    (collectionId) => {
-      const currentCollections = phase.settings.returnCollections || [];
-      const newCollections = currentCollections.includes(collectionId)
-        ? currentCollections.filter((c) => c !== collectionId)
-        : [...currentCollections, collectionId];
-      onUpdateSettings("returnCollections", newCollections);
-    },
-    [phase.settings.returnCollections, onUpdateSettings],
   );
 
   // Handle edge filter toggle for a specific field
@@ -272,11 +290,7 @@ const PhaseEditor = ({
                     key={nodeId}
                     className="origin-node-pill"
                     title={nodeId}
-                    style={{
-                      backgroundColor: `${nodeColor}20`,
-                      borderColor: nodeColor,
-                      color: nodeColor,
-                    }}
+                    style={nodeColorStyle(nodeColor)}
                   >
                     <span className="node-label">{displayName}</span>
                     <button
@@ -324,9 +338,9 @@ const PhaseEditor = ({
                 <label>
                   Use:
                   <select value={phase.originFilter} onChange={handleOriginFilterChange}>
-                    <option value="all">All nodes</option>
-                    <option value="leafNodes">Leaf nodes only</option>
-                    <option value="originNodes">Origin nodes only</option>
+                    {ORIGIN_FILTER_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
                   </select>
                 </label>
               </>
@@ -363,26 +377,21 @@ const PhaseEditor = ({
               })}
             </div>
             <div className="settings-grid" style={{ marginTop: "var(--spacing-md)" }}>
-              <div className="setting-item">
-                <label htmlFor={`combine-op-${phase.id}`}>Combine Operation</label>
-                <select
-                  id={`combine-op-${phase.id}`}
-                  value={phase.phaseCombineOperation || "Intersection"}
-                  onChange={handleCombineOperationChange}
-                >
-                  <option value="Intersection">Intersection (common nodes)</option>
-                  <option value="Union">Union (combine all)</option>
-                  <option value="Symmetric Difference">Symmetric Difference</option>
-                </select>
-              </div>
+              <SettingsSelect
+                id={`combine-op-${phase.id}`}
+                label="Combine Operation"
+                value={phase.phaseCombineOperation || "Intersection"}
+                options={SET_OPERATION_OPTIONS}
+                onChange={handleCombineOperationChange}
+              />
             </div>
             <div className="setting-item full-width" style={{ marginTop: "var(--spacing-md)" }}>
               <label>
                 Use from each source:
                 <select value={phase.originFilter} onChange={handleOriginFilterChange}>
-                  <option value="all">All nodes</option>
-                  <option value="leafNodes">Leaf nodes only</option>
-                  <option value="originNodes">Origin nodes only</option>
+                  {ORIGIN_FILTER_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
                 </select>
               </label>
             </div>
@@ -401,7 +410,7 @@ const PhaseEditor = ({
             <select
               id={`graph-type-${phase.id}`}
               value={phase.settings.graphType || "phenotypes"}
-              onChange={(e) => handleSettingChange("graphType", e.target.value)}
+              onChange={(e) => onUpdateSettings("graphType", e.target.value)}
             >
               <option value="phenotypes">Phenotypes</option>
               <option value="ontologies">Ontologies</option>
@@ -428,50 +437,28 @@ const PhaseEditor = ({
             {/* Shared Settings (when "same settings" is checked) */}
             {!showAdvancedSettings && (
               <div className="settings-grid">
-                {/* Depth */}
-                <div className="setting-item">
-                  <label htmlFor={`depth-${phase.id}`}>Depth</label>
-                  <select
-                    id={`depth-${phase.id}`}
-                    value={phase.settings.depth}
-                    onChange={(e) => handleSettingChange("depth", Number.parseInt(e.target.value, 10))}
-                  >
-                    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => (
-                      <option key={d} value={d}>
-                        {d}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Direction */}
-                <div className="setting-item">
-                  <label htmlFor={`direction-${phase.id}`}>Direction</label>
-                  <select
-                    id={`direction-${phase.id}`}
-                    value={phase.settings.edgeDirection}
-                    onChange={(e) => handleSettingChange("edgeDirection", e.target.value)}
-                  >
-                    <option value="ANY">ANY</option>
-                    <option value="INBOUND">INBOUND</option>
-                    <option value="OUTBOUND">OUTBOUND</option>
-                  </select>
-                </div>
-
-                {/* Set Operation (only show if multiple origin nodes) */}
+                <SettingsSelect
+                  id={`depth-${phase.id}`}
+                  label="Depth"
+                  value={phase.settings.depth}
+                  options={DEPTH_OPTIONS}
+                  onChange={(e) => onUpdateSettings("depth", Number.parseInt(e.target.value, 10))}
+                />
+                <SettingsSelect
+                  id={`direction-${phase.id}`}
+                  label="Direction"
+                  value={phase.settings.edgeDirection}
+                  options={DIRECTION_OPTIONS}
+                  onChange={(e) => onUpdateSettings("edgeDirection", e.target.value)}
+                />
                 {(phase.originNodeIds.length > 1 || phase.originSource === "previousPhase") && (
-                  <div className="setting-item">
-                    <label htmlFor={`operation-${phase.id}`}>Set Operation</label>
-                    <select
-                      id={`operation-${phase.id}`}
-                      value={phase.settings.setOperation}
-                      onChange={(e) => handleSettingChange("setOperation", e.target.value)}
-                    >
-                      <option value="Union">Union (combine all)</option>
-                      <option value="Intersection">Intersection (common nodes)</option>
-                      <option value="Symmetric Difference">Symmetric Difference</option>
-                    </select>
-                  </div>
+                  <SettingsSelect
+                    id={`operation-${phase.id}`}
+                    label="Set Operation"
+                    value={phase.settings.setOperation}
+                    options={SET_OPERATION_OPTIONS}
+                    onChange={(e) => onUpdateSettings("setOperation", e.target.value)}
+                  />
                 )}
               </div>
             )}
@@ -479,20 +466,14 @@ const PhaseEditor = ({
             {/* Per-Node Settings (when advanced mode is enabled) */}
             {showAdvancedSettings && (
               <div className="per-node-settings">
-                {/* Set Operation (applies to all) */}
                 <div className="settings-grid">
-                  <div className="setting-item">
-                    <label htmlFor={`operation-${phase.id}`}>Set Operation</label>
-                    <select
-                      id={`operation-${phase.id}`}
-                      value={phase.settings.setOperation}
-                      onChange={(e) => handleSettingChange("setOperation", e.target.value)}
-                    >
-                      <option value="Union">Union (combine all)</option>
-                      <option value="Intersection">Intersection (common nodes)</option>
-                      <option value="Symmetric Difference">Symmetric Difference</option>
-                    </select>
-                  </div>
+                  <SettingsSelect
+                    id={`operation-${phase.id}`}
+                    label="Set Operation"
+                    value={phase.settings.setOperation}
+                    options={SET_OPERATION_OPTIONS}
+                    onChange={(e) => onUpdateSettings("setOperation", e.target.value)}
+                  />
                 </div>
 
                 <h5>Per-Node Settings</h5>
@@ -505,11 +486,7 @@ const PhaseEditor = ({
                       <span
                         className="per-node-label"
                         title={nodeId}
-                        style={{
-                          backgroundColor: `${nodeColor}20`,
-                          borderColor: nodeColor,
-                          color: nodeColor,
-                        }}
+                        style={nodeColorStyle(nodeColor)}
                       >
                         {displayName}
                       </span>
@@ -526,10 +503,8 @@ const PhaseEditor = ({
                               )
                             }
                           >
-                            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => (
-                              <option key={d} value={d}>
-                                {d}
-                              </option>
+                            {DEPTH_OPTIONS.map((d) => (
+                              <option key={d} value={d}>{d}</option>
                             ))}
                           </select>
                         </label>
@@ -541,9 +516,9 @@ const PhaseEditor = ({
                               onUpdatePerNodeSetting(nodeId, "edgeDirection", e.target.value)
                             }
                           >
-                            <option value="ANY">ANY</option>
-                            <option value="INBOUND">INBOUND</option>
-                            <option value="OUTBOUND">OUTBOUND</option>
+                            {DIRECTION_OPTIONS.map((d) => (
+                              <option key={d} value={d}>{d}</option>
+                            ))}
                           </select>
                         </label>
                       </div>
@@ -605,7 +580,7 @@ const PhaseEditor = ({
               <input
                 type="checkbox"
                 checked={phase.settings.collapseLeafNodes ?? true}
-                onChange={(e) => handleSettingChange("collapseLeafNodes", e.target.checked)}
+                onChange={(e) => onUpdateSettings("collapseLeafNodes", e.target.checked)}
               />
               Collapse leaf nodes
             </label>

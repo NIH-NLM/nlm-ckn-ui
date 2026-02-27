@@ -33,6 +33,20 @@ export const DEFAULT_USE_FOCUS_NODES = true;
 export const DEFAULT_COLLAPSE_ON_START = true;
 export const DEFAULT_INCLUDE_INTER_NODE_EDGES = true;
 
+// Dropdown option arrays (shared across PhaseEditor, GeneralSettingsPanel, etc.)
+export const DEPTH_OPTIONS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+export const DIRECTION_OPTIONS = ["ANY", "INBOUND", "OUTBOUND"];
+export const SET_OPERATION_OPTIONS = [
+  { value: "Union", label: "Union (combine all)" },
+  { value: "Intersection", label: "Intersection (common nodes)" },
+  { value: "Symmetric Difference", label: "Symmetric Difference" },
+];
+export const ORIGIN_FILTER_OPTIONS = [
+  { value: "all", label: "All nodes" },
+  { value: "leafNodes", label: "Leaf nodes only" },
+  { value: "originNodes", label: "Origin nodes only" },
+];
+
 // Node expansion depth
 export const EXPANSION_DEPTH = 1;
 

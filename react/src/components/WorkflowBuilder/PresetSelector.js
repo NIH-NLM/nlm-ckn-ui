@@ -72,7 +72,7 @@ const PresetSelector = ({ onSelectPreset, onStartFromScratch }) => {
   }, [categories, presets]);
 
   return (
-    <div className="preset-selector">
+    <div className="preset-selector custom-scrollbar">
       <div className="preset-selector-header">
         <h3>Start from a preset, or build your own</h3>
         <p className="preset-description">

@@ -1,4 +1,4 @@
-import { PHENOTYPES_ENABLED } from "constants/index";
+import { DEPTH_OPTIONS, DIRECTION_OPTIONS, PHENOTYPES_ENABLED } from "constants/index";
 import { memo } from "react";
 
 /**
@@ -24,7 +24,7 @@ const GeneralSettingsPanel = ({
         <label htmlFor="depth-select">Depth:</label>
         {/* biome-ignore lint/correctness/useUniqueElementIds: legacy id */}
         <select id="depth-select" value={settings.depth} onChange={onDepthChange}>
-          {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((value) => (
+          {DEPTH_OPTIONS.map((value) => (
             <option key={value} value={value}>
               {value}
             </option>
@@ -40,7 +40,7 @@ const GeneralSettingsPanel = ({
           value={settings.edgeDirection}
           onChange={onEdgeDirectionChange}
         >
-          {["ANY", "INBOUND", "OUTBOUND"].map((value) => (
+          {DIRECTION_OPTIONS.map((value) => (
             <option key={value} value={value}>
               {value}
             </option>

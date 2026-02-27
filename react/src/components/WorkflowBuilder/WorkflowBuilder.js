@@ -299,7 +299,7 @@ const WorkflowBuilder = ({ onGraphReady }) => {
       />
 
       {/* Phases */}
-      <div className="phases-container">
+      <div className="phases-container custom-scrollbar">
         {phases.map((phase, index) => {
           const isCombine = phase.originSource === "multiplePhases";
           return (
