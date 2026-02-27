@@ -253,7 +253,7 @@ const graphSlice = createSlice({
 
       state.lastActionType = "updateEdgeFilter";
     },
-    // Sets edge filters directly (used by EdgeFilterSelector component).
+    // Sets edge filters directly.
     // Merges partial updates into existing filters so callers can pass just the changed property.
     setEdgeFilters: (state, action) => {
       state.settings.edgeFilters = { ...state.settings.edgeFilters, ...action.payload };

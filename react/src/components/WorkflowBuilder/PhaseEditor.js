@@ -9,7 +9,6 @@
  * - Execute action
  */
 
-import EdgeFilterSelector from "components/EdgeFilterSelector";
 import FilterableDropdown from "components/FilterableDropdown";
 import { PHENOTYPES_ENABLED } from "constants/index";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
@@ -144,10 +143,14 @@ const PhaseEditor = ({
     [phase.settings.returnCollections, onUpdateSettings],
   );
 
-  // Handle edge filter change from EdgeFilterSelector
-  const handleEdgeFilterChange = useCallback(
-    (propertyName, values) => {
-      onUpdateSettings("edgeFilters", { ...phase.settings.edgeFilters, [propertyName]: values });
+  // Handle edge filter toggle for a specific field
+  const handleEdgeFilterToggle = useCallback(
+    (field, value) => {
+      const currentValues = phase.settings.edgeFilters?.[field] || [];
+      const newValues = currentValues.includes(value)
+        ? currentValues.filter((v) => v !== value)
+        : [...currentValues, value];
+      onUpdateSettings("edgeFilters", { ...phase.settings.edgeFilters, [field]: newValues });
     },
     [phase.settings.edgeFilters, onUpdateSettings],
   );
@@ -564,14 +567,20 @@ const PhaseEditor = ({
             </div>
 
             {/* Edge Filters */}
-            <div className="setting-item full-width">
-              <span className="setting-label">Edge Filters</span>
-              <EdgeFilterSelector
-                availableFilters={edgeFilterOptions || {}}
-                selectedFilters={phase.settings.edgeFilters || {}}
-                onFilterChange={handleEdgeFilterChange}
-              />
-            </div>
+            {Object.keys(edgeFilterOptions || {}).length > 0 && (
+              <div className="setting-item full-width">
+                <span className="setting-label">Edge Filters</span>
+                {Object.entries(edgeFilterOptions).map(([field, values]) => (
+                  <FilterableDropdown
+                    key={field}
+                    label={field}
+                    options={values}
+                    selectedOptions={phase.settings.edgeFilters?.[field] || []}
+                    onOptionToggle={(value) => handleEdgeFilterToggle(field, value)}
+                  />
+                ))}
+              </div>
+            )}
           </>
         )}
 

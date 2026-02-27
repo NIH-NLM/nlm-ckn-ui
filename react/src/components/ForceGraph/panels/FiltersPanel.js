@@ -1,7 +1,6 @@
-import { memo, useCallback } from "react";
+import { memo } from "react";
 import { useDispatch } from "react-redux";
-import { setEdgeFilters } from "../../../store";
-import EdgeFilterSelector from "../../EdgeFilterSelector";
+import { updateEdgeFilter } from "../../../store";
 import FilterableDropdown from "../../FilterableDropdown/FilterableDropdown";
 
 /**
@@ -16,15 +15,6 @@ const FiltersPanel = ({
   onCollectionChange,
 }) => {
   const dispatch = useDispatch();
-
-  // Handle edge filter changes from EdgeFilterSelector.
-  // Dispatches a partial update; the reducer merges it into existing filters.
-  const handleEdgeFilterChange = useCallback(
-    (propertyName, values) => {
-      dispatch(setEdgeFilters({ [propertyName]: values }));
-    },
-    [dispatch],
-  );
 
   return (
     // biome-ignore lint/correctness/useUniqueElementIds: legacy id
@@ -48,15 +38,32 @@ const FiltersPanel = ({
         />
       </div>
 
-      <div className="edge-filter-section">
-        <h3>Edge Filters:</h3>
-        <EdgeFilterSelector
-          availableFilters={availableEdgeFilters}
-          selectedFilters={settings.edgeFilters}
-          onFilterChange={handleEdgeFilterChange}
-          status={edgeFilterStatus}
-        />
-      </div>
+      {edgeFilterStatus === "loading" && (
+        <output className="option-group" aria-live="polite">
+          Loading edge filters...
+        </output>
+      )}
+
+      {edgeFilterStatus === "failed" && (
+        <div className="option-group error-message" role="alert">
+          Failed to load edge filters.
+        </div>
+      )}
+
+      {edgeFilterStatus === "succeeded" && Object.keys(availableEdgeFilters).length > 0 && (
+        <div className="edge-filter-section">
+          <h3>Edge Filters:</h3>
+          {Object.entries(availableEdgeFilters).map(([field, values]) => (
+            <FilterableDropdown
+              key={field}
+              label={field}
+              options={values}
+              selectedOptions={settings.edgeFilters[field] || []}
+              onOptionToggle={(value) => dispatch(updateEdgeFilter({ field, value }))}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };

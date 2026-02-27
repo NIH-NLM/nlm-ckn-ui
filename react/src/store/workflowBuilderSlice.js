@@ -120,6 +120,31 @@ const setPhaseResult = (state, phaseId, result) => {
 };
 
 /**
+ * Filters a graph result to only include nodes belonging to the specified
+ * collections, and prunes links whose endpoints are no longer present.
+ * Returns the original result unchanged if returnCollections is empty.
+ * @param {{ nodes: Array, links: Array }} result - The graph result to filter.
+ * @param {Array<string>} returnCollections - Collection prefixes to keep.
+ * @returns {{ nodes: Array, links: Array }} The filtered (or original) result.
+ */
+const filterResultByCollections = (result, returnCollections) => {
+  if (!returnCollections || returnCollections.length === 0) {
+    return result;
+  }
+  const filteredNodes = result.nodes.filter((node) => {
+    const collection = node._id?.split("/")[0];
+    return returnCollections.includes(collection);
+  });
+  const remainingIds = new Set(filteredNodes.map((n) => n._id));
+  const filteredLinks = result.links.filter((link) => {
+    const fromId = link._from || (typeof link.source === "object" ? link.source._id : link.source);
+    const toId = link._to || (typeof link.target === "object" ? link.target._id : link.target);
+    return remainingIds.has(fromId) && remainingIds.has(toId);
+  });
+  return { nodes: filteredNodes, links: filteredLinks };
+};
+
+/**
  * Async thunk for executing a single phase.
  * Takes a phaseId and looks up the phase from current state, avoiding stale
  * index references if phases are modified during execution.
@@ -186,23 +211,10 @@ export const executePhase = createAsyncThunk(
 
       // Apply combine set operation
       const combineOp = phase.phaseCombineOperation || "Intersection";
-      let combinedResult = performSetOperation(sourceGraphs, combineOp);
-
-      // Apply returnCollections filter
-      const returnCollections = phase.settings.returnCollections || [];
-      if (returnCollections.length > 0) {
-        const filteredNodes = combinedResult.nodes.filter((node) => {
-          const collection = node._id?.split("/")[0];
-          return returnCollections.includes(collection);
-        });
-        const remainingIds = new Set(filteredNodes.map((n) => n._id));
-        const filteredLinks = combinedResult.links.filter((link) => {
-          const fromId = link._from || (typeof link.source === "object" ? link.source._id : link.source);
-          const toId = link._to || (typeof link.target === "object" ? link.target._id : link.target);
-          return remainingIds.has(fromId) && remainingIds.has(toId);
-        });
-        combinedResult = { nodes: filteredNodes, links: filteredLinks };
-      }
+      const combinedResult = filterResultByCollections(
+        performSetOperation(sourceGraphs, combineOp),
+        phase.settings.returnCollections || [],
+      );
 
       return {
         phaseId: phase.id,
@@ -299,28 +311,10 @@ export const executePhase = createAsyncThunk(
     const mergedResult = performSetOperation(graphsArray, phase.settings.setOperation || "Union");
 
     // Filter results to only include nodes from specified collections (if set)
-    const returnCollections = phase.settings.returnCollections || [];
-    let finalResult = mergedResult;
-
-    if (returnCollections.length > 0) {
-      // Filter nodes to only those in returnCollections
-      const filteredNodes = mergedResult.nodes.filter((node) => {
-        const collection = node._id?.split("/")[0];
-        return returnCollections.includes(collection);
-      });
-
-      // Get the IDs of remaining nodes
-      const remainingNodeIds = new Set(filteredNodes.map((n) => n._id));
-
-      // Filter links to only those where both endpoints are in the return collections
-      const filteredLinks = mergedResult.links.filter((link) => {
-        const fromId = link._from || (typeof link.source === "object" ? link.source._id : link.source);
-        const toId = link._to || (typeof link.target === "object" ? link.target._id : link.target);
-        return remainingNodeIds.has(fromId) && remainingNodeIds.has(toId);
-      });
-
-      finalResult = { nodes: filteredNodes, links: filteredLinks };
-    }
+    const finalResult = filterResultByCollections(
+      mergedResult,
+      phase.settings.returnCollections || [],
+    );
 
     return {
       phaseId: phase.id,
@@ -536,18 +530,6 @@ const workflowBuilderSlice = createSlice({
     },
 
     /**
-     * Set origin nodes for a phase.
-     */
-    setPhaseOriginNodes: (state, action) => {
-      const { phaseId, nodeIds } = action.payload;
-      const phase = state.phases.find((p) => p.id === phaseId);
-      if (phase) {
-        phase.originNodeIds = nodeIds;
-        clearPhaseResult(state, phaseId);
-      }
-    },
-
-    /**
      * Add an origin node to a phase.
      */
     addPhaseOriginNode: (state, action) => {
@@ -609,19 +591,6 @@ const workflowBuilderSlice = createSlice({
     },
 
     /**
-     * Clear per-node settings (revert to shared settings).
-     */
-    clearPerNodeSettings: (state, action) => {
-      const { phaseId } = action.payload;
-      const phase = state.phases.find((p) => p.id === phaseId);
-      if (phase) {
-        phase.perNodeSettings = {};
-        phase.showAdvancedSettings = false;
-        clearPhaseResult(state, phaseId);
-      }
-    },
-
-    /**
      * Set the active graph to display.
      */
     setActiveGraph: (state, action) => {
@@ -631,30 +600,12 @@ const workflowBuilderSlice = createSlice({
     },
 
     /**
-     * Clear all results.
-     */
-    clearResults: (state) => {
-      state.phaseResults = {};
-      state.activeGraph = null;
-      state.activePhaseId = null;
-      for (const phase of state.phases) {
-        phase.result = null;
-      }
-    },
-
-    /**
      * Show preset selector (to change workflow).
      */
     showPresets: (state) => {
       state.showPresetSelector = true;
     },
 
-    /**
-     * Clear error.
-     */
-    clearError: (state) => {
-      state.error = null;
-    },
   },
   extraReducers: (builder) => {
     builder
@@ -735,16 +686,12 @@ export const {
   removePhase,
   updatePhase,
   updatePhaseSettings,
-  setPhaseOriginNodes,
   addPhaseOriginNode,
   removePhaseOriginNode,
   toggleAdvancedSettings,
   updatePerNodeSetting,
-  clearPerNodeSettings,
   setActiveGraph,
-  clearResults,
   showPresets,
-  clearError,
 } = workflowBuilderSlice.actions;
 
 export default workflowBuilderSlice.reducer;
