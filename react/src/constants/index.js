@@ -45,12 +45,10 @@ export {
   PHENOTYPES_ENABLED,
 } from "./graph";
 
-// Workflow builder presets and utilities
+// Workflow builder utilities (presets are fetched from the backend API)
 export {
   createEmptyPhase,
   DEFAULT_PHASE_SETTINGS,
-  PRESET_CATEGORIES,
   QUERY_DEFAULTS,
   UI_DEFAULTS,
-  WORKFLOW_PRESETS,
 } from "./workflowPresets";

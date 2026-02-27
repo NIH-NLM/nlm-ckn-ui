@@ -2,10 +2,9 @@
  * PresetSelector component for displaying and selecting workflow presets.
  *
  * Shows pre-built workflow examples that users can load, explore, and modify.
- * Fetches presets from the backend API, falling back to local constants on error.
+ * Presets and categories are fetched from the backend API.
  */
 
-import { PRESET_CATEGORIES, WORKFLOW_PRESETS } from "constants/index";
 import { memo, useEffect, useMemo, useState } from "react";
 import { fetchWorkflowPresets } from "services";
 
@@ -13,22 +12,29 @@ import { fetchWorkflowPresets } from "services";
  * PresetSelector displays available workflow presets grouped by category.
  */
 const PresetSelector = ({ onSelectPreset, onStartFromScratch }) => {
-  const [presets, setPresets] = useState(WORKFLOW_PRESETS);
+  const [presets, setPresets] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
     fetchWorkflowPresets()
       .then((data) => {
         if (cancelled) return;
-        // Handle both formats: { presets, categories } or flat array
         const presetList = Array.isArray(data) ? data : data?.presets;
-        if (Array.isArray(presetList) && presetList.length > 0) {
+        const categoryList = data?.categories;
+        if (Array.isArray(presetList)) {
           setPresets(presetList);
         }
+        if (Array.isArray(categoryList)) {
+          setCategories(categoryList);
+        }
       })
-      .catch(() => {
-        // Fall back to local WORKFLOW_PRESETS (already set as initial state)
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err?.message || "Failed to load presets.");
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -49,6 +55,22 @@ const PresetSelector = ({ onSelectPreset, onStartFromScratch }) => {
     return groups;
   }, [presets]);
 
+  // Derive display categories: use API categories if available, otherwise
+  // fall back to the order in which categories appear in the presets array.
+  const displayCategories = useMemo(() => {
+    if (categories.length > 0) return categories;
+    const seen = new Set();
+    const derived = [];
+    for (const preset of presets) {
+      const cat = preset.category || "Other";
+      if (!seen.has(cat)) {
+        seen.add(cat);
+        derived.push({ id: cat, label: cat });
+      }
+    }
+    return derived;
+  }, [categories, presets]);
+
   return (
     <div className="preset-selector">
       <div className="preset-selector-header">
@@ -61,9 +83,14 @@ const PresetSelector = ({ onSelectPreset, onStartFromScratch }) => {
 
       {loading ? (
         <div className="preset-loading">Loading presets...</div>
+      ) : error ? (
+        <div className="preset-error">
+          <p>Unable to load presets: {error}</p>
+          <p>You can still build a workflow from scratch.</p>
+        </div>
       ) : (
         <div className="preset-categories">
-          {PRESET_CATEGORIES.map((category) => {
+          {displayCategories.map((category) => {
             const categoryPresets = groupedPresets[category.id];
             if (!categoryPresets || categoryPresets.length === 0) return null;
 

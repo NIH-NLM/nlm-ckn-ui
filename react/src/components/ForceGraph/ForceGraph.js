@@ -3,22 +3,18 @@ import AddToGraphButton from "components/AddToGraphButton";
 import DocumentPopup from "components/DocumentPopup";
 import ForceGraphConstructor from "components/ForceGraphConstructor/ForceGraphConstructor";
 import LoadGraphModal from "components/LoadGraphModal";
-import { useHotkeyHold, useHotkeys } from "hooks";
+import { useGraphDataInit, useHotkeyHold, useHotkeys } from "hooks";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { batch, shallowEqual, useDispatch, useSelector } from "react-redux";
 import { ActionCreators } from "redux-undo";
-import { fetchCollections } from "services";
 import {
   clearGraphData,
   clearNodeToCenter,
   collapseNode,
   expandNode,
   fetchAndProcessGraph,
-  fetchEdgeFilterOptions,
   initializeGraph,
   saveGraph,
-  setAllCollections,
-  setAvailableCollections,
   setGraphData,
   setInitialCollapseList,
   uncollapseNode,
@@ -29,7 +25,6 @@ import {
   hasNodesInRawData,
   isMac,
   LoadingBar,
-  parseCollections,
   performSetOperation,
 } from "utils";
 // Import extracted hooks
@@ -136,23 +131,8 @@ const ForceGraph = ({
   const hasAppliedPropDefaultsRef = useRef(false);
   const isApplyingPropDefaultsRef = useRef(false);
 
-  // Fetches list of available data collections on component mount.
-  useEffect(() => {
-    fetchCollections(settings.graphType).then((data) => {
-      const parsed = parseCollections(data);
-      dispatch(setAvailableCollections(parsed));
-    });
-    fetchCollections("ontologies").then((data) => {
-      const parsed = parseCollections(data);
-      dispatch(setAllCollections(parsed));
-    });
-  }, [dispatch, settings.graphType]);
-
-  // Fetches available edge filter options when component mounts or graph type changes.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: graphType triggers refetch
-  useEffect(() => {
-    dispatch(fetchEdgeFilterOptions());
-  }, [dispatch, settings.graphType]);
+  // Initialize collections and edge filter options (refetches when graphType changes)
+  useGraphDataInit(settings.graphType);
 
   // Apply defaults from settingsFromProps exactly once on initial load.
   useEffect(() => {

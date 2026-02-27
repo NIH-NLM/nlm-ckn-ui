@@ -8,23 +8,20 @@
  */
 
 import { GRAPH_STATUS } from "constants/index";
+import { useGraphDataInit } from "hooks";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchCollections } from "services";
 import {
   addPhase,
   addPhaseOriginNode,
   executePhase,
   executeWorkflow,
-  fetchEdgeFilterOptions,
   fetchNodeDetails,
   initializeWorkflow,
   loadWorkflow,
   removePhase,
   setWorkflowDescription,
   removePhaseOriginNode,
-  setAllCollections,
-  setAvailableCollections,
   setWorkflowName,
   showPresets,
   toggleAdvancedSettings,
@@ -32,7 +29,6 @@ import {
   updatePhase,
   updatePhaseSettings,
 } from "store";
-import { parseCollections } from "utils";
 import PhaseEditor from "./PhaseEditor";
 import PresetSelector from "./PresetSelector";
 
@@ -59,9 +55,12 @@ const WorkflowBuilder = ({ onGraphReady }) => {
   } = useSelector((state) => state.workflowBuilder);
 
   // Get collections and edge filter options from graph state
+  const graphType = useSelector((state) => state.graph.present.settings.graphType);
   const collections = useSelector((state) => state.graph.present.settings.allCollections || []);
   const availableEdgeFilters = useSelector((state) => state.graph.present.availableEdgeFilters);
-  const edgeFilterStatus = useSelector((state) => state.graph.present.edgeFilterStatus);
+
+  // Initialize collections and edge filter options
+  useGraphDataInit(graphType);
 
   // Toast notification state
   const [toastMessage, setToastMessage] = useState(null);
@@ -75,25 +74,6 @@ const WorkflowBuilder = ({ onGraphReady }) => {
   }, [toastMessage]);
 
   // Note: workflow is only initialized when user selects a preset or starts from scratch
-
-  // Fetch edge filter options if not already loaded
-  useEffect(() => {
-    if (edgeFilterStatus === GRAPH_STATUS.IDLE) {
-      dispatch(fetchEdgeFilterOptions());
-    }
-  }, [dispatch, edgeFilterStatus]);
-
-  // Fetch collections if not already loaded
-  useEffect(() => {
-    if (collections.length === 0) {
-      fetchCollections("phenotypes").then((data) => {
-        dispatch(setAvailableCollections(parseCollections(data)));
-      });
-      fetchCollections("ontologies").then((data) => {
-        dispatch(setAllCollections(parseCollections(data)));
-      });
-    }
-  }, [dispatch, collections.length]);
 
   // Fetch node details when origin nodes change
   useEffect(() => {

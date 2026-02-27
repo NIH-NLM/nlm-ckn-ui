@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { downloadBlob } from "utils";
 
 /**
  * Hook for exporting graph to various formats (SVG, PNG, JSON).
@@ -23,14 +24,7 @@ export function useGraphExport(wrapperRef, graphData, originNodeIds) {
         }
         const jsonString = JSON.stringify(graphData, null, 2);
         const blob = new Blob([jsonString], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `${filenameStem}.json`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        downloadBlob(blob, `${filenameStem}.json`);
         return;
       }
 
@@ -45,18 +39,12 @@ export function useGraphExport(wrapperRef, graphData, originNodeIds) {
       });
       svgElement.style.backgroundColor = "";
 
-      const url = URL.createObjectURL(svgBlob);
-
       if (format === "svg") {
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `${filenameStem}.svg`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        downloadBlob(svgBlob, `${filenameStem}.svg`);
         return;
       }
+
+      const url = URL.createObjectURL(svgBlob);
 
       // PNG export
       const img = new Image();
@@ -75,16 +63,13 @@ export function useGraphExport(wrapperRef, graphData, originNodeIds) {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-        const downloadUrl = canvas.toDataURL(`image/${format}`);
-        const filename = `${filenameStem}.${format}`;
-
-        const link = document.createElement("a");
-        link.href = downloadUrl;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        canvas.toBlob(
+          (pngBlob) => {
+            downloadBlob(pngBlob, `${filenameStem}.${format}`);
+            URL.revokeObjectURL(url);
+          },
+          `image/${format}`,
+        );
       };
       img.onerror = () => URL.revokeObjectURL(url);
       img.src = url;

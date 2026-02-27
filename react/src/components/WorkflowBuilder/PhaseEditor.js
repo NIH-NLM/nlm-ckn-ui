@@ -19,7 +19,7 @@ import {
   getCollectionColorByKey,
   getCollectionDisplayName,
   getNodeLabel,
-} from "utils/collectionHelpers";
+} from "utils";
 import NodeSearchInput from "./NodeSearchInput";
 
 /**

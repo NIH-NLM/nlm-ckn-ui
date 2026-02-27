@@ -1,88 +1,39 @@
 import { DEFAULT_GRAPH_TYPE } from "constants/index";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { searchDocuments } from "services";
-import { getCollectionColor, getCollectionDisplayName } from "utils/collectionHelpers";
-import { getAllSearchableFields, getLabel } from "utils";
+import { useCallback, useMemo } from "react";
+import { useSearch } from "hooks";
+import {
+  getCollectionColor,
+  getCollectionDisplayName,
+  getLabel,
+} from "utils";
 
 const NodeSearchInput = ({ onSelectNode, existingNodeIds = [] }) => {
-  const containerRef = useRef(null);
-  const debounceTimeoutRef = useRef(null);
-  const mountedRef = useRef(true);
-  const [input, setInput] = useState("");
-  const [results, setResults] = useState([]);
-  const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const {
+    query,
+    setQuery,
+    results,
+    isOpen,
+    setIsOpen,
+    isLoading,
+    highlightedIndex,
+    containerRef,
+    clearSearch,
+    handleKeyDown: handleSearchKeyDown,
+  } = useSearch(DEFAULT_GRAPH_TYPE);
 
   const existingSet = useMemo(() => new Set(existingNodeIds), [existingNodeIds]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
-
-  // Click-outside to close
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (containerRef.current && !containerRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
-    };
-  }, []);
-
-  const handleInputChange = useCallback((e) => {
-    const value = e.target.value;
-    setInput(value);
-    setHighlightedIndex(-1);
-
-    if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
-
-    if (!value.trim()) {
-      setResults([]);
-      setIsOpen(false);
-      return;
-    }
-
-    setIsLoading(true);
-    debounceTimeoutRef.current = setTimeout(async () => {
-      const searchFields = Array.from(getAllSearchableFields());
-      const data = await searchDocuments(value, DEFAULT_GRAPH_TYPE, searchFields);
-      if (!mountedRef.current) return;
-      setResults(data || []);
-      setIsOpen(true);
-      setIsLoading(false);
-    }, 250);
-  }, []);
 
   const handleSelect = useCallback(
     (nodeId) => {
       onSelectNode(nodeId);
-      setInput("");
-      setResults([]);
-      setIsOpen(false);
-      setHighlightedIndex(-1);
+      clearSearch();
     },
-    [onSelectNode],
+    [onSelectNode, clearSearch],
   );
 
   const handleKeyDown = useCallback(
     (e) => {
-      if (!isOpen || results.length === 0) return;
-
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setHighlightedIndex((prev) => (prev < results.length - 1 ? prev + 1 : 0));
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : results.length - 1));
-      } else if (e.key === "Enter") {
+      if (e.key === "Enter" && isOpen && results.length > 0) {
         e.preventDefault();
         if (highlightedIndex >= 0 && highlightedIndex < results.length) {
           const nodeId = results[highlightedIndex]._id;
@@ -90,13 +41,11 @@ const NodeSearchInput = ({ onSelectNode, existingNodeIds = [] }) => {
             handleSelect(nodeId);
           }
         }
-      } else if (e.key === "Escape") {
-        e.preventDefault();
-        setIsOpen(false);
-        setHighlightedIndex(-1);
+        return;
       }
+      handleSearchKeyDown(e);
     },
-    [isOpen, results, highlightedIndex, existingSet, handleSelect],
+    [isOpen, results, highlightedIndex, existingSet, handleSelect, handleSearchKeyDown],
   );
 
   return (
@@ -104,8 +53,8 @@ const NodeSearchInput = ({ onSelectNode, existingNodeIds = [] }) => {
       <input
         type="text"
         placeholder="Search by name (e.g., dendritic cell)..."
-        value={input}
-        onChange={handleInputChange}
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
         onKeyDown={handleKeyDown}
         onFocus={() => {
           if (results.length > 0) setIsOpen(true);
@@ -114,7 +63,7 @@ const NodeSearchInput = ({ onSelectNode, existingNodeIds = [] }) => {
       {isOpen && (
         <div className="node-search-dropdown">
           {isLoading && <div className="node-search-status">Searching...</div>}
-          {!isLoading && results.length === 0 && input.trim() && (
+          {!isLoading && results.length === 0 && query.trim() && (
             <div className="node-search-status">No results found</div>
           )}
           {!isLoading &&

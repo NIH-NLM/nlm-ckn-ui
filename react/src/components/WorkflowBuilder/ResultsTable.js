@@ -9,12 +9,14 @@
 import React, { memo, useCallback, useMemo, useState } from "react";
 import {
   collectionConfigMap,
+  downloadFile,
+  generateCsv,
   getCollectionColor,
   getCollectionDisplayName,
   getCollectionFields,
   getNodeExternalUrl,
   getNodeLabel,
-} from "utils/collectionHelpers";
+} from "utils";
 
 /**
  * Format a field value for display (handles arrays, objects, etc.)
@@ -31,108 +33,23 @@ const formatFieldValue = (value) => {
   return String(value);
 };
 
-/**
- * Generate CSV content from nodes data.
- */
-const generateNodesCsv = (nodes) => {
-  if (!nodes.length) return "";
+/** Fields to skip when generating nodes CSV. */
+const NODE_SKIP_FIELDS = ["x", "y", "vx", "vy", "fx", "fy", "index"];
 
-  // Collect all unique fields across all nodes
-  const allFields = new Set(["_id", "_key"]);
-  for (const node of nodes) {
-    for (const key of Object.keys(node)) {
-      // Skip internal/display fields
-      if (
-        !key.startsWith("__") &&
-        key !== "x" &&
-        key !== "y" &&
-        key !== "vx" &&
-        key !== "vy" &&
-        key !== "fx" &&
-        key !== "fy" &&
-        key !== "index"
-      ) {
-        allFields.add(key);
-      }
-    }
+/** Fields to skip when generating edges CSV. */
+const EDGE_SKIP_FIELDS = ["source", "target", "index"];
+
+/**
+ * Value transform for edge CSV that resolves _from/_to from source/target when needed.
+ */
+const edgeValueTransform = (field, link) => {
+  if (field === "_from" && !link._from && link.source) {
+    return typeof link.source === "string" ? link.source : link.source._id;
   }
-
-  const fieldList = Array.from(allFields);
-
-  // Build CSV header
-  const header = fieldList.map((f) => `"${f}"`).join(",");
-
-  // Build CSV rows
-  const rows = nodes.map((node) => {
-    return fieldList
-      .map((field) => {
-        let value = node[field];
-        if (value === null || value === undefined) return '""';
-        if (Array.isArray(value)) value = value.join("; ");
-        if (typeof value === "object") value = JSON.stringify(value);
-        // Escape quotes and wrap in quotes
-        return `"${String(value).replace(/"/g, '""')}"`;
-      })
-      .join(",");
-  });
-
-  return [header, ...rows].join("\n");
-};
-
-/**
- * Generate CSV content from edges data.
- */
-const generateEdgesCsv = (links) => {
-  if (!links.length) return "";
-
-  // Collect all unique fields across all edges
-  const allFields = new Set(["_from", "_to", "_id", "_key"]);
-  for (const link of links) {
-    for (const key of Object.keys(link)) {
-      if (!key.startsWith("__") && key !== "source" && key !== "target" && key !== "index") {
-        allFields.add(key);
-      }
-    }
+  if (field === "_to" && !link._to && link.target) {
+    return typeof link.target === "string" ? link.target : link.target._id;
   }
-
-  const fieldList = Array.from(allFields);
-
-  // Build CSV header
-  const header = fieldList.map((f) => `"${f}"`).join(",");
-
-  // Build CSV rows
-  const rows = links.map((link) => {
-    return fieldList
-      .map((field) => {
-        let value = link[field];
-        // Handle source/target objects
-        if (field === "_from" && !value && link.source) {
-          value = typeof link.source === "string" ? link.source : link.source._id;
-        }
-        if (field === "_to" && !value && link.target) {
-          value = typeof link.target === "string" ? link.target : link.target._id;
-        }
-        if (value === null || value === undefined) return '""';
-        if (Array.isArray(value)) value = value.join("; ");
-        if (typeof value === "object") value = JSON.stringify(value);
-        return `"${String(value).replace(/"/g, '""')}"`;
-      })
-      .join(",");
-  });
-
-  return [header, ...rows].join("\n");
-};
-
-/**
- * Download a string as a CSV file.
- */
-const downloadCsv = (content, filename) => {
-  const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(link.href), 100);
+  return link[field];
 };
 
 /**
@@ -201,11 +118,18 @@ const ResultsTable = ({ graphData }) => {
     if (!graphData) return;
 
     if (activeTab === "nodes") {
-      const csv = generateNodesCsv(graphData.nodes || []);
-      downloadCsv(csv, "workflow-nodes.csv");
+      const csv = generateCsv(graphData.nodes || [], {
+        priorityFields: ["_id", "_key"],
+        skipFields: NODE_SKIP_FIELDS,
+      });
+      downloadFile(csv, "workflow-nodes.csv");
     } else {
-      const csv = generateEdgesCsv(graphData.links || []);
-      downloadCsv(csv, "workflow-edges.csv");
+      const csv = generateCsv(graphData.links || [], {
+        priorityFields: ["_from", "_to", "_id", "_key"],
+        skipFields: EDGE_SKIP_FIELDS,
+        valueTransform: edgeValueTransform,
+      });
+      downloadFile(csv, "workflow-edges.csv");
     }
   }, [graphData, activeTab]);
 
