@@ -20,8 +20,11 @@ const PresetSelector = ({ onSelectPreset, onStartFromScratch }) => {
     let cancelled = false;
     fetchWorkflowPresets()
       .then((data) => {
-        if (!cancelled && Array.isArray(data) && data.length > 0) {
-          setPresets(data);
+        if (cancelled) return;
+        // Handle both formats: { presets, categories } or flat array
+        const presetList = Array.isArray(data) ? data : data?.presets;
+        if (Array.isArray(presetList) && presetList.length > 0) {
+          setPresets(presetList);
         }
       })
       .catch(() => {

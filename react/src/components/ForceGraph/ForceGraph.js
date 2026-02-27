@@ -5,10 +5,11 @@ import ForceGraphConstructor from "components/ForceGraphConstructor/ForceGraphCo
 import LoadGraphModal from "components/LoadGraphModal";
 import { useHotkeyHold, useHotkeys } from "hooks";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { shallowEqual, useDispatch, useSelector } from "react-redux";
+import { batch, shallowEqual, useDispatch, useSelector } from "react-redux";
 import { ActionCreators } from "redux-undo";
 import { fetchCollections } from "services";
 import {
+  clearGraphData,
   clearNodeToCenter,
   collapseNode,
   expandNode,
@@ -58,9 +59,10 @@ const ForceGraph = ({
   const svgRef = useRef();
   const graphInstanceRef = useRef(null);
   const hasInitializedGraph = useRef(false);
-  // Track the node IDs we've rendered to prevent infinite loops when setGraphData triggers effect
+  // Track the node and link IDs we've rendered to prevent infinite loops when setGraphData triggers effect
   // (simulation end dispatches setGraphData with same nodes, causing re-render loop)
   const lastRenderedNodeIdsRef = useRef(null);
+  const lastRenderedLinkIdsRef = useRef(null);
 
   // Selects origin node IDs from nodesSlice for NodesSlice driven graphs.
   const _nodesSliceOriginNodeIds = useSelector((state) => state.nodesSlice.originNodeIds);
@@ -76,6 +78,7 @@ const ForceGraph = ({
     collapsed,
     availableEdgeFilters,
     edgeFilterStatus,
+    source,
   } = useSelector((state) => state.graph.present, shallowEqual);
 
   // Select undo and redo state
@@ -220,6 +223,12 @@ const ForceGraph = ({
 
   // Triggers new data fetch when graph is explicitly initialized in the slice.
   useEffect(() => {
+    // If the existing data came from a workflow, clear it so the graph page
+    // can perform a fresh initialization instead of showing stale data.
+    if (graphData?.nodes?.length > 0 && source === "workflow") {
+      dispatch(clearGraphData());
+      return;
+    }
     // Skip if we already have graph data (e.g., from WorkflowBuilder).
     if (graphData?.nodes?.length > 0) return;
     // Skip if a fetch is already in progress (prevents StrictMode double-fire).
@@ -279,7 +288,7 @@ const ForceGraph = ({
 
   const handleSimulationEnd = useCallback(
     (finalNodes, finalLinks) => {
-      dispatch(setGraphData({ nodes: finalNodes, links: finalLinks }));
+      dispatch(setGraphData({ nodes: finalNodes, links: finalLinks, skipUndo: true }));
     },
     [dispatch],
   );
@@ -346,14 +355,17 @@ const ForceGraph = ({
       // render it immediately since we won't get another action to trigger rendering.
       // Use updateGraph (not restoreGraph) to run the simulation for fresh data.
       if (graphData?.nodes?.length > 0) {
-        // Track rendered node IDs to prevent duplicate renders (StrictMode, simulation end)
+        // Track rendered node and link IDs to prevent duplicate renders (StrictMode, simulation end)
         lastRenderedNodeIdsRef.current = new Set(graphData.nodes.map((n) => n._id || n.id));
+        lastRenderedLinkIdsRef.current = new Set(graphData.links.map((l) => l._id || `${l.source}-${l.target}`));
         // Mark as initialized to prevent the initialization effect from triggering
         // fetchAndProcessGraph — we already have the data we need.
         hasInitializedGraph.current = true;
         // Set display settings to reflect workflow results (depth 0, no donuts)
-        dispatch(updateSetting({ setting: "useFocusNodes", value: false }));
-        dispatch(updateSetting({ setting: "depth", value: 0 }));
+        batch(() => {
+          dispatch(updateSetting({ setting: "useFocusNodes", value: false }));
+          dispatch(updateSetting({ setting: "depth", value: 0 }));
+        });
         newGraphInstance.updateGraph({
           newOriginNodeIds: originNodeIds,
           newNodes: graphData.nodes,
@@ -420,10 +432,13 @@ const ForceGraph = ({
             labelStates: settings.labelStates,
           });
 
-          // Track rendered node IDs so the subsequent setGraphData from
+          // Track rendered node and link IDs so the subsequent setGraphData from
           // onSimulationEnd doesn't trigger a redundant updateGraph call.
           lastRenderedNodeIdsRef.current = new Set(
             processedData.nodes.map((n) => n._id || n.id),
+          );
+          lastRenderedLinkIdsRef.current = new Set(
+            processedData.links.map((l) => l._id || `${l.source}-${l.target}`),
           );
 
           if (nodeToCenter) {
@@ -437,20 +452,28 @@ const ForceGraph = ({
           // the instance was just created in this same effect run.
           const currentInstance = graphInstanceRef.current;
           if (currentInstance && graphData?.nodes?.length > 0) {
-            // Skip if we already rendered this exact set of nodes.
+            // Skip if we already rendered this exact set of nodes and links.
             // Prevents duplicate renders from: StrictMode double-mount,
             // simulation end callback, and redundant effect triggers.
             const currentNodeIds = new Set(graphData.nodes.map((n) => n._id || n.id));
-            const lastRendered = lastRenderedNodeIdsRef.current;
-            if (lastRendered && currentNodeIds.size === lastRendered.size) {
-              const allMatch = [...currentNodeIds].every((id) => lastRendered.has(id));
-              if (allMatch) {
-                break;
-              }
+            const currentLinkIds = new Set(graphData.links.map((l) => l._id || `${l.source}-${l.target}`));
+            const lastRenderedNodes = lastRenderedNodeIdsRef.current;
+            const lastRenderedLinks = lastRenderedLinkIdsRef.current;
+
+            const nodesMatch = lastRenderedNodes
+              && currentNodeIds.size === lastRenderedNodes.size
+              && [...currentNodeIds].every((id) => lastRenderedNodes.has(id));
+            const linksMatch = lastRenderedLinks
+              && currentLinkIds.size === lastRenderedLinks.size
+              && [...currentLinkIds].every((id) => lastRenderedLinks.has(id));
+
+            if (nodesMatch && linksMatch) {
+              break;
             }
 
             // Track this render and update the graph
             lastRenderedNodeIdsRef.current = currentNodeIds;
+            lastRenderedLinkIdsRef.current = currentLinkIds;
             currentInstance.updateGraph({
               newOriginNodeIds: originNodeIds,
               newNodes: graphData.nodes,

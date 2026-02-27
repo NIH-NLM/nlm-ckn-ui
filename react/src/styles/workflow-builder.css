@@ -74,7 +74,7 @@
   font-size: var(--font-size-sm);
   color: var(--color-gray-dark);
   white-space: nowrap;
-  transition: all var(--transition-fast);
+  transition: background var(--transition-fast), color var(--transition-fast);
 }
 
 .back-to-presets-btn:hover {
@@ -97,7 +97,7 @@
 .workflow-name-input:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(0, 113, 188, 0.2);
+  box-shadow: 0 0 0 2px rgba(0, 113, 188, 0.2); /* --color-primary with alpha */
 }
 
 .workflow-description-input {
@@ -117,7 +117,7 @@
 .workflow-description-input:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(0, 113, 188, 0.2);
+  box-shadow: 0 0 0 2px rgba(0, 113, 188, 0.2); /* --color-primary with alpha */
 }
 
 .workflow-description-input::placeholder {
@@ -175,6 +175,11 @@
   background: var(--color-gray);
 }
 
+.preset-selector {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-gray-light) var(--color-gray-lighter);
+}
+
 .preset-selector-header h3 {
   margin: 0 0 var(--spacing-sm) 0;
   color: var(--color-text);
@@ -222,7 +227,7 @@
   border-radius: var(--radius-md);
   cursor: pointer;
   text-align: left;
-  transition: all var(--transition-fast);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
@@ -271,7 +276,6 @@
 .phases-container {
   display: flex;
   flex-direction: column;
-  gap: 0;
   flex: 1;
   overflow-y: auto;
   min-height: 0;
@@ -319,7 +323,7 @@
 
 .phase-editor.executing {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(0, 113, 188, 0.2);
+  box-shadow: 0 0 0 2px rgba(0, 113, 188, 0.2); /* --color-primary with alpha */
 }
 
 .phase-header {
@@ -350,6 +354,7 @@
 .phase-name-input:focus {
   outline: none;
   border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(0, 113, 188, 0.2); /* --color-primary with alpha */
 }
 
 .phase-delete-btn {
@@ -364,7 +369,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all var(--transition-fast);
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .phase-delete-btn:hover {
@@ -472,6 +477,7 @@
 .node-search-input input:focus {
   outline: none;
   border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(0, 113, 188, 0.2); /* --color-primary with alpha */
 }
 
 .node-search-dropdown {
@@ -519,6 +525,10 @@
   cursor: default;
 }
 
+.node-search-result.highlighted {
+  background: var(--color-gray-lightest);
+}
+
 .node-search-collection-badge {
   flex-shrink: 0;
   display: inline-block;
@@ -541,7 +551,7 @@
 
 .node-search-id {
   flex-shrink: 0;
-  font-family: monospace;
+  font-family: var(--font-family-mono);
   font-size: var(--font-size-xs);
   color: var(--color-gray);
 }
@@ -551,7 +561,7 @@
   padding: var(--spacing-md);
   background: var(--color-gray-lightest);
   border-radius: var(--radius-md);
-  border-left: 3px solid var(--color-gold, #f59e0b);
+  border-left: 3px solid var(--color-gold, #fdb81e);
 }
 
 .multi-phase-selection {
@@ -578,17 +588,17 @@
 
 /* Combine phase visual distinction */
 .phase-editor.combine-phase {
-  border-left: 3px solid var(--color-gold, #f59e0b);
+  border-left: 3px solid var(--color-gold, #fdb81e);
 }
 
 /* Combine connector */
 .phase-connector.combine-connector .connector-label {
-  color: var(--color-gold, #f59e0b);
+  color: var(--color-gold, #fdb81e);
   font-weight: 600;
 }
 
 .phase-connector.combine-connector .connector-arrow {
-  color: var(--color-gold, #f59e0b);
+  color: var(--color-gold, #fdb81e);
 }
 
 /* Collection Origin */
@@ -686,6 +696,7 @@
 .setting-item input:focus {
   outline: none;
   border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(0, 113, 188, 0.2); /* --color-primary with alpha */
 }
 
 .toggle-label {
@@ -743,7 +754,7 @@
 }
 
 .execute-phase-btn.completed {
-  background: var(--color-green, #2e7d32);
+  background: var(--color-green, #2e8540);
 }
 
 .phase-result-summary {
@@ -789,11 +800,11 @@
   cursor: pointer;
   font-size: var(--font-size-sm);
   font-weight: 500;
-  transition: all var(--transition-fast);
+  transition: background var(--transition-fast), color var(--transition-fast);
 }
 
 .add-phase-btn:hover {
-  background: rgba(0, 113, 188, 0.1);
+  background: rgba(0, 113, 188, 0.1); /* --color-primary with alpha */
 }
 
 .execute-workflow-btn {
@@ -870,7 +881,7 @@
   line-height: var(--line-height-relaxed);
 }
 
-.loading-indicator {
+.wb-loading-indicator {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
@@ -914,7 +925,7 @@
    ========================================================================== */
 
 .workflow-builder-sidebar {
-  height: calc(100vh - 200px);
+  height: calc(100vh - 200px); /* 200px accounts for header + nav + spacing */
   display: flex;
   flex-direction: column;
 }
@@ -936,6 +947,11 @@
 
 .phases-container::-webkit-scrollbar-thumb:hover {
   background: var(--color-gray-light);
+}
+
+.phases-container {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-gray-light) var(--color-gray-lighter);
 }
 
 /* ==========================================================================
@@ -1012,7 +1028,7 @@
 
 .workflow-builder-results-area {
   min-height: 500px;
-  max-height: calc(100vh - 200px);
+  max-height: calc(100vh - 200px); /* 200px accounts for header + nav + spacing */
   background: var(--color-white);
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-gray-lighter);
@@ -1039,7 +1055,7 @@
   font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--color-gray);
-  transition: all var(--transition-fast);
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .phase-tab:hover {
@@ -1085,7 +1101,7 @@
   font-size: var(--font-size-base);
   font-weight: 500;
   color: var(--color-gray);
-  transition: all var(--transition-fast);
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .view-tab:hover {
@@ -1110,7 +1126,7 @@
 .results-view-content.graph-view {
   padding: 0;
   min-height: 500px;
-  height: 600px; /* Fixed height for graph container */
+  height: calc(100vh - 300px); /* Responsive graph height */
   display: flex;
   flex-direction: column;
 }
@@ -1160,12 +1176,6 @@
 }
 
 /* Results Sub-Tabs (Nodes / Edges) */
-.results-tabs {
-  display: flex;
-  gap: var(--spacing-xs);
-  margin-bottom: var(--spacing-md);
-}
-
 .results-tab {
   padding: var(--spacing-sm) var(--spacing-md);
   background: var(--color-gray-lightest);
@@ -1175,7 +1185,7 @@
   font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--color-gray-dark);
-  transition: all var(--transition-fast);
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .results-tab:hover {
@@ -1230,7 +1240,7 @@
 }
 
 .results-table .id-cell {
-  font-family: monospace;
+  font-family: var(--font-family-mono);
   font-size: var(--font-size-xs);
   color: var(--color-gray);
   max-width: 200px;
@@ -1303,7 +1313,7 @@
   font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--color-gray-dark);
-  transition: all var(--transition-fast);
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .download-csv-btn:hover {
@@ -1337,7 +1347,7 @@
   font-size: var(--font-size-base);
   font-weight: 600;
   color: var(--color-gray-dark);
-  transition: all var(--transition-fast);
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .expand-btn:hover {
@@ -1346,7 +1356,7 @@
 }
 
 .results-table tr.expanded {
-  background: var(--color-primary-lightest, rgba(0, 113, 188, 0.05));
+  background: rgba(0, 113, 188, 0.05); /* --color-primary with alpha */
 }
 
 .expanded-row {
@@ -1392,12 +1402,12 @@
    External Links
    ========================================================================== */
 
-.external-link {
+.wb-external-link {
   color: var(--color-primary);
   text-decoration: none;
 }
 
-.external-link:hover {
+.wb-external-link:hover {
   text-decoration: underline;
 }
 
@@ -1424,8 +1434,8 @@
   left: 50%;
   transform: translateX(-50%);
   padding: var(--spacing-sm) var(--spacing-lg);
-  background: #1a1a2e;
-  color: #ffffff;
+  background: var(--color-base-darkest, #1a1a2e);
+  color: var(--color-white);
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -1442,4 +1452,25 @@
     opacity: 1;
     transform: translateX(-50%) translateY(0);
   }
+}
+
+/* ==========================================================================
+   Focus Styles (Accessibility)
+   ========================================================================== */
+
+.preset-card:focus-visible,
+.back-to-presets-btn:focus-visible,
+.share-btn:focus-visible,
+.execute-phase-btn:focus-visible,
+.execute-workflow-btn:focus-visible,
+.add-phase-btn:focus-visible,
+.phase-tab:focus-visible,
+.view-tab:focus-visible,
+.results-tab:focus-visible,
+.expand-btn:focus-visible,
+.node-search-result:focus-visible,
+.phase-delete-btn:focus-visible,
+.download-csv-btn:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
 }

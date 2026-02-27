@@ -9,72 +9,18 @@
  * - Execute action
  */
 
-import collMaps from "assets/nlm-ckn-collection-maps.json";
 import EdgeFilterSelector from "components/EdgeFilterSelector";
 import FilterableDropdown from "components/FilterableDropdown";
 import { PHENOTYPES_ENABLED } from "constants/index";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
+import {
+  getCollectionColor,
+  getCollectionColorByKey,
+  getCollectionDisplayName,
+  getNodeLabel,
+} from "utils/collectionHelpers";
 import NodeSearchInput from "./NodeSearchInput";
-
-// Build collection config map from collection maps JSON (module-level for efficiency)
-const collectionConfigMap = new Map();
-for (const [key, value] of collMaps.maps) {
-  collectionConfigMap.set(key, value);
-}
-
-/**
- * Get the collection color for a node ID.
- * @param {string} nodeId - The node ID (e.g., "CL/0000540")
- * @returns {string} The hex color code
- */
-const getCollectionColor = (nodeId) => {
-  const collection = nodeId?.split("/")[0] || "";
-  return collectionConfigMap.get(collection)?.color || "#666666";
-};
-
-const getCollectionColorByKey = (collectionKey) => {
-  return collectionConfigMap.get(collectionKey)?.color || null;
-};
-
-const getCollectionDisplayName = (collectionKey) => {
-  return collectionConfigMap.get(collectionKey)?.display_name || collectionKey;
-};
-
-/**
- * Get the display label for a node using the collection's individual_labels config.
- * Tries each field in order until one has a value.
- * @param {Object} nodeInfo - The node data object (may be partial or null)
- * @param {string} nodeId - The node ID as fallback
- * @returns {string} The display label
- */
-const getNodeLabel = (nodeInfo, nodeId) => {
-  if (!nodeInfo) return nodeId;
-
-  const collection = nodeId?.split("/")[0] || "";
-  const config = collectionConfigMap.get(collection);
-
-  if (!config?.individual_labels) {
-    // Fallback if no config
-    return nodeInfo.label || nodeInfo.name || nodeInfo._key || nodeId;
-  }
-
-  for (const labelConfig of config.individual_labels) {
-    let value = nodeInfo[labelConfig.field_to_use];
-    if (value !== undefined && value !== null && value !== "") {
-      // Apply transformations if specified
-      if (labelConfig.to_be_replaced && labelConfig.replace_with !== undefined) {
-        value = String(value).split(labelConfig.to_be_replaced).join(labelConfig.replace_with);
-      }
-      if (labelConfig.make_lower_case) {
-        value = String(value).toLowerCase();
-      }
-      return String(value);
-    }
-  }
-
-  return nodeId;
-};
 
 /**
  * PhaseEditor displays and manages settings for a single workflow phase.

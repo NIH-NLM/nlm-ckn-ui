@@ -8,7 +8,7 @@
  * - Used by both ForceGraph FiltersPanel and WorkflowBuilder PhaseEditor
  */
 
-import { memo, useCallback, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import "./EdgeFilterSelector.css";
 
 /**
@@ -35,7 +35,7 @@ const EdgeFilterSelector = ({
   const properties = useMemo(() => Object.keys(availableFilters), [availableFilters]);
 
   // Set default property if not set and properties are available
-  useMemo(() => {
+  useEffect(() => {
     if (!selectedProperty && properties.length > 0) {
       setSelectedProperty(properties[0]);
     }

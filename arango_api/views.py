@@ -270,6 +270,8 @@ class WorkflowExecuteView(APIView):
                 )
 
             if result.get("errors"):
+                # HTTP 207 Multi-Status: some phases succeeded while others
+                # failed, so neither 200 nor 4xx/5xx fully describes the outcome.
                 return Response(result, status=207)
             return Response(result)
 
@@ -288,6 +290,9 @@ class WorkflowPresetsView(APIView):
     """Return pre-built workflow presets (query-only schema)."""
 
     def get(self, request):
-        from arango_api.workflow_presets import WORKFLOW_PRESETS
+        from arango_api.workflow_presets import PRESET_CATEGORIES, WORKFLOW_PRESETS
 
-        return Response(WORKFLOW_PRESETS)
+        return Response({
+            "presets": WORKFLOW_PRESETS,
+            "categories": PRESET_CATEGORIES,
+        })

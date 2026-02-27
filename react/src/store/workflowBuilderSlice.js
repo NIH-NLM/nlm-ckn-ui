@@ -5,6 +5,11 @@
  * - Workflow configuration (phases, settings)
  * - Phase execution and results
  * - Loading and saving presets
+ *
+ * Results storage: `state.phaseResults[phaseId]` is the source of truth for
+ * phase results. `phase.result` is a convenience reference that is ALWAYS
+ * derived from `phaseResults`. Any code that clears or sets results must
+ * update BOTH to keep them in sync.
  */
 
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
@@ -17,6 +22,20 @@ import { performSetOperation } from "../utils";
  * @returns {string} A unique identifier.
  */
 const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+
+/**
+ * Creates a new empty phase and links it to the last phase in the given array.
+ * Wraps createEmptyPhase to consolidate previousPhaseId logic.
+ * @param {Array} existingPhases - The current phases array.
+ * @returns {Object} A new phase object with previousPhaseId set.
+ */
+const createLinkedPhase = (existingPhases) => {
+  const newPhase = createEmptyPhase(existingPhases.length);
+  if (existingPhases.length > 0) {
+    newPhase.previousPhaseId = existingPhases[existingPhases.length - 1].id;
+  }
+  return newPhase;
+};
 
 /**
  * Filters nodes from a phase result based on the filter type.
@@ -47,17 +66,72 @@ const filterNodesForNextPhase = (nodes, filter, originNodeIds = []) => {
 };
 
 /**
+ * Recursively invalidates cached results for all phases downstream of the
+ * given phase. A phase is downstream if its previousPhaseId or
+ * previousPhaseIds includes the given phaseId, or if it transitively depends
+ * on such a phase.
+ * @param {Object} state - The workflowBuilder state (Immer draft).
+ * @param {string} phaseId - The phase whose downstream dependents to invalidate.
+ */
+const invalidateDownstream = (state, phaseId) => {
+  for (const phase of state.phases) {
+    if (
+      phase.previousPhaseId === phaseId ||
+      (phase.previousPhaseIds && phase.previousPhaseIds.includes(phaseId))
+    ) {
+      if (state.phaseResults[phase.id]) {
+        delete state.phaseResults[phase.id];
+        // phase.result is a convenience mirror of phaseResults — clear both
+        phase.result = null;
+        invalidateDownstream(state, phase.id); // recurse
+      }
+    }
+  }
+};
+
+/**
+ * Helper to clear results for a phase. Ensures both phaseResults and
+ * phase.result are always cleared together.
+ * @param {Object} state - The workflowBuilder state (Immer draft).
+ * @param {string} phaseId - The phase ID to clear results for.
+ */
+const clearPhaseResult = (state, phaseId) => {
+  delete state.phaseResults[phaseId];
+  const phase = state.phases.find((p) => p.id === phaseId);
+  if (phase) {
+    phase.result = null;
+  }
+};
+
+/**
+ * Helper to set results for a phase. Writes to phaseResults (source of truth)
+ * and mirrors the value to phase.result for convenience.
+ * @param {Object} state - The workflowBuilder state (Immer draft).
+ * @param {string} phaseId - The phase ID to set results for.
+ * @param {Object} result - The result data.
+ */
+const setPhaseResult = (state, phaseId, result) => {
+  state.phaseResults[phaseId] = result;
+  // phase.result is a convenience mirror — always derived from phaseResults
+  const phase = state.phases.find((p) => p.id === phaseId);
+  if (phase) {
+    phase.result = state.phaseResults[phaseId];
+  }
+};
+
+/**
  * Async thunk for executing a single phase.
- * Takes phase config and optionally uses previous phase results for origin nodes.
+ * Takes a phaseId and looks up the phase from current state, avoiding stale
+ * index references if phases are modified during execution.
  */
 export const executePhase = createAsyncThunk(
   "workflowBuilder/executePhase",
-  async ({ phaseIndex }, { getState }) => {
+  async ({ phaseId }, { getState }) => {
     const { phases, phaseResults } = getState().workflowBuilder;
-    const phase = phases[phaseIndex];
+    const phase = phases.find((p) => p.id === phaseId);
 
     if (!phase) {
-      throw new Error(`Phase at index ${phaseIndex} not found`);
+      throw new Error(`Phase with id ${phaseId} not found`);
     }
 
     // Return cached result if available (cache is cleared when settings change)
@@ -65,7 +139,6 @@ export const executePhase = createAsyncThunk(
     if (cachedResult) {
       return {
         phaseId: phase.id,
-        phaseIndex,
         result: cachedResult,
         originNodeIds: phase._executedOriginNodeIds || phase.originNodeIds,
         cached: true,
@@ -133,7 +206,6 @@ export const executePhase = createAsyncThunk(
 
       return {
         phaseId: phase.id,
-        phaseIndex,
         result: combinedResult,
         originNodeIds: sourcePhaseIds,
       };
@@ -252,7 +324,6 @@ export const executePhase = createAsyncThunk(
 
     return {
       phaseId: phase.id,
-      phaseIndex,
       result: finalResult,
       originNodeIds, // Store which nodes were actually used
     };
@@ -283,19 +354,23 @@ export const fetchNodeDetails = createAsyncThunk(
 
 /**
  * Async thunk for executing all phases in sequence.
+ * Captures phase IDs at the start to avoid stale index references if
+ * phases are modified during execution.
  */
 export const executeWorkflow = createAsyncThunk(
   "workflowBuilder/executeWorkflow",
   async (_, { getState, dispatch }) => {
     const { phases } = getState().workflowBuilder;
+    const phaseIds = phases.map((p) => p.id);
     const results = {};
 
-    for (let i = 0; i < phases.length; i++) {
-      const action = await dispatch(executePhase({ phaseIndex: i }));
+    for (let i = 0; i < phaseIds.length; i++) {
+      const phaseId = phaseIds[i];
+      const action = await dispatch(executePhase({ phaseId }));
       if (executePhase.rejected.match(action)) {
         throw new Error(`Phase ${i + 1} failed: ${action.error.message}`);
       }
-      results[phases[i].id] = action.payload.result;
+      results[phaseId] = action.payload.result;
     }
 
     return results;
@@ -312,7 +387,7 @@ const initialState = {
   // Phases configuration
   phases: [createEmptyPhase(0)],
 
-  // Execution results keyed by phase ID
+  // Execution results keyed by phase ID (source of truth for results)
   phaseResults: {},
 
   // Node details cache (nodeId -> node object with label, etc.)
@@ -398,14 +473,10 @@ const workflowBuilderSlice = createSlice({
     },
 
     /**
-     * Add a new phase.
+     * Add a new phase, automatically linked to the last existing phase.
      */
     addPhase: (state) => {
-      const newPhase = createEmptyPhase(state.phases.length);
-      // Link to previous phase by default
-      if (state.phases.length > 0) {
-        newPhase.previousPhaseId = state.phases[state.phases.length - 1].id;
-      }
+      const newPhase = createLinkedPhase(state.phases);
       state.phases.push(newPhase);
     },
 
@@ -433,8 +504,8 @@ const workflowBuilderSlice = createSlice({
           }
         }
 
-        // Clean up results for removed phase
-        delete state.phaseResults[phaseId];
+        // Clean up results for removed phase (clear both stores)
+        clearPhaseResult(state, phaseId);
       }
     },
 
@@ -446,9 +517,8 @@ const workflowBuilderSlice = createSlice({
       const phase = state.phases.find((p) => p.id === phaseId);
       if (phase) {
         Object.assign(phase, updates);
-        // Clear result when phase config changes
-        phase.result = null;
-        delete state.phaseResults[phaseId];
+        // Clear result when phase config changes (both stores)
+        clearPhaseResult(state, phaseId);
       }
     },
 
@@ -460,9 +530,8 @@ const workflowBuilderSlice = createSlice({
       const phase = state.phases.find((p) => p.id === phaseId);
       if (phase) {
         phase.settings[setting] = value;
-        // Clear result when settings change
-        phase.result = null;
-        delete state.phaseResults[phaseId];
+        // Clear result when settings change (both stores)
+        clearPhaseResult(state, phaseId);
       }
     },
 
@@ -474,8 +543,7 @@ const workflowBuilderSlice = createSlice({
       const phase = state.phases.find((p) => p.id === phaseId);
       if (phase) {
         phase.originNodeIds = nodeIds;
-        phase.result = null;
-        delete state.phaseResults[phaseId];
+        clearPhaseResult(state, phaseId);
       }
     },
 
@@ -487,8 +555,7 @@ const workflowBuilderSlice = createSlice({
       const phase = state.phases.find((p) => p.id === phaseId);
       if (phase && !phase.originNodeIds.includes(nodeId)) {
         phase.originNodeIds.push(nodeId);
-        phase.result = null;
-        delete state.phaseResults[phaseId];
+        clearPhaseResult(state, phaseId);
       }
     },
 
@@ -504,8 +571,7 @@ const workflowBuilderSlice = createSlice({
         if (phase.perNodeSettings) {
           delete phase.perNodeSettings[nodeId];
         }
-        phase.result = null;
-        delete state.phaseResults[phaseId];
+        clearPhaseResult(state, phaseId);
       }
     },
 
@@ -538,8 +604,7 @@ const workflowBuilderSlice = createSlice({
           phase.perNodeSettings[nodeId] = {};
         }
         phase.perNodeSettings[nodeId][setting] = value;
-        phase.result = null;
-        delete state.phaseResults[phaseId];
+        clearPhaseResult(state, phaseId);
       }
     },
 
@@ -552,8 +617,7 @@ const workflowBuilderSlice = createSlice({
       if (phase) {
         phase.perNodeSettings = {};
         phase.showAdvancedSettings = false;
-        phase.result = null;
-        delete state.phaseResults[phaseId];
+        clearPhaseResult(state, phaseId);
       }
     },
 
@@ -596,8 +660,8 @@ const workflowBuilderSlice = createSlice({
     builder
       // Execute single phase
       .addCase(executePhase.pending, (state, action) => {
-        const { phaseIndex } = action.meta.arg;
-        const phase = state.phases[phaseIndex];
+        const { phaseId } = action.meta.arg;
+        const phase = state.phases.find((p) => p.id === phaseId);
         // Skip loading state if we have a cached result
         if (phase && state.phaseResults[phase.id]) return;
         state.status = GRAPH_STATUS.LOADING;
@@ -609,31 +673,19 @@ const workflowBuilderSlice = createSlice({
         state.status = GRAPH_STATUS.SUCCEEDED;
         state.executingPhaseId = null;
 
-        // Store result
-        state.phaseResults[phaseId] = result;
+        // Store result in phaseResults (source of truth) and mirror to phase.result
+        setPhaseResult(state, phaseId, result);
 
-        // Update the phase with the result
+        // Store the actual origin nodes used (important for chained phases)
         const phase = state.phases.find((p) => p.id === phaseId);
         if (phase) {
-          phase.result = result;
-          // Store the actual origin nodes used (important for chained phases)
           phase._executedOriginNodeIds = originNodeIds;
         }
 
-        // If this was a fresh fetch (not cached), clear downstream phase caches
-        // since their inputs may have changed
+        // If this was a fresh fetch (not cached), recursively clear downstream
+        // phase caches since their inputs may have changed
         if (!cached) {
-          const phaseIndex = state.phases.findIndex((p) => p.id === phaseId);
-          for (let i = phaseIndex + 1; i < state.phases.length; i++) {
-            const downstreamPhase = state.phases[i];
-            const dependsOnThis =
-              downstreamPhase.previousPhaseId === phaseId ||
-              (downstreamPhase.previousPhaseIds && downstreamPhase.previousPhaseIds.includes(phaseId));
-            if (dependsOnThis) {
-              delete state.phaseResults[downstreamPhase.id];
-              downstreamPhase.result = null;
-            }
-          }
+          invalidateDownstream(state, phaseId);
         }
 
         // Set as active graph
@@ -641,9 +693,15 @@ const workflowBuilderSlice = createSlice({
         state.activeGraph = result;
       })
       .addCase(executePhase.rejected, (state, action) => {
+        const { phaseId } = action.meta.arg;
         state.status = GRAPH_STATUS.FAILED;
         state.executingPhaseId = null;
         state.error = action.error.message;
+        // Find the phase to include its name in error context if needed
+        const phase = state.phases.find((p) => p.id === phaseId);
+        if (phase) {
+          phase._executedOriginNodeIds = null;
+        }
       })
 
       // Execute full workflow

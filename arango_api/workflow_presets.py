@@ -17,6 +17,119 @@ PRESET_CATEGORIES = [
     {"id": "Example: Pulmonary Hypertension", "label": "Example: Pulmonary Hypertension"},
 ]
 
+# ---------------------------------------------------------------------------
+# Shared phase settings for Pulmonary Hypertension presets
+#
+# The four PH presets (ph-subtypes, ph-drugs, ph-drug-targets,
+# ph-drug-target-cell-types) form an incremental chain where each preset
+# extends the previous one with an additional phase. The shared settings
+# below eliminate duplication; each preset composes its phases list by
+# referencing these constants and supplying only the per-phase id/name.
+# ---------------------------------------------------------------------------
+
+_PH_SUBTYPES_PHASE_SETTINGS = {
+    "depth": 9,
+    "edgeDirection": "INBOUND",
+    "allowedCollections": ["MONDO"],
+    "edgeFilters": {"Label": ["SUB_CLASS_OF"], "Source": []},
+    "setOperation": "Union",
+    "graphType": "ontologies",
+    "includeInterNodeEdges": True,
+}
+
+_PH_DRUGS_PHASE_SETTINGS = {
+    "depth": 1,
+    "edgeDirection": "ANY",
+    "allowedCollections": ["CHEMBL"],
+    "edgeFilters": {"Label": ["IS_SUBSTANCE_THAT_TREATS"], "Source": []},
+    "setOperation": "Union",
+    "graphType": "ontologies",
+    "includeInterNodeEdges": True,
+    "returnCollections": ["CHEMBL"],
+}
+
+_PH_TARGETS_PHASE_SETTINGS = {
+    "depth": 2,
+    "edgeDirection": "ANY",
+    "allowedCollections": ["GS", "PR"],
+    "edgeFilters": {
+        "Label": ["MOLECULARLY_INTERACTS_WITH", "PRODUCES"],
+        "Source": [],
+    },
+    "setOperation": "Union",
+    "graphType": "ontologies",
+    "includeInterNodeEdges": True,
+    "returnCollections": ["GS", "PR"],
+}
+
+_PH_CELL_TYPES_PHASE_SETTINGS = {
+    "depth": 1,
+    "edgeDirection": "ANY",
+    "allowedCollections": ["CL"],
+    "edgeFilters": {"Label": [], "Source": []},
+    "setOperation": "Union",
+    "graphType": "ontologies",
+    "includeInterNodeEdges": True,
+    "returnCollections": ["CL"],
+}
+
+
+def _ph_subtypes_phase(phase_id, previous_phase_id=None):
+    """Build the PH disease-subtypes phase with a preset-specific id."""
+    return {
+        "id": phase_id,
+        "name": "Collect PH disease subtypes",
+        "originSource": "manual",
+        "originNodeIds": ["MONDO/0005149"],
+        "previousPhaseId": previous_phase_id,
+        "originFilter": "all",
+        "settings": {**_PH_SUBTYPES_PHASE_SETTINGS},
+        "perNodeSettings": {},
+    }
+
+
+def _ph_drugs_phase(phase_id, previous_phase_id):
+    """Build the PH therapeutic-compounds phase with a preset-specific id."""
+    return {
+        "id": phase_id,
+        "name": "Identify therapeutic compounds",
+        "originSource": "previousPhase",
+        "originNodeIds": [],
+        "previousPhaseId": previous_phase_id,
+        "originFilter": "all",
+        "settings": {**_PH_DRUGS_PHASE_SETTINGS},
+        "perNodeSettings": {},
+    }
+
+
+def _ph_targets_phase(phase_id, previous_phase_id):
+    """Build the PH gene/protein-targets phase with a preset-specific id."""
+    return {
+        "id": phase_id,
+        "name": "Trace to gene/protein targets",
+        "originSource": "previousPhase",
+        "originNodeIds": [],
+        "previousPhaseId": previous_phase_id,
+        "originFilter": "all",
+        "settings": {**_PH_TARGETS_PHASE_SETTINGS},
+        "perNodeSettings": {},
+    }
+
+
+def _ph_cell_types_phase(phase_id, previous_phase_id):
+    """Build the PH expressing-cell-types phase with a preset-specific id."""
+    return {
+        "id": phase_id,
+        "name": "Identify expressing cell types",
+        "originSource": "previousPhase",
+        "originNodeIds": [],
+        "previousPhaseId": previous_phase_id,
+        "originFilter": "all",
+        "settings": {**_PH_CELL_TYPES_PHASE_SETTINGS},
+        "perNodeSettings": {},
+    }
+
+
 WORKFLOW_PRESETS = [
     # -------------------------------------------------------------------------
     # Ontology Exploration
@@ -394,6 +507,10 @@ WORKFLOW_PRESETS = [
 
     # -------------------------------------------------------------------------
     # Example: Pulmonary Hypertension
+    #
+    # These four presets form an incremental chain. Each extends the previous
+    # with one additional phase. Shared phase definitions are composed from
+    # the _ph_*_phase() helpers above to avoid duplication.
     # -------------------------------------------------------------------------
     {
         "id": "ph-subtypes",
@@ -404,24 +521,7 @@ WORKFLOW_PRESETS = [
         ),
         "category": "Example: Pulmonary Hypertension",
         "phases": [
-            {
-                "id": "preset-ph-subtypes-phase-1",
-                "name": "Collect PH disease subtypes",
-                "originSource": "manual",
-                "originNodeIds": ["MONDO/0005149"],
-                "previousPhaseId": None,
-                "originFilter": "all",
-                "settings": {
-                    "depth": 9,
-                    "edgeDirection": "INBOUND",
-                    "allowedCollections": ["MONDO"],
-                    "edgeFilters": {"Label": ["SUB_CLASS_OF"], "Source": []},
-                    "setOperation": "Union",
-                    "graphType": "ontologies",
-                    "includeInterNodeEdges": True,
-                },
-                "perNodeSettings": {},
-            },
+            _ph_subtypes_phase("preset-ph-subtypes-phase-1"),
         ],
     },
     {
@@ -433,43 +533,8 @@ WORKFLOW_PRESETS = [
         ),
         "category": "Example: Pulmonary Hypertension",
         "phases": [
-            {
-                "id": "preset-ph-drugs-phase-1",
-                "name": "Collect PH disease subtypes",
-                "originSource": "manual",
-                "originNodeIds": ["MONDO/0005149"],
-                "previousPhaseId": None,
-                "originFilter": "all",
-                "settings": {
-                    "depth": 9,
-                    "edgeDirection": "INBOUND",
-                    "allowedCollections": ["MONDO"],
-                    "edgeFilters": {"Label": ["SUB_CLASS_OF"], "Source": []},
-                    "setOperation": "Union",
-                    "graphType": "ontologies",
-                    "includeInterNodeEdges": True,
-                },
-                "perNodeSettings": {},
-            },
-            {
-                "id": "preset-ph-drugs-phase-2",
-                "name": "Identify therapeutic compounds",
-                "originSource": "previousPhase",
-                "originNodeIds": [],
-                "previousPhaseId": "preset-ph-drugs-phase-1",
-                "originFilter": "all",
-                "settings": {
-                    "depth": 1,
-                    "edgeDirection": "ANY",
-                    "allowedCollections": ["CHEMBL"],
-                    "edgeFilters": {"Label": ["IS_SUBSTANCE_THAT_TREATS"], "Source": []},
-                    "setOperation": "Union",
-                    "graphType": "ontologies",
-                    "includeInterNodeEdges": True,
-                    "returnCollections": ["CHEMBL"],
-                },
-                "perNodeSettings": {},
-            },
+            _ph_subtypes_phase("preset-ph-drugs-phase-1"),
+            _ph_drugs_phase("preset-ph-drugs-phase-2", "preset-ph-drugs-phase-1"),
         ],
     },
     {
@@ -482,65 +547,9 @@ WORKFLOW_PRESETS = [
         ),
         "category": "Example: Pulmonary Hypertension",
         "phases": [
-            {
-                "id": "preset-ph-targets-phase-1",
-                "name": "Collect PH disease subtypes",
-                "originSource": "manual",
-                "originNodeIds": ["MONDO/0005149"],
-                "previousPhaseId": None,
-                "originFilter": "all",
-                "settings": {
-                    "depth": 9,
-                    "edgeDirection": "INBOUND",
-                    "allowedCollections": ["MONDO"],
-                    "edgeFilters": {"Label": ["SUB_CLASS_OF"], "Source": []},
-                    "setOperation": "Union",
-                    "graphType": "ontologies",
-                    "includeInterNodeEdges": True,
-                },
-                "perNodeSettings": {},
-            },
-            {
-                "id": "preset-ph-targets-phase-2",
-                "name": "Identify therapeutic compounds",
-                "originSource": "previousPhase",
-                "originNodeIds": [],
-                "previousPhaseId": "preset-ph-targets-phase-1",
-                "originFilter": "all",
-                "settings": {
-                    "depth": 1,
-                    "edgeDirection": "ANY",
-                    "allowedCollections": ["CHEMBL"],
-                    "edgeFilters": {"Label": ["IS_SUBSTANCE_THAT_TREATS"], "Source": []},
-                    "setOperation": "Union",
-                    "graphType": "ontologies",
-                    "includeInterNodeEdges": True,
-                    "returnCollections": ["CHEMBL"],
-                },
-                "perNodeSettings": {},
-            },
-            {
-                "id": "preset-ph-targets-phase-3",
-                "name": "Trace to gene/protein targets",
-                "originSource": "previousPhase",
-                "originNodeIds": [],
-                "previousPhaseId": "preset-ph-targets-phase-2",
-                "originFilter": "all",
-                "settings": {
-                    "depth": 2,
-                    "edgeDirection": "ANY",
-                    "allowedCollections": ["GS", "PR"],
-                    "edgeFilters": {
-                        "Label": ["MOLECULARLY_INTERACTS_WITH", "PRODUCES"],
-                        "Source": [],
-                    },
-                    "setOperation": "Union",
-                    "graphType": "ontologies",
-                    "includeInterNodeEdges": True,
-                    "returnCollections": ["GS", "PR"],
-                },
-                "perNodeSettings": {},
-            },
+            _ph_subtypes_phase("preset-ph-targets-phase-1"),
+            _ph_drugs_phase("preset-ph-targets-phase-2", "preset-ph-targets-phase-1"),
+            _ph_targets_phase("preset-ph-targets-phase-3", "preset-ph-targets-phase-2"),
         ],
     },
     {
@@ -552,84 +561,10 @@ WORKFLOW_PRESETS = [
         ),
         "category": "Example: Pulmonary Hypertension",
         "phases": [
-            {
-                "id": "preset-ph-cells-phase-1",
-                "name": "Collect PH disease subtypes",
-                "originSource": "manual",
-                "originNodeIds": ["MONDO/0005149"],
-                "previousPhaseId": None,
-                "originFilter": "all",
-                "settings": {
-                    "depth": 9,
-                    "edgeDirection": "INBOUND",
-                    "allowedCollections": ["MONDO"],
-                    "edgeFilters": {"Label": ["SUB_CLASS_OF"], "Source": []},
-                    "setOperation": "Union",
-                    "graphType": "ontologies",
-                    "includeInterNodeEdges": True,
-                },
-                "perNodeSettings": {},
-            },
-            {
-                "id": "preset-ph-cells-phase-2",
-                "name": "Identify therapeutic compounds",
-                "originSource": "previousPhase",
-                "originNodeIds": [],
-                "previousPhaseId": "preset-ph-cells-phase-1",
-                "originFilter": "all",
-                "settings": {
-                    "depth": 1,
-                    "edgeDirection": "ANY",
-                    "allowedCollections": ["CHEMBL"],
-                    "edgeFilters": {"Label": ["IS_SUBSTANCE_THAT_TREATS"], "Source": []},
-                    "setOperation": "Union",
-                    "graphType": "ontologies",
-                    "includeInterNodeEdges": True,
-                    "returnCollections": ["CHEMBL"],
-                },
-                "perNodeSettings": {},
-            },
-            {
-                "id": "preset-ph-cells-phase-3",
-                "name": "Trace to gene/protein targets",
-                "originSource": "previousPhase",
-                "originNodeIds": [],
-                "previousPhaseId": "preset-ph-cells-phase-2",
-                "originFilter": "all",
-                "settings": {
-                    "depth": 2,
-                    "edgeDirection": "ANY",
-                    "allowedCollections": ["GS", "PR"],
-                    "edgeFilters": {
-                        "Label": ["MOLECULARLY_INTERACTS_WITH", "PRODUCES"],
-                        "Source": [],
-                    },
-                    "setOperation": "Union",
-                    "graphType": "ontologies",
-                    "includeInterNodeEdges": True,
-                    "returnCollections": ["GS", "PR"],
-                },
-                "perNodeSettings": {},
-            },
-            {
-                "id": "preset-ph-cells-phase-4",
-                "name": "Identify expressing cell types",
-                "originSource": "previousPhase",
-                "originNodeIds": [],
-                "previousPhaseId": "preset-ph-cells-phase-3",
-                "originFilter": "all",
-                "settings": {
-                    "depth": 1,
-                    "edgeDirection": "ANY",
-                    "allowedCollections": ["CL"],
-                    "edgeFilters": {"Label": [], "Source": []},
-                    "setOperation": "Union",
-                    "graphType": "ontologies",
-                    "includeInterNodeEdges": True,
-                    "returnCollections": ["CL"],
-                },
-                "perNodeSettings": {},
-            },
+            _ph_subtypes_phase("preset-ph-cells-phase-1"),
+            _ph_drugs_phase("preset-ph-cells-phase-2", "preset-ph-cells-phase-1"),
+            _ph_targets_phase("preset-ph-cells-phase-3", "preset-ph-cells-phase-2"),
+            _ph_cell_types_phase("preset-ph-cells-phase-4", "preset-ph-cells-phase-3"),
         ],
     },
 ]

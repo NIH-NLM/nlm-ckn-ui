@@ -8,7 +8,7 @@
  */
 
 import { GRAPH_STATUS } from "constants/index";
-import { memo, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchCollections } from "services";
 import {
@@ -41,6 +41,7 @@ import PresetSelector from "./PresetSelector";
  */
 const WorkflowBuilder = ({ onGraphReady }) => {
   const dispatch = useDispatch();
+  const requestedNodeIdsRef = useRef(new Set());
 
   // Select workflow builder state
   const {
@@ -96,14 +97,14 @@ const WorkflowBuilder = ({ onGraphReady }) => {
 
   // Fetch node details when origin nodes change
   useEffect(() => {
-    // Collect all origin node IDs that need details
     const allNodeIds = phases.flatMap((phase) => phase.originNodeIds || []);
-    const missingNodeIds = allNodeIds.filter((id) => !nodeDetails[id]);
+    const missingNodeIds = allNodeIds.filter((id) => !requestedNodeIdsRef.current.has(id));
 
     if (missingNodeIds.length > 0) {
+      missingNodeIds.forEach((id) => requestedNodeIdsRef.current.add(id));
       dispatch(fetchNodeDetails({ nodeIds: missingNodeIds }));
     }
-  }, [dispatch, phases, nodeDetails]);
+  }, [dispatch, phases]);
 
   // Notify parent when graph is ready
   useEffect(() => {
@@ -127,8 +128,13 @@ const WorkflowBuilder = ({ onGraphReady }) => {
 
   // Handle going back to preset selection
   const handleBackToPresets = useCallback(() => {
+    if (phases.length > 0) {
+      if (!window.confirm("You'll lose your current workflow configuration. Continue?")) {
+        return;
+      }
+    }
     dispatch(showPresets());
-  }, [dispatch]);
+  }, [dispatch, phases.length]);
 
   // Handle workflow name change
   const handleNameChange = useCallback(
@@ -209,8 +215,8 @@ const WorkflowBuilder = ({ onGraphReady }) => {
 
   // Handle executing a single phase
   const handleExecutePhase = useCallback(
-    (phaseIndex) => {
-      dispatch(executePhase({ phaseIndex }));
+    (phaseId) => {
+      dispatch(executePhase({ phaseId }));
     },
     [dispatch],
   );
@@ -233,14 +239,24 @@ const WorkflowBuilder = ({ onGraphReady }) => {
     };
 
     try {
-      const encoded = btoa(JSON.stringify(workflowData));
+      // Use a Unicode-safe encoding: JSON -> UTF-8 bytes -> base64
+      const jsonStr = JSON.stringify(workflowData);
+      const utf8Bytes = new TextEncoder().encode(jsonStr);
+      const binaryStr = Array.from(utf8Bytes, (byte) => String.fromCharCode(byte)).join("");
+      const encoded = btoa(binaryStr);
+
+      if (encoded.length > 4000) {
+        setToastMessage("Workflow is too large to share via URL. Try reducing the number of phases.");
+        return;
+      }
+
       // Use hash router format: origin/path#/workflow-builder?w=...
-      const url = `${window.location.origin}${window.location.pathname}#/workflow-builder?w=${encoded}`;
+      const url = `${window.location.origin}${window.location.pathname}#/workflow-builder?w=${encodeURIComponent(encoded)}`;
       navigator.clipboard.writeText(url);
       setToastMessage("Link copied to clipboard!");
     } catch (err) {
       console.error("Failed to create shareable URL:", err);
-      setToastMessage("Failed to create shareable URL");
+      setToastMessage("Failed to create shareable URL. The workflow may be too large to encode.");
     }
   }, [workflowId, workflowName, workflowDescription, phases]);
 
@@ -322,7 +338,7 @@ const WorkflowBuilder = ({ onGraphReady }) => {
               <PhaseEditor
                 phase={phase}
                 phaseIndex={index}
-                previousPhaseResult={index > 0 ? phaseResults[phases[index - 1].id] : null}
+                previousPhaseResult={phase.previousPhaseId ? phaseResults[phase.previousPhaseId] : null}
                 allPhases={phases}
                 allPhaseResults={phaseResults}
                 onUpdate={(updates) => handleUpdatePhase(phase.id, updates)}
@@ -335,7 +351,7 @@ const WorkflowBuilder = ({ onGraphReady }) => {
                 onUpdatePerNodeSetting={(nodeId, setting, value) =>
                   handleUpdatePerNodeSetting(phase.id, nodeId, setting, value)
                 }
-                onExecute={() => handleExecutePhase(index)}
+                onExecute={() => handleExecutePhase(phase.id)}
                 onDelete={() => handleRemovePhase(phase.id)}
                 isExecuting={executingPhaseId === phase.id}
                 collections={collections}
@@ -382,4 +398,4 @@ const WorkflowBuilder = ({ onGraphReady }) => {
   );
 };
 
-export default memo(WorkflowBuilder);
+export default WorkflowBuilder;

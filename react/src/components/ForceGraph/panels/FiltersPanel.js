@@ -17,12 +17,13 @@ const FiltersPanel = ({
 }) => {
   const dispatch = useDispatch();
 
-  // Handle edge filter changes from EdgeFilterSelector
+  // Handle edge filter changes from EdgeFilterSelector.
+  // Dispatches a partial update; the reducer merges it into existing filters.
   const handleEdgeFilterChange = useCallback(
     (propertyName, values) => {
-      dispatch(setEdgeFilters({ ...settings.edgeFilters, [propertyName]: values }));
+      dispatch(setEdgeFilters({ [propertyName]: values }));
     },
-    [dispatch, settings.edgeFilters],
+    [dispatch],
   );
 
   return (

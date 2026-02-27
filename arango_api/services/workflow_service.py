@@ -16,6 +16,7 @@ from arango_api.services import collection_service, graph_service
 logger = logging.getLogger(__name__)
 
 DEFAULT_GRAPH_TYPE = "ontologies"
+MAX_COLLECTION_ORIGIN_NODES = 500
 
 
 def execute_workflow(phases, graph=DEFAULT_GRAPH_TYPE):
@@ -35,7 +36,7 @@ def execute_workflow(phases, graph=DEFAULT_GRAPH_TYPE):
     # Build a lookup of origin node IDs actually used per phase (for originFilter)
     phase_origin_ids = {}
 
-    for phase in phases:
+    for i, phase in enumerate(phases):
         phase_id = phase["id"]
         try:
             result, origin_ids = _execute_phase(
@@ -46,6 +47,11 @@ def execute_workflow(phases, graph=DEFAULT_GRAPH_TYPE):
         except Exception as e:
             logger.exception("Error executing phase '%s'", phase_id)
             errors[phase_id] = str(e)
+            # Mark remaining downstream phases as skipped
+            for remaining in phases[i + 1 :]:
+                errors[remaining.get("id", f"phase-{i+1}")] = (
+                    "Skipped due to earlier phase failure"
+                )
             break  # Downstream phases depend on prior results
 
     return {"phases": phase_results, "errors": errors}
@@ -226,6 +232,14 @@ def _resolve_origin_node_ids(
             raise ValueError(
                 f'No nodes found in collection "{collection_name}".'
             )
+        if len(node_ids) > MAX_COLLECTION_ORIGIN_NODES:
+            logger.warning(
+                "Collection '%s' has %d nodes, truncating to %d",
+                collection_name,
+                len(node_ids),
+                MAX_COLLECTION_ORIGIN_NODES,
+            )
+            node_ids = node_ids[:MAX_COLLECTION_ORIGIN_NODES]
         return node_ids
 
     if origin_source == "previousPhase":
@@ -251,7 +265,10 @@ def _filter_nodes_for_next_phase(nodes, filter_type, origin_node_ids=None):
 
     Args:
         nodes (list): Node dicts from a phase result.
-        filter_type (str): "all", "leafNodes", or "originNodes".
+        filter_type (str): "all", "leafNodes", "nonOriginNodes", or "originNodes".
+            "nonOriginNodes" (preferred) and "leafNodes" (backward-compatible alias)
+            both return nodes that were NOT in the origin set -- i.e. non-origin
+            nodes discovered during traversal, not true graph leaves.
         origin_node_ids (list): The origin node IDs used in the source phase.
 
     Returns:
@@ -262,7 +279,7 @@ def _filter_nodes_for_next_phase(nodes, filter_type, origin_node_ids=None):
 
     origin_node_ids = origin_node_ids or []
 
-    if filter_type == "leafNodes":
+    if filter_type in ("leafNodes", "nonOriginNodes"):
         origin_set = set(origin_node_ids)
         return [n["_id"] for n in nodes if n.get("_id") and n["_id"] not in origin_set]
 

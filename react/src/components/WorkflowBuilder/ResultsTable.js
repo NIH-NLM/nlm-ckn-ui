@@ -6,91 +6,15 @@
  * Supports CSV download of results.
  */
 
-import collMaps from "assets/nlm-ckn-collection-maps.json";
 import React, { memo, useCallback, useMemo, useState } from "react";
-
-// Build collection config map from collection maps JSON (module-level for efficiency)
-const collectionConfigMap = new Map();
-for (const [key, value] of collMaps.maps) {
-  collectionConfigMap.set(key, value);
-}
-
-/**
- * Get the collection color for a collection name.
- */
-const getCollectionColor = (collection) => {
-  return collectionConfigMap.get(collection)?.color || "#666666";
-};
-
-/**
- * Get the display name for a collection.
- */
-const getCollectionDisplayName = (collection) => {
-  return collectionConfigMap.get(collection)?.display_name || collection;
-};
-
-/**
- * Get the fields to display for a collection.
- * Returns an array of { fieldName, displayName } objects.
- */
-const getCollectionFields = (collection) => {
-  const config = collectionConfigMap.get(collection);
-  if (!config?.individual_fields) return [];
-  return config.individual_fields.map((f) => ({
-    fieldName: f.field_to_display,
-    displayName: f.display_field_as,
-  }));
-};
-
-/**
- * Get the display label for a node using the collection's individual_labels config.
- * Tries each field in order until one has a value.
- */
-const getNodeLabel = (node, collection) => {
-  const config = collectionConfigMap.get(collection);
-  if (!config?.individual_labels) {
-    // Fallback if no config
-    return node.label || node.name || node._key || "-";
-  }
-
-  for (const labelConfig of config.individual_labels) {
-    let value = node[labelConfig.field_to_use];
-    if (value !== undefined && value !== null && value !== "") {
-      // Apply transformations if specified
-      if (labelConfig.to_be_replaced && labelConfig.replace_with !== undefined) {
-        value = String(value).split(labelConfig.to_be_replaced).join(labelConfig.replace_with);
-      }
-      if (labelConfig.make_lower_case) {
-        value = String(value).toLowerCase();
-      }
-      return String(value);
-    }
-  }
-
-  return "-";
-};
-
-/**
- * Get the external URL for a node based on its collection config.
- */
-const getNodeExternalUrl = (node, collection) => {
-  const config = collectionConfigMap.get(collection);
-  if (!config?.individual_urls?.[0]) return null;
-
-  const urlConfig = config.individual_urls[0];
-  let fieldValue = node[urlConfig.field_to_use];
-  if (!fieldValue) return null;
-
-  // Apply transformations
-  if (urlConfig.to_be_replaced && urlConfig.replace_with !== undefined) {
-    fieldValue = fieldValue.split(urlConfig.to_be_replaced).join(urlConfig.replace_with);
-  }
-  if (urlConfig.make_lower_case) {
-    fieldValue = fieldValue.toLowerCase();
-  }
-
-  return urlConfig.individual_url.replace("<FIELD_TO_USE>", fieldValue);
-};
+import {
+  collectionConfigMap,
+  getCollectionColor,
+  getCollectionDisplayName,
+  getCollectionFields,
+  getNodeExternalUrl,
+  getNodeLabel,
+} from "utils/collectionHelpers";
 
 /**
  * Format a field value for display (handles arrays, objects, etc.)
@@ -208,7 +132,7 @@ const downloadCsv = (content, filename) => {
   link.href = URL.createObjectURL(blob);
   link.download = filename;
   link.click();
-  URL.revokeObjectURL(link.href);
+  setTimeout(() => URL.revokeObjectURL(link.href), 100);
 };
 
 /**
@@ -385,7 +309,7 @@ const ResultsTable = ({ graphData }) => {
                             href={externalUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="external-link"
+                            className="wb-external-link"
                           >
                             {node._id}
                           </a>

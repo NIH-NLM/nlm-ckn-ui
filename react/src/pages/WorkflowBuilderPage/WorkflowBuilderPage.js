@@ -41,7 +41,15 @@ const WorkflowBuilderPage = () => {
 
     if (encodedWorkflow) {
       try {
-        const decoded = JSON.parse(atob(encodedWorkflow));
+        // Decode: URL-decode -> base64 -> UTF-8 bytes -> JSON string
+        const base64 = decodeURIComponent(encodedWorkflow);
+        const binaryStr = atob(base64);
+        const utf8Bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) {
+          utf8Bytes[i] = binaryStr.charCodeAt(i);
+        }
+        const jsonStr = new TextDecoder().decode(utf8Bytes);
+        const decoded = JSON.parse(jsonStr);
         dispatch(loadWorkflow(decoded));
         // Clear the URL parameter to avoid re-loading on navigation
         navigate(location.pathname, { replace: true });
@@ -50,9 +58,6 @@ const WorkflowBuilderPage = () => {
       }
     }
   }, [dispatch, location.search, location.pathname, navigate]);
-
-  // Phases that have cached results
-  const phasesWithResults = phases.filter((p) => phaseResults[p.id]);
 
   // Handle switching to a different phase's results
   const handlePhaseSelect = useCallback(
@@ -163,13 +168,11 @@ const WorkflowBuilderPage = () => {
               )}
 
               {/* Graph View */}
-              {activeView === "graph" && (
-                <div className="results-view-content graph-view">
-                  <ErrorBoundary>
-                    <ForceGraph />
-                  </ErrorBoundary>
-                </div>
-              )}
+              <div className="results-view-content graph-view" style={{ display: activeView === "graph" ? "block" : "none" }}>
+                <ErrorBoundary>
+                  <ForceGraph />
+                </ErrorBoundary>
+              </div>
             </>
           ) : (
             <div className="workflow-graph-placeholder">
@@ -180,7 +183,7 @@ const WorkflowBuilderPage = () => {
                   as a table of nodes and edges, with an option to view as a graph.
                 </p>
                 {status === GRAPH_STATUS.LOADING && (
-                  <div className="loading-indicator">
+                  <div className="wb-loading-indicator">
                     <span className="spinner" />
                     Executing query...
                   </div>

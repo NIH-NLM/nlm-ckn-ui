@@ -1,5 +1,6 @@
 // Graph slice actions and thunks
 export {
+  clearGraphData,
   clearNodeToCenter,
   collapseNode,
   default as graphReducer,

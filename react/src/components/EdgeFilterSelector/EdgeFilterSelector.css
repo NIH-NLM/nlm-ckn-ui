@@ -180,6 +180,11 @@
 }
 
 /* Scrollbar styling for dropdown */
+.value-dropdown {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-gray-lighter) var(--color-gray-lightest);
+}
+
 .value-dropdown::-webkit-scrollbar {
   width: 6px;
 }

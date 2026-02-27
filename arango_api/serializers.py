@@ -236,23 +236,77 @@ class PhaseSerializer(serializers.Serializer):
     originNodeIds = serializers.ListField(
         child=serializers.CharField(),
         required=False,
-        default=[],
+        default=list,
     )
     originCollection = serializers.CharField(required=False, allow_null=True, default=None)
     previousPhaseId = serializers.CharField(required=False, allow_null=True, default=None)
     previousPhaseIds = serializers.ListField(
         child=serializers.CharField(),
         required=False,
-        default=[],
+        default=list,
     )
-    phaseCombineOperation = serializers.CharField(required=False, default="Intersection")
+    phaseCombineOperation = serializers.ChoiceField(
+        choices=["Union", "Intersection", "Symmetric Difference"],
+        required=False,
+        default="Intersection",
+    )
     originFilter = serializers.ChoiceField(
-        choices=["all", "leafNodes", "originNodes"],
+        choices=["all", "leafNodes", "nonOriginNodes", "originNodes"],
         required=False,
         default="all",
     )
     settings = serializers.DictField(required=False, default=dict)
     perNodeSettings = serializers.DictField(required=False, default=dict)
+
+    def validate_settings(self, value):
+        """Validate known keys within the settings dict (all optional)."""
+        if "depth" in value:
+            if not isinstance(value["depth"], int):
+                raise serializers.ValidationError(
+                    "'depth' must be an integer."
+                )
+
+        if "edgeDirection" in value:
+            allowed_directions = ("ANY", "INBOUND", "OUTBOUND")
+            if value["edgeDirection"] not in allowed_directions:
+                raise serializers.ValidationError(
+                    f"'edgeDirection' must be one of {allowed_directions}."
+                )
+
+        if "allowedCollections" in value:
+            ac = value["allowedCollections"]
+            if not isinstance(ac, list) or not all(isinstance(s, str) for s in ac):
+                raise serializers.ValidationError(
+                    "'allowedCollections' must be a list of strings."
+                )
+
+        if "setOperation" in value:
+            allowed_ops = ("Union", "Intersection", "Symmetric Difference")
+            if value["setOperation"] not in allowed_ops:
+                raise serializers.ValidationError(
+                    f"'setOperation' must be one of {allowed_ops}."
+                )
+
+        if "graphType" in value:
+            if not isinstance(value["graphType"], str):
+                raise serializers.ValidationError(
+                    "'graphType' must be a string."
+                )
+
+        if "includeInterNodeEdges" in value:
+            if not isinstance(value["includeInterNodeEdges"], bool):
+                raise serializers.ValidationError(
+                    "'includeInterNodeEdges' must be a boolean."
+                )
+
+        if "returnCollections" in value:
+            rc = value["returnCollections"]
+            if not isinstance(rc, list) or not all(isinstance(s, str) for s in rc):
+                raise serializers.ValidationError(
+                    "'returnCollections' must be a list of strings."
+                )
+
+        return value
 
 
 class WorkflowExecuteSerializer(serializers.Serializer):

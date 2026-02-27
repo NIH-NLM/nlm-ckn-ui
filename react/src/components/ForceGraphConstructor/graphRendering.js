@@ -24,10 +24,11 @@ export function toggleFocusNodeRendering(d3, nodeContainer, useFocusNodes, origi
     if (useFocusNodes && originSet.has(d.id)) {
       // Add inner circle if not present
       if (innerCircle.empty()) {
-        // Insert before text elements so it renders under labels
-        const firstText = nodeG.select("title");
+        // Insert before the first text element so it renders under labels.
+        // Using "text" as the reference is more robust than "title" which may not exist.
+        const firstText = nodeG.select("text");
         nodeG
-          .insert("circle", firstText.empty() ? null : "title")
+          .insert("circle", firstText.empty() ? null : function() { return firstText.node(); })
           .attr("class", "donut-inner")
           .attr("r", nodeRadius * 0.7)
           .attr("fill", "white")
