@@ -1,3 +1,4 @@
+import { DEFAULT_GRAPH_TYPE } from "constants/index";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { searchDocuments } from "services";
 import { getCollectionColor, getCollectionDisplayName } from "utils/collectionHelpers";
@@ -52,7 +53,7 @@ const NodeSearchInput = ({ onSelectNode, existingNodeIds = [] }) => {
     setIsLoading(true);
     debounceTimeoutRef.current = setTimeout(async () => {
       const searchFields = Array.from(getAllSearchableFields());
-      const data = await searchDocuments(value, "ontologies", searchFields);
+      const data = await searchDocuments(value, DEFAULT_GRAPH_TYPE, searchFields);
       if (!mountedRef.current) return;
       setResults(data || []);
       setIsOpen(true);
