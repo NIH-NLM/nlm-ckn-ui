@@ -13,18 +13,20 @@ See: https://www.django-rest-framework.org/api-guide/serializers/
 """
 from rest_framework import serializers
 
+GRAPH_CHOICES = ["ontologies", "phenotypes"]
+
 
 class GraphRequestSerializer(serializers.Serializer):
     """Base serializer for requests that need a graph/database parameter."""
 
     graph = serializers.ChoiceField(
-        choices=["ontologies", "phenotypes"],
+        choices=GRAPH_CHOICES,
         required=False,
         default="ontologies",
     )
 
 
-class GraphTraversalSerializer(serializers.Serializer):
+class GraphTraversalSerializer(GraphRequestSerializer):
     """Serializer for graph traversal requests."""
 
     node_ids = serializers.ListField(
@@ -47,11 +49,6 @@ class GraphTraversalSerializer(serializers.Serializer):
         required=True,
         help_text="List of vertex collection names to include",
     )
-    graph = serializers.ChoiceField(
-        choices=["ontologies", "phenotypes"],
-        required=False,
-        default="ontologies",
-    )
     edge_filters = serializers.DictField(
         required=False,
         allow_null=True,
@@ -64,7 +61,7 @@ class GraphTraversalSerializer(serializers.Serializer):
     )
 
 
-class AdvancedGraphTraversalSerializer(serializers.Serializer):
+class AdvancedGraphTraversalSerializer(GraphRequestSerializer):
     """Serializer for advanced graph traversal with per-node settings."""
 
     node_ids = serializers.ListField(
@@ -74,11 +71,6 @@ class AdvancedGraphTraversalSerializer(serializers.Serializer):
     advanced_settings = serializers.DictField(
         required=True,
         help_text="Dictionary mapping node IDs to their traversal settings",
-    )
-    graph = serializers.ChoiceField(
-        choices=["ontologies", "phenotypes"],
-        required=False,
-        default="ontologies",
     )
     include_inter_node_edges = serializers.BooleanField(
         required=False,
@@ -106,7 +98,7 @@ class SearchRequestSerializer(serializers.Serializer):
     """Serializer for search requests."""
 
     db = serializers.ChoiceField(
-        choices=["ontologies", "phenotypes"],
+        choices=GRAPH_CHOICES,
         required=False,
         default="ontologies",
         help_text="Database/graph to search",
@@ -180,7 +172,7 @@ class AQLQuerySerializer(serializers.Serializer):
         return value
 
 
-class SunburstRequestSerializer(serializers.Serializer):
+class SunburstRequestSerializer(GraphRequestSerializer):
     """Serializer for sunburst data requests."""
 
     parent_id = serializers.CharField(
@@ -188,11 +180,6 @@ class SunburstRequestSerializer(serializers.Serializer):
         allow_null=True,
         default=None,
         help_text="Parent node ID for on-demand loading",
-    )
-    graph = serializers.ChoiceField(
-        choices=["ontologies", "phenotypes"],
-        required=False,
-        default="ontologies",
     )
 
 
@@ -211,7 +198,7 @@ class DocumentsRequestSerializer(serializers.Serializer):
     """Serializer for document retrieval requests."""
 
     db = serializers.ChoiceField(
-        choices=["ontologies", "phenotypes"],
+        choices=GRAPH_CHOICES,
         required=False,
         default="ontologies",
         help_text="Database/graph to fetch from",
@@ -309,7 +296,7 @@ class PhaseSerializer(serializers.Serializer):
         return value
 
 
-class WorkflowExecuteSerializer(serializers.Serializer):
+class WorkflowExecuteSerializer(GraphRequestSerializer):
     """Serializer for workflow execution requests."""
 
     preset_id = serializers.CharField(required=False, allow_null=True, default=None)
@@ -319,11 +306,6 @@ class WorkflowExecuteSerializer(serializers.Serializer):
         allow_null=True,
         default=None,
         help_text="Dict of {phase_id: [node_ids]} to override origins in a preset",
-    )
-    graph = serializers.ChoiceField(
-        choices=["ontologies", "phenotypes"],
-        required=False,
-        default="ontologies",
     )
 
     def validate(self, data):
