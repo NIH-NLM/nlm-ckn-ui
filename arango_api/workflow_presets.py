@@ -74,60 +74,45 @@ _PH_CELL_TYPES_PHASE_SETTINGS = {
 }
 
 
-def _ph_subtypes_phase(phase_id, previous_phase_id=None):
-    """Build the PH disease-subtypes phase with a preset-specific id."""
-    return {
-        "id": phase_id,
+_PH_PHASE_TEMPLATES = [
+    {
         "name": "Collect PH disease subtypes",
         "originSource": "manual",
         "originNodeIds": ["MONDO/0005149"],
-        "previousPhaseId": previous_phase_id,
-        "originFilter": "all",
-        "settings": {**_PH_SUBTYPES_PHASE_SETTINGS},
-        "perNodeSettings": {},
-    }
-
-
-def _ph_drugs_phase(phase_id, previous_phase_id):
-    """Build the PH therapeutic-compounds phase with a preset-specific id."""
-    return {
-        "id": phase_id,
+        "settings": _PH_SUBTYPES_PHASE_SETTINGS,
+    },
+    {
         "name": "Identify therapeutic compounds",
-        "originSource": "previousPhase",
-        "originNodeIds": [],
-        "previousPhaseId": previous_phase_id,
-        "originFilter": "all",
-        "settings": {**_PH_DRUGS_PHASE_SETTINGS},
-        "perNodeSettings": {},
-    }
-
-
-def _ph_targets_phase(phase_id, previous_phase_id):
-    """Build the PH gene/protein-targets phase with a preset-specific id."""
-    return {
-        "id": phase_id,
+        "settings": _PH_DRUGS_PHASE_SETTINGS,
+    },
+    {
         "name": "Trace to gene/protein targets",
-        "originSource": "previousPhase",
-        "originNodeIds": [],
-        "previousPhaseId": previous_phase_id,
-        "originFilter": "all",
-        "settings": {**_PH_TARGETS_PHASE_SETTINGS},
-        "perNodeSettings": {},
-    }
-
-
-def _ph_cell_types_phase(phase_id, previous_phase_id):
-    """Build the PH expressing-cell-types phase with a preset-specific id."""
-    return {
-        "id": phase_id,
+        "settings": _PH_TARGETS_PHASE_SETTINGS,
+    },
+    {
         "name": "Identify expressing cell types",
-        "originSource": "previousPhase",
-        "originNodeIds": [],
-        "previousPhaseId": previous_phase_id,
-        "originFilter": "all",
-        "settings": {**_PH_CELL_TYPES_PHASE_SETTINGS},
-        "perNodeSettings": {},
-    }
+        "settings": _PH_CELL_TYPES_PHASE_SETTINGS,
+    },
+]
+
+
+def _build_ph_phases(id_prefix, count):
+    """Build the first *count* PH phases with preset-specific IDs."""
+    phases = []
+    for i in range(count):
+        template = _PH_PHASE_TEMPLATES[i]
+        phase_id = f"{id_prefix}-phase-{i + 1}"
+        phases.append({
+            "id": phase_id,
+            "name": template["name"],
+            "originSource": template.get("originSource", "previousPhase"),
+            "originNodeIds": list(template.get("originNodeIds", [])),
+            "previousPhaseId": phases[-1]["id"] if phases else None,
+            "originFilter": "all",
+            "settings": {**template["settings"]},
+            "perNodeSettings": {},
+        })
+    return phases
 
 
 WORKFLOW_PRESETS = [
@@ -520,9 +505,7 @@ WORKFLOW_PRESETS = [
             "SUB_CLASS_OF hierarchy inward from the root disease term."
         ),
         "category": "Example: Pulmonary Hypertension",
-        "phases": [
-            _ph_subtypes_phase("preset-ph-subtypes-phase-1"),
-        ],
+        "phases": _build_ph_phases("preset-ph-subtypes", 1),
     },
     {
         "id": "ph-drugs",
@@ -532,10 +515,7 @@ WORKFLOW_PRESETS = [
             "used to treat each subtype."
         ),
         "category": "Example: Pulmonary Hypertension",
-        "phases": [
-            _ph_subtypes_phase("preset-ph-drugs-phase-1"),
-            _ph_drugs_phase("preset-ph-drugs-phase-2", "preset-ph-drugs-phase-1"),
-        ],
+        "phases": _build_ph_phases("preset-ph-drugs", 2),
     },
     {
         "id": "ph-drug-targets",
@@ -546,11 +526,7 @@ WORKFLOW_PRESETS = [
             "production relationships."
         ),
         "category": "Example: Pulmonary Hypertension",
-        "phases": [
-            _ph_subtypes_phase("preset-ph-targets-phase-1"),
-            _ph_drugs_phase("preset-ph-targets-phase-2", "preset-ph-targets-phase-1"),
-            _ph_targets_phase("preset-ph-targets-phase-3", "preset-ph-targets-phase-2"),
-        ],
+        "phases": _build_ph_phases("preset-ph-targets", 3),
     },
     {
         "id": "ph-drug-target-cell-types",
@@ -560,11 +536,6 @@ WORKFLOW_PRESETS = [
             "cell types that express those gene and protein targets."
         ),
         "category": "Example: Pulmonary Hypertension",
-        "phases": [
-            _ph_subtypes_phase("preset-ph-cells-phase-1"),
-            _ph_drugs_phase("preset-ph-cells-phase-2", "preset-ph-cells-phase-1"),
-            _ph_targets_phase("preset-ph-cells-phase-3", "preset-ph-cells-phase-2"),
-            _ph_cell_types_phase("preset-ph-cells-phase-4", "preset-ph-cells-phase-3"),
-        ],
+        "phases": _build_ph_phases("preset-ph-cells", 4),
     },
 ]
