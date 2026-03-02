@@ -1,0 +1,42 @@
+[
+  {
+    "ParameterKey": "ProjectName",
+    "ParameterValue": "cell-kn"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "dev"
+  },
+  {
+    "ParameterKey": "VpcId",
+    "ParameterValue": "vpc-8b3fe4ec"
+  },
+  {
+    "ParameterKey": "VpcCidr",
+    "ParameterValue": "172.31.0.0/16"
+  },
+  {
+    "ParameterKey": "PublicSubnetIds",
+    "ParameterValue": "subnet-0031722a,subnet-c2f261a7"
+  },
+  {
+    "ParameterKey": "PrivateSubnetIds",
+    "ParameterValue": "subnet-0031722a,subnet-c2f261a7"
+  },
+  {
+    "ParameterKey": "DomainName",
+    "ParameterValue": "nlm-ckn.org"
+  },
+  {
+    "ParameterKey": "HostedZoneId",
+    "ParameterValue": "Z05089951YM1345O1XAHB"
+  },
+  {
+    "ParameterKey": "ArangoDbUser",
+    "ParameterValue": "root"
+  },
+  {
+    "ParameterKey": "PrivateSubnetCount",
+    "ParameterValue": "2"
+  }
+]

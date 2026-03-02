@@ -1,0 +1,42 @@
+[
+  {
+    "ParameterKey": "ProjectName",
+    "ParameterValue": "cell-kn"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "dev"
+  },
+  {
+    "ParameterKey": "VpcId",
+    "ParameterValue": "vpc-0abc123def456789"
+  },
+  {
+    "ParameterKey": "VpcCidr",
+    "ParameterValue": "10.0.0.0/16"
+  },
+  {
+    "ParameterKey": "PublicSubnetIds",
+    "ParameterValue": "subnet-0abc123,subnet-0def456"
+  },
+  {
+    "ParameterKey": "PrivateSubnetIds",
+    "ParameterValue": "subnet-0ghi789,subnet-0jkl012"
+  },
+  {
+    "ParameterKey": "DomainName",
+    "ParameterValue": "cell-kn-mvp.org"
+  },
+  {
+    "ParameterKey": "HostedZoneId",
+    "ParameterValue": "Z018047920VCMG6465Q74"
+  },
+  {
+    "ParameterKey": "ArangoDbUser",
+    "ParameterValue": "root"
+  },
+  {
+    "ParameterKey": "PrivateSubnetCount",
+    "ParameterValue": "2"
+  }
+]

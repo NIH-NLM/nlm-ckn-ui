@@ -1,0 +1,73 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AWS Cloud Map service discovery namespace for Cell-KN'
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: cell-kn
+    Description: Project name for resource naming
+
+  Environment:
+    Type: String
+    Default: dev
+    Description: Environment name (dev, staging, prod)
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC ID (NIH-provided)
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Project Configuration
+        Parameters:
+          - ProjectName
+          - Environment
+      - Label:
+          default: Network Configuration
+        Parameters:
+          - VpcId
+
+Resources:
+  # ============================================================================
+  # Cloud Map Private DNS Namespace
+  # ============================================================================
+  ServiceDiscoveryNamespace:
+    Type: AWS::ServiceDiscovery::PrivateDnsNamespace
+    Properties:
+      Name: !Sub '${ProjectName}-${Environment}.local'
+      Description: !Sub 'Private DNS namespace for ${ProjectName} ${Environment} environment'
+      Vpc: !Ref VpcId
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-namespace'
+        - Key: ManagedBy
+          Value: CloudFormation
+
+Outputs:
+  NamespaceId:
+    Description: Service discovery namespace ID
+    Value: !Ref ServiceDiscoveryNamespace
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-namespace-id'
+
+  NamespaceName:
+    Description: Service discovery namespace name
+    Value: !Sub '${ProjectName}-${Environment}.local'
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-namespace-name'
+
+  NamespaceArn:
+    Description: Service discovery namespace ARN
+    Value: !GetAtt ServiceDiscoveryNamespace.Arn
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-namespace-arn'

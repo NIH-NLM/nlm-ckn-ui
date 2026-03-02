@@ -1,0 +1,172 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Security groups for Cell-KN application services'
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: cell-kn
+    Description: Project name for resource naming
+
+  Environment:
+    Type: String
+    Default: dev
+    Description: Environment name (dev, sandbox, prod)
+    AllowedValues:
+      - dev
+      - sandbox
+      - prod
+
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC ID (NIH-provided)
+
+  VpcCidr:
+    Type: String
+    Description: VPC CIDR block for internal traffic rules
+    Default: 10.0.0.0/16
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Project Configuration
+        Parameters:
+          - ProjectName
+          - Environment
+      - Label:
+          default: Network Configuration (NIH-provided)
+        Parameters:
+          - VpcId
+          - VpcCidr
+
+Conditions:
+  IsDev: !Equals [!Ref Environment, 'dev']
+
+Resources:
+  # ============================================================================
+  # ALB Security Group
+  # ============================================================================
+  AlbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub '${ProjectName}-${Environment}-alb-sg'
+      GroupDescription: Security group for Application Load Balancer
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        # HTTP
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: HTTP from internet
+        # HTTPS
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: HTTPS from internet
+        # Backend port (public in dev only, VPC-only in staging/prod)
+        - IpProtocol: tcp
+          FromPort: 8000
+          ToPort: 8000
+          CidrIp: !If [IsDev, '0.0.0.0/0', !Ref VpcCidr]
+          Description: !If [IsDev, 'Backend API port (dev - public)', 'Backend API port (VPC only)']
+        # ArangoDB port (public in dev only, VPC-only in staging/prod)
+        - IpProtocol: tcp
+          FromPort: 8529
+          ToPort: 8529
+          CidrIp: !If [IsDev, '0.0.0.0/0', !Ref VpcCidr]
+          Description: !If [IsDev, 'ArangoDB web UI (dev - public)', 'ArangoDB web UI (VPC only)']
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-alb-sg'
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  # ============================================================================
+  # Backend ECS Tasks Security Group
+  # ============================================================================
+  BackendSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub '${ProjectName}-${Environment}-backend-sg'
+      GroupDescription: Security group for backend ECS tasks
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        # Port 8000 from VPC (ALB and other services)
+        - IpProtocol: tcp
+          FromPort: 8000
+          ToPort: 8000
+          CidrIp: !Ref VpcCidr
+          Description: Backend API from VPC
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-backend-sg'
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  # ============================================================================
+  # ArangoDB ECS Tasks Security Group
+  # ============================================================================
+  ArangoDbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub '${ProjectName}-${Environment}-arangodb-sg'
+      GroupDescription: Security group for ArangoDB ECS tasks
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        # Port 8529 from VPC (ALB and backend)
+        - IpProtocol: tcp
+          FromPort: 8529
+          ToPort: 8529
+          CidrIp: !Ref VpcCidr
+          Description: ArangoDB from VPC
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-arangodb-sg'
+        - Key: ManagedBy
+          Value: CloudFormation
+
+
+Outputs:
+  AlbSecurityGroupId:
+    Description: Security group ID for ALB
+    Value: !Ref AlbSecurityGroup
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-alb-sg-id'
+
+  BackendSecurityGroupId:
+    Description: Security group ID for backend ECS tasks
+    Value: !Ref BackendSecurityGroup
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-backend-sg-id'
+
+  ArangoDbSecurityGroupId:
+    Description: Security group ID for ArangoDB EC2 instance
+    Value: !Ref ArangoDbSecurityGroup
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-arangodb-sg-id'

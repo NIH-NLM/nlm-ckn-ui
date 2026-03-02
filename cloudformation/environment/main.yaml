@@ -1,0 +1,330 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Cell-KN Environment Stack - Orchestrates all nested stacks'
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: cell-kn
+    Description: Project name for resource naming
+
+  Environment:
+    Type: String
+    Default: dev
+    Description: Environment name (dev, sandbox, prod)
+    AllowedValues:
+      - dev
+      - sandbox
+      - prod
+
+  # NIH-Provided Infrastructure
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC ID (NIH-provided)
+
+  VpcCidr:
+    Type: String
+    Description: VPC CIDR block for security group rules
+    Default: 10.0.0.0/16
+
+  PublicSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Public subnet IDs for ALB (NIH-provided, minimum 2)
+
+  PrivateSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Private subnet IDs for ECS tasks (NIH-provided, minimum 1)
+
+  # Application Configuration
+  DomainName:
+    Type: String
+    Description: Base domain name (e.g., cell-kn-mvp.org)
+
+  HostedZoneId:
+    Type: String
+    Description: Route 53 hosted zone ID
+
+  # Optional Parameters
+  ArangoDbUser:
+    Type: String
+    Default: root
+    Description: ArangoDB username
+
+  PrivateSubnetCount:
+    Type: Number
+    Default: 2
+    AllowedValues: [1, 2]
+    Description: Number of private subnets provided
+
+  # Template S3 Bucket (from bootstrap stack)
+  TemplatesBucketName:
+    Type: String
+    Description: S3 bucket containing nested stack templates (from bootstrap stack output)
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Project Configuration
+        Parameters:
+          - ProjectName
+          - Environment
+      - Label:
+          default: NIH-Provided Infrastructure
+        Parameters:
+          - VpcId
+          - VpcCidr
+          - PublicSubnetIds
+          - PrivateSubnetIds
+      - Label:
+          default: Custom Domain (Required)
+        Parameters:
+          - DomainName
+          - HostedZoneId
+      - Label:
+          default: Optional Configuration
+        Parameters:
+          - ArangoDbUser
+          - PrivateSubnetCount
+          - TemplatesBucketName
+
+    ParameterLabels:
+      VpcId:
+        default: VPC ID
+      VpcCidr:
+        default: VPC CIDR Block
+      PublicSubnetIds:
+        default: Public Subnet IDs
+      PrivateSubnetIds:
+        default: Private Subnet IDs
+
+Conditions:
+  # True only for the dev account where we have full IAM/SG permissions
+  IsDev: !Equals [!Ref Environment, 'dev']
+
+Resources:
+  # ============================================================================
+  # Secrets Stack
+  # Generates random secrets for ArangoDB, Django, and CloudFront.
+  # Runs first; all other stacks receive secrets as parameters.
+  # Secrets are stable across stack updates (never rotated automatically).
+  # ============================================================================
+  SecretsStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub 'https://${TemplatesBucketName}.s3.${AWS::Region}.amazonaws.com/environment/secrets.yaml'
+      Parameters:
+        ProjectName: !Ref ProjectName
+        Environment: !Ref Environment
+        # IAM role ARN: created in dev, read from SSM prereqs in sandbox/prod
+        LambdaExecutionRoleArn: !If
+          - IsDev
+          - ''
+          - !Sub '{{resolve:ssm:/${ProjectName}/${Environment}/prereqs/iam-random-secret-fn-arn}}'
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: StackType
+          Value: secrets
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  # ============================================================================
+  # Security Groups Stack (dev only)
+  # In sandbox/prod, security groups are pre-created by NIH and their IDs are
+  # stored in SSM under /${ProjectName}/${Environment}/prereqs/sg-*.
+  # Deployment will fail here if those SSM parameters do not exist.
+  # ============================================================================
+  SecurityGroupsStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: IsDev
+    Properties:
+      TemplateURL: !Sub 'https://${TemplatesBucketName}.s3.${AWS::Region}.amazonaws.com/environment/security-groups.yaml'
+      Parameters:
+        ProjectName: !Ref ProjectName
+        Environment: !Ref Environment
+        VpcId: !Ref VpcId
+        VpcCidr: !Ref VpcCidr
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: StackType
+          Value: security-groups
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  # ============================================================================
+  # ECS Cluster Stack
+  # ============================================================================
+  EcsClusterStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub 'https://${TemplatesBucketName}.s3.${AWS::Region}.amazonaws.com/environment/ecs-cluster.yaml'
+      Parameters:
+        ProjectName: !Ref ProjectName
+        Environment: !Ref Environment
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: StackType
+          Value: ecs-cluster
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  # ============================================================================
+  # Service Discovery Stack
+  # ============================================================================
+  ServiceDiscoveryStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub 'https://${TemplatesBucketName}.s3.${AWS::Region}.amazonaws.com/environment/service-discovery.yaml'
+      Parameters:
+        ProjectName: !Ref ProjectName
+        Environment: !Ref Environment
+        VpcId: !Ref VpcId
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: StackType
+          Value: service-discovery
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  # ============================================================================
+  # Application Load Balancer Stack
+  # ============================================================================
+  AlbStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub 'https://${TemplatesBucketName}.s3.${AWS::Region}.amazonaws.com/environment/alb.yaml'
+      Parameters:
+        ProjectName: !Ref ProjectName
+        Environment: !Ref Environment
+        VpcId: !Ref VpcId
+        PublicSubnetIds: !Join [',', !Ref PublicSubnetIds]
+        # In dev the SG comes from the nested stack output; in sandbox/prod it is
+        # read from SSM (fails fast if the prereq has not been created).
+        AlbSecurityGroupId: !If
+          - IsDev
+          - !GetAtt SecurityGroupsStack.Outputs.AlbSecurityGroupId
+          - !Sub '{{resolve:ssm:/${ProjectName}/${Environment}/prereqs/sg-alb}}'
+        # Used to create the ACM certificate for ALB HTTPS listeners
+        DomainName: !Ref DomainName
+        HostedZoneId: !Ref HostedZoneId
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: StackType
+          Value: alb
+        - Key: ManagedBy
+          Value: CloudFormation
+
+Outputs:
+  # ============================================================================
+  # Cross-stack exports consumed by the tier-2 service stacks
+  # (cell-kn-<env>-arangodb, cell-kn-<env>-backend, cell-kn-<env>-frontend).
+  # These stacks are deployed independently via deploy-environment.sh after
+  # this infra stack is stable.
+  # ============================================================================
+
+  # VPC / Networking
+  VpcId:
+    Description: VPC ID
+    Value: !Ref VpcId
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-vpc-id'
+
+  PrivateSubnetIds:
+    Description: Comma-separated private subnet IDs
+    Value: !Join [',', !Ref PrivateSubnetIds]
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-private-subnet-ids'
+
+  PublicSubnetIds:
+    Description: Comma-separated public subnet IDs
+    Value: !Join [',', !Ref PublicSubnetIds]
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-public-subnet-ids'
+
+  PrivateSubnetCount:
+    Description: Number of private subnets
+    Value: !Ref PrivateSubnetCount
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-private-subnet-count'
+
+  # Domain
+  DomainName:
+    Description: Base domain name
+    Value: !Ref DomainName
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-domain-name'
+
+  HostedZoneId:
+    Description: Route 53 hosted zone ID
+    Value: !Ref HostedZoneId
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-hosted-zone-id'
+
+  # ECS Cluster
+  EcsClusterName:
+    Description: ECS cluster name
+    Value: !GetAtt EcsClusterStack.Outputs.ClusterName
+
+  # ALB
+  AlbDnsName:
+    Description: ALB DNS name
+    Value: !GetAtt AlbStack.Outputs.LoadBalancerDnsName
+
+  BackendUrl:
+    Description: Backend API URL
+    Value: !GetAtt AlbStack.Outputs.BackendUrl
+
+  # Secrets Manager ARNs — consumed by the tier-2 service stacks so they can
+  # reference the full ARN (including the 6-char random suffix that SM appends).
+  ArangoDbPasswordSecretArn:
+    Description: ARN of the ArangoDB root password secret in Secrets Manager
+    Value: !GetAtt SecretsStack.Outputs.ArangoDbPasswordSecretArn
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-arango-password-secret-arn'
+
+  DjangoSecretKeySecretArn:
+    Description: ARN of the Django SECRET_KEY secret in Secrets Manager
+    Value: !GetAtt SecretsStack.Outputs.DjangoSecretKeySecretArn
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-django-secret-key-arn'
+
+  ArangoDbUrl:
+    Description: ArangoDB web UI URL
+    Value: !GetAtt AlbStack.Outputs.ArangoDbUrl
+
+  # Instructions
+  DeploymentInstructions:
+    Description: Next steps for deployment
+    Value: !Sub |
+      Infra stack deployed successfully!
+
+      Backend ALB:  ${AlbStack.Outputs.BackendUrl}
+      ArangoDB ALB: ${AlbStack.Outputs.ArangoDbUrl}
+
+      Next steps (run in order):
+      1. Deploy service stacks:
+         ./scripts/deploy-environment.sh ${Environment}
+         (select "service stacks" phase when prompted, or run the full deploy)
+
+      2. Build and push backend Docker image:
+         ./scripts/deploy-backend.sh ${Environment}
+
+      3. Build and deploy frontend:
+         ./scripts/deploy-frontend.sh ${Environment}
+
+      4. (Optional) Deploy dataset:
+         ./scripts/deploy-dataset.sh ${Environment} datasets/your-file.tar.gz
