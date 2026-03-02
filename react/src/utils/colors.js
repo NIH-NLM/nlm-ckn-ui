@@ -48,9 +48,7 @@ export function getColorForCollection(collectionId) {
  * @returns {string} The hex color code or a default fallback.
  */
 export const getCollectionColor = (nodeIdOrKey) => {
-  const collection = nodeIdOrKey?.includes("/")
-    ? nodeIdOrKey.split("/")[0]
-    : nodeIdOrKey || "";
+  const collection = nodeIdOrKey?.includes("/") ? nodeIdOrKey.split("/")[0] : nodeIdOrKey || "";
   return collectionMaps.get(collection)?.color || "#666666";
 };
 

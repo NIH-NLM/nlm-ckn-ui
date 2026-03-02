@@ -63,13 +63,10 @@ export function useGraphExport(wrapperRef, graphData, originNodeIds) {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-        canvas.toBlob(
-          (pngBlob) => {
-            downloadBlob(pngBlob, `${filenameStem}.${format}`);
-            URL.revokeObjectURL(url);
-          },
-          `image/${format}`,
-        );
+        canvas.toBlob((pngBlob) => {
+          downloadBlob(pngBlob, `${filenameStem}.${format}`);
+          URL.revokeObjectURL(url);
+        }, `image/${format}`);
       };
       img.onerror = () => URL.revokeObjectURL(url);
       img.src = url;

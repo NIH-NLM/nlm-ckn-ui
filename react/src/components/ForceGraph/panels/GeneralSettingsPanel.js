@@ -118,11 +118,7 @@ const GeneralSettingsPanel = ({
         <h3 className="group-label">Highlight Origin Nodes:</h3>
         <div className="labels-toggle graph-source-toggle">
           <label className="switch">
-            <input
-              type="checkbox"
-              checked={settings.useFocusNodes}
-              onChange={onFocusNodesToggle}
-            />
+            <input type="checkbox" checked={settings.useFocusNodes} onChange={onFocusNodesToggle} />
             <span className="slider round" />
           </label>
         </div>

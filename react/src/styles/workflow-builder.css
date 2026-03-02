@@ -89,7 +89,9 @@
   font-size: var(--font-size-sm);
   color: var(--color-gray-dark);
   white-space: nowrap;
-  transition: background var(--transition-fast), color var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
 }
 
 .back-to-presets-btn:hover {
@@ -247,7 +249,9 @@
   border-radius: var(--radius-md);
   cursor: pointer;
   text-align: left;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
@@ -383,7 +387,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast);
 }
 
 .phase-delete-btn:hover {
@@ -802,7 +809,9 @@
   cursor: pointer;
   font-size: var(--font-size-sm);
   font-weight: 500;
-  transition: background var(--transition-fast), color var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
 }
 
 .add-phase-btn:hover {
@@ -1021,7 +1030,10 @@
   font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--color-gray);
-  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast);
 }
 
 .phase-tab:hover {
@@ -1067,7 +1079,10 @@
   font-size: var(--font-size-base);
   font-weight: 500;
   color: var(--color-gray);
-  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast);
 }
 
 .view-tab:hover {
@@ -1151,7 +1166,10 @@
   font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--color-gray-dark);
-  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast);
 }
 
 .results-tab:hover {
@@ -1279,7 +1297,10 @@
   font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--color-gray-dark);
-  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast);
 }
 
 .download-csv-btn:hover {
@@ -1313,7 +1334,10 @@
   font-size: var(--font-size-base);
   font-weight: 600;
   color: var(--color-gray-dark);
-  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast);
 }
 
 .expand-btn:hover {

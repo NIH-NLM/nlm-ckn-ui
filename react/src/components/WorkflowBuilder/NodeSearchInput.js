@@ -1,11 +1,7 @@
 import { DEFAULT_GRAPH_TYPE } from "constants/index";
-import { useCallback, useMemo } from "react";
 import { useSearch } from "hooks";
-import {
-  getCollectionColor,
-  getCollectionDisplayName,
-  getLabel,
-} from "utils";
+import { useCallback, useMemo } from "react";
+import { getCollectionColor, getCollectionDisplayName, getLabel } from "utils";
 
 const NodeSearchInput = ({ onSelectNode, existingNodeIds = [] }) => {
   const {

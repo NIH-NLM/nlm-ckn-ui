@@ -138,14 +138,12 @@ const PhaseEditor = ({
     [],
   );
 
-  const handlePreviousPhaseIdToggle = makeArrayToggle(
-    phase.previousPhaseIds || [],
-    (ids) => onUpdate({ previousPhaseIds: ids }),
+  const handlePreviousPhaseIdToggle = makeArrayToggle(phase.previousPhaseIds || [], (ids) =>
+    onUpdate({ previousPhaseIds: ids }),
   );
 
-  const handleCollectionToggle = makeArrayToggle(
-    phase.settings.allowedCollections || [],
-    (cols) => onUpdateSettings("allowedCollections", cols),
+  const handleCollectionToggle = makeArrayToggle(phase.settings.allowedCollections || [], (cols) =>
+    onUpdateSettings("allowedCollections", cols),
   );
 
   const handleReturnCollectionToggle = makeArrayToggle(
@@ -203,7 +201,9 @@ const PhaseEditor = ({
   };
 
   return (
-    <div className={`phase-editor ${isExecuting ? "executing" : ""} ${isCombinePhase ? "combine-phase" : ""}`}>
+    <div
+      className={`phase-editor ${isExecuting ? "executing" : ""} ${isCombinePhase ? "combine-phase" : ""}`}
+    >
       {/* Phase Header */}
       <div className="phase-header">
         <span className="phase-number">Phase {phaseIndex + 1}</span>
@@ -313,10 +313,7 @@ const PhaseEditor = ({
           <div className="collection-origin">
             <label>
               Collection:
-              <select
-                value={phase.originCollection || ""}
-                onChange={handleCollectionSelect}
-              >
+              <select value={phase.originCollection || ""} onChange={handleCollectionSelect}>
                 <option value="">Select a collection...</option>
                 {(collections || allCollections).map((collKey) => (
                   <option key={collKey} value={collKey}>
@@ -339,7 +336,9 @@ const PhaseEditor = ({
                   Use:
                   <select value={phase.originFilter} onChange={handleOriginFilterChange}>
                     {ORIGIN_FILTER_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
                     ))}
                   </select>
                 </label>
@@ -369,7 +368,8 @@ const PhaseEditor = ({
                       onChange={() => handlePreviousPhaseIdToggle(p.id)}
                     />
                     <span>
-                      Phase {idx + 1}{p.name ? `: ${p.name}` : ""}
+                      Phase {idx + 1}
+                      {p.name ? `: ${p.name}` : ""}
                       {result ? ` (${nodeCount} nodes)` : " (not executed)"}
                     </span>
                   </label>
@@ -390,7 +390,9 @@ const PhaseEditor = ({
                 Use from each source:
                 <select value={phase.originFilter} onChange={handleOriginFilterChange}>
                   {ORIGIN_FILTER_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
                   ))}
                 </select>
               </label>
@@ -504,7 +506,9 @@ const PhaseEditor = ({
                             }
                           >
                             {DEPTH_OPTIONS.map((d) => (
-                              <option key={d} value={d}>{d}</option>
+                              <option key={d} value={d}>
+                                {d}
+                              </option>
                             ))}
                           </select>
                         </label>
@@ -517,7 +521,9 @@ const PhaseEditor = ({
                             }
                           >
                             {DIRECTION_OPTIONS.map((d) => (
-                              <option key={d} value={d}>{d}</option>
+                              <option key={d} value={d}>
+                                {d}
+                              </option>
                             ))}
                           </select>
                         </label>

@@ -175,7 +175,9 @@ export const executePhase = createAsyncThunk(
     if (phase.originSource === "collection" && phase.originCollection) {
       const graphType = phase.settings.graphType || DEFAULT_GRAPH_TYPE;
       const docs = await fetchCollectionDocuments(phase.originCollection, graphType);
-      collectionOriginNodeIds = Object.values(docs).map((doc) => doc._id).filter(Boolean);
+      collectionOriginNodeIds = Object.values(docs)
+        .map((doc) => doc._id)
+        .filter(Boolean);
       if (collectionOriginNodeIds.length === 0) {
         throw new Error(`No nodes found in collection "${phase.originCollection}".`);
       }
@@ -198,7 +200,11 @@ export const executePhase = createAsyncThunk(
         }
         const srcPhase = phases.find((p) => p.id === srcId);
         const srcOriginIds = srcPhase?._executedOriginNodeIds || srcPhase?.originNodeIds || [];
-        const filteredIds = filterNodesForNextPhase(srcResult.nodes, phase.originFilter, srcOriginIds);
+        const filteredIds = filterNodesForNextPhase(
+          srcResult.nodes,
+          phase.originFilter,
+          srcOriginIds,
+        );
         const filteredIdSet = new Set(filteredIds);
         const filteredNodes = srcResult.nodes.filter((n) => filteredIdSet.has(n._id));
         const filteredLinks = (srcResult.links || []).filter((link) => {
@@ -440,7 +446,8 @@ const workflowBuilderSlice = createSlice({
         originCollection: p.originCollection || null,
         previousPhaseIds: p.previousPhaseIds || [],
         phaseCombineOperation: p.phaseCombineOperation || "Intersection",
-        showAdvancedSettings: p.showAdvancedSettings ?? (Object.keys(p.perNodeSettings || {}).length > 0),
+        showAdvancedSettings:
+          p.showAdvancedSettings ?? Object.keys(p.perNodeSettings || {}).length > 0,
         result: null,
         settings: { ...UI_DEFAULTS, ...p.settings },
       }));
@@ -605,7 +612,6 @@ const workflowBuilderSlice = createSlice({
     showPresets: (state) => {
       state.showPresetSelector = true;
     },
-
   },
   extraReducers: (builder) => {
     builder

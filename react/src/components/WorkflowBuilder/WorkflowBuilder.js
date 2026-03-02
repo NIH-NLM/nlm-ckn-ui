@@ -20,8 +20,8 @@ import {
   initializeWorkflow,
   loadWorkflow,
   removePhase,
-  setWorkflowDescription,
   removePhaseOriginNode,
+  setWorkflowDescription,
   setWorkflowName,
   showPresets,
   toggleAdvancedSettings,
@@ -81,7 +81,7 @@ const WorkflowBuilder = ({ onGraphReady }) => {
     const missingNodeIds = allNodeIds.filter((id) => !requestedNodeIdsRef.current.has(id));
 
     if (missingNodeIds.length > 0) {
-      missingNodeIds.forEach((id) => requestedNodeIdsRef.current.add(id));
+      for (const id of missingNodeIds) requestedNodeIdsRef.current.add(id);
       dispatch(fetchNodeDetails({ nodeIds: missingNodeIds }));
     }
   }, [dispatch, phases]);
@@ -226,7 +226,9 @@ const WorkflowBuilder = ({ onGraphReady }) => {
       const encoded = btoa(binaryStr);
 
       if (encoded.length > 4000) {
-        setToastMessage("Workflow is too large to share via URL. Try reducing the number of phases.");
+        setToastMessage(
+          "Workflow is too large to share via URL. Try reducing the number of phases.",
+        );
         return;
       }
 
@@ -310,15 +312,15 @@ const WorkflowBuilder = ({ onGraphReady }) => {
                   {phase.originSource === "previousPhase" && (
                     <span className="connector-label">feeds into</span>
                   )}
-                  {isCombine && (
-                    <span className="connector-label">combines</span>
-                  )}
+                  {isCombine && <span className="connector-label">combines</span>}
                 </div>
               )}
               <PhaseEditor
                 phase={phase}
                 phaseIndex={index}
-                previousPhaseResult={phase.previousPhaseId ? phaseResults[phase.previousPhaseId] : null}
+                previousPhaseResult={
+                  phase.previousPhaseId ? phaseResults[phase.previousPhaseId] : null
+                }
                 allPhases={phases}
                 allPhaseResults={phaseResults}
                 onUpdate={(updates) => handleUpdatePhase(phase.id, updates)}

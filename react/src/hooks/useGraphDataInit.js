@@ -1,11 +1,7 @@
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { fetchCollections } from "services";
-import {
-  fetchEdgeFilterOptions,
-  setAllCollections,
-  setAvailableCollections,
-} from "store";
+import { fetchEdgeFilterOptions, setAllCollections, setAvailableCollections } from "store";
 import { parseCollections } from "utils";
 
 /**

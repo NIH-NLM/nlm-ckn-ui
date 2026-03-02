@@ -259,9 +259,7 @@ export const getCollectionFields = (collection) => {
  */
 export const getNodeLabel = (nodeData, nodeIdOrCollection) => {
   const isNodeId = nodeIdOrCollection?.includes("/");
-  const collection = isNodeId
-    ? nodeIdOrCollection?.split("/")[0] || ""
-    : nodeIdOrCollection || "";
+  const collection = isNodeId ? nodeIdOrCollection?.split("/")[0] || "" : nodeIdOrCollection || "";
   const fallback = isNodeId ? nodeIdOrCollection : "-";
 
   if (!nodeData) return fallback;

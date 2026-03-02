@@ -1,7 +1,7 @@
 import SearchResultsTable from "components/SearchResultsTable";
 import { GraphContext } from "contexts";
-import { useContext } from "react";
 import { useSearch } from "hooks";
+import { useContext } from "react";
 
 // SVG Icon Component
 const SearchIcon = () => (
@@ -23,14 +23,7 @@ const SearchIcon = () => (
 const SearchBar = () => {
   const { graphType } = useContext(GraphContext);
 
-  const {
-    query,
-    setQuery,
-    results,
-    isOpen,
-    setIsOpen,
-    containerRef,
-  } = useSearch(graphType);
+  const { query, setQuery, results, isOpen, setIsOpen, containerRef } = useSearch(graphType);
 
   const shouldDropdownBeVisible = isOpen && query.trim() !== "";
 

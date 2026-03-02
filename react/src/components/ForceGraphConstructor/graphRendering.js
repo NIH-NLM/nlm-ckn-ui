@@ -14,7 +14,13 @@ import { truncateString } from "../../utils";
  * @param {Array} originNodeIds - IDs of origin nodes
  * @param {number} nodeRadius - Node radius for sizing inner circle
  */
-export function toggleFocusNodeRendering(d3, nodeContainer, useFocusNodes, originNodeIds, nodeRadius) {
+export function toggleFocusNodeRendering(
+  d3,
+  nodeContainer,
+  useFocusNodes,
+  originNodeIds,
+  nodeRadius,
+) {
   const originSet = new Set(originNodeIds || []);
 
   nodeContainer.selectAll("g.node").each(function (d) {
@@ -28,7 +34,7 @@ export function toggleFocusNodeRendering(d3, nodeContainer, useFocusNodes, origi
         // Using "text" as the reference is more robust than "title" which may not exist.
         const firstText = nodeG.select("text");
         nodeG
-          .insert("circle", firstText.empty() ? null : function() { return firstText.node(); })
+          .insert("circle", firstText.empty() ? null : () => firstText.node())
           .attr("class", "donut-inner")
           .attr("r", nodeRadius * 0.7)
           .attr("fill", "white")

@@ -15,8 +15,9 @@ const useSearch = (graphType) => {
   const [isLoading, setIsLoading] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
 
-  // Cleanup on unmount
+  // Track mount state for async safety
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
       mountedRef.current = false;
     };

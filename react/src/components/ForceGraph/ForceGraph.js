@@ -20,13 +20,7 @@ import {
   uncollapseNode,
   updateSetting,
 } from "store";
-import {
-  getLabel,
-  hasNodesInRawData,
-  isMac,
-  LoadingBar,
-  performSetOperation,
-} from "utils";
+import { getLabel, hasNodesInRawData, isMac, LoadingBar, performSetOperation } from "utils";
 // Import extracted hooks
 import { useGraphExport, useNodeNames, usePerNodeSettings } from "./hooks";
 // Import extracted panels
@@ -337,7 +331,9 @@ const ForceGraph = ({
       if (graphData?.nodes?.length > 0) {
         // Track rendered node and link IDs to prevent duplicate renders (StrictMode, simulation end)
         lastRenderedNodeIdsRef.current = new Set(graphData.nodes.map((n) => n._id || n.id));
-        lastRenderedLinkIdsRef.current = new Set(graphData.links.map((l) => l._id || `${l.source}-${l.target}`));
+        lastRenderedLinkIdsRef.current = new Set(
+          graphData.links.map((l) => l._id || `${l.source}-${l.target}`),
+        );
         // Mark as initialized to prevent the initialization effect from triggering
         // fetchAndProcessGraph — we already have the data we need.
         hasInitializedGraph.current = true;
@@ -414,9 +410,7 @@ const ForceGraph = ({
 
           // Track rendered node and link IDs so the subsequent setGraphData from
           // onSimulationEnd doesn't trigger a redundant updateGraph call.
-          lastRenderedNodeIdsRef.current = new Set(
-            processedData.nodes.map((n) => n._id || n.id),
-          );
+          lastRenderedNodeIdsRef.current = new Set(processedData.nodes.map((n) => n._id || n.id));
           lastRenderedLinkIdsRef.current = new Set(
             processedData.links.map((l) => l._id || `${l.source}-${l.target}`),
           );
@@ -436,16 +430,20 @@ const ForceGraph = ({
             // Prevents duplicate renders from: StrictMode double-mount,
             // simulation end callback, and redundant effect triggers.
             const currentNodeIds = new Set(graphData.nodes.map((n) => n._id || n.id));
-            const currentLinkIds = new Set(graphData.links.map((l) => l._id || `${l.source}-${l.target}`));
+            const currentLinkIds = new Set(
+              graphData.links.map((l) => l._id || `${l.source}-${l.target}`),
+            );
             const lastRenderedNodes = lastRenderedNodeIdsRef.current;
             const lastRenderedLinks = lastRenderedLinkIdsRef.current;
 
-            const nodesMatch = lastRenderedNodes
-              && currentNodeIds.size === lastRenderedNodes.size
-              && [...currentNodeIds].every((id) => lastRenderedNodes.has(id));
-            const linksMatch = lastRenderedLinks
-              && currentLinkIds.size === lastRenderedLinks.size
-              && [...currentLinkIds].every((id) => lastRenderedLinks.has(id));
+            const nodesMatch =
+              lastRenderedNodes &&
+              currentNodeIds.size === lastRenderedNodes.size &&
+              [...currentNodeIds].every((id) => lastRenderedNodes.has(id));
+            const linksMatch =
+              lastRenderedLinks &&
+              currentLinkIds.size === lastRenderedLinks.size &&
+              [...currentLinkIds].every((id) => lastRenderedLinks.has(id));
 
             if (nodesMatch && linksMatch) {
               break;

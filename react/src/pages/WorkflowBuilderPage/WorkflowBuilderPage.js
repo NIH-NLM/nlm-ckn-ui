@@ -30,9 +30,8 @@ const WorkflowBuilderPage = () => {
   const [activeView, setActiveView] = useState("table"); // "table" | "graph"
 
   // Workflow builder state
-  const { activeGraph, activePhaseId, phases, phaseResults, status, executingPhaseId } = useSelector(
-    (state) => state.workflowBuilder,
-  );
+  const { activeGraph, activePhaseId, phases, phaseResults, status, executingPhaseId } =
+    useSelector((state) => state.workflowBuilder);
 
   // Load workflow from URL on mount
   useEffect(() => {
@@ -168,7 +167,10 @@ const WorkflowBuilderPage = () => {
               )}
 
               {/* Graph View */}
-              <div className="results-view-content graph-view" style={{ display: activeView === "graph" ? "block" : "none" }}>
+              <div
+                className="results-view-content graph-view"
+                style={{ display: activeView === "graph" ? "block" : "none" }}
+              >
                 <ErrorBoundary>
                   <ForceGraph />
                 </ErrorBoundary>

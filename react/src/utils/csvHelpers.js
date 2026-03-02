@@ -28,12 +28,7 @@ const formatCsvValue = (value) => {
 export const generateCsv = (dataArray, options = {}) => {
   if (!dataArray.length) return "";
 
-  const {
-    priorityFields = [],
-    skipFields = [],
-    skipPrefixes = ["__"],
-    valueTransform,
-  } = options;
+  const { priorityFields = [], skipFields = [], skipPrefixes = ["__"], valueTransform } = options;
 
   const skipFieldSet = new Set(skipFields);
 

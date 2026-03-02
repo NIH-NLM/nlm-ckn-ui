@@ -39,7 +39,9 @@ const PresetSelector = ({ onSelectPreset, onStartFromScratch }) => {
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Group presets by category
