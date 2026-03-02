@@ -13,7 +13,7 @@
     "edgeDirection": "ANY",
     "collapseOnStart": false,
     "allowedCollections": ["UBERON"],
-    "preferredPredicates": ["SUB_CLASS_OF"]
+    "preferredPredicates": ["PART_OF"]
   },
   "CHEBI": {
     "graphType": "ontologies",

@@ -22,7 +22,7 @@
         ],
         "individual_urls": [
           {
-            "individual_url": "https://cell-kn-mvp.org/#/collections/<FIELD_TO_USE>",
+            "individual_url": "https://nlm-ckn.org/#/collections/<FIELD_TO_USE>",
             "field_to_use": "_id",
             "to_be_replaced": "",
             "replace_with": "",
@@ -105,7 +105,7 @@
         ],
         "individual_urls": [
           {
-            "individual_url": "https://cell-kn-mvp.org/#/collections/<FIELD_TO_USE>",
+            "individual_url": "https://nlm-ckn.org/#/collections/<FIELD_TO_USE>",
             "field_to_use": "_id",
             "to_be_replaced": "",
             "replace_with": "",
@@ -145,7 +145,7 @@
         ],
         "individual_urls": [
           {
-            "individual_url": "https://cell-kn-mvp.org/#/collections/<FIELD_TO_USE>",
+            "individual_url": "https://nlm-ckn.org/#/collections/<FIELD_TO_USE>",
             "field_to_use": "_id",
             "to_be_replaced": "",
             "replace_with": "",
@@ -361,7 +361,7 @@
         ],
         "individual_urls": [
           {
-            "individual_url": "https://cell-kn-mvp.org/#/collections/<FIELD_TO_USE>",
+            "individual_url": "https://nlm-ckn.org/#/collections/<FIELD_TO_USE>",
             "field_to_use": "_id",
             "to_be_replaced": "",
             "replace_with": "",
@@ -851,82 +851,6 @@
           }
         ],
         "more_info": "The Mondo Disease Ontology (Mondo) aims to harmonize existing disease terminologies into a coherent ontological representation of diseases. Mondo integrates widely used terminologies such as Online Mendelian Inheritance in Man (OMIM), Orphanet, Experimental Factor Ontology (EFO), Disease Ontology (DOID), ICD 11 (Foundation) and the neoplasm branch of National Cancer Institute Thesaurus (NCIt). Mondo aims to track provenance and attribution for every integrated part of the disease definition to serve a wide range of data integration and cross-terminology analysis use cases."
-      }
-    ],
-    [
-      "MmusDv",
-      {
-        "abbreviated_name": "MmusDv",
-        "display_name": "Life cycle stage",
-        "color": "#dcbeff",
-        "individual_labels": [
-          {
-            "field_to_use": "label",
-            "to_be_replaced": "",
-            "replace_with": "",
-            "make_lower_case": false
-          },
-          {
-            "field_to_use": "definition",
-            "to_be_replaced": "",
-            "replace_with": "",
-            "make_lower_case": false
-          }
-        ],
-        "individual_urls": [
-          {
-            "individual_url": "http://purl.obolibrary.org/obo/<FIELD_TO_USE>",
-            "field_to_use": "_id",
-            "to_be_replaced": "/",
-            "replace_with": "_",
-            "make_lower_case": false
-          }
-        ],
-        "individual_fields": [
-          {
-            "field_to_display": "label",
-            "display_field_as": "Label",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "definition",
-            "display_field_as": "Definition",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "hasOBONamespace",
-            "display_field_as": "OBO_namespace",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "start_dpb",
-            "display_field_as": "Start_dpb",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "end_dpb",
-            "display_field_as": "End_dpb",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "start_wpb",
-            "display_field_as": "Start_wpb",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "end_wpb",
-            "display_field_as": "End_wpb",
-            "field_url": "",
-            "field_to_use": ""
-          }
-        ],
-        "more_info": "MmusDv was developed by the Bgee group with assistance from the core Uberon developers and the Mouse anatomy ontology developers. Currently it includes both embryonic stages and adult stages."
       }
     ],
     [

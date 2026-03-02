@@ -1,4 +1,4 @@
-# Cell KN MVP UI - CSS Architecture
+# NLM-CKN MVP UI - CSS Architecture
 
 ## Overview
 
@@ -263,5 +263,5 @@ Test responsive behavior at these widths:
 ---
 
 **Last Updated**: Dec 2025
-**Maintained by**: Cell KN Team
+**Maintained by**: NLM-CKN Team
 **Standards**: NCBI Style Guide + USWDS 2.x

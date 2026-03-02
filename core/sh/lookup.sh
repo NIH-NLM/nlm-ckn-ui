@@ -23,7 +23,6 @@ EOF
 }
 
 # Parse command line options
-do_list_configurations=0
 while getopts ":lc:hex" opt; do
     case $opt in
 	h)

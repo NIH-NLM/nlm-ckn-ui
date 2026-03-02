@@ -3,7 +3,7 @@
  * Uses predefined colors from collection config for consistency.
  */
 import * as d3 from "d3";
-import collMaps from "../assets/cell-kn-mvp-collection-maps.json";
+import collMaps from "../assets/nlm-ckn-collection-maps.json";
 
 // Build color mappings from config
 const collectionMaps = new Map(collMaps.maps);
@@ -29,7 +29,7 @@ const defaultColor = "#cccccc";
 
 /**
  * Gets stable color for specific collection ID from main config file.
- * The color is defined in cell-kn-mvp-collection-maps.json, ensuring
+ * The color is defined in nlm-ckn-collection-maps.json, ensuring
  * consistent colors across page loads and renders.
  *
  * @param {string} collectionId - The ID of collection (e.g., "CL", "UBERON").

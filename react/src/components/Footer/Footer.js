@@ -9,7 +9,7 @@ const Footer = () => {
       <div className="footer-content-wrapper">
         <div className="footer-section footer-links">
           <a
-            href="https://github.com/NIH-NLM/cell-kn-mvp"
+            href="https://github.com/NIH-NLM/nlm-ckn"
             target="_blank"
             rel="noopener noreferrer"
             className="footer-link github-link"
