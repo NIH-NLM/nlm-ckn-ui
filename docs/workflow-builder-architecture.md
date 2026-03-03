@@ -9,50 +9,39 @@ The Workflow Builder is a **multi-phase graph query orchestrator**. Users build 
 ## Architecture Diagram
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        WorkflowBuilderPage                              │
-│  ┌────────────────────────────┐   ┌──────────────────────────────────┐  │
-│  │     WorkflowBuilder        │   │         Results Area             │  │
-│  │                            │   │                                  │  │
-│  │  ┌──────────────────────┐  │   │  ┌─ Phase Tabs ──────────────┐  │  │
-│  │  │   PresetSelector     │  │   │  │ [Phase 1] [Phase 2] [...]  │  │  │
-│  │  │   (grid of presets)  │  │   │  └────────────────────────────┘  │  │
-│  │  └──────────────────────┘  │   │                                  │  │
-│  │           OR               │   │  ┌─ View Toggle ─────────────┐  │  │
-│  │  ┌──────────────────────┐  │   │  │ [Table]  [Graph]          │  │  │
-│  │  │   Phase Editor #1    │  │   │  └────────────────────────────┘  │  │
-│  │  │  ┌────────────────┐  │  │   │                                  │  │
-│  │  │  │ Origin Source   │  │  │   │  ┌────────────────────────────┐ │  │
-│  │  │  │ ○ Manual        │  │  │   │  │     ResultsTable           │ │  │
-│  │  │  │ ○ Collection    │  │  │   │  │  (Nodes tab / Edges tab)   │ │  │
-│  │  │  │ ○ Prev Phase    │  │  │   │  │  + CSV download            │ │  │
-│  │  │  │ ○ Combine       │  │  │   │  └────────────────────────────┘ │  │
-│  │  │  └────────────────┘  │  │   │            OR                    │  │
-│  │  │  ┌────────────────┐  │  │   │  ┌────────────────────────────┐ │  │
-│  │  │  │ NodeSearchInput │  │  │   │  │     ForceGraph (D3.js)     │ │  │
-│  │  │  │ (search nodes)  │  │  │   │  │  ┌──────────────────────┐ │ │  │
-│  │  │  └────────────────┘  │  │   │  │  │  Force Simulation     │ │ │  │
-│  │  │  ┌────────────────┐  │  │   │  │  │  • Charge repulsion   │ │ │  │
-│  │  │  │ Settings        │  │  │   │  │  │  • Center gravity     │ │ │  │
-│  │  │  │ • Depth (0-9)   │  │  │   │  │  │  • Link springs      │ │ │  │
-│  │  │  │ • Direction     │  │  │   │  │  └──────────────────────┘ │ │  │
-│  │  │  │ • Set Operation │  │  │   │  │  Drag / Zoom / Pan        │ │  │
-│  │  │  │ • Collections   │  │  │   │  │  Right-click context menu  │ │  │
-│  │  │  │ • Edge Filters  │  │  │   │  │  Expand / Collapse nodes   │ │  │
-│  │  │  │ • Per-node      │  │  │   │  └────────────────────────────┘ │  │
-│  │  │  │   overrides     │  │  │   │                                  │  │
-│  │  │  └────────────────┘  │  │   └──────────────────────────────────┘  │
-│  │  │  [Execute Phase]     │  │                                         │
-│  │  └──────────────────────┘  │                                         │
-│  │         ↕ connector        │                                         │
-│  │  ┌──────────────────────┐  │                                         │
-│  │  │   Phase Editor #2    │  │                                         │
-│  │  │   (chains from #1)   │  │                                         │
-│  │  └──────────────────────┘  │                                         │
-│  │  [+ Add Phase]             │                                         │
-│  │  [Execute All Phases]      │                                         │
-│  └────────────────────────────┘                                         │
-└─────────────────────────────────────────────────────────────────────────┘
++---------------------------------------------------------------------------+
+|                        WorkflowBuilderPage                                |
++-----------------------------------+---------------------------------------+
+| WorkflowBuilder (left sidebar)    | Results Area (right panel)            |
++-----------------------------------+---------------------------------------+
+|                                   |                                       |
+| PresetSelector                    | Phase Tabs                            |
+|   (grid of presets)               |   [Phase 1] [Phase 2] [...]           |
+|         -- OR --                  |                                       |
+| Phase Editor #1                   | View: [Table] or [Graph]              |
+|   Origin Source:                  |                                       |
+|     o Manual                      | ResultsTable                          |
+|     o Collection                  |   Nodes / Edges tabs                  |
+|     o Previous Phase              |   CSV download                        |
+|     o Combine Phases              |         -- OR --                      |
+|   NodeSearchInput                 | ForceGraph (D3.js)                    |
+|     (debounced node search)       |   Force Simulation:                   |
+|   Settings:                       |     - Charge repulsion                |
+|     - Depth (0-9)                 |     - Center gravity                  |
+|     - Direction                   |     - Link springs                    |
+|     - Set Operation               |   Interactions:                       |
+|     - Collections filter          |     - Drag / Zoom / Pan               |
+|     - Edge filters                |     - Right-click context menu        |
+|     - Per-node overrides          |     - Expand / Collapse nodes         |
+|   [Execute Phase]                 |                                       |
+|        |                          |                                       |
+|   Phase Editor #2                 |                                       |
+|     (chains from #1)              |                                       |
+|        |                          |                                       |
+|   [+ Add Phase]                   |                                       |
+|   [Execute All Phases]            |                                       |
+|                                   |                                       |
++-----------------------------------+---------------------------------------+
 ```
 
 ---
@@ -60,26 +49,26 @@ The Workflow Builder is a **multi-phase graph query orchestrator**. Users build 
 ## Redux State Architecture
 
 ```
-                        ┌─────────────────────────────────────────────┐
-                        │              Redux Store                    │
-                        ├─────────────────────────────────────────────┤
-                        │                                             │
-                        │  workflowBuilderSlice                       │
-                        │  ├── phases[] (config + cached results)     │
-                        │  ├── phaseResults{} (source of truth)       │
-                        │  ├── nodeDetails{} (label cache)            │
-                        │  ├── status, executingPhaseId, error        │
-                        │  ├── activePhaseId, activeGraph             │
-                        │  └── showPresetSelector                     │
-                        │                                             │
-                        │  graphSlice (wrapped in redux-undo)         │
-                        │  ├── graphData (nodes + links for D3)       │
-                        │  ├── settings (depth, fonts, labels, etc.)  │
-                        │  ├── collapsed state                        │
-                        │  ├── availableEdgeFilters                   │
-                        │  └── past[] / future[] (undo/redo history)  │
-                        │                                             │
-                        └─────────────────────────────────────────────┘
++-----------------------------------------------------+
+|                    Redux Store                      |
++-----------------------------------------------------+
+|                                                     |
+|  workflowBuilderSlice                               |
+|    phases[] (config + cached results)               |
+|    phaseResults{} (source of truth)                 |
+|    nodeDetails{} (label cache)                      |
+|    status, executingPhaseId, error                  |
+|    activePhaseId, activeGraph                       |
+|    showPresetSelector                               |
+|                                                     |
+|  graphSlice (wrapped in redux-undo)                 |
+|    graphData (nodes + links for D3)                 |
+|    settings (depth, fonts, labels, etc.)            |
+|    collapsed state                                  |
+|    availableEdgeFilters                             |
+|    past[] / future[] (undo/redo history)            |
+|                                                     |
++-----------------------------------------------------+
 ```
 
 ---
@@ -88,45 +77,40 @@ The Workflow Builder is a **multi-phase graph query orchestrator**. Users build 
 
 ```
 User configures phase
-        │
-        ▼
-┌─ Origin Resolution ──────────────────────────────────┐
-│                                                      │
-│  "manual"        → use user-selected node IDs        │
-│  "collection"    → fetch all IDs from collection     │
-│  "previousPhase" → filter prior phase's result nodes │
-│                    (all / leafNodes / originNodes)    │
-│  "multiplePhases"→ combine results via set operation │
-│                    (no API call — pure merge)         │
-└──────────────────────────┬───────────────────────────┘
-                           │
-                           ▼
-┌─ Build Per-Node Settings ────────────────────────────┐
-│  For each origin node:                               │
-│    shared settings (depth, direction, collections,   │
-│    edge filters) MERGED with per-node overrides      │
-└──────────────────────────┬───────────────────────────┘
-                           │
-                           ▼
-            POST /arango_api/graph/
-            { node_ids, advanced_settings, graph }
-                           │
-                           ▼
-┌─ Backend Traversal ──────────────────────────────────┐
-│  ArangoDB graph traversal per origin node             │
-│  Returns { nodeId: { nodes[], links[] } }            │
-└──────────────────────────┬───────────────────────────┘
-                           │
-                           ▼
-┌─ Frontend Merge ─────────────────────────────────────┐
-│  performSetOperation(results, "Union"|"Intersection") │
-│  Filter by returnCollections if specified             │
-└──────────────────────────┬───────────────────────────┘
-                           │
-                           ▼
-    Cache in phaseResults[phaseId] + phase.result
-    Invalidate all downstream phase caches
-    Set activeGraph → render in table / D3 graph
+         |
+         v
+  Origin Resolution
+    "manual"         -> user-selected node IDs
+    "collection"     -> fetch all IDs from collection
+    "previousPhase"  -> filter prior phase's results
+                        (all / leafNodes / originNodes)
+    "multiplePhases" -> combine via set operation
+                        (no API call -- pure merge)
+         |
+         v
+  Build Per-Node Settings
+    For each origin node: shared settings
+    (depth, direction, collections, edge filters)
+    MERGED with per-node overrides
+         |
+         v
+  POST /arango_api/graph/
+  { node_ids, advanced_settings, graph }
+         |
+         v
+  Backend Traversal
+    ArangoDB graph traversal per origin node
+    Returns { nodeId: { nodes[], links[] } }
+         |
+         v
+  Frontend Merge
+    performSetOperation(results, "Union" | "Intersection")
+    Filter by returnCollections if specified
+         |
+         v
+  Cache in phaseResults[phaseId] + phase.result
+  Invalidate all downstream phase caches
+  Set activeGraph -> render in table / D3 graph
 ```
 
 ---
@@ -134,35 +118,34 @@ User configures phase
 ## API Endpoints
 
 ```
-┌───────────────────────────────────────────────────────┐
-│              Django Backend                            │
-│                                                       │
-│  GET  /arango_api/workflow_presets/                    │
-│       → returns preset definitions + categories       │
-│                                                       │
-│  POST /arango_api/graph/                              │
-│       → traverses ArangoDB graph from origin nodes    │
-│       → returns { nodeId: {nodes, links} }            │
-│                                                       │
-│  POST /arango_api/collection/{name}/                  │
-│       → returns all documents in a collection         │
-│                                                       │
-│  POST /arango_api/document/details                    │
-│       → returns node metadata by IDs                  │
-│                                                       │
-│  ┌─────────────────────────────────────────────────┐  │
-│  │  workflow_service.py                             │  │
-│  │  • execute_workflow(phases, graph)               │  │
-│  │  • execute_preset(preset_id, overrides)          │  │
-│  │  • _execute_phase() — resolves origins,          │  │
-│  │    traverses graph, applies set operations       │  │
-│  └─────────────────────────────────────────────────┘  │
-│  ┌─────────────────────────────────────────────────┐  │
-│  │  ArangoDB (Knowledge Graph)                      │  │
-│  │  Collections: CL, MONDO, UBERON, HP, ...         │  │
-│  │  Edges: SUB_CLASS_OF, PART_OF, etc.              │  │
-│  └─────────────────────────────────────────────────┘  │
-└───────────────────────────────────────────────────────┘
++----------------------------------------------------------+
+|                     Django Backend                       |
++----------------------------------------------------------+
+|                                                          |
+|  GET  /arango_api/workflow_presets/                      |
+|       -> preset definitions + categories                 |
+|                                                          |
+|  POST /arango_api/graph/                                 |
+|       -> traverses graph from origin nodes               |
+|       -> returns { nodeId: {nodes, links} }              |
+|                                                          |
+|  POST /arango_api/collection/{name}/                     |
+|       -> all documents in a collection                   |
+|                                                          |
+|  POST /arango_api/document/details                       |
+|       -> node metadata by IDs                            |
+|                                                          |
+|  workflow_service.py                                     |
+|    - execute_workflow(phases, graph)                     |
+|    - execute_preset(preset_id, overrides)                |
+|    - _execute_phase() -- resolves origins,               |
+|      traverses graph, applies set operations             |
+|                                                          |
+|  ArangoDB (Knowledge Graph)                              |
+|    Collections: CL, MONDO, UBERON, HP, ...               |
+|    Edges: SUB_CLASS_OF, PART_OF, etc.                    |
+|                                                          |
++----------------------------------------------------------+
 ```
 
 ---
@@ -218,7 +201,7 @@ Each phase in a workflow contains:
 | **Dual result storage** (`phaseResults{}` + `phase.result`) | `phaseResults` is the source of truth for cross-phase lookups; `phase.result` is a convenience mirror for rendering |
 | **Cascade invalidation** | When a phase changes, all downstream phases that depend on it have their cached results cleared automatically |
 | **Per-node settings** | Advanced users can set different traversal depth/direction/filters per origin node within a single phase |
-| **Custom D3 (no React Flow)** | Full control over force simulation physics, SVG rendering, and interactions for the biomedical graph domain |
+| **Custom D3 graph engine** | Hand-built D3.js force simulation gives full control over physics, SVG rendering, and interactions tailored to our biomedical graph domain |
 | **URL-based sharing** | Workflows are base64-encoded into a `?w=` query parameter so users can share configurations via link |
 | **Preset system** | Backend-defined preset workflows (with categories) give users starting templates for common exploration patterns |
 
