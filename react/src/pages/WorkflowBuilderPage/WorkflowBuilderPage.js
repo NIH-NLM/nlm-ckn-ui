@@ -76,9 +76,9 @@ const WorkflowBuilderPage = () => {
         const nodeIds = graphData.nodes.map((n) => n._id);
 
         // Set graph data and origin node IDs in a single dispatch.
-        // Settings like depth and useFocusNodes are applied in ForceGraph's
-        // constructor path to avoid updateSetting dispatches that set
-        // lastActionType="updateSetting" and trigger fetchAndProcessGraph.
+        // The setGraphData reducer also sets depth=0 and useFocusNodes=false
+        // and snapshots lastAppliedSettings so the "Apply Changes" mechanism
+        // works for query-affecting settings in the graph options panel.
         dispatch(setGraphData({ graphData, originNodeIds: nodeIds }));
 
         setHasResults(true);

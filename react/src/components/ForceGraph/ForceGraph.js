@@ -5,7 +5,7 @@ import ForceGraphConstructor from "components/ForceGraphConstructor/ForceGraphCo
 import LoadGraphModal from "components/LoadGraphModal";
 import { useGraphDataInit, useHotkeyHold, useHotkeys } from "hooks";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { batch, shallowEqual, useDispatch, useSelector } from "react-redux";
+import { shallowEqual, useDispatch, useSelector } from "react-redux";
 import { ActionCreators } from "redux-undo";
 import {
   clearGraphData,
@@ -337,11 +337,6 @@ const ForceGraph = ({
         // Mark as initialized to prevent the initialization effect from triggering
         // fetchAndProcessGraph — we already have the data we need.
         hasInitializedGraph.current = true;
-        // Set display settings to reflect workflow results (depth 0, no donuts)
-        batch(() => {
-          dispatch(updateSetting({ setting: "useFocusNodes", value: false }));
-          dispatch(updateSetting({ setting: "depth", value: 0 }));
-        });
         newGraphInstance.updateGraph({
           newOriginNodeIds: originNodeIds,
           newNodes: graphData.nodes,

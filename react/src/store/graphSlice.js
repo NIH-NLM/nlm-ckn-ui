@@ -180,6 +180,16 @@ const graphSlice = createSlice({
         if (action.payload.originNodeIds) {
           state.originNodeIds = action.payload.originNodeIds;
           state.lastAppliedOriginNodeIds = action.payload.originNodeIds;
+          // Configure display settings for pre-fetched workflow results
+          // and snapshot lastAppliedSettings so the "Apply Changes" banner
+          // appears when the user changes query-affecting settings.
+          state.settings.depth = 0;
+          state.settings.useFocusNodes = false;
+          try {
+            state.lastAppliedSettings = JSON.parse(JSON.stringify(state.settings));
+          } catch (_err) {
+            state.lastAppliedSettings = { ...state.settings };
+          }
         }
       } else {
         const graphData = action.payload.nodes
