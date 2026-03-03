@@ -79,38 +79,54 @@ The Workflow Builder is a **multi-phase graph query orchestrator**. Users build 
 User configures phase
          |
          v
-  Origin Resolution
-    "manual"         -> user-selected node IDs
-    "collection"     -> fetch all IDs from collection
-    "previousPhase"  -> filter prior phase's results
-                        (all / leafNodes / originNodes)
-    "multiplePhases" -> combine via set operation
-                        (no API call -- pure merge)
++--------------------------------------------------------+
+| Origin Resolution                                      |
+|                                                        |
+|   "manual"         -> user-selected node IDs           |
+|   "collection"     -> fetch all IDs from collection    |
+|   "previousPhase"  -> filter prior phase's results     |
+|                       (all / leafNodes / originNodes)  |
+|   "multiplePhases" -> combine via set operation        |
+|                       (no API call -- pure merge)      |
++--------------------------------------------------------+
          |
          v
-  Build Per-Node Settings
-    For each origin node: shared settings
-    (depth, direction, collections, edge filters)
-    MERGED with per-node overrides
++--------------------------------------------------------+
+| Build Per-Node Settings                                |
+|                                                        |
+|   For each origin node: shared settings                |
+|   (depth, direction, collections, edge filters)        |
+|   MERGED with per-node overrides                       |
++--------------------------------------------------------+
          |
          v
-  POST /arango_api/graph/
-  { node_ids, advanced_settings, graph }
++--------------------------------------------------------+
+| POST /arango_api/graph/                                |
+| { node_ids, advanced_settings, graph }                 |
++--------------------------------------------------------+
          |
          v
-  Backend Traversal
-    ArangoDB graph traversal per origin node
-    Returns { nodeId: { nodes[], links[] } }
++--------------------------------------------------------+
+| Backend Traversal                                      |
+|                                                        |
+|   ArangoDB graph traversal per origin node             |
+|   Returns { nodeId: { nodes[], links[] } }             |
++--------------------------------------------------------+
          |
          v
-  Frontend Merge
-    performSetOperation(results, "Union" | "Intersection")
-    Filter by returnCollections if specified
++--------------------------------------------------------+
+| Frontend Merge                                         |
+|                                                        |
+|   performSetOperation(results, "Union"|"Intersection") |
+|   Filter by returnCollections if specified             |
++--------------------------------------------------------+
          |
          v
-  Cache in phaseResults[phaseId] + phase.result
-  Invalidate all downstream phase caches
-  Set activeGraph -> render in table / D3 graph
++--------------------------------------------------------+
+| Cache in phaseResults[phaseId] + phase.result          |
+| Invalidate all downstream phase caches                 |
+| Set activeGraph -> render in table / D3 graph          |
++--------------------------------------------------------+
 ```
 
 ---
