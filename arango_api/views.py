@@ -28,9 +28,10 @@ from arango_api.serializers import (
     SunburstRequestSerializer,
     EdgeFilterOptionsSerializer,
     DocumentsRequestSerializer,
+    WorkflowExecuteSerializer,
 )
 from arango_api.services import collection_service, graph_service, search_service
-from arango_api.services import document_service, sunburst_service
+from arango_api.services import document_service, sunburst_service, workflow_service
 from arango_api.services.sunburst_service import SunburstServiceError
 
 logger = logging.getLogger(__name__)
@@ -244,3 +245,54 @@ class DocumentsView(APIView):
             graph_name=data.get("db", "ontologies"),
         )
         return Response(results)
+
+
+class WorkflowExecuteView(APIView):
+    """Execute a multi-phase workflow or a preset."""
+
+    def post(self, request):
+        serializer = WorkflowExecuteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        graph = data.get("graph", "ontologies")
+
+        try:
+            if data.get("preset_id"):
+                result = workflow_service.execute_preset(
+                    preset_id=data["preset_id"],
+                    origin_overrides=data.get("origin_overrides"),
+                    graph=graph,
+                )
+            else:
+                result = workflow_service.execute_workflow(
+                    phases=data["phases"],
+                    graph=graph,
+                )
+
+            if result.get("errors"):
+                # HTTP 207 Multi-Status: some phases succeeded while others
+                # failed, so neither 200 nor 4xx/5xx fully describes the outcome.
+                return Response(result, status=207)
+            return Response(result)
+
+        except ValueError as e:
+            logger.warning("Workflow execution error: %s", e)
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception:
+            logger.exception("Unexpected error executing workflow")
+            return Response(
+                {"error": "An internal server error occurred."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class WorkflowPresetsView(APIView):
+    """Return pre-built workflow presets (query-only schema)."""
+
+    def get(self, request):
+        from arango_api.workflow_presets import PRESET_CATEGORIES, WORKFLOW_PRESETS
+
+        return Response({
+            "presets": WORKFLOW_PRESETS,
+            "categories": PRESET_CATEGORIES,
+        })

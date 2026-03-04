@@ -14,6 +14,10 @@ const PER_NODE_SETTINGS = [
   "edgeFilters",
 ];
 
+// Settings that take effect immediately (display-only) and should NOT
+// trigger the "Apply Changes" banner when changed.
+const DISPLAY_ONLY_SETTINGS = ["useFocusNodes", "labelStates", "nodeFontSize", "edgeFontSize"];
+
 /**
  * Hook for managing per-node settings in advanced mode.
  * @param {Object} settings - Current graph settings from Redux
@@ -87,7 +91,7 @@ export function usePerNodeSettings(
     }
   }, [settings.edgeFilters, isAdvancedMode, activeOriginNodeId, perNodeSettings]);
 
-  // Calculate if settings are stale.
+  // Calculate if settings are stale (only for query-affecting settings).
   const isSettingsStale = useMemo(() => {
     // On the very first run, lastAppliedSettings is null, so nothing is stale.
     if (!lastAppliedSettings) {
@@ -99,8 +103,21 @@ export function usePerNodeSettings(
       // Compare perNodeSettings against snapshot in Redux.
       return JSON.stringify(perNodeSettings) !== JSON.stringify(lastAppliedPerNodeSettings);
     }
-    // Compare standard settings.
-    return JSON.stringify(settings) !== JSON.stringify(lastAppliedSettings);
+    // Compare only query-affecting settings, excluding display-only ones
+    // that take immediate effect (labels, font sizes, focus nodes).
+    const filterQuerySettings = (s) => {
+      const filtered = {};
+      for (const key of Object.keys(s)) {
+        if (!DISPLAY_ONLY_SETTINGS.includes(key)) {
+          filtered[key] = s[key];
+        }
+      }
+      return filtered;
+    };
+    return (
+      JSON.stringify(filterQuerySettings(settings)) !==
+      JSON.stringify(filterQuerySettings(lastAppliedSettings))
+    );
   }, [isAdvancedMode, settings, perNodeSettings, lastAppliedSettings, lastAppliedPerNodeSettings]);
 
   // Memoized handler for updating per-node or global settings.

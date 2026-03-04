@@ -150,6 +150,7 @@ const initialState = {
   status: GRAPH_STATUS.IDLE,
   error: null,
   lastActionType: null, // Tracks last action for conditional logic in UI.
+  source: null, // Tracks data source: "graph" | "workflow" | null
   availableEdgeFilters: {}, // Stores all unique edge attribute values fetched from API.
   edgeFilterStatus: GRAPH_STATUS.IDLE, // Status for edge filter options fetch.
   // Flag indicating if advanced mode is active for the current query.
@@ -170,10 +171,50 @@ const graphSlice = createSlice({
       state.lastActionType = "updateSetting";
     },
     // Sets final, processed graph data, including node positions.
+    // Accepts either {nodes, links} directly, or {graphData, originNodeIds}
+    // for workflow-style initialization that also sets origin nodes.
     setGraphData: (state, action) => {
-      state.graphData = action.payload;
+      if (action.payload.graphData) {
+        state.graphData = action.payload.graphData;
+        state.rawData = action.payload.graphData;
+        if (action.payload.originNodeIds) {
+          state.originNodeIds = action.payload.originNodeIds;
+          state.lastAppliedOriginNodeIds = action.payload.originNodeIds;
+          // Configure display settings for pre-fetched workflow results
+          // and snapshot lastAppliedSettings so the "Apply Changes" banner
+          // appears when the user changes query-affecting settings.
+          state.settings.depth = 0;
+          state.settings.useFocusNodes = false;
+          try {
+            state.lastAppliedSettings = JSON.parse(JSON.stringify(state.settings));
+          } catch (_err) {
+            state.lastAppliedSettings = { ...state.settings };
+          }
+        }
+      } else {
+        const graphData = action.payload.nodes
+          ? { nodes: action.payload.nodes, links: action.payload.links }
+          : action.payload;
+        state.graphData = graphData;
+        // Only overwrite rawData when this is an API/workflow dispatch (has originNodeIds),
+        // not when it's a simulation-end update.
+        if (action.payload.originNodeIds) {
+          state.rawData = graphData;
+        }
+      }
+      if (action.payload.source) {
+        state.source = action.payload.source;
+      }
       state.status = GRAPH_STATUS.SUCCEEDED;
       state.lastActionType = "setGraphData";
+    },
+    // Clears graph data, used when navigating away from workflow results to the graph page.
+    clearGraphData: (state) => {
+      state.graphData = { nodes: [], links: [] };
+      state.rawData = {};
+      state.originNodeIds = [];
+      state.source = null;
+      state.lastActionType = null;
     },
     // Resets graph state for new query.
     initializeGraph: (state, action) => {
@@ -204,7 +245,7 @@ const graphSlice = createSlice({
       state.settings.allCollections = action.payload;
       state.lastActionType = "setAllCollections";
     },
-    // Updates user-selected edge filter for a specific field.
+    // Updates user-selected edge filter for a specific field (toggles single value).
     updateEdgeFilter: (state, action) => {
       const { field, value } = action.payload;
       const currentFilters = state.settings.edgeFilters[field] || [];
@@ -221,6 +262,12 @@ const graphSlice = createSlice({
       };
 
       state.lastActionType = "updateEdgeFilter";
+    },
+    // Sets edge filters directly.
+    // Merges partial updates into existing filters so callers can pass just the changed property.
+    setEdgeFilters: (state, action) => {
+      state.settings.edgeFilters = { ...state.settings.edgeFilters, ...action.payload };
+      state.lastActionType = "setEdgeFilters";
     },
     // Updates a node's position, typically after user drag.
     updateNodePosition: (state, action) => {
@@ -395,6 +442,7 @@ const graphSlice = createSlice({
 export const {
   updateSetting,
   setGraphData,
+  clearGraphData,
   initializeGraph,
   setAvailableCollections,
   setAllCollections,
@@ -404,6 +452,7 @@ export const {
   uncollapseNode,
   collapseNode,
   updateEdgeFilter,
+  setEdgeFilters,
   loadGraph,
   loadGraphFromJson,
 } = graphSlice.actions;
@@ -411,7 +460,9 @@ export const {
 // Wrap base reducer with redux-undo.
 const undoableGraphReducer = undoable(graphSlice.reducer, {
   // Only create new history states on these specific actions.
+  // Skip undo entries for simulation-end dispatches (flagged with skipUndo).
   filter: (action, _currentState, _previousHistory) => {
+    if (action.type === setGraphData.type && action.payload?.skipUndo) return false;
     return action.type === setGraphData.type || action.type === updateNodePosition.type;
   },
   ignoreInitialState: true,

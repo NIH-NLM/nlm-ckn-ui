@@ -40,3 +40,23 @@ export function getColorForCollection(collectionId) {
   const config = collectionMaps.get(collectionId);
   return config?.color || defaultColor;
 }
+
+/**
+ * Get the collection color for a node ID (e.g., "CL/0000540") or a collection key (e.g., "CL").
+ * Extracts the collection prefix from node IDs that contain "/".
+ * @param {string} nodeIdOrKey - A node ID or collection key.
+ * @returns {string} The hex color code or a default fallback.
+ */
+export const getCollectionColor = (nodeIdOrKey) => {
+  const collection = nodeIdOrKey?.includes("/") ? nodeIdOrKey.split("/")[0] : nodeIdOrKey || "";
+  return collectionMaps.get(collection)?.color || "#666666";
+};
+
+/**
+ * Get the collection color by collection key (e.g., "CL").
+ * @param {string} collectionKey - The collection key.
+ * @returns {string|null} The hex color code or null if not found.
+ */
+export const getCollectionColorByKey = (collectionKey) => {
+  return collectionMaps.get(collectionKey)?.color || null;
+};

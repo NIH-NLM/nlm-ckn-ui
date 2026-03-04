@@ -28,3 +28,6 @@ export const SUNBURST_ENDPOINT = `${API_BASE}/sunburst/`;
 
 // AQL query endpoint
 export const AQL_ENDPOINT = `${API_BASE}/aql/`;
+
+// Workflow presets endpoint
+export const WORKFLOW_PRESETS_ENDPOINT = `${API_BASE}/workflow_presets/`;

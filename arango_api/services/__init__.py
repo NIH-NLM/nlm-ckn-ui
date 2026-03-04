@@ -11,4 +11,5 @@ Modules:
     graph_service: Graph traversal queries
     search_service: Full-text search, AQL queries
     sunburst_service: Hierarchical data for sunburst visualization
+    workflow_service: Multi-phase workflow orchestration
 """

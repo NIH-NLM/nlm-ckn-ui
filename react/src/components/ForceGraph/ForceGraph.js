@@ -3,34 +3,24 @@ import AddToGraphButton from "components/AddToGraphButton";
 import DocumentPopup from "components/DocumentPopup";
 import ForceGraphConstructor from "components/ForceGraphConstructor/ForceGraphConstructor";
 import LoadGraphModal from "components/LoadGraphModal";
-import { useHotkeyHold, useHotkeys } from "hooks";
+import { useGraphDataInit, useHotkeyHold, useHotkeys } from "hooks";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { shallowEqual, useDispatch, useSelector } from "react-redux";
 import { ActionCreators } from "redux-undo";
-import { fetchCollections } from "services";
 import {
+  clearGraphData,
   clearNodeToCenter,
   collapseNode,
   expandNode,
   fetchAndProcessGraph,
-  fetchEdgeFilterOptions,
   initializeGraph,
   saveGraph,
-  setAllCollections,
-  setAvailableCollections,
   setGraphData,
   setInitialCollapseList,
   uncollapseNode,
   updateSetting,
 } from "store";
-import {
-  getLabel,
-  hasNodesInRawData,
-  isMac,
-  LoadingBar,
-  parseCollections,
-  performSetOperation,
-} from "utils";
+import { getLabel, hasNodesInRawData, isMac, LoadingBar, performSetOperation } from "utils";
 // Import extracted hooks
 import { useGraphExport, useNodeNames, usePerNodeSettings } from "./hooks";
 // Import extracted panels
@@ -58,6 +48,10 @@ const ForceGraph = ({
   const svgRef = useRef();
   const graphInstanceRef = useRef(null);
   const hasInitializedGraph = useRef(false);
+  // Track the node and link IDs we've rendered to prevent infinite loops when setGraphData triggers effect
+  // (simulation end dispatches setGraphData with same nodes, causing re-render loop)
+  const lastRenderedNodeIdsRef = useRef(null);
+  const lastRenderedLinkIdsRef = useRef(null);
 
   // Selects origin node IDs from nodesSlice for NodesSlice driven graphs.
   const _nodesSliceOriginNodeIds = useSelector((state) => state.nodesSlice.originNodeIds);
@@ -73,6 +67,7 @@ const ForceGraph = ({
     collapsed,
     availableEdgeFilters,
     edgeFilterStatus,
+    source,
   } = useSelector((state) => state.graph.present, shallowEqual);
 
   // Select undo and redo state
@@ -130,23 +125,8 @@ const ForceGraph = ({
   const hasAppliedPropDefaultsRef = useRef(false);
   const isApplyingPropDefaultsRef = useRef(false);
 
-  // Fetches list of available data collections on component mount.
-  useEffect(() => {
-    fetchCollections(settings.graphType).then((data) => {
-      const parsed = parseCollections(data);
-      dispatch(setAvailableCollections(parsed));
-    });
-    fetchCollections("ontologies").then((data) => {
-      const parsed = parseCollections(data);
-      dispatch(setAllCollections(parsed));
-    });
-  }, [dispatch, settings.graphType]);
-
-  // Fetches available edge filter options when component mounts or graph type changes.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: graphType triggers refetch
-  useEffect(() => {
-    dispatch(fetchEdgeFilterOptions());
-  }, [dispatch, settings.graphType]);
+  // Initialize collections and edge filter options (refetches when graphType changes)
+  useGraphDataInit(settings.graphType);
 
   // Apply defaults from settingsFromProps exactly once on initial load.
   useEffect(() => {
@@ -217,6 +197,17 @@ const ForceGraph = ({
 
   // Triggers new data fetch when graph is explicitly initialized in the slice.
   useEffect(() => {
+    // If the existing data came from a workflow, clear it so the graph page
+    // can perform a fresh initialization instead of showing stale data.
+    if (graphData?.nodes?.length > 0 && source === "workflow") {
+      dispatch(clearGraphData());
+      return;
+    }
+    // Skip if we already have graph data (e.g., from WorkflowBuilder).
+    if (graphData?.nodes?.length > 0) return;
+    // Skip if a fetch is already in progress (prevents StrictMode double-fire).
+    if (status === "loading") return;
+
     if (
       (lastActionType === "initializeGraph" && settings.allowedCollections.length > 0) ||
       (!hasInitializedGraph.current && lastActionType === "updateSetting")
@@ -271,7 +262,7 @@ const ForceGraph = ({
 
   const handleSimulationEnd = useCallback(
     (finalNodes, finalLinks) => {
-      dispatch(setGraphData({ nodes: finalNodes, links: finalLinks }));
+      dispatch(setGraphData({ nodes: finalNodes, links: finalLinks, skipUndo: true }));
     },
     [dispatch],
   );
@@ -333,6 +324,28 @@ const ForceGraph = ({
       for (const labelClass in settings.labelStates) {
         newGraphInstance.toggleLabels(settings.labelStates[labelClass], labelClass);
       }
+
+      // If graphData already exists when instance is created (e.g., from WorkflowBuilder),
+      // render it immediately since we won't get another action to trigger rendering.
+      // Use updateGraph (not restoreGraph) to run the simulation for fresh data.
+      if (graphData?.nodes?.length > 0) {
+        // Track rendered node and link IDs to prevent duplicate renders (StrictMode, simulation end)
+        lastRenderedNodeIdsRef.current = new Set(graphData.nodes.map((n) => n._id || n.id));
+        lastRenderedLinkIdsRef.current = new Set(
+          graphData.links.map((l) => l._id || `${l.source}-${l.target}`),
+        );
+        // Mark as initialized to prevent the initialization effect from triggering
+        // fetchAndProcessGraph — we already have the data we need.
+        hasInitializedGraph.current = true;
+        newGraphInstance.updateGraph({
+          newOriginNodeIds: originNodeIds,
+          newNodes: graphData.nodes,
+          newLinks: graphData.links,
+          resetData: true,
+          labelStates: settings.labelStates,
+        });
+        return; // Early return since we've handled rendering
+      }
     }
 
     if (isRestoring === true || lastActionType === "loadGraph") {
@@ -390,8 +403,57 @@ const ForceGraph = ({
             labelStates: settings.labelStates,
           });
 
+          // Track rendered node and link IDs so the subsequent setGraphData from
+          // onSimulationEnd doesn't trigger a redundant updateGraph call.
+          lastRenderedNodeIdsRef.current = new Set(processedData.nodes.map((n) => n._id || n.id));
+          lastRenderedLinkIdsRef.current = new Set(
+            processedData.links.map((l) => l._id || `${l.source}-${l.target}`),
+          );
+
           if (nodeToCenter) {
             dispatch(clearNodeToCenter());
+          }
+          break;
+        }
+        case "setGraphData": {
+          // Handle direct graph data setting (e.g., from WorkflowBuilder).
+          // Use graphInstanceRef.current since graphInstance may be stale if
+          // the instance was just created in this same effect run.
+          const currentInstance = graphInstanceRef.current;
+          if (currentInstance && graphData?.nodes?.length > 0) {
+            // Skip if we already rendered this exact set of nodes and links.
+            // Prevents duplicate renders from: StrictMode double-mount,
+            // simulation end callback, and redundant effect triggers.
+            const currentNodeIds = new Set(graphData.nodes.map((n) => n._id || n.id));
+            const currentLinkIds = new Set(
+              graphData.links.map((l) => l._id || `${l.source}-${l.target}`),
+            );
+            const lastRenderedNodes = lastRenderedNodeIdsRef.current;
+            const lastRenderedLinks = lastRenderedLinkIdsRef.current;
+
+            const nodesMatch =
+              lastRenderedNodes &&
+              currentNodeIds.size === lastRenderedNodes.size &&
+              [...currentNodeIds].every((id) => lastRenderedNodes.has(id));
+            const linksMatch =
+              lastRenderedLinks &&
+              currentLinkIds.size === lastRenderedLinks.size &&
+              [...currentLinkIds].every((id) => lastRenderedLinks.has(id));
+
+            if (nodesMatch && linksMatch) {
+              break;
+            }
+
+            // Track this render and update the graph
+            lastRenderedNodeIdsRef.current = currentNodeIds;
+            lastRenderedLinkIdsRef.current = currentLinkIds;
+            currentInstance.updateGraph({
+              newOriginNodeIds: originNodeIds,
+              newNodes: graphData.nodes,
+              newLinks: graphData.links,
+              resetData: true,
+              labelStates: settings.labelStates,
+            });
           }
           break;
         }
@@ -424,6 +486,13 @@ const ForceGraph = ({
       }
     }
   }, [settings.labelStates]);
+
+  // Toggles donut rendering on origin nodes when setting changes.
+  useEffect(() => {
+    if (graphInstanceRef.current?.toggleFocusNodes) {
+      graphInstanceRef.current.toggleFocusNodes(settings.useFocusNodes);
+    }
+  }, [settings.useFocusNodes]);
 
   // --- History & Save/Load Handlers ---
   const handleUndo = useCallback(() => {
@@ -495,6 +564,7 @@ const ForceGraph = ({
   const handleEdgeFontSizeChange = (e) =>
     handleSettingChange("edgeFontSize", Number.parseInt(e.target.value, 10));
   const handleLeafToggle = (e) => handleSettingChange("collapseOnStart", e.target.checked);
+  const handleFocusNodesToggle = (e) => handleSettingChange("useFocusNodes", e.target.checked);
   const handleGraphToggle = () =>
     handleSettingChange(
       "graphType",
@@ -732,6 +802,7 @@ const ForceGraph = ({
                     onEdgeFontSizeChange={handleEdgeFontSizeChange}
                     onLabelToggle={handleLabelToggle}
                     onLeafToggle={handleLeafToggle}
+                    onFocusNodesToggle={handleFocusNodesToggle}
                     onGraphToggle={handleGraphToggle}
                     onSimulationRestart={handleSimulationRestart}
                   />

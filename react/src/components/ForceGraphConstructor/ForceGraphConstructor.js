@@ -1,7 +1,7 @@
 import * as d3 from "d3";
 import { getColorForCollection } from "../../utils";
 import { findLeafNodes, processGraphData, processGraphLinks } from "./graphDataProcessing";
-import { renderGraph } from "./graphRendering";
+import { renderGraph, toggleFocusNodeRendering } from "./graphRendering";
 import { DEFAULT_GRAPH_OPTIONS, runSimulation, waitForAlpha } from "./simulationUtils";
 
 // Re-export data processing functions for backwards compatibility
@@ -642,6 +642,18 @@ function ForceGraphConstructor(
     });
   }
 
+  // Toggles donut rendering on origin nodes without recreating graph.
+  function toggleFocusNodes(useFocusNodes) {
+    mergedOptions.useFocusNodes = useFocusNodes;
+    toggleFocusNodeRendering(
+      d3,
+      nodeContainer,
+      useFocusNodes,
+      mergedOptions.originNodeIds,
+      mergedOptions.nodeRadius,
+    );
+  }
+
   // Expose public API for graph manipulation.
   return {
     updateGraph,
@@ -649,6 +661,7 @@ function ForceGraphConstructor(
     updateNodeFontSize,
     updateLinkFontSize,
     toggleLabels,
+    toggleFocusNodes,
     centerOnNode,
     resize,
     // Returns the current node/link state suitable for saving.

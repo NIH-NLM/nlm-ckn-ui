@@ -1,8 +1,7 @@
 import SearchResultsTable from "components/SearchResultsTable";
 import { GraphContext } from "contexts";
-import { useCallback, useContext, useEffect, useRef, useState } from "react";
-import { searchDocuments } from "services";
-import { getAllSearchableFields } from "utils";
+import { useSearch } from "hooks";
+import { useContext } from "react";
 
 // SVG Icon Component
 const SearchIcon = () => (
@@ -22,61 +21,11 @@ const SearchIcon = () => (
 );
 
 const SearchBar = () => {
-  const containerRef = useRef(null);
-  const debounceTimeoutRef = useRef(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [input, setInput] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
-  const [showResults, setShowResults] = useState(false);
-
   const { graphType } = useContext(GraphContext);
 
-  // Text search function
-  const getSearchTerms = useCallback(async (currentSearchTerm, db) => {
-    const searchableFields = getAllSearchableFields();
-    return searchDocuments(currentSearchTerm, db, Array.from(searchableFields));
-  }, []);
+  const { query, setQuery, results, isOpen, setIsOpen, containerRef } = useSearch(graphType);
 
-  // Effect for fetching search results
-  useEffect(() => {
-    const fetchSearchResults = async () => {
-      if (searchTerm.trim() !== "") {
-        const data = await getSearchTerms(searchTerm, graphType);
-        setSearchResults(data);
-      } else {
-        setSearchResults([]);
-      }
-    };
-
-    fetchSearchResults();
-  }, [searchTerm, graphType, getSearchTerms]);
-
-  // Effect for handling clicks outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (containerRef.current && !containerRef.current.contains(event.target)) {
-        setShowResults(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
-    };
-  }, []);
-
-  // Search input handler
-  const handleSearch = (event) => {
-    const value = event.target.value;
-    setInput(value);
-    if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
-    debounceTimeoutRef.current = setTimeout(() => {
-      setSearchTerm(value);
-      if (value.trim() !== "") setShowResults(true);
-    }, 250);
-  };
-
-  const shouldDropdownBeVisible = showResults && input.trim() !== "";
+  const shouldDropdownBeVisible = isOpen && query.trim() !== "";
 
   return (
     <div className="search-component-wrapper" ref={containerRef}>
@@ -86,14 +35,14 @@ const SearchBar = () => {
             type="text"
             className="search-input"
             placeholder="Search NCKN..."
-            value={input}
-            onChange={handleSearch}
-            onFocus={() => setShowResults(true)}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => setIsOpen(true)}
           />
           <SearchIcon />
         </div>
         <div className={`search-results-dropdown ${shouldDropdownBeVisible ? "show" : ""}`}>
-          <SearchResultsTable searchResults={searchResults} />
+          <SearchResultsTable searchResults={results} />
         </div>
       </div>
     </div>

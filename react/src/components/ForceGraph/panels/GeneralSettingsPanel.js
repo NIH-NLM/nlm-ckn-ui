@@ -1,4 +1,4 @@
-import { PHENOTYPES_ENABLED } from "constants/index";
+import { DEPTH_OPTIONS, DIRECTION_OPTIONS, PHENOTYPES_ENABLED } from "constants/index";
 import { memo } from "react";
 
 /**
@@ -13,6 +13,7 @@ const GeneralSettingsPanel = ({
   onEdgeFontSizeChange,
   onLabelToggle,
   onLeafToggle,
+  onFocusNodesToggle,
   onGraphToggle,
   onSimulationRestart,
 }) => {
@@ -23,7 +24,7 @@ const GeneralSettingsPanel = ({
         <label htmlFor="depth-select">Depth:</label>
         {/* biome-ignore lint/correctness/useUniqueElementIds: legacy id */}
         <select id="depth-select" value={settings.depth} onChange={onDepthChange}>
-          {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((value) => (
+          {DEPTH_OPTIONS.map((value) => (
             <option key={value} value={value}>
               {value}
             </option>
@@ -39,7 +40,7 @@ const GeneralSettingsPanel = ({
           value={settings.edgeDirection}
           onChange={onEdgeDirectionChange}
         >
-          {["ANY", "INBOUND", "OUTBOUND"].map((value) => (
+          {DIRECTION_OPTIONS.map((value) => (
             <option key={value} value={value}>
               {value}
             </option>
@@ -108,6 +109,16 @@ const GeneralSettingsPanel = ({
         <div className="labels-toggle graph-source-toggle">
           <label className="switch">
             <input type="checkbox" checked={settings.collapseOnStart} onChange={onLeafToggle} />
+            <span className="slider round" />
+          </label>
+        </div>
+      </div>
+
+      <div className="option-group labels-toggle-container">
+        <h3 className="group-label">Highlight Origin Nodes:</h3>
+        <div className="labels-toggle graph-source-toggle">
+          <label className="switch">
+            <input type="checkbox" checked={settings.useFocusNodes} onChange={onFocusNodesToggle} />
             <span className="slider round" />
           </label>
         </div>

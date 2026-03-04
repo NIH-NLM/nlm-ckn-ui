@@ -21,15 +21,19 @@ const DocumentPage = () => {
   const { ftuParts } = useFtuParts();
 
   useEffect(() => {
+    let cancelled = false;
     const getDocumentData = async () => {
       try {
         const data = await fetchDocument(coll, id);
+        if (cancelled) return;
         setDocument(data);
         setNodeIds(parseId(data));
         dispatch(initializeGraph({ nodeIds: parseId(data) }));
       } catch (error) {
-        console.error("Failed to fetch document:", error);
-        setDocument(null);
+        if (!cancelled) {
+          console.error("Failed to fetch document:", error);
+          setDocument(null);
+        }
       }
     };
 
@@ -37,6 +41,9 @@ const DocumentPage = () => {
       setDocument(null);
       getDocumentData();
     }
+    return () => {
+      cancelled = true;
+    };
   }, [id, coll, dispatch]);
 
   const ftuIllustrationUrl = useMemo(() => {
