@@ -15,7 +15,7 @@ from arango_api.services import collection_service, graph_service
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_GRAPH_TYPE = "ontologies"
+DEFAULT_GRAPH_TYPE = "phenotypes"
 MAX_COLLECTION_ORIGIN_NODES = 500
 
 
