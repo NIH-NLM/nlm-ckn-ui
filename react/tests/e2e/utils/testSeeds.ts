@@ -66,6 +66,19 @@ export function edge(key: string, fromDocId: string, toDocId: string, label = "r
   };
 }
 
+export function edgeWithSource(
+  key: string,
+  fromDocId: string,
+  toDocId: string,
+  label: string,
+  source: string,
+): TestEdge & { Source: string } {
+  return {
+    ...edge(key, fromDocId, toDocId, label),
+    Source: source,
+  };
+}
+
 // Build a small connected graph with documents and edges
 export function smallGraphWithEdges() {
   const r = doc("ROOT", "Root");
