@@ -9,6 +9,7 @@ export {
   getDisplayFields,
   getFilterableEdgeFields,
   getLabel,
+  getLinkSourceText,
   getNodeExternalUrl,
   getNodeLabel,
   getTitle,

@@ -355,6 +355,13 @@ const graphSlice = createSlice({
       state.lastActionType = "loadGraph";
       state.rawData = {};
     },
+    // Resets settings to match lastAppliedSettings after undo/redo so the
+    // "Apply Changes" banner doesn't appear for the restored graph.
+    syncSettingsToLastApplied: (state) => {
+      if (state.lastAppliedSettings) {
+        state.settings = state.lastAppliedSettings;
+      }
+    },
   },
   // Reducers for handling async thunk lifecycle actions.
   extraReducers: (builder) => {
@@ -455,17 +462,33 @@ export const {
   setEdgeFilters,
   loadGraph,
   loadGraphFromJson,
+  syncSettingsToLastApplied,
 } = graphSlice.actions;
 
 // Wrap base reducer with redux-undo.
 const undoableGraphReducer = undoable(graphSlice.reducer, {
   // Only create new history states on these specific actions.
   // Skip undo entries for simulation-end dispatches (flagged with skipUndo).
-  filter: (action, _currentState, _previousHistory) => {
+  // syncFilter keeps _latestUnfiltered in sync with present so the undo target
+  // is always the most recent state, not a stale snapshot.
+  // Note: redux-undo runs the reducer BEFORE calling filter, so the second
+  // argument is the state AFTER the reducer. Use previousHistory.present
+  // to inspect the state BEFORE the action.
+  filter: (action, _newState, previousHistory) => {
     if (action.type === setGraphData.type && action.payload?.skipUndo) return false;
-    return action.type === setGraphData.type || action.type === updateNodePosition.type;
+    // Create an undo checkpoint when re-generating a graph (settings change),
+    // but not on the very first initialization (empty graph).
+    if (action.type === initializeGraph.type) {
+      return previousHistory.present.graphData.nodes.length > 0;
+    }
+    return (
+      action.type === setGraphData.type ||
+      action.type === updateNodePosition.type ||
+      action.type === expandNode.fulfilled.type
+    );
   },
   ignoreInitialState: true,
+  syncFilter: true,
 });
 
 export default undoableGraphReducer;

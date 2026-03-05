@@ -10,6 +10,7 @@ export {
   initializeGraph,
   loadGraph,
   loadGraphFromJson,
+  syncSettingsToLastApplied,
   setAllCollections,
   setAvailableCollections,
   setEdgeFilters,
