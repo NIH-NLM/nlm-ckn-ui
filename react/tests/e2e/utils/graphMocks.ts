@@ -19,11 +19,7 @@ export interface GraphMockOptions {
  * Sets up all API route mocks needed for graph tests:
  * collections, edge filter options, graph fetch, and document details.
  */
-export async function setupGraphMocks(
-  page: Page,
-  originId: string,
-  options: GraphMockOptions,
-) {
+export async function setupGraphMocks(page: Page, originId: string, options: GraphMockOptions) {
   const { buildGraph, buildDeeperGraph, buildExpansion } = options;
 
   await page.route("**/arango_api/collections/", async (route) => {

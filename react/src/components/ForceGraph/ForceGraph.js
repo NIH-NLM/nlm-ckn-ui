@@ -605,7 +605,9 @@ const ForceGraph = ({
     // graph data, even if onSimulationEnd hasn't fired yet.
     const currentGraph = graphInstanceRef.current?.getCurrentGraph?.();
     if (currentGraph) {
-      dispatch(setGraphData({ nodes: currentGraph.nodes, links: currentGraph.links, skipUndo: true }));
+      dispatch(
+        setGraphData({ nodes: currentGraph.nodes, links: currentGraph.links, skipUndo: true }),
+      );
     }
     dispatch(uncollapseNode(popup.nodeId));
     dispatch(expandNode(popup.nodeId));
