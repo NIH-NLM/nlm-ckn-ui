@@ -3,7 +3,7 @@
  * These functions transform graph data without side effects.
  */
 
-import { getColorForCollection } from "../../utils";
+import { getColorForCollection, getLinkSourceText } from "../../utils";
 
 /**
  * Merges new nodes into existing node list.
@@ -86,7 +86,7 @@ export function processGraphLinks(
     // Prepare new link object with resolved nodes.
     const processedNewLink = {
       ...newLink,
-      sourceText: newLink.source ?? newLink.Source,
+      sourceText: newLink.sourceText ?? getLinkSourceText(newLink),
       source: sourceNode,
       target: targetNode,
       label: labelFn(newLink),

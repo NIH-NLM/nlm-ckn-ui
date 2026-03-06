@@ -15,6 +15,7 @@ export {
   setEdgeFilters,
   setGraphData,
   setInitialCollapseList,
+  syncSettingsToLastApplied,
   uncollapseNode,
   updateEdgeFilter,
   updateNodePosition,

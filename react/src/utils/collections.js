@@ -184,6 +184,24 @@ export const getTitle = (item) => {
 };
 
 /**
+ * Extracts the source text for a link using the edges collection config.
+ * Reads the "Source" field as defined in the edges individual_fields map,
+ * avoiding any collision with D3's `source` property on links.
+ * @param {object} link - Raw or processed link object.
+ * @returns {string|undefined} The source text value, or undefined.
+ */
+export const getLinkSourceText = (link) => {
+  const edgeConfig = collectionConfigMap.get("edges");
+  if (!edgeConfig?.individual_fields) return undefined;
+  const sourceFieldConfig = edgeConfig.individual_fields.find(
+    (f) => f.field_to_display === "Source",
+  );
+  if (!sourceFieldConfig) return undefined;
+  const value = link[sourceFieldConfig.field_to_display];
+  return value !== null && value !== undefined ? String(value) : undefined;
+};
+
+/**
  * Extracts filterable edge attribute names from collection maps configuration.
  * @returns {Array<string>} Sorted array of unique field names for filtering.
  */

@@ -17,6 +17,7 @@ import {
   saveGraph,
   setGraphData,
   setInitialCollapseList,
+  syncSettingsToLastApplied,
   uncollapseNode,
   updateSetting,
 } from "store";
@@ -498,11 +499,13 @@ const ForceGraph = ({
   const handleUndo = useCallback(() => {
     setIsRestoring(true);
     dispatch(ActionCreators.undo());
+    dispatch(syncSettingsToLastApplied());
   }, [dispatch]);
 
   const handleRedo = useCallback(() => {
     setIsRestoring(true);
     dispatch(ActionCreators.redo());
+    dispatch(syncSettingsToLastApplied());
   }, [dispatch]);
 
   const handleSave = useCallback(() => {
@@ -597,6 +600,15 @@ const ForceGraph = ({
   // --- Popup Handlers ---
   const handleExpand = () => {
     if (!popup.nodeId) return;
+    // Capture the current D3 graph state into Redux before expanding.
+    // This ensures redux-undo's _latestUnfiltered has the correct pre-expand
+    // graph data, even if onSimulationEnd hasn't fired yet.
+    const currentGraph = graphInstanceRef.current?.getCurrentGraph?.();
+    if (currentGraph) {
+      dispatch(
+        setGraphData({ nodes: currentGraph.nodes, links: currentGraph.links, skipUndo: true }),
+      );
+    }
     dispatch(uncollapseNode(popup.nodeId));
     dispatch(expandNode(popup.nodeId));
     handlePopupClose();
@@ -713,15 +725,27 @@ const ForceGraph = ({
               <button
                 type="button"
                 className="primary-action-button"
-                onClick={() =>
+                onClick={() => {
+                  // Capture the current D3 graph state into Redux so
+                  // redux-undo records the pre-regeneration graph for undo.
+                  const currentGraph = graphInstanceRef.current?.getCurrentGraph?.();
+                  if (currentGraph?.nodes?.length > 0) {
+                    dispatch(
+                      setGraphData({
+                        nodes: currentGraph.nodes,
+                        links: currentGraph.links,
+                        skipUndo: true,
+                      }),
+                    );
+                  }
                   dispatch(
                     initializeGraph({
                       nodeIds: originNodeIds,
                       isAdvancedMode: isAdvancedMode,
                       perNodeSettings: perNodeSettings,
                     }),
-                  )
-                }
+                  );
+                }}
               >
                 Apply Changes
               </button>
