@@ -4,23 +4,22 @@ usage() {
     cat << EOF
 
 NAME
-    build - Build the Cell KN MVP ArangoDB archive
+    build - Build the Cell KN ArangoDB archive
 
 SYNOPSIS
     build [OPTIONS]
 
 DESCRIPTION
-    Build the Cell KN MVP ArangoDB archive by checking out the
-    specified versions to build, making clean packages, building the
-    ontology graph, fetching external data, building the results and
-    phenotype graphs, archiving the ArangoDB database, and uploading
-    the archive to the Cell KN MVP servers. Changes on the current
-    branches are stashed prior to checking out the specified versions,
-    then applied on checking out the current version after the build.
+    Build the Cell KN ArangoDB archive by checking out the specified versions
+    to build, making clean packages, building the ontology graph, fetching
+    external data, building the results and phenotype graphs, archiving the
+    ArangoDB database, and uploading the archive to the Cell KN server. Changes
+    on the current branches are stashed prior to checking out the specified
+    versions, then applied on checking out the current version after the build.
 
 OPTIONS 
     -c    CONF
-          The Cell KN MVP configuration to build
+          The Cell KN configuration to build
 
     -o    Build the specified version of the ontologies graph, if it
           does not exist
@@ -36,8 +35,7 @@ OPTIONS
 
     -A    Force -a
 
-    -u    Upload the ArangoDB archive to cell-kn-mvp.org and
-          cell-kn.org
+    -u    Upload the ArangoDB archive to cell-kn.org
 
     -h    Help
 
@@ -116,14 +114,14 @@ fi
 if [[ -z "$CONF" ]]; then
     echo "No configuration specified"
     exit 0
-elif [[ ! -f "conf/$CONF" ]]; then
+elif [[ ! -f "conf-ckn/$CONF" ]]; then
     echo "Configuration not found"
     exit 1
 fi
-. conf/$CONF
+. conf-ckn/$CONF
 
 # Build ontology graph, if specified
-pushd "../../../cell-kn-mvp-etl-ontologies"
+pushd "../../../nlm-ckn-etl"
 if [[ ! -f ".built" ]] && [[ $run_ontology -eq 1 ]] \
        || [[ $force_ontology -eq 1 ]]; then
 
@@ -142,13 +140,13 @@ if [[ ! -f ".built" ]] && [[ $run_ontology -eq 1 ]] \
     # build
     git stash
     current_branch="$(git branch --show-current)"
-    git checkout $CELL_KN_MVP_ETL_ONTOLOGIES_VERSION
+    git checkout $NLM_CKN_ETL_VERSION
 
     # Make a clean package, then update ontologies downloaded from the
     # OBO Foundry, and build the ontology graph
     mvn clean package -DskipTests
-    classpath="target/cell-kn-mvp-etl-ontologies-1.0.jar"
-    # java -cp $classpath gov.nih.nlm.OntologyDownloader
+    classpath="target/nlm-ckn-etl-1.0.jar"
+    java -cp $classpath gov.nih.nlm.OntologyDownloader
     java -cp $classpath gov.nih.nlm.OntologyGraphBuilder
 
     # Checkout the current branch, and apply the stash so that changes
@@ -157,8 +155,8 @@ if [[ ! -f ".built" ]] && [[ $run_ontology -eq 1 ]] \
     git stash apply
 
     # Log the build
-    log_message="Built cell-kn-mvp-etl-ontologies"
-    log_message+=" using $CELL_KN_MVP_ETL_ONTOLOGIES_VERSION"
+    log_message="Built ontology graph"
+    log_message+=" using $NLM_CKN_ETL_VERSION"
     log_message+=" on $(date)"
     echo $log_message > ".built"
 
@@ -166,7 +164,7 @@ fi
 popd
 
 # Build results and phenotype graphs, if specified
-pushd "../../../"
+pushd "../../../nlm-ckn-etl"
 if [[ ! -f ".built" ]] && [[ $run_results -eq 1 ]] \
        || [[ $force_results -eq 1 ]]; then
 
@@ -174,7 +172,7 @@ if [[ ! -f ".built" ]] && [[ $run_results -eq 1 ]] \
     # build
     current_branch="$(git branch --show-current)"
     git stash
-    git checkout $CELL_KN_MVP_ETL_RESULTS_VERSION
+    git checkout $NLM_CKN_ETL_VERSION
 
     # Remove existing tuples
     rm data/tuples/*.json
@@ -183,8 +181,9 @@ if [[ ! -f ".built" ]] && [[ $run_results -eq 1 ]] \
     # Activate the Python environment, fetch external data, and write
     # all tuples. Note that the local .zshenv contains E-Utilities
     # credentials
+    pushd python
     . .venv/bin/activate
-    pushd src/main/python
+    pushd src
     . .zshenv
     python ExternalApiResultsFetcher.py
     python NSForestResultsTupleWriter.py
@@ -193,12 +192,12 @@ if [[ ! -f ".built" ]] && [[ $run_results -eq 1 ]] \
     # TODO: Remove when confirmed
     # python AnnotationResultsTupleWriter.py
     popd
+    popd
 
     # Make a clean package, then build the results and phenotype
     # graphs
     mvn clean package -DskipTests
-    classpath="target/cell-kn-mvp-etl-results-1.0.jar"
-    classpath+=":cell-kn-mvp-etl-ontologies/target/cell-kn-mvp-etl-ontologies-1.0.jar"
+    classpath="target/nlm-ckn-etl-1.0.jar"
     java -cp $classpath gov.nih.nlm.ResultsGraphBuilder
     java -cp $classpath gov.nih.nlm.PhenotypeGraphBuilder
 
@@ -215,8 +214,8 @@ if [[ ! -f ".built" ]] && [[ $run_results -eq 1 ]] \
     git stash apply
 
     # Log the build
-    log_message="Built cell-kn-mvp-etl-results"
-    log_message+=" using $CELL_KN_MVP_ETL_RESULTS_VERSION"
+    log_message="Built phenotype graph"
+    log_message+=" using $NLM_CKN_ETL_VERSION"
     log_message+=" on $(date)"
     echo $log_message > ".built"
 
@@ -225,12 +224,11 @@ popd
 
 # Name the ArangoDB archive
 archive="arangodb"
-archive+="-$CELL_KN_MVP_ETL_ONTOLOGIES_VERSION"
-archive+="-$CELL_KN_MVP_ETL_RESULTS_VERSION"
+archive+="-$NLM_CKN_ETL_VERSION"
 archive+=".tar.gz"
 
 # Make ArangoDB archive, if specified
-pushd "../../../cell-kn-mvp-etl-ontologies"
+pushd "../../../nlm-ckn-etl"
 if [[ ! -f ".archived" ]] && [[ $make_archive -eq 1 ]] \
        || [[ $force_archive -eq 1 ]]; then
 
@@ -239,11 +237,9 @@ if [[ ! -f ".archived" ]] && [[ $make_archive -eq 1 ]] \
     tar -czvf $archive arangodb
     popd
 
-
     # Log the archive
     log_message="Archived ArangoDB using"
-    log_message+=" $CELL_KN_MVP_ETL_ONTOLOGIES_VERSION"
-    log_message+=" and $CELL_KN_MVP_ETL_RESULTS_VERSION"
+    log_message+=" $NLM_CKN_ETL_VERSION"
     log_message+=" on $(date)"
     echo $log_message > ".archived"
 
@@ -251,13 +247,12 @@ fi
 popd
 
 # Upload ArangoDB archive, if specified
-pushd "../../../cell-kn-mvp-etl-ontologies"
+pushd "../../../nlm-ckn-etl"
 if [[ $upload_archive -eq 1 ]]; then
 
-    # Upload the archive to cell-kn-mvp.org and cell-kn.org, if it exists
+    # Upload the archive to cell-kn.org, if it exists
     pushd data
     if [[ -f "$archive" ]]; then
-        scp $archive mvp:~
         scp $archive ckn:~
 
     else

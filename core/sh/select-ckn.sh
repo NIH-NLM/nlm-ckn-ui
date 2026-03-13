@@ -75,12 +75,12 @@ fqdn="$domain.org"
 # List configurations
 if [[ $do_list_configurations -eq 1 ]]; then
     printf "Available configurations:\n"
-    confs="$(ls conf/)"
+    confs="$(ls conf-ckn/)"
     for conf in $confs; do
 
 	# Source the current configuration, assign the subdomain, and
 	# print enabled configurations, indicating default, if any
-	. conf/$conf
+	. conf-ckn/$conf
 	subdomain="$(echo $conf | sed s/\\./-/g)"
 	site="/etc/apache2/sites-enabled/$subdomain-$domain.conf"
 	if [[ -f $site ]]; then
@@ -98,14 +98,14 @@ fi
 if [[ -z "$CONF" ]]; then
     echo "No configuration specified"
     exit 0
-elif [[ ! -f "conf/$CONF" ]]; then
+elif [[ ! -f "conf-ckn/$CONF" ]]; then
     echo "Configuration $CONF not found"
     exit 1
 fi
 
 # Source the current configuration, assign the subdomain, and ensure
 # the site has been enabled, exiting if not
-. conf/$CONF
+. conf-ckn/$CONF
 subdomain="$(echo $CONF | sed s/\\./-/g)"
 site="/etc/apache2/sites-enabled/$subdomain-$domain.conf"
 if [[ ! -f $site ]]; then
@@ -114,12 +114,12 @@ if [[ ! -f $site ]]; then
 fi
 
 last_conf="v1.0.2"
-confs="$(ls conf/)"
+confs="$(ls conf-ckn/)"
 for conf in $confs; do
     
     # Source the current configuration, assign the subdomain, and
     # ensure the site has been enabled, continuing if not
-    . conf/$conf
+    . conf-ckn/$conf
     subdomain="$(echo $conf | sed s/\\./-/g)"
     site="/etc/apache2/sites-enabled/$subdomain-$domain.conf"
     if [[ ! -f $site ]]; then

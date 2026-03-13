@@ -65,13 +65,13 @@ fi
 if [[ -z "$CONF" ]]; then
     echo "No configuration specified"
     exit 0
-elif [[ ! -f "conf/$CONF" ]]; then
+elif [[ ! -f "conf-ckn/$CONF" ]]; then
     echo "Configuration not found"
     exit 1
 fi
 
 # Source the specified configuration
-. conf/$CONF
+. conf-ckn/$CONF
 
 # Assign the archive
 archive="arangodb"
