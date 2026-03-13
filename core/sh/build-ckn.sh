@@ -131,6 +131,7 @@ if [[ ! -f ".built" ]] && [[ $run_ontology -eq 1 ]] \
     popd
     pushd "data"
     rm -rf arangodb
+    export ARANGO_DB_HOME="$PWD/arangodb"
     popd
     pushd "src/main/shell"
     ./start-arangodb.sh
