@@ -415,13 +415,15 @@ const graphSlice = createSlice({
       })
       .addCase(fetchEdgeFilterOptions.fulfilled, (state, action) => {
         state.edgeFilterStatus = GRAPH_STATUS.SUCCEEDED;
-        // Sort by field name so iteration order is deterministic across loads.
-        const sorted = Object.keys(action.payload)
-          .sort()
-          .reduce((acc, key) => {
-            acc[key] = action.payload[key];
-            return acc;
-          }, {});
+        // Sort: categorical fields first, then numeric, each alphabetical.
+        const entries = Object.entries(action.payload);
+        const categorical = entries
+          .filter(([, v]) => v.type !== "numeric")
+          .sort(([a], [b]) => a.localeCompare(b));
+        const numeric = entries
+          .filter(([, v]) => v.type === "numeric")
+          .sort(([a], [b]) => a.localeCompare(b));
+        const sorted = Object.fromEntries([...categorical, ...numeric]);
         state.availableEdgeFilters = sorted;
         // Initialize edgeFilters: empty array for categorical, full {min, max} for numeric.
         for (const [field, filterData] of Object.entries(sorted)) {
