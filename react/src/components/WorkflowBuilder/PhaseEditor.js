@@ -10,6 +10,7 @@
  */
 
 import FilterableDropdown from "components/FilterableDropdown";
+import RangeSliderFilter from "components/RangeSliderFilter/RangeSliderFilter";
 import {
   DEPTH_OPTIONS,
   DIRECTION_OPTIONS,
@@ -159,7 +160,7 @@ const PhaseEditor = ({
     [onUpdate],
   );
 
-  // Handle edge filter toggle for a specific field
+  // Handle edge filter toggle for a specific categorical field
   const handleEdgeFilterToggle = useCallback(
     (field, value) => {
       const currentValues = phase.settings.edgeFilters?.[field] || [];
@@ -167,6 +168,14 @@ const PhaseEditor = ({
         ? currentValues.filter((v) => v !== value)
         : [...currentValues, value];
       onUpdateSettings("edgeFilters", { ...phase.settings.edgeFilters, [field]: newValues });
+    },
+    [phase.settings.edgeFilters, onUpdateSettings],
+  );
+
+  // Handle numeric edge filter range change
+  const handleNumericEdgeFilterChange = useCallback(
+    (field, min, max) => {
+      onUpdateSettings("edgeFilters", { ...phase.settings.edgeFilters, [field]: { min, max } });
     },
     [phase.settings.edgeFilters, onUpdateSettings],
   );
@@ -551,15 +560,27 @@ const PhaseEditor = ({
             {Object.keys(edgeFilterOptions || {}).length > 0 && (
               <div className="setting-item full-width">
                 <span className="setting-label">Edge Filters</span>
-                {Object.entries(edgeFilterOptions).map(([field, values]) => (
-                  <FilterableDropdown
-                    key={field}
-                    label={field}
-                    options={values}
-                    selectedOptions={phase.settings.edgeFilters?.[field] || []}
-                    onOptionToggle={(value) => handleEdgeFilterToggle(field, value)}
-                  />
-                ))}
+                {Object.entries(edgeFilterOptions).map(([field, filterData]) =>
+                  filterData.type === "numeric" ? (
+                    <RangeSliderFilter
+                      key={field}
+                      field={field}
+                      min={filterData.min}
+                      max={filterData.max}
+                      currentMin={phase.settings.edgeFilters?.[field]?.min}
+                      currentMax={phase.settings.edgeFilters?.[field]?.max}
+                      onRangeChange={handleNumericEdgeFilterChange}
+                    />
+                  ) : (
+                    <FilterableDropdown
+                      key={field}
+                      label={field}
+                      options={filterData.values || filterData}
+                      selectedOptions={phase.settings.edgeFilters?.[field] || []}
+                      onOptionToggle={(value) => handleEdgeFilterToggle(field, value)}
+                    />
+                  ),
+                )}
               </div>
             )}
           </>

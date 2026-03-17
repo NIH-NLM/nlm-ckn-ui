@@ -63,11 +63,15 @@ def get_edge_filter_options(fields_to_query):
     """
     Query database for unique values for specified edge attributes.
 
+    Auto-detects whether each field is numeric or categorical. If >90% of
+    non-null values for a field are numeric, returns {type: "numeric", min, max}.
+    Otherwise returns {type: "categorical", values: [...]}.
+
     Args:
         fields_to_query (list): List of field names to get unique values for.
 
     Returns:
-        dict: Dictionary mapping field names to lists of unique values.
+        dict: Dictionary mapping field names to typed filter descriptors.
 
     Raises:
         Exception: Re-raises database errors for handling by caller.
@@ -99,7 +103,16 @@ def get_edge_filter_options(fields_to_query):
                             COLLECT value = edge[field_name]
                             RETURN value
                     )
-                    RETURN {{ [field_name]: UNIQUE(values) }}
+                    LET numeric_values = (
+                        FOR v IN values
+                            LET n = TO_NUMBER(v)
+                            FILTER IS_NUMBER(n) AND n != 0 OR TO_STRING(v) == "0"
+                            RETURN n
+                    )
+                    LET is_numeric = LENGTH(values) > 0 AND LENGTH(numeric_values) / LENGTH(values) > 0.9
+                    RETURN is_numeric
+                        ? {{ [field_name]: {{ type: "numeric", min: MIN(numeric_values), max: MAX(numeric_values) }} }}
+                        : {{ [field_name]: {{ type: "categorical", values: UNIQUE(values) }} }}
             )
 
             RETURN MERGE(options_per_field)
