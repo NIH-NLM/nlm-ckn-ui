@@ -38,9 +38,7 @@ const FiltersPanel = ({
       }
     }
 
-    return Object.entries(availableEdgeFilters)
-      .filter(([field]) => fieldsInGraph.has(field))
-      .sort(([a], [b]) => a.localeCompare(b));
+    return Object.entries(availableEdgeFilters).filter(([field]) => fieldsInGraph.has(field));
   }, [availableEdgeFilters, graphLinks]);
 
   return (

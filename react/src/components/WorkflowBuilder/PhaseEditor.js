@@ -560,29 +560,27 @@ const PhaseEditor = ({
             {Object.keys(edgeFilterOptions || {}).length > 0 && (
               <div className="setting-item full-width">
                 <span className="setting-label">Edge Filters</span>
-                {Object.entries(edgeFilterOptions)
-                  .sort(([a], [b]) => a.localeCompare(b))
-                  .map(([field, filterData]) =>
-                    filterData.type === "numeric" ? (
-                      <RangeSliderFilter
-                        key={field}
-                        field={field}
-                        min={filterData.min}
-                        max={filterData.max}
-                        currentMin={phase.settings.edgeFilters?.[field]?.min}
-                        currentMax={phase.settings.edgeFilters?.[field]?.max}
-                        onRangeChange={handleNumericEdgeFilterChange}
-                      />
-                    ) : (
-                      <FilterableDropdown
-                        key={field}
-                        label={field}
-                        options={filterData.values || filterData}
-                        selectedOptions={phase.settings.edgeFilters?.[field] || []}
-                        onOptionToggle={(value) => handleEdgeFilterToggle(field, value)}
-                      />
-                    ),
-                  )}
+                {Object.entries(edgeFilterOptions).map(([field, filterData]) =>
+                  filterData.type === "numeric" ? (
+                    <RangeSliderFilter
+                      key={field}
+                      field={field}
+                      min={filterData.min}
+                      max={filterData.max}
+                      currentMin={phase.settings.edgeFilters?.[field]?.min}
+                      currentMax={phase.settings.edgeFilters?.[field]?.max}
+                      onRangeChange={handleNumericEdgeFilterChange}
+                    />
+                  ) : (
+                    <FilterableDropdown
+                      key={field}
+                      label={field}
+                      options={filterData.values || filterData}
+                      selectedOptions={phase.settings.edgeFilters?.[field] || []}
+                      onOptionToggle={(value) => handleEdgeFilterToggle(field, value)}
+                    />
+                  ),
+                )}
               </div>
             )}
           </>
