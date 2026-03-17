@@ -16,9 +16,11 @@ function buildRaw(originId: string) {
     ...(root.children?.[0]?.children || []),
     ...(root.children?.[1]?.children || []),
   ];
+  // Add numeric fields to edges so contextual filtering shows them
   const links = edges.map((e, i) => ({
     ...e,
     _key: `${e._from.split("/")[1]}-${e._to.split("/")[1]}-${i}`,
+    F_beta_confidence_score: (0.5 + i * 0.1).toString(),
   }));
   return { [originId]: { nodes, links } };
 }
