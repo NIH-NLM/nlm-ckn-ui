@@ -379,8 +379,11 @@ jobs:
       - backend-unit-tests
       - backend-integration-tests
     if: ${{ always() && !cancelled() }}
+    outputs:
+      success: ${{ steps.set-output.outputs.passed }}
     steps:
       - name: Check all jobs passed
+        id: set-output
         run: |
           echo "Fork permissions: ${{ needs.check-fork-permissions.result }}"
           echo "Frontend lint: ${{ needs.frontend-lint.result }}"
@@ -399,10 +402,12 @@ jobs:
              [[ "${{ needs.backend-integration-tests.result }}" == "failure" ]] || \
              [[ "${{ needs.backend-docker-build.result }}" == "failure" ]]; then
             echo "One or more jobs failed"
+            echo "passed=false" >> $GITHUB_OUTPUT
             exit 1
           fi
 
           echo "All checks passed"
+          echo "passed=true" >> $GITHUB_OUTPUT
 
   # ============================================================================
   # Deploy jobs - only run on push to main after all tests pass
@@ -411,7 +416,7 @@ jobs:
   deploy-frontend:
     needs: [detect-changes, ci-passed]
     if: |
-      needs.ci-passed.result == 'success' &&
+      needs.ci-passed.outputs.success == 'true' &&
       (
         github.event_name == 'push' && needs.detect-changes.outputs.frontend == 'true' ||
         github.event_name == 'workflow_dispatch'
@@ -440,7 +445,7 @@ jobs:
   deploy-backend:
     needs: [detect-changes, ci-passed]
     if: |
-      needs.ci-passed.result == 'success' &&
+      needs.ci-passed.outputs.success == 'true' &&
       (
         github.event_name == 'push' && needs.detect-changes.outputs.backend == 'true' ||
         github.event_name == 'workflow_dispatch'
