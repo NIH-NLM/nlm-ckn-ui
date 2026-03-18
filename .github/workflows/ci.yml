@@ -409,9 +409,11 @@ jobs:
   # ============================================================================
 
   deploy-frontend:
-    needs: [detect-changes, ci-passed]
+    needs: [detect-changes, frontend-lint, frontend-unit-tests, frontend-e2e]
     if: |
-      needs.ci-passed.result == 'success' &&
+      (needs.frontend-lint.result == 'success' || needs.frontend-lint.result == 'skipped') &&
+      (needs.frontend-unit-tests.result == 'success' || needs.frontend-unit-tests.result == 'skipped') &&
+      (needs.frontend-e2e.result == 'success' || needs.frontend-e2e.result == 'skipped') &&
       (
         github.event_name == 'push' && needs.detect-changes.outputs.frontend == 'true' ||
         github.event_name == 'workflow_dispatch'
@@ -438,9 +440,11 @@ jobs:
         run: ./scripts/app/deploy-frontend.sh dev
 
   deploy-backend:
-    needs: [detect-changes, ci-passed]
+    needs: [detect-changes, backend-unit-tests, backend-integration-tests, backend-docker-build]
     if: |
-      needs.ci-passed.result == 'success' &&
+      (needs.backend-unit-tests.result == 'success' || needs.backend-unit-tests.result == 'skipped') &&
+      (needs.backend-integration-tests.result == 'success' || needs.backend-integration-tests.result == 'skipped') &&
+      (needs.backend-docker-build.result == 'success' || needs.backend-docker-build.result == 'skipped') &&
       (
         github.event_name == 'push' && needs.detect-changes.outputs.backend == 'true' ||
         github.event_name == 'workflow_dispatch'
