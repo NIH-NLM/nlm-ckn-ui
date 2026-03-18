@@ -116,11 +116,11 @@ fi
 if [[ -z "$CONF" ]]; then
     echo "No configuration specified"
     exit 0
-elif [[ ! -f "conf/$CONF" ]]; then
+elif [[ ! -f "conf-mvp/$CONF" ]]; then
     echo "Configuration not found"
     exit 1
 fi
-. conf/$CONF
+. conf-mvp/$CONF
 
 # Build ontology graph, if specified
 pushd "../../../cell-kn-mvp-etl-ontologies"
