@@ -204,7 +204,7 @@ if [[ ! -f ".built" ]] && [[ $run_results -eq 1 ]] \
 
     # Create all analyzers and views, then deactivate the Python
     # environment
-    pushd src/main/python
+    pushd python/src
     python CellKnSchemaUtilities.py
     popd
     deactivate
