@@ -379,8 +379,11 @@ jobs:
       - backend-unit-tests
       - backend-integration-tests
     if: ${{ always() && !cancelled() }}
+    outputs:
+      success: ${{ steps.set-output.outputs.passed }}
     steps:
       - name: Check all jobs passed
+        id: set-output
         run: |
           echo "Fork permissions: ${{ needs.check-fork-permissions.result }}"
           echo "Frontend lint: ${{ needs.frontend-lint.result }}"
@@ -399,21 +402,21 @@ jobs:
              [[ "${{ needs.backend-integration-tests.result }}" == "failure" ]] || \
              [[ "${{ needs.backend-docker-build.result }}" == "failure" ]]; then
             echo "One or more jobs failed"
+            echo "passed=false" >> $GITHUB_OUTPUT
             exit 1
           fi
 
           echo "All checks passed"
+          echo "passed=true" >> $GITHUB_OUTPUT
 
   # ============================================================================
   # Deploy jobs - only run on push to main after all tests pass
   # ============================================================================
 
   deploy-frontend:
-    needs: [detect-changes, frontend-lint, frontend-unit-tests, frontend-e2e]
+    needs: [detect-changes, ci-passed]
     if: |
-      (needs.frontend-lint.result == 'success' || needs.frontend-lint.result == 'skipped') &&
-      (needs.frontend-unit-tests.result == 'success' || needs.frontend-unit-tests.result == 'skipped') &&
-      (needs.frontend-e2e.result == 'success' || needs.frontend-e2e.result == 'skipped') &&
+      needs.ci-passed.outputs.success == 'true' &&
       (
         github.event_name == 'push' && needs.detect-changes.outputs.frontend == 'true' ||
         github.event_name == 'workflow_dispatch'
@@ -440,11 +443,9 @@ jobs:
         run: ./scripts/app/deploy-frontend.sh dev
 
   deploy-backend:
-    needs: [detect-changes, backend-unit-tests, backend-integration-tests, backend-docker-build]
+    needs: [detect-changes, ci-passed]
     if: |
-      (needs.backend-unit-tests.result == 'success' || needs.backend-unit-tests.result == 'skipped') &&
-      (needs.backend-integration-tests.result == 'success' || needs.backend-integration-tests.result == 'skipped') &&
-      (needs.backend-docker-build.result == 'success' || needs.backend-docker-build.result == 'skipped') &&
+      needs.ci-passed.outputs.success == 'true' &&
       (
         github.event_name == 'push' && needs.detect-changes.outputs.backend == 'true' ||
         github.event_name == 'workflow_dispatch'
