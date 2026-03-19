@@ -83,8 +83,7 @@ fi
 
 # Assign the archive
 archive="arangodb"
-archive+="-$CELL_KN_MVP_ETL_ONTOLOGIES_VERSION"
-archive+="-$CELL_KN_MVP_ETL_RESULTS_VERSION"
+archive+="-$NLM_CKN_ETL_VERSION"
 archive+=".tar.gz"
 
 # Assign the port as one greater than the maximum in use, staying
