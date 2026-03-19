@@ -1113,7 +1113,7 @@
         "individual_urls": [
           {
             "individual_url": "https://<FIELD_TO_USE>",
-            "field_to_use": "DOI",
+            "field_to_use": "Link_to_publication",
             "to_be_replaced": "",
             "replace_with": "",
             "make_lower_case": false
@@ -1121,43 +1121,25 @@
         ],
         "individual_fields": [
           {
-            "field_to_display": "Author",
-            "display_field_as": "Author",
+            "field_to_display": "Citation",
+            "display_field_as": "Citation",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Year",
-            "display_field_as": "Year",
-            "field_url": "",
-            "field_to_use": ""
+            "field_to_display": "Link_to_publication",
+            "display_field_as": "Publication",
+            "field_url": "https://<FIELD_TO_USE>",
+            "field_to_use": "Link_to_publication"
           },
           {
-            "field_to_display": "Title",
-            "display_field_as": "Title",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "Journal",
-            "display_field_as": "Journal",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "PMID",
-            "display_field_as": "PMID",
-            "field_url": "https://pubmed.ncbi.nlm.nih.gov/<FIELD_TO_USE>/",
-            "field_to_use": "PMID"
-          },
-          {
-            "field_to_display": "PMCID",
-            "display_field_as": "PMCID",
-            "field_url": "https://pmc.ncbi.nlm.nih.gov/articles/<FIELD_TO_USE>/",
-            "field_to_use": "PMCID"
+            "field_to_display": "Link_to_CELLxGENE_collection",
+            "display_field_as": "CELLxGENE_collection",
+            "field_url": "https://<FIELD_TO_USE>",
+            "field_to_use": "Link_to_CELLxGENE_collection"
           }
         ],
-        "more_info": "Publication DOIs"
+        "more_info": "Publication metadata"
       }
     ],
     [
