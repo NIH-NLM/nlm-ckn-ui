@@ -575,7 +575,7 @@ const PhaseEditor = ({
                     <FilterableDropdown
                       key={field}
                       label={field}
-                      options={filterData.values || filterData}
+                      options={filterData.values || []}
                       selectedOptions={phase.settings.edgeFilters?.[field] || []}
                       onOptionToggle={(value) => handleEdgeFilterToggle(field, value)}
                     />

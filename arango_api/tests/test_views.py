@@ -256,4 +256,5 @@ class DocumentViewsTestCase(ArangoDBViewTestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertIn("label", data)
-        self.assertEqual(sorted(data["label"]), sorted(["subClassOf", "participates_in", "part_of"]))
+        self.assertEqual(data["label"]["type"], "categorical")
+        self.assertEqual(sorted(data["label"]["values"]), sorted(["subClassOf", "participates_in", "part_of"]))

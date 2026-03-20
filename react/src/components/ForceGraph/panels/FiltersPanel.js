@@ -93,7 +93,7 @@ const FiltersPanel = ({
               <FilterableDropdown
                 key={field}
                 label={field}
-                options={filterData.values || filterData}
+                options={filterData.values || []}
                 selectedOptions={settings.edgeFilters[field] || []}
                 onOptionToggle={(value) => dispatch(updateEdgeFilter({ field, value }))}
               />

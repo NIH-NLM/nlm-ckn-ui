@@ -55,7 +55,7 @@ test("Graph page shows two selected nodes and builds graph with both origins", a
       return route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ Label: ["has_child"] }),
+        body: JSON.stringify({ Label: { type: "categorical", values: ["has_child"] } }),
       });
     }
     return route.continue();

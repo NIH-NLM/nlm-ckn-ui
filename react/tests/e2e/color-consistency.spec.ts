@@ -53,7 +53,7 @@ test.describe("Collection colors consistency", () => {
         return route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify({ Label: ["has_child"] }),
+          body: JSON.stringify({ Label: { type: "categorical", values: ["has_child"] } }),
         });
       }
       return route.continue();
@@ -234,7 +234,7 @@ test.describe("Collection colors consistency", () => {
         return route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify({ Label: ["has_child"] }),
+          body: JSON.stringify({ Label: { type: "categorical", values: ["has_child"] } }),
         });
       }
       return route.continue();

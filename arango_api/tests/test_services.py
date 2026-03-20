@@ -87,7 +87,8 @@ class DocumentServiceTestCase(ArangoDBTestCase):
 
     def test_get_edge_filter_options(self):
         result = document_service.get_edge_filter_options(fields_to_query=["label"])
-        self.assertEqual(sorted(result["label"]), sorted(["subClassOf", "participates_in", "part_of"]))
+        self.assertEqual(result["label"]["type"], "categorical")
+        self.assertEqual(sorted(result["label"]["values"]), sorted(["subClassOf", "participates_in", "part_of"]))
 
 
 class GraphServiceTestCase(ArangoDBTestCase):
