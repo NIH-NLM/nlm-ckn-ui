@@ -200,7 +200,7 @@ if [[ ! -f ".built" ]] && [[ $run_results -eq 1 ]] \
     mvn clean package -DskipTests
     classpath="target/nlm-ckn-etl-1.0.jar"
     java -Xms32g -Xmx32g -cp $classpath gov.nih.nlm.ResultsGraphBuilder
-    java -Xms32g -Xmx32g -cp $classpath gov.nih.nlm.InducedGraphBuilder
+    java -Xms32g -Xmx32g -cp $classpath gov.nih.nlm.InducedSubgraphBuilder
 
     # Create all analyzers and views, then deactivate the Python
     # environment
