@@ -8,6 +8,7 @@ Reuses existing services:
     - graph_service.traverse_graph_advanced() for graph traversal
     - collection_service.get_all_by_collection() for collection origins
 """
+
 import copy
 import logging
 
@@ -112,7 +113,7 @@ def _execute_phase(phase, all_phases, phase_results, phase_origin_ids, graph):
     # --- Handle multiplePhases combine (no API call) ---
     if origin_source == "multiplePhases":
         return _execute_combine_phase(
-            phase, all_phases, phase_results, phase_origin_ids, settings
+            phase, all_phases, phase_results, phase_origin_ids, settings, phase_graph
         )
 
     # --- Resolve origin node IDs ---
@@ -172,7 +173,7 @@ def _execute_phase(phase, all_phases, phase_results, phase_origin_ids, graph):
 
 
 def _execute_combine_phase(
-    phase, all_phases, phase_results, phase_origin_ids, settings
+    phase, all_phases, phase_results, phase_origin_ids, settings, graph=None
 ):
     """Handle multiplePhases origin: combine results from multiple prior phases."""
     source_phase_ids = phase.get("previousPhaseIds", [])
@@ -207,6 +208,20 @@ def _execute_combine_phase(
     combine_op = phase.get("phaseCombineOperation", "Intersection")
     combined_result = _perform_set_operation(source_graphs, combine_op)
 
+    if settings.get("includeInterNodeEdges", True) and graph:
+        node_ids = [n["_id"] for n in combined_result.get("nodes", []) if n.get("_id")]
+        if len(node_ids) >= 2:
+            inter_edges = graph_service.find_inter_node_edges(node_ids, graph)
+            existing_ids = {
+                l["_id"]
+                for l in (combined_result.get("links") or [])
+                if l and l.get("_id")
+            }
+            for edge in inter_edges:
+                if edge and edge.get("_id") and edge["_id"] not in existing_ids:
+                    combined_result["links"].append(edge)
+                    existing_ids.add(edge["_id"])
+
     return_collections = settings.get("returnCollections", [])
     if return_collections:
         combined_result = _apply_return_collections_filter(
@@ -216,9 +231,7 @@ def _execute_combine_phase(
     return combined_result, source_phase_ids
 
 
-def _resolve_origin_node_ids(
-    phase, all_phases, phase_results, phase_origin_ids, graph
-):
+def _resolve_origin_node_ids(phase, all_phases, phase_results, phase_origin_ids, graph):
     """Resolve origin node IDs based on the phase's originSource type."""
     origin_source = phase.get("originSource", "manual")
 
@@ -229,9 +242,7 @@ def _resolve_origin_node_ids(
         docs = collection_service.get_all_by_collection(collection_name, graph)
         node_ids = [doc["_id"] for doc in docs if doc.get("_id")]
         if not node_ids:
-            raise ValueError(
-                f'No nodes found in collection "{collection_name}".'
-            )
+            raise ValueError(f'No nodes found in collection "{collection_name}".')
         if len(node_ids) > MAX_COLLECTION_ORIGIN_NODES:
             logger.warning(
                 "Collection '%s' has %d nodes, truncating to %d",
@@ -314,7 +325,7 @@ def _perform_set_operation(graphs, operation):
     # Count node frequency across graphs
     node_frequency = {}  # node_id -> {"node": dict, "count": int}
     for graph in safe_graphs:
-        for node in (graph.get("nodes") or []):
+        for node in graph.get("nodes") or []:
             node_id = node.get("_id") or node.get("id")
             if not node_id:
                 continue
@@ -333,9 +344,7 @@ def _perform_set_operation(graphs, operation):
         ]
     elif op in ("symmetric difference", "symmetric_difference", "xor"):
         final_nodes = [
-            entry["node"]
-            for entry in node_frequency.values()
-            if entry["count"] == 1
+            entry["node"] for entry in node_frequency.values() if entry["count"] == 1
         ]
     else:
         # Union
@@ -350,7 +359,7 @@ def _perform_set_operation(graphs, operation):
     # Collect unique links
     unique_links = {}
     for graph in safe_graphs:
-        for link in (graph.get("links") or []):
+        for link in graph.get("links") or []:
             if not link:
                 continue
             key = (

@@ -1,11 +1,13 @@
 """
 Service for graph traversal operations.
 """
+
 import logging
 import re
 
 from arango_api.db import db_ontologies, GRAPH_NAME_ONTOLOGIES
 from arango_api.services.base import get_db_and_graph
+from arango_api.services.collection_service import get_collections
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +61,7 @@ def traverse_graph(
         negative_conditions = []
 
         for key, values in edge_filters.items():
-            safe_key = re.sub(r'[^a-zA-Z0-9_]', '', key)
+            safe_key = re.sub(r"[^a-zA-Z0-9_]", "", key)
 
             # Numeric range filter: values is a dict with min/max keys
             if isinstance(values, dict):
@@ -81,7 +83,9 @@ def traverse_graph(
                 pos_cond = f"({' AND '.join(range_parts)})"
                 positive_conditions.append(pos_cond)
 
-                neg_cond = f"(e.`{key}` != null AND NOT ({' AND '.join(range_parts[2:])}))"
+                neg_cond = (
+                    f"(e.`{key}` != null AND NOT ({' AND '.join(range_parts[2:])}))"
+                )
                 negative_conditions.append(neg_cond)
                 continue
 
@@ -111,26 +115,6 @@ def traverse_graph(
             filter_string = f"FILTER {' AND '.join(positive_conditions)}"
             prune_string = f"PRUNE {' OR '.join(negative_conditions)}"
 
-    # Build inter-node edges query section if enabled
-    inter_node_edges_query = ""
-    if include_inter_node_edges:
-        inter_node_edges_query = f"""
-         LET all_node_ids = all_nodes[*]._id
-
-         LET inter_node_edges = (
-             FOR v IN all_nodes
-                 FOR neighbor, e IN 1..1 ANY v._id GRAPH @graph
-                     OPTIONS {{ vertexCollections: @allowed_collections }}
-                     FILTER neighbor._id IN all_node_ids
-                     RETURN DISTINCT e
-         )
-
-         LET combined_links = UNION_DISTINCT(all_links, inter_node_edges)
-        """
-        links_field = "combined_links"
-    else:
-        links_field = "all_links"
-
     aql_query = f"""
      FOR start_node_id IN @node_ids
          LET start_node_doc = DOCUMENT(start_node_id)
@@ -154,19 +138,43 @@ def traverse_graph(
 
          LET all_links = UNIQUE(traversal[*].e)
 
-         {inter_node_edges_query}
-
          RETURN {{
              "start_node_id": start_node_id,
              "data": {{
                  "nodes": all_nodes,
-                 "links": {links_field}
+                 "links": all_links
              }}
          }}
      """
 
     cursor = db.aql.execute(aql_query, bind_vars=bind_vars)
     results = {item["start_node_id"]: item["data"] for item in cursor}
+
+    if include_inter_node_edges:
+        all_node_ids = set()
+        for data in results.values():
+            for node in data.get("nodes") or []:
+                if node and node.get("_id"):
+                    all_node_ids.add(node["_id"])
+
+        if all_node_ids:
+            inter_edges = find_inter_node_edges(list(all_node_ids), graph)
+            inter_by_id = {e["_id"]: e for e in inter_edges if e and e.get("_id")}
+
+            for data in results.values():
+                node_ids_in_result = {
+                    n["_id"] for n in (data.get("nodes") or []) if n and n.get("_id")
+                }
+                existing_ids = {
+                    l["_id"] for l in (data.get("links") or []) if l and l.get("_id")
+                }
+                for eid, edge in inter_by_id.items():
+                    if (
+                        eid not in existing_ids
+                        and edge.get("_from") in node_ids_in_result
+                        and edge.get("_to") in node_ids_in_result
+                    ):
+                        data["links"].append(edge)
 
     return results
 
@@ -216,6 +224,42 @@ def traverse_graph_advanced(
             aggregated_results.update(result_for_node)
 
     return aggregated_results
+
+
+def find_inter_node_edges(node_ids, graph="ontologies"):
+    """
+    Find all edges between a given set of nodes using direct edge collection scans.
+
+    Args:
+        node_ids (list): A list of node _id strings.
+        graph (str): The graph type ("ontologies" or "phenotypes").
+
+    Returns:
+        list: A list of edge documents connecting nodes in the set.
+    """
+    if not node_ids or len(node_ids) < 2:
+        return []
+
+    db, _ = get_db_and_graph(graph)
+    edge_collections = get_collections("edge", graph)
+
+    if not edge_collections:
+        return []
+
+    bind_vars = {"vertex_ids": node_ids}
+    subqueries = []
+    for i, coll in enumerate(edge_collections):
+        bind_key = f"@coll_{i}"
+        subqueries.append(
+            f"(FOR e IN @@coll_{i} FILTER e._from IN @vertex_ids"
+            f" AND e._to IN @vertex_ids RETURN e)"
+        )
+        bind_vars[bind_key] = coll
+
+    aql_query = f"RETURN UNION({', '.join(subqueries)})"
+    cursor = db.aql.execute(aql_query, bind_vars=bind_vars)
+    result = cursor.next()
+    return result if result else []
 
 
 def find_shortest_paths(node_ids, edge_direction="ANY"):
