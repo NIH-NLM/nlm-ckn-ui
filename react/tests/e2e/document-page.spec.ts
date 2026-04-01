@@ -65,7 +65,7 @@ test("DocumentPage shows details, toggles panel, renders graph, and opens option
       return route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ Label: ["has_child"] }),
+        body: JSON.stringify({ Label: { type: "categorical", values: ["has_child"] } }),
       });
     }
     return route.continue();

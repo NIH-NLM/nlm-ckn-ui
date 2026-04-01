@@ -1,3 +1,7 @@
 NLM_CKN_ETL_VERSION="v1.1.0"
+<<<<<<< ralatsdc/add-conf-v1.2.11
 CELL_KN_MVP_UI_VERSION="v1.2.7"
+=======
+CELL_KN_MVP_UI_VERSION="v1.2.10"
+>>>>>>> main
 SERVER_ADMIN="raymond.leclair@springbok.io"

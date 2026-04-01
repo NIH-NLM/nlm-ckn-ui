@@ -19,6 +19,7 @@ export {
   uncollapseNode,
   updateEdgeFilter,
   updateNodePosition,
+  updateNumericEdgeFilter,
   updateSetting,
 } from "./graphSlice";
 // Nodes slice actions

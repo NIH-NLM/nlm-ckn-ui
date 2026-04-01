@@ -111,6 +111,49 @@ Then edit `.env` with your local settings. For local development, the defaults i
 | `GRAPH_NAME_ONTOLOGIES` | Ontologies graph name | `KN-Ontologies-v2.0` |
 | `GRAPH_NAME_PHENOTYPES` | Phenotypes graph name | `KN-Phenotypes-v2.0` |
 
+## Live Environment
+
+The application is deployed to **https://dev.nlm-ckn.org/**.
+
+Deployments are triggered automatically by the CI/CD pipeline (`.github/workflows/ci.yml`) on every push to `main`:
+
+- **Frontend** — built with `npm run build-react` and deployed to S3 + CloudFront via `scripts/app/deploy-frontend.sh dev`. Triggered when `react/src/**`, `react/public/**`, or related config files change.
+- **Backend** — Docker image built and pushed to ECR, then deployed to ECS Fargate via `scripts/app/deploy-backend.sh dev`. Triggered when Django app files, `Dockerfile`, or `requirements.txt` change.
+
+Both deploy jobs run only after their respective test suites pass (lint, unit tests, E2E / integration tests). AWS credentials are obtained via GitHub OIDC — no long-lived secrets are stored. Deployments can also be triggered manually via `workflow_dispatch`.
+
+## AWS Architecture
+
+```mermaid
+graph TD
+    User([Researcher / Browser])
+
+    subgraph AWS
+        CF[CloudFront CDN]
+        S3[S3 Bucket\nReact static assets]
+        ALB[Application Load Balancer]
+
+        subgraph ECS [ECS Fargate]
+            BE[Django Backend\ncontainer]
+        end
+
+        subgraph EC2 [EC2 Instance]
+            ADB[(ArangoDB\ngraph database)]
+        end
+
+        SM[Secrets Manager]
+    end
+
+    User -->|HTTPS| CF
+    CF --> S3
+    CF -->|/arango_api/ /api/| ALB
+    ALB --> BE
+    BE --> ADB
+    BE --> SM
+```
+
+> **Why EC2 for ArangoDB?** ArangoDB requires a local, POSIX-compliant filesystem for its RocksDB storage engine. AWS EFS (NFS-based) is not supported and causes data corruption. EC2 with an EBS volume is the only managed AWS option that satisfies this requirement.
+
 ## Production Deployment
 
 1. **Generate a new SECRET_KEY:**

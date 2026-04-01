@@ -132,7 +132,7 @@ WORKFLOW_PRESETS = [
                 "id": "preset-hierarchy-phase-1",
                 "name": "Traverse cell type subclass hierarchy",
                 "originSource": "manual",
-                "originNodeIds": ["CL/0000235"],
+                "originNodeIds": ["CL/0009089"],
                 "previousPhaseId": None,
                 "originFilter": "all",
                 "settings": {

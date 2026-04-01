@@ -52,7 +52,7 @@ test("Graph generates from one origin, shows nodes/links, and options toggle aff
       return route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ Label: ["has_child"] }),
+        body: JSON.stringify({ Label: { type: "categorical", values: ["has_child"] } }),
       });
     }
     return route.continue();
@@ -162,7 +162,7 @@ test("Graph renders edges (links) between nodes", async ({ page }) => {
       return route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ Label: ["has_child"] }),
+        body: JSON.stringify({ Label: { type: "categorical", values: ["has_child"] } }),
       });
     }
     return route.continue();
@@ -254,7 +254,10 @@ test("Graph export buttons exist and trigger download", async ({ page }) => {
     route.fulfill({ status: 200, body: JSON.stringify([COLL]) }),
   );
   await page.route("**/arango_api/edge_filter_options/", async (route) =>
-    route.fulfill({ status: 200, body: JSON.stringify({ Label: ["has_child"] }) }),
+    route.fulfill({
+      status: 200,
+      body: JSON.stringify({ Label: { type: "categorical", values: ["has_child"] } }),
+    }),
   );
   await page.route("**/arango_api/graph/", async (route) =>
     route.fulfill({ status: 200, body: JSON.stringify(buildRawGraph(originId)) }),
@@ -315,7 +318,10 @@ test("Graph node click opens popup with actions", async ({ page }) => {
     route.fulfill({ status: 200, body: JSON.stringify([COLL]) }),
   );
   await page.route("**/arango_api/edge_filter_options/", async (route) =>
-    route.fulfill({ status: 200, body: JSON.stringify({ Label: ["has_child"] }) }),
+    route.fulfill({
+      status: 200,
+      body: JSON.stringify({ Label: { type: "categorical", values: ["has_child"] } }),
+    }),
   );
   await page.route("**/arango_api/graph/", async (route) =>
     route.fulfill({ status: 200, body: JSON.stringify(buildRawGraph(originId)) }),

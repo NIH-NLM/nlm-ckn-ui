@@ -20,7 +20,7 @@ test("Header navigation links work correctly", async ({ page }) => {
     return route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ Label: ["has_child"] }),
+      body: JSON.stringify({ Label: { type: "categorical", values: ["has_child"] } }),
     });
   });
   await page.route("**/arango_api/graph/", async (route) => {

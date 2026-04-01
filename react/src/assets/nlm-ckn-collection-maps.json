@@ -1284,6 +1284,30 @@
             "display_field_as": "Source",
             "field_url": "",
             "field_to_use": ""
+          },
+          {
+            "field_to_display": "F_beta_confidence_score",
+            "display_field_as": "F-beta Score",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "Precision",
+            "display_field_as": "Precision",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "Marker_count",
+            "display_field_as": "Marker Count",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "Score",
+            "display_field_as": "Score",
+            "field_url": "",
+            "field_to_use": ""
           }
         ]
       }

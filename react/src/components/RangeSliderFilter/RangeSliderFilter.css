@@ -1,0 +1,56 @@
+.range-slider-filter {
+  margin-bottom: var(--spacing-md, 12px);
+  padding: var(--spacing-sm, 8px) 0;
+}
+
+.range-slider-label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: var(--spacing-sm, 8px);
+  color: var(--text-primary, #333);
+}
+
+.range-slider-filter .rc-slider {
+  margin: 0 6px var(--spacing-sm, 8px);
+}
+
+.range-slider-filter .rc-slider-track {
+  background-color: var(--accent-color, #4a90d9);
+}
+
+.range-slider-filter .rc-slider-handle {
+  border-color: var(--accent-color, #4a90d9);
+  opacity: 1;
+}
+
+.range-slider-filter .rc-slider-handle:hover,
+.range-slider-filter .rc-slider-handle-dragging {
+  border-color: var(--accent-color-hover, #357abd);
+  box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.2);
+}
+
+.range-slider-inputs {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs, 4px);
+}
+
+.range-input {
+  width: 70px;
+  padding: 2px 4px;
+  font-size: 0.8rem;
+  border: 1px solid var(--border-color, #ccc);
+  border-radius: 3px;
+  text-align: center;
+}
+
+.range-input:focus {
+  outline: 2px solid var(--accent-color, #4a90d9);
+  outline-offset: -1px;
+}
+
+.range-separator {
+  color: var(--text-secondary, #666);
+  font-size: 0.85rem;
+}
