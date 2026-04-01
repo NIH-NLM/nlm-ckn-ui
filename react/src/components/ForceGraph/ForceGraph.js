@@ -838,6 +838,7 @@ const ForceGraph = ({
                     availableEdgeFilters={availableEdgeFilters}
                     edgeFilterStatus={edgeFilterStatus}
                     onCollectionChange={handleCollectionChange}
+                    graphLinks={graphData.links}
                   />
                 )}
               </div>

@@ -148,7 +148,7 @@ if [[ ! -f ".built" ]] && [[ $run_ontology -eq 1 ]] \
     mvn clean package -DskipTests
     classpath="target/nlm-ckn-etl-1.0.jar"
     java -cp $classpath gov.nih.nlm.OntologyDownloader
-    java -cp $classpath gov.nih.nlm.OntologyGraphBuilder
+    java -Xms32g -Xmx32g -cp $classpath gov.nih.nlm.OntologyGraphBuilder
 
     # Checkout the current branch, and apply the stash so that changes
     # are not lost
@@ -199,8 +199,8 @@ if [[ ! -f ".built" ]] && [[ $run_results -eq 1 ]] \
     # graphs
     mvn clean package -DskipTests
     classpath="target/nlm-ckn-etl-1.0.jar"
-    java -cp $classpath gov.nih.nlm.ResultsGraphBuilder
-    java -cp $classpath gov.nih.nlm.PhenotypeGraphBuilder
+    java -Xms32g -Xmx32g -cp $classpath gov.nih.nlm.ResultsGraphBuilder
+    java -Xms32g -Xmx32g -cp $classpath gov.nih.nlm.PhenotypeGraphBuilder
 
     # Create all analyzers and views, then deactivate the Python
     # environment

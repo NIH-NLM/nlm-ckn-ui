@@ -59,8 +59,35 @@ def traverse_graph(
         negative_conditions = []
 
         for key, values in edge_filters.items():
+            safe_key = re.sub(r'[^a-zA-Z0-9_]', '', key)
+
+            # Numeric range filter: values is a dict with min/max keys
+            if isinstance(values, dict):
+                filter_min = values.get("min")
+                filter_max = values.get("max")
+                if filter_min is None and filter_max is None:
+                    continue
+
+                range_parts = [f"e.`{key}` != null", f'e.`{key}` != ""']
+                if filter_min is not None:
+                    bind_min = f"filter_min_{safe_key}"
+                    range_parts.append(f"TO_NUMBER(e.`{key}`) >= @{bind_min}")
+                    bind_vars[bind_min] = filter_min
+                if filter_max is not None:
+                    bind_max = f"filter_max_{safe_key}"
+                    range_parts.append(f"TO_NUMBER(e.`{key}`) <= @{bind_max}")
+                    bind_vars[bind_max] = filter_max
+
+                pos_cond = f"({' AND '.join(range_parts)})"
+                positive_conditions.append(pos_cond)
+
+                neg_cond = f"(e.`{key}` != null AND NOT ({' AND '.join(range_parts[2:])}))"
+                negative_conditions.append(neg_cond)
+                continue
+
+            # Categorical filter: values is a list
             if values:
-                bind_key = f"filter_value_{re.sub(r'[^a-zA-Z0-9_]', '', key)}"
+                bind_key = f"filter_value_{safe_key}"
 
                 pos_cond = (
                     f"(e.`{key}` != null AND ("

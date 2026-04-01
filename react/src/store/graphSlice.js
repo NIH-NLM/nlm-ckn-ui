@@ -263,6 +263,15 @@ const graphSlice = createSlice({
 
       state.lastActionType = "updateEdgeFilter";
     },
+    // Updates a numeric edge filter range for a specific field.
+    updateNumericEdgeFilter: (state, action) => {
+      const { field, min, max } = action.payload;
+      state.settings.edgeFilters = {
+        ...state.settings.edgeFilters,
+        [field]: { min, max },
+      };
+      state.lastActionType = "updateNumericEdgeFilter";
+    },
     // Sets edge filters directly.
     // Merges partial updates into existing filters so callers can pass just the changed property.
     setEdgeFilters: (state, action) => {
@@ -406,12 +415,24 @@ const graphSlice = createSlice({
       })
       .addCase(fetchEdgeFilterOptions.fulfilled, (state, action) => {
         state.edgeFilterStatus = GRAPH_STATUS.SUCCEEDED;
-        state.availableEdgeFilters = action.payload;
-        // Initialize edgeFilters in settings with empty arrays for each new field.
-        // Prevents undefined errors when accessing filters later.
-        for (const field of Object.keys(action.payload)) {
+        // Sort: categorical fields first, then numeric, each alphabetical.
+        const entries = Object.entries(action.payload);
+        const categorical = entries
+          .filter(([, v]) => v.type !== "numeric")
+          .sort(([a], [b]) => a.localeCompare(b));
+        const numeric = entries
+          .filter(([, v]) => v.type === "numeric")
+          .sort(([a], [b]) => a.localeCompare(b));
+        const sorted = Object.fromEntries([...categorical, ...numeric]);
+        state.availableEdgeFilters = sorted;
+        // Initialize edgeFilters: empty array for categorical, full {min, max} for numeric.
+        for (const [field, filterData] of Object.entries(sorted)) {
           if (!state.settings.edgeFilters[field]) {
-            state.settings.edgeFilters[field] = [];
+            if (filterData.type === "numeric") {
+              state.settings.edgeFilters[field] = { min: filterData.min, max: filterData.max };
+            } else {
+              state.settings.edgeFilters[field] = [];
+            }
           }
         }
       })
@@ -459,6 +480,7 @@ export const {
   uncollapseNode,
   collapseNode,
   updateEdgeFilter,
+  updateNumericEdgeFilter,
   setEdgeFilters,
   loadGraph,
   loadGraphFromJson,

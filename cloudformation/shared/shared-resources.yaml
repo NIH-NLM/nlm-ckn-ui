@@ -30,6 +30,21 @@ Resources:
         ScanOnPush: true
       EncryptionConfiguration:
         EncryptionType: AES256
+      RepositoryPolicyText:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowCrossAccountAccess
+            Effect: Allow
+            Principal:
+              AWS: 'arn:aws:iam::206537881715:root'
+            Action:
+              - ecr:GetDownloadUrlForLayer
+              - ecr:BatchGetImage
+              - ecr:BatchCheckLayerAvailability
+              - ecr:DescribeRepositories
+              - ecr:DescribeImages
+              - ecr:ListImages
+              - ecr:GetRepositoryPolicy
       LifecyclePolicy:
         LifecyclePolicyText: |
           {
@@ -107,6 +122,28 @@ Resources:
           Value: ArangoDB datasets for all environments
         - Key: ManagedBy
           Value: CloudFormation
+
+  # S3 Bucket Policy for cross-account access
+  ArangoDbDataBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ArangoDbDataBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowCrossAccountAccess
+            Effect: Allow
+            Principal:
+              AWS: 'arn:aws:iam::206537881715:root'
+            Action:
+              - s3:GetObject
+              - s3:PutObject
+              - s3:DeleteObject
+              - s3:ListBucket
+              - s3:GetBucketLocation
+            Resource:
+              - !GetAtt ArangoDbDataBucket.Arn
+              - !Sub '${ArangoDbDataBucket.Arn}/*'
 
 Outputs:
   EcrRepositoryUrl:

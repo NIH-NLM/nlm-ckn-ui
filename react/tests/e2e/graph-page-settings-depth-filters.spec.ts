@@ -49,7 +49,7 @@ test("Graph settings: depth, direction, collections, edge filters", async ({ pag
       return route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ Label: ["has_child", "path"] }),
+        body: JSON.stringify({ Label: { type: "categorical", values: ["has_child", "path"] } }),
       });
     }
     return route.continue();

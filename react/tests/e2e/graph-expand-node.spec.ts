@@ -66,7 +66,7 @@ test("Expand button fetches and adds new nodes to graph", async ({ page }) => {
       return route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ Label: ["has_child"] }),
+        body: JSON.stringify({ Label: { type: "categorical", values: ["has_child"] } }),
       });
     }
     return route.continue();
@@ -231,7 +231,7 @@ test("Expand button closes popup after triggering expansion", async ({ page }) =
       return route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ Label: ["has_child"] }),
+        body: JSON.stringify({ Label: { type: "categorical", values: ["has_child"] } }),
       });
     }
     return route.continue();
