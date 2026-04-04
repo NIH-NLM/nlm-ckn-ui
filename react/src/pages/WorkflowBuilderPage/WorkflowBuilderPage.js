@@ -73,13 +73,15 @@ const WorkflowBuilderPage = () => {
   const handleGraphReady = useCallback(
     (graphData) => {
       if (graphData?.nodes?.length > 0) {
-        const nodeIds = graphData.nodes.map((n) => n._id);
+        // Use the actual origin node IDs from the active phase, not all graph nodes.
+        const activePhase = phases.find((p) => p.id === activePhaseId);
+        const nodeIds = activePhase?._executedOriginNodeIds || activePhase?.originNodeIds || [];
 
         // Set graph data and origin node IDs in a single dispatch.
         // The setGraphData reducer also sets depth=0 and useFocusNodes=false
         // and snapshots lastAppliedSettings so the "Apply Changes" mechanism
         // works for query-affecting settings in the graph options panel.
-        dispatch(setGraphData({ graphData, originNodeIds: nodeIds }));
+        dispatch(setGraphData({ graphData, originNodeIds: nodeIds, source: "workflow" }));
 
         setHasResults(true);
 
@@ -94,7 +96,7 @@ const WorkflowBuilderPage = () => {
         }, 100);
       }
     },
-    [dispatch],
+    [dispatch, phases, activePhaseId],
   );
 
   return (
