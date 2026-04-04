@@ -14,7 +14,12 @@
 
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { createEmptyPhase, DEFAULT_GRAPH_TYPE, GRAPH_STATUS, UI_DEFAULTS } from "../constants";
-import { fetchCollectionDocuments, fetchGraphData, fetchNodeDetailsByIds } from "../services";
+import {
+  fetchCollectionDocuments,
+  fetchConnectingPaths,
+  fetchGraphData,
+  fetchNodeDetailsByIds,
+} from "../services";
 import { performSetOperation } from "../utils";
 
 /**
@@ -295,32 +300,89 @@ export const executePhase = createAsyncThunk(
       };
     }
 
-    // Build params for the graph API using advancedSettings format
-    const params = {
-      nodeIds: originNodeIds,
-      advancedSettings,
-      graphType: phase.settings.graphType,
-      includeInterNodeEdges: phase.settings.includeInterNodeEdges ?? true,
-    };
+    let mergedResult;
 
-    // Fetch the raw data from API
-    const rawData = await fetchGraphData(params);
+    // "Connected Paths" uses a dedicated API to find shortest paths between origins
+    if (phase.settings.setOperation === "Connected Paths") {
+      mergedResult = await fetchConnectingPaths({
+        nodeIds: originNodeIds,
+        graphType: phase.settings.graphType,
+        allowedCollections: phase.settings.allowedCollections,
+        edgeFilters: phase.settings.edgeFilters,
+        maxDepth: phase.settings.depth || undefined,
+      });
+    } else {
+      // Standard flow: traverse from each origin, then merge with set operation
+      const params = {
+        nodeIds: originNodeIds,
+        advancedSettings,
+        graphType: phase.settings.graphType,
+        includeInterNodeEdges: phase.settings.includeInterNodeEdges ?? true,
+      };
 
-    // The API returns { nodeId: { nodes: [], links: [] }, ... } for each origin node
-    // We need to merge these based on the set operation
-    const graphsArray = Object.values(rawData).map((data) => ({
-      nodes: data.nodes || [],
-      links: data.links || [],
-    }));
+      const rawData = await fetchGraphData(params);
 
-    // Apply set operation to merge results
-    const mergedResult = performSetOperation(graphsArray, phase.settings.setOperation || "Union");
+      const graphsArray = Object.values(rawData).map((data) => ({
+        nodes: data.nodes || [],
+        links: data.links || [],
+      }));
+
+      mergedResult = performSetOperation(graphsArray, phase.settings.setOperation || "Union");
+
+      // For "Intersection with Origins", add back origin nodes and their edges
+      if (phase.settings.setOperation === "Intersection with Origins") {
+        const existingIds = new Set(mergedResult.nodes.map((n) => n._id || n.id));
+        const addedNodes = [...mergedResult.nodes];
+        const addedLinks = [...mergedResult.links];
+        const linkKeys = new Set(
+          addedLinks.map((l) => l._id || `${l._from}->${l._to}`),
+        );
+
+        for (const originId of originNodeIds) {
+          if (existingIds.has(originId)) continue;
+          const originData = rawData[originId];
+          if (originData) {
+            const originNode = originData.nodes?.find((n) => (n._id || n.id) === originId);
+            if (originNode) {
+              addedNodes.push(originNode);
+              existingIds.add(originId);
+            }
+          }
+        }
+
+        for (const data of Object.values(rawData)) {
+          for (const link of data.links || []) {
+            const key = link._id || `${link._from}->${link._to}`;
+            if (linkKeys.has(key)) continue;
+            if (existingIds.has(link._from) && existingIds.has(link._to)) {
+              addedLinks.push(link);
+              linkKeys.add(key);
+            }
+          }
+        }
+
+        mergedResult = { nodes: addedNodes, links: addedLinks };
+      }
+    }
 
     // Filter results to only include nodes from specified collections (if set)
     const finalResult = filterResultByCollections(
       mergedResult,
       phase.settings.returnCollections || [],
     );
+
+    // Check for empty results and provide a helpful message
+    if (!finalResult.nodes || finalResult.nodes.length === 0) {
+      const op = phase.settings.setOperation || "Union";
+      if (op === "Connected Paths") {
+        const depth = phase.settings.depth;
+        throw new Error(
+          `No connecting paths found at depth ${depth}. ` +
+            "Try increasing the depth to find longer paths between the origin nodes.",
+        );
+      }
+      throw new Error("No results found for this phase configuration.");
+    }
 
     return {
       phaseId: phase.id,

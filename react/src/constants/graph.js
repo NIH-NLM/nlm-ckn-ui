@@ -39,6 +39,8 @@ export const DIRECTION_OPTIONS = ["ANY", "INBOUND", "OUTBOUND"];
 export const SET_OPERATION_OPTIONS = [
   { value: "Union", label: "Union (combine all)" },
   { value: "Intersection", label: "Intersection (common nodes)" },
+  { value: "Intersection with Origins", label: "Intersection (keep origins)" },
+  { value: "Connected Paths", label: "Connected Paths (between origins)" },
   { value: "Symmetric Difference", label: "Symmetric Difference" },
 ];
 export const ORIGIN_FILTER_OPTIONS = [

@@ -13,6 +13,7 @@ export { fetchDocument, fetchNodeDetailsByIds, fetchNodesDetails } from "./docum
 export { ApiError, fetchWithErrorHandling, getJson, postJson } from "./fetchWrapper";
 // Graph operations
 export {
+  fetchConnectingPaths,
   fetchEdgeFilterOptions,
   fetchGraphData,
   fetchNodeExpansion,

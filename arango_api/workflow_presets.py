@@ -10,6 +10,7 @@ making them discoverable by non-browser clients (MCP tools, agents, etc.).
 """
 
 PRESET_CATEGORIES = [
+    {"id": "Use Cases", "label": "Use Cases"},
     {"id": "Ontology Exploration", "label": "Ontology Exploration"},
     {"id": "Cell Type Discovery", "label": "Cell Type Discovery"},
     {"id": "Marker Gene Analysis", "label": "Marker Gene Analysis"},
@@ -116,6 +117,72 @@ def _build_ph_phases(id_prefix, count):
 
 
 WORKFLOW_PRESETS = [
+    # -------------------------------------------------------------------------
+    # Use Cases
+    # -------------------------------------------------------------------------
+    {
+        "id": "hlca-lung-cell-types",
+        "name": "HLCA lung cell types (UC1)",
+        "description": (
+            "Displays cell sets from the HLCA respiratory system dataset "
+            "(Sikkema et al.) and their mapped Cell Ontology terms. "
+            "The dataset node is at the center, connected to ~61 cell "
+            "sets (orange) mapped to cell types (blue)."
+        ),
+        "category": "Use Cases",
+        "phases": [
+            {
+                "id": "preset-hlca-lung-phase-1",
+                "name": "Traverse HLCA dataset to cell types",
+                "originSource": "manual",
+                "originNodeIds": [
+                    "CSD/b351804c-293e-4aeb-9c4c-043db67f4540",
+                ],
+                "previousPhaseId": None,
+                "originFilter": "all",
+                "settings": {
+                    "depth": 1,
+                    "edgeDirection": "INBOUND",
+                    "allowedCollections": ["CS", "CL"],
+                    "edgeFilters": {"Label": [], "Source": []},
+                    "setOperation": "Union",
+                    "graphType": "phenotypes",
+                    "includeInterNodeEdges": True,
+                },
+                "perNodeSettings": {},
+            },
+        ],
+    },
+
+    {
+        "id": "epithelial-cells-lung-uc2",
+        "name": "Epithelial cells in the lung (UC2)",
+        "description": (
+            "Shows all paths connecting epithelial cell to lung "
+            "through the Cell Ontology hierarchy, revealing the "
+            "intermediate cell types that bridge between them."
+        ),
+        "category": "Use Cases",
+        "phases": [
+            {
+                "id": "preset-uc2-phase-1",
+                "name": "Find paths between epithelial cell and lung",
+                "originSource": "manual",
+                "originNodeIds": ["CL/0000066", "UBERON/0002048"],
+                "previousPhaseId": None,
+                "originFilter": "all",
+                "settings": {
+                    "depth": 3,
+                    "allowedCollections": ["CL", "UBERON"],
+                    "setOperation": "Connected Paths",
+                    "graphType": "phenotypes",
+                    "includeInterNodeEdges": True,
+                },
+                "perNodeSettings": {},
+            },
+        ],
+    },
+
     # -------------------------------------------------------------------------
     # Ontology Exploration
     # -------------------------------------------------------------------------

@@ -43,7 +43,8 @@ export function performSetOperation(graphs, operation) {
     let finalNodes = [];
     const allEntries = Array.from(nodeFrequencyMap.values());
     switch (op) {
-      case "intersection": {
+      case "intersection":
+      case "intersection with origins": {
         const required = safeGraphs.length;
         finalNodes = allEntries.filter((e) => e.count === required).map((e) => e.node);
         break;

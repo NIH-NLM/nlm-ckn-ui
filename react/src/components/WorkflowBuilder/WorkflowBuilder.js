@@ -68,7 +68,7 @@ const WorkflowBuilder = ({ onGraphReady }) => {
   // Auto-dismiss toast after 2 seconds
   useEffect(() => {
     if (toastMessage) {
-      const timer = setTimeout(() => setToastMessage(null), 2000);
+      const timer = setTimeout(() => setToastMessage(null), 4000);
       return () => clearTimeout(timer);
     }
   }, [toastMessage]);
