@@ -6,7 +6,7 @@ import { GraphContext } from "contexts";
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchNodeDetailsByIds } from "services";
-import { initializeGraph, loadGraphFromJson, removeNodeFromSlice } from "store";
+import { clearNodesSlice, initializeGraph, loadGraphFromJson, removeNodeFromSlice } from "store";
 
 const GraphPage = () => {
   const dispatch = useDispatch();
@@ -25,7 +25,7 @@ const GraphPage = () => {
 
   // Add memoized calculation for stale state detection
   const isGraphStale = useMemo(() => {
-    if (!showGraph) return false;
+    if (!showGraph || nodeIds.length === 0) return false;
     return JSON.stringify(nodeIds) !== JSON.stringify(lastAppliedOriginNodeIds);
   }, [nodeIds, lastAppliedOriginNodeIds, showGraph]);
 
@@ -34,7 +34,7 @@ const GraphPage = () => {
   const hasInitializedRef = useRef(false);
   useEffect(() => {
     if (!hasInitializedRef.current) {
-      dispatch(initializeGraph({}));
+      dispatch(initializeGraph({ nodeIds: [] }));
       hasInitializedRef.current = true;
     }
   }, [dispatch]);
@@ -179,6 +179,15 @@ const GraphPage = () => {
         <button type="button" onClick={handleLoadFromJson} className="secondary-action-button">
           Load from File
         </button>
+        {nodeIds.length > 0 && (
+          <button
+            type="button"
+            onClick={() => dispatch(clearNodesSlice())}
+            className="secondary-action-button"
+          >
+            Clear All Nodes
+          </button>
+        )}
       </div>
 
       {isGraphStale && (
