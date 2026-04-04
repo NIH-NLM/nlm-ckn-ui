@@ -11,6 +11,7 @@ Usage in views:
 
 See: https://www.django-rest-framework.org/api-guide/serializers/
 """
+
 from rest_framework import serializers
 
 GRAPH_CHOICES = ["ontologies", "phenotypes"]
@@ -91,6 +92,17 @@ class ShortestPathsSerializer(serializers.Serializer):
         choices=["INBOUND", "OUTBOUND", "ANY"],
         required=False,
         default="ANY",
+    )
+
+
+class EdgesBetweenSerializer(GraphRequestSerializer):
+    """Serializer for finding edges between a set of nodes."""
+
+    node_ids = serializers.ListField(
+        child=serializers.CharField(),
+        required=True,
+        min_length=2,
+        help_text="List of at least 2 node IDs to find edges between",
     )
 
 
@@ -225,8 +237,12 @@ class PhaseSerializer(serializers.Serializer):
         required=False,
         default=list,
     )
-    originCollection = serializers.CharField(required=False, allow_null=True, default=None)
-    previousPhaseId = serializers.CharField(required=False, allow_null=True, default=None)
+    originCollection = serializers.CharField(
+        required=False, allow_null=True, default=None
+    )
+    previousPhaseId = serializers.CharField(
+        required=False, allow_null=True, default=None
+    )
     previousPhaseIds = serializers.ListField(
         child=serializers.CharField(),
         required=False,
@@ -249,9 +265,7 @@ class PhaseSerializer(serializers.Serializer):
         """Validate known keys within the settings dict (all optional)."""
         if "depth" in value:
             if not isinstance(value["depth"], int):
-                raise serializers.ValidationError(
-                    "'depth' must be an integer."
-                )
+                raise serializers.ValidationError("'depth' must be an integer.")
 
         if "edgeDirection" in value:
             allowed_directions = ("ANY", "INBOUND", "OUTBOUND")
@@ -276,9 +290,7 @@ class PhaseSerializer(serializers.Serializer):
 
         if "graphType" in value:
             if not isinstance(value["graphType"], str):
-                raise serializers.ValidationError(
-                    "'graphType' must be a string."
-                )
+                raise serializers.ValidationError("'graphType' must be a string.")
 
         if "includeInterNodeEdges" in value:
             if not isinstance(value["includeInterNodeEdges"], bool):

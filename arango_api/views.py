@@ -11,6 +11,7 @@ Each view:
 
 See: https://www.django-rest-framework.org/api-guide/views/
 """
+
 import logging
 
 from django.http import HttpResponseNotFound
@@ -23,6 +24,7 @@ from arango_api.serializers import (
     GraphTraversalSerializer,
     AdvancedGraphTraversalSerializer,
     ShortestPathsSerializer,
+    EdgesBetweenSerializer,
     SearchRequestSerializer,
     AQLQuerySerializer,
     SunburstRequestSerializer,
@@ -142,6 +144,21 @@ class ShortestPathsView(APIView):
         return Response(results)
 
 
+class EdgesBetweenView(APIView):
+    """Find all edges between a given set of nodes."""
+
+    def post(self, request):
+        serializer = EdgesBetweenSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        edges = graph_service.find_inter_node_edges(
+            node_ids=data["node_ids"],
+            graph=data.get("graph", "ontologies"),
+        )
+        return Response(edges)
+
+
 class SearchView(APIView):
     """Search for items by term."""
 
@@ -206,7 +223,9 @@ class SunburstView(APIView):
             error_response = {"error": str(e)}
             if e.db_error:
                 error_response["db_error"] = e.db_error
-            return Response(error_response, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                error_response, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class EdgeFilterOptionsView(APIView):
@@ -292,7 +311,9 @@ class WorkflowPresetsView(APIView):
     def get(self, request):
         from arango_api.workflow_presets import PRESET_CATEGORIES, WORKFLOW_PRESETS
 
-        return Response({
-            "presets": WORKFLOW_PRESETS,
-            "categories": PRESET_CATEGORIES,
-        })
+        return Response(
+            {
+                "presets": WORKFLOW_PRESETS,
+                "categories": PRESET_CATEGORIES,
+            }
+        )

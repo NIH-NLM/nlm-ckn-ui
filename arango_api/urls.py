@@ -1,6 +1,7 @@
 """
 URL configuration for the ArangoDB API.
 """
+
 from django.urls import path
 
 from arango_api.views import (
@@ -10,6 +11,7 @@ from arango_api.views import (
     RelatedEdgesView,
     GraphTraversalView,
     ShortestPathsView,
+    EdgesBetweenView,
     SearchView,
     GetAllView,
     AQLQueryView,
@@ -34,6 +36,11 @@ urlpatterns = [
     # Graph traversal endpoints
     path("graph/", GraphTraversalView.as_view(), name="get_graph"),
     path("shortest_paths/", ShortestPathsView.as_view(), name="get_shortest_paths"),
+    path(
+        "graph/edges-between/",
+        EdgesBetweenView.as_view(),
+        name="get_edges_between",
+    ),
     # Edge endpoints
     path(
         "edges/<str:edge_coll>/<str:dr>/<str:item_coll>/<str:pk>/",
