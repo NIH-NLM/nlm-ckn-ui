@@ -88,13 +88,24 @@ test("Inter-node edges render when backend includes them", async ({ page }) => {
     return route.continue();
   });
 
-  await page.goto(`/graph?origin=${encodeURIComponent(originId)}`);
+  await page.addInitScript((origin) => {
+    const persistedRoot = {
+      nodesSlice: JSON.stringify({ originNodeIds: [origin] }),
+      savedGraphs: JSON.stringify({ graphs: [] }),
+      _persist: JSON.stringify({ version: -1, rehydrated: true }),
+    };
+    localStorage.setItem("persist:root", JSON.stringify(persistedRoot));
+  }, originId);
+
+  await page.goto("/#/graph");
+  await page.locator(".selected-items-container").waitFor({ state: "visible" });
+  await page.getByRole("button", { name: /Generate Graph|Update Graph/i }).click();
 
   // Wait for graph to render with all 3 nodes and 3 edges (including inter-node B→C)
   await expect(page.locator("g.node")).toHaveCount(3, { timeout: 10000 });
   await expect(page.locator("g.link")).toHaveCount(3, { timeout: 10000 });
 
-  const errors = getCollectedErrors(filterErrorsContaining("favicon"));
+  const errors = filterErrorsContaining(await getCollectedErrors(page), "favicon");
   expect(errors).toHaveLength(0);
 });
 
@@ -116,12 +127,23 @@ test("Graph shows only traversal edges when inter-node edge is absent", async ({
     return route.continue();
   });
 
-  await page.goto(`/graph?origin=${encodeURIComponent(originId)}`);
+  await page.addInitScript((origin) => {
+    const persistedRoot = {
+      nodesSlice: JSON.stringify({ originNodeIds: [origin] }),
+      savedGraphs: JSON.stringify({ graphs: [] }),
+      _persist: JSON.stringify({ version: -1, rehydrated: true }),
+    };
+    localStorage.setItem("persist:root", JSON.stringify(persistedRoot));
+  }, originId);
+
+  await page.goto("/#/graph");
+  await page.locator(".selected-items-container").waitFor({ state: "visible" });
+  await page.getByRole("button", { name: /Generate Graph|Update Graph/i }).click();
 
   // Only 2 traversal edges, no inter-node edge
   await expect(page.locator("g.node")).toHaveCount(3, { timeout: 10000 });
   await expect(page.locator("g.link")).toHaveCount(2, { timeout: 10000 });
 
-  const errors = getCollectedErrors(filterErrorsContaining("favicon"));
+  const errors = filterErrorsContaining(await getCollectedErrors(page), "favicon");
   expect(errors).toHaveLength(0);
 });
