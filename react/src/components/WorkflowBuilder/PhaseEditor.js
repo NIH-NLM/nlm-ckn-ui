@@ -471,6 +471,26 @@ const PhaseEditor = ({
                     onChange={(e) => onUpdateSettings("setOperation", e.target.value)}
                   />
                 )}
+                {(phase.settings.setOperation === "Intersection" ||
+                  phase.settings.setOperation === "Intersection with Origins") &&
+                  (phase.originNodeIds.length > 1 || phase.originSource === "previousPhase") && (
+                  <SettingsSelect
+                    id={`min-overlap-${phase.id}`}
+                    label="Require overlap"
+                    value={phase.settings.minOverlap || "all"}
+                    options={[
+                      { value: "all", label: "All origins (strict)" },
+                      ...[2, 3, 4, 5].map((n) => ({
+                        value: n,
+                        label: `At least ${n} origins`,
+                      })),
+                    ]}
+                    onChange={(e) => {
+                      const val = e.target.value === "all" ? undefined : Number(e.target.value);
+                      onUpdateSettings("minOverlap", val);
+                    }}
+                  />
+                )}
               </div>
             )}
 

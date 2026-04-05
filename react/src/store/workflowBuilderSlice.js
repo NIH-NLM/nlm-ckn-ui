@@ -17,6 +17,7 @@ import { createEmptyPhase, DEFAULT_GRAPH_TYPE, GRAPH_STATUS, UI_DEFAULTS } from 
 import {
   fetchCollectionDocuments,
   fetchConnectingPaths,
+  fetchEdgesBetween,
   fetchGraphData,
   fetchNodeDetailsByIds,
 } from "../services";
@@ -327,7 +328,11 @@ export const executePhase = createAsyncThunk(
         links: data.links || [],
       }));
 
-      mergedResult = performSetOperation(graphsArray, phase.settings.setOperation || "Union");
+      mergedResult = performSetOperation(
+        graphsArray,
+        phase.settings.setOperation || "Union",
+        phase.settings.minOverlap,
+      );
 
       // For "Intersection with Origins", add back origin nodes and their edges
       if (phase.settings.setOperation === "Intersection with Origins") {
@@ -362,6 +367,23 @@ export const executePhase = createAsyncThunk(
         }
 
         mergedResult = { nodes: addedNodes, links: addedLinks };
+      }
+    }
+
+    // Post-merge inter-node edge scan: find edges between nodes that
+    // came from different origins (e.g., origin nodes added back after
+    // intersection may have edges to result nodes not yet discovered).
+    if (phase.settings.includeInterNodeEdges !== false && mergedResult.nodes?.length >= 2) {
+      const allNodeIds = mergedResult.nodes.map((n) => n._id || n.id).filter(Boolean);
+      const existingLinkIds = new Set(mergedResult.links.map((l) => l._id).filter(Boolean));
+      const interEdges = await fetchEdgesBetween(allNodeIds, phase.settings.graphType);
+      const nodeIdSet = new Set(allNodeIds);
+      for (const edge of interEdges) {
+        if (!edge?._id || existingLinkIds.has(edge._id)) continue;
+        if (nodeIdSet.has(edge._from) && nodeIdSet.has(edge._to)) {
+          mergedResult.links.push(edge);
+          existingLinkIds.add(edge._id);
+        }
       }
     }
 

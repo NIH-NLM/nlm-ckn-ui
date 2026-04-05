@@ -182,6 +182,70 @@ WORKFLOW_PRESETS = [
             },
         ],
     },
+    {
+        "id": "dendritic-marker-genes-uc3",
+        "name": "Dendritic cell marker genes in lung (UC3)",
+        "description": (
+            "Identifies dendritic cell subtypes in lung via "
+            "intersection, then retrieves their biomarker "
+            "combinations and associated marker genes."
+        ),
+        "category": "Use Cases",
+        "phases": [
+            {
+                "id": "preset-uc3-phase-1",
+                "name": "Find dendritic cells in lung",
+                "originSource": "manual",
+                "originNodeIds": ["CL/0000451", "UBERON/0002048"],
+                "previousPhaseId": None,
+                "originFilter": "all",
+                "settings": {
+                    "depth": 9,
+                    "edgeDirection": "INBOUND",
+                    "allowedCollections": ["CL"],
+                    "edgeFilters": {
+                        "Label": ["PART_OF", "SUB_CLASS_OF"],
+                        "Source": [],
+                    },
+                    "setOperation": "Intersection with Origins",
+                    "graphType": "phenotypes",
+                    "includeInterNodeEdges": True,
+                },
+                "perNodeSettings": {
+                    "CL/0000451": {"depth": 9},
+                    "UBERON/0002048": {"depth": 1},
+                },
+            },
+            {
+                "id": "preset-uc3-phase-2",
+                "name": "Compare marker genes",
+                "originSource": "previousPhase",
+                "originNodeIds": [],
+                "previousPhaseId": "preset-uc3-phase-1",
+                "originFilter": "all",
+                "settings": {
+                    "depth": 3,
+                    "edgeDirection": "ANY",
+                    "allowedCollections": ["BMC", "GS", "CS"],
+                    "edgeFilters": {
+                        "Label": [
+                            "DERIVES_FROM",
+                            "PART_OF",
+                            "HAS_CHARACTERIZING_MARKER_SET",
+                            "COMPOSED_PRIMARILY_OF",
+                            "SUB_CLASS_OF",
+                        ],
+                        "Source": [],
+                    },
+                    "setOperation": "Intersection with Origins",
+                    "graphType": "phenotypes",
+                    "includeInterNodeEdges": True,
+                    "minOverlap": 2,
+                },
+                "perNodeSettings": {},
+            },
+        ],
+    },
 
     # -------------------------------------------------------------------------
     # Ontology Exploration

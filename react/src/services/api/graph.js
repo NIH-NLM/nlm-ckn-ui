@@ -100,6 +100,21 @@ export const fetchConnectingPaths = async (params) => {
 };
 
 /**
+ * Find all edges between a set of nodes.
+ * Used as a post-merge scan to discover edges between nodes from different origins.
+ * @param {Array<string>} nodeIds - Node IDs to check for edges between.
+ * @param {string} graphType - Graph type.
+ * @returns {Promise<Array>} Array of edge documents.
+ */
+export const fetchEdgesBetween = async (nodeIds, graphType) => {
+  if (!nodeIds || nodeIds.length < 2) return [];
+  return postJson(`${GRAPH_ENDPOINT}edges-between/`, {
+    node_ids: nodeIds,
+    graph: graphType,
+  });
+};
+
+/**
  * Expand a single node by fetching its neighbors.
  * @param {string} nodeId - The node ID to expand.
  * @param {string} graphType - Graph/database type.

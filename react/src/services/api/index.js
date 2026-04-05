@@ -15,6 +15,7 @@ export { ApiError, fetchWithErrorHandling, getJson, postJson } from "./fetchWrap
 export {
   fetchConnectingPaths,
   fetchEdgeFilterOptions,
+  fetchEdgesBetween,
   fetchGraphData,
   fetchNodeExpansion,
 } from "./graph";

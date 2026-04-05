@@ -171,7 +171,10 @@ def _execute_phase(phase, all_phases, phase_results, phase_origin_ids, graph):
             for data in raw_data.values()
         ]
 
-        merged_result = _perform_set_operation(graphs_array, set_operation)
+        min_overlap = settings.get("minOverlap")
+        merged_result = _perform_set_operation(
+            graphs_array, set_operation, min_overlap=min_overlap
+        )
 
         if set_operation == "Intersection with Origins":
             merged_result = _add_origin_nodes(
@@ -412,13 +415,17 @@ def _add_origin_nodes(merged_result, raw_data, origin_node_ids):
     return {"nodes": added_nodes, "links": added_links}
 
 
-def _perform_set_operation(graphs, operation):
+def _perform_set_operation(graphs, operation, min_overlap=None):
     """
     Apply a set operation across multiple graph results.
 
     Args:
         graphs (list): List of {nodes: [], links: []} dicts.
         operation (str): "Union", "Intersection", or "Symmetric Difference".
+        min_overlap (int|None): Minimum number of origin graphs that must
+            contain a node for it to be kept.  Acts as a threshold between
+            Union (1) and Intersection (N).  None means use the operation's
+            default behavior.
 
     Returns:
         dict: Merged {nodes, links}.
@@ -446,11 +453,13 @@ def _perform_set_operation(graphs, operation):
 
     # Select nodes based on operation
     if op in ("intersection", "intersection with origins"):
-        required = len(safe_graphs)
+        # min_overlap relaxes intersection: instead of requiring ALL origins,
+        # require at least min_overlap origins.  Default = all (strict).
+        required = min_overlap if min_overlap and min_overlap > 1 else len(safe_graphs)
         final_nodes = [
             entry["node"]
             for entry in node_frequency.values()
-            if entry["count"] == required
+            if entry["count"] >= required
         ]
     elif op in ("symmetric difference", "symmetric_difference", "xor"):
         final_nodes = [
