@@ -122,6 +122,7 @@ const initialState = {
     collapseOnStart: DEFAULT_COLLAPSE_ON_START,
     graphType: DEFAULT_GRAPH_TYPE,
     includeInterNodeEdges: DEFAULT_INCLUDE_INTER_NODE_EDGES,
+    layoutMode: "force",
     edgeFilters: getFilterableEdgeFields().reduce((acc, field) => {
       acc[field] = [];
       return acc;

@@ -1,4 +1,9 @@
-import { DEPTH_OPTIONS, DIRECTION_OPTIONS, PHENOTYPES_ENABLED } from "constants/index";
+import {
+  DEPTH_OPTIONS,
+  DIRECTION_OPTIONS,
+  LAYOUT_MODE_OPTIONS,
+  PHENOTYPES_ENABLED,
+} from "constants/index";
 import { memo } from "react";
 
 /**
@@ -15,6 +20,7 @@ const GeneralSettingsPanel = ({
   onLeafToggle,
   onFocusNodesToggle,
   onGraphToggle,
+  onLayoutModeChange,
   onSimulationRestart,
 }) => {
   return (
@@ -141,6 +147,21 @@ const GeneralSettingsPanel = ({
           </div>
         </div>
       )}
+
+      <div className="option-group">
+        <label htmlFor="layout-mode-select">Layout:</label>
+        <select
+          id="layout-mode-select"
+          value={settings.layoutMode || "force"}
+          onChange={onLayoutModeChange}
+        >
+          {LAYOUT_MODE_OPTIONS.map(({ value, label }) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <div className="option-group">
         <button

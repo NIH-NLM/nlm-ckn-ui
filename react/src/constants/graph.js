@@ -43,6 +43,11 @@ export const SET_OPERATION_OPTIONS = [
   { value: "Connected Paths", label: "Connected Paths (between origins)" },
   { value: "Symmetric Difference", label: "Symmetric Difference" },
 ];
+export const LAYOUT_MODE_OPTIONS = [
+  { value: "force", label: "Force" },
+  { value: "clustered", label: "Clustered" },
+  { value: "radial", label: "Radial" },
+];
 export const ORIGIN_FILTER_OPTIONS = [
   { value: "all", label: "All nodes" },
   { value: "leafNodes", label: "Leaf nodes only" },

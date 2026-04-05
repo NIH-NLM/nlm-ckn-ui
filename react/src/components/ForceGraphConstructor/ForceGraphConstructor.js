@@ -2,7 +2,12 @@ import * as d3 from "d3";
 import { getColorForCollection } from "../../utils";
 import { findLeafNodes, processGraphData, processGraphLinks } from "./graphDataProcessing";
 import { renderGraph, toggleFocusNodeRendering } from "./graphRendering";
-import { DEFAULT_GRAPH_OPTIONS, runSimulation, waitForAlpha } from "./simulationUtils";
+import {
+  DEFAULT_GRAPH_OPTIONS,
+  applyLayoutMode,
+  runSimulation,
+  waitForAlpha,
+} from "./simulationUtils";
 
 // Re-export data processing functions for backwards compatibility
 export { processGraphData, processGraphLinks } from "./graphDataProcessing";
@@ -677,6 +682,15 @@ function ForceGraphConstructor(
         target: target.id || target,
       }));
       return { nodes: finalNodes, links: finalLinks };
+    },
+    setLayoutMode: (mode) => {
+      // Restore force strengths (they may be zeroed by runSimulation(false))
+      forceNode.strength(mergedOptions.nodeForceStrength);
+      forceCenter.strength(mergedOptions.centerForceStrength);
+      forceLink.strength(linkForceStrength);
+      forceLink.links(processedLinks);
+      // Apply layout-specific forces (this also adjusts charge and restarts)
+      applyLayoutMode(d3, simulation, mode, mergedOptions.width, mergedOptions.height);
     },
     toggleSimulation: (on, incomingLabelStates = {}) => {
       if (on) {

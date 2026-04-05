@@ -471,6 +471,13 @@ const ForceGraph = ({
     }
   }, [settings.nodeFontSize]);
 
+  // Applies layout mode changes to the D3 simulation.
+  useEffect(() => {
+    if (graphInstanceRef.current?.setLayoutMode) {
+      graphInstanceRef.current.setLayoutMode(settings.layoutMode || "force");
+    }
+  }, [settings.layoutMode]);
+
   // Updates D3 link font size when setting changes.
   useEffect(() => {
     if (graphInstanceRef.current?.updateLinkFontSize) {
@@ -828,6 +835,9 @@ const ForceGraph = ({
                     onLeafToggle={handleLeafToggle}
                     onFocusNodesToggle={handleFocusNodesToggle}
                     onGraphToggle={handleGraphToggle}
+                    onLayoutModeChange={(e) =>
+                      dispatch(updateSetting({ setting: "layoutMode", value: e.target.value }))
+                    }
                     onSimulationRestart={handleSimulationRestart}
                   />
                 )}
