@@ -95,7 +95,7 @@ export function applyLayoutMode(d3, simulation, mode, width, height) {
 
   if (mode === "clustered" && collections.length > 0) {
     // Arrange collection targets in a circle
-    const radius = Math.min(width, height) * 0.3;
+    const radius = Math.min(width, height) * 0.5;
     const targets = {};
     collections.forEach((coll, i) => {
       const angle = (2 * Math.PI * i) / collections.length - Math.PI / 2;
@@ -109,15 +109,14 @@ export function applyLayoutMode(d3, simulation, mode, width, height) {
 
     simulation.force(
       "cluster-x",
-      d3.forceX((d) => targets[getCollection(d)]?.x ?? 0).strength(0.12),
+      d3.forceX((d) => targets[getCollection(d)]?.x ?? 0).strength(0.35),
     );
     simulation.force(
       "cluster-y",
-      d3.forceY((d) => targets[getCollection(d)]?.y ?? 0).strength(0.12),
+      d3.forceY((d) => targets[getCollection(d)]?.y ?? 0).strength(0.35),
     );
 
-    // Reduce charge so clusters can form
-    simulation.force("charge")?.strength(-300);
+    simulation.force("charge")?.strength(-1000);
   } else if (mode === "radial" && collections.length > 0) {
     // Find the "hub" collection (most nodes, prefer CL)
     const hub = collections.includes("CL")
@@ -138,11 +137,10 @@ export function applyLayoutMode(d3, simulation, mode, width, height) {
 
     simulation.force(
       "radial",
-      d3.forceRadial((d) => rings[getCollection(d)] ?? 200, 0, 0).strength(0.15),
+      d3.forceRadial((d) => rings[getCollection(d)] ?? 200, 0, 0).strength(0.4),
     );
 
-    // Reduce charge so rings can form
-    simulation.force("charge")?.strength(-200);
+    simulation.force("charge")?.strength(-1000);
   } else {
     // "force" mode — restore default charge
     simulation.force("charge")?.strength(-1000);
