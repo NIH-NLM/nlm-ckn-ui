@@ -192,7 +192,6 @@ WORKFLOW_PRESETS = [
             "their anatomical locations (UBERON)."
         ),
         "category": "Use Cases",
-        "layoutMode": "clustered",
         "phases": [
             {
                 "id": "preset-uc6-phase-1",
@@ -259,7 +258,6 @@ WORKFLOW_PRESETS = [
             "combinations and associated marker genes."
         ),
         "category": "Use Cases",
-        "layoutMode": "clustered",
         "phases": [
             {
                 "id": "preset-uc3-phase-1",

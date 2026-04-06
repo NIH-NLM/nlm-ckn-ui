@@ -455,6 +455,7 @@ const ForceGraph = ({
               resetData: true,
               labelStates: settings.labelStates,
             });
+
           }
           break;
         }

@@ -88,10 +88,13 @@ export function applyLayoutMode(d3, simulation, mode, width, height) {
   }
   const collections = Object.keys(collectionCounts);
 
-  // Remove any existing layout forces
+  // Remove any existing layout forces and phase listeners
   simulation.force("cluster-x", null);
   simulation.force("cluster-y", null);
   simulation.force("radial", null);
+  simulation.on("tick.phaseRestore", null);
+
+  const getCollection = (d) => (d._id || d.id || "").split("/")[0];
 
   if (mode === "clustered" && collections.length > 0) {
     // Arrange collection targets in a circle
@@ -105,8 +108,6 @@ export function applyLayoutMode(d3, simulation, mode, width, height) {
       };
     });
 
-    const getCollection = (d) => (d._id || d.id || "").split("/")[0];
-
     simulation.force(
       "cluster-x",
       d3.forceX((d) => targets[getCollection(d)]?.x ?? 0).strength(0.35),
@@ -116,8 +117,29 @@ export function applyLayoutMode(d3, simulation, mode, width, height) {
       d3.forceY((d) => targets[getCollection(d)]?.y ?? 0).strength(0.35),
     );
 
+    // Two-phase: disable links first so clusters can form freely,
+    // then re-enable links to settle the final layout
     simulation.force("charge")?.strength(-1000);
-  } else if (mode === "radial" && collections.length > 0) {
+    const linkForce = simulation.force("link");
+    if (linkForce) linkForce.strength(0);
+    simulation.alpha(1).restart();
+
+    let tickCount = 0;
+    simulation.on("tick.phaseRestore", () => {
+      if (++tickCount >= 80) {
+        simulation.on("tick.phaseRestore", null);
+        if (linkForce) {
+          // Restore default link strength (D3 default: 1/min(degree,3))
+          linkForce.strength(null);
+          linkForce.strength(linkForce.strength());
+        }
+        simulation.alpha(0.3).restart();
+      }
+    });
+    return; // skip the restart at the bottom — we already started above
+  }
+
+  if (mode === "radial" && collections.length > 0) {
     // Find the "hub" collection (most nodes, prefer CL)
     const hub = collections.includes("CL")
       ? "CL"
@@ -133,20 +155,34 @@ export function applyLayoutMode(d3, simulation, mode, width, height) {
       rings[coll] = 120 + i * ringSpacing;
     });
 
-    const getCollection = (d) => (d._id || d.id || "").split("/")[0];
-
     simulation.force(
       "radial",
       d3.forceRadial((d) => rings[getCollection(d)] ?? 200, 0, 0).strength(0.4),
     );
 
+    // Same two-phase for radial
     simulation.force("charge")?.strength(-1000);
-  } else {
-    // "force" mode — restore default charge
-    simulation.force("charge")?.strength(-1000);
+    const linkForce = simulation.force("link");
+    if (linkForce) linkForce.strength(0);
+    simulation.alpha(1).restart();
+
+    let tickCount = 0;
+    simulation.on("tick.phaseRestore", () => {
+      if (++tickCount >= 80) {
+        simulation.on("tick.phaseRestore", null);
+        if (linkForce) {
+          linkForce.strength(null);
+          linkForce.strength(linkForce.strength());
+        }
+        simulation.alpha(0.3).restart();
+      }
+    });
+    return;
   }
 
-  simulation.alpha(0.5).restart();
+  // "force" mode — restore default charge
+  simulation.force("charge")?.strength(-1000);
+  simulation.alpha(1).restart();
 }
 
 /**
