@@ -183,6 +183,74 @@ WORKFLOW_PRESETS = [
         ],
     },
     {
+        "id": "cystic-fibrosis-uc6",
+        "name": "Cystic fibrosis pathogenesis (UC6)",
+        "description": (
+            "Big Dipper exploration of cystic fibrosis. CFTR gene "
+            "connects to disease (MONDO), treatments (CHEMBL), "
+            "protein (PR), and expressing cell types (CL) with "
+            "their anatomical locations (UBERON)."
+        ),
+        "category": "Use Cases",
+        "layoutMode": "clustered",
+        "phases": [
+            {
+                "id": "preset-uc6-phase-1",
+                "name": "Explore CFTR connections",
+                "originSource": "manual",
+                "originNodeIds": ["GS/CFTR"],
+                "previousPhaseId": None,
+                "originFilter": "all",
+                "settings": {
+                    "depth": 2,
+                    "edgeDirection": "ANY",
+                    "allowedCollections": [
+                        "CL", "UBERON", "MONDO", "CHEMBL",
+                        "PR", "NCBITaxon",
+                    ],
+                    "edgeFilters": {"Label": [], "Source": []},
+                    "setOperation": "Union",
+                    "graphType": "phenotypes",
+                    "includeInterNodeEdges": True,
+                },
+                "perNodeSettings": {},
+            },
+        ],
+    },
+    {
+        "id": "dataset-comparison-uc5",
+        "name": "Compare datasets: HLCA vs CellRef (UC5)",
+        "description": (
+            "Compares cell types between the HLCA (Sikkema et al.) "
+            "and CellRef (Guo et al.) lung datasets. Shared cell "
+            "types appear between the two dataset hubs."
+        ),
+        "category": "Use Cases",
+        "phases": [
+            {
+                "id": "preset-uc5-phase-1",
+                "name": "Show both datasets with cell types",
+                "originSource": "manual",
+                "originNodeIds": [
+                    "CSD/b351804c-293e-4aeb-9c4c-043db67f4540",
+                    "CSD/443f7fb8-2a27-47c3-98f6-6a603c7a294e",
+                ],
+                "previousPhaseId": None,
+                "originFilter": "all",
+                "settings": {
+                    "depth": 1,
+                    "edgeDirection": "INBOUND",
+                    "allowedCollections": ["CS", "CL"],
+                    "edgeFilters": {"Label": [], "Source": []},
+                    "setOperation": "Union",
+                    "graphType": "phenotypes",
+                    "includeInterNodeEdges": True,
+                },
+                "perNodeSettings": {},
+            },
+        ],
+    },
+    {
         "id": "dendritic-marker-genes-uc3",
         "name": "Dendritic cell marker genes in lung (UC3)",
         "description": (
@@ -191,6 +259,7 @@ WORKFLOW_PRESETS = [
             "combinations and associated marker genes."
         ),
         "category": "Use Cases",
+        "layoutMode": "clustered",
         "phases": [
             {
                 "id": "preset-uc3-phase-1",

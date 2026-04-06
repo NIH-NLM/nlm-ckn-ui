@@ -28,6 +28,7 @@ import {
   updatePerNodeSetting,
   updatePhase,
   updatePhaseSettings,
+  updateSetting,
 } from "store";
 import PhaseEditor from "./PhaseEditor";
 import PresetSelector from "./PresetSelector";
@@ -97,6 +98,9 @@ const WorkflowBuilder = ({ onGraphReady }) => {
   const handleSelectPreset = useCallback(
     (preset) => {
       dispatch(loadWorkflow(preset));
+      if (preset.layoutMode) {
+        dispatch(updateSetting({ setting: "layoutMode", value: preset.layoutMode }));
+      }
     },
     [dispatch],
   );
