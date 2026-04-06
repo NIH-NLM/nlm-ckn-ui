@@ -186,28 +186,59 @@ WORKFLOW_PRESETS = [
         "id": "cystic-fibrosis-uc6",
         "name": "Cystic fibrosis pathogenesis (UC6)",
         "description": (
-            "Big Dipper exploration of cystic fibrosis. CFTR gene "
-            "connects to disease (MONDO), treatments (CHEMBL), "
-            "protein (PR), and expressing cell types (CL) with "
-            "their anatomical locations (UBERON)."
+            "Big Dipper exploration of cystic fibrosis. Starting "
+            "from the disease, finds causal genes and treatments, "
+            "then traces genes to expressing cell types and their "
+            "anatomical locations."
         ),
         "category": "Use Cases",
         "phases": [
             {
                 "id": "preset-uc6-phase-1",
-                "name": "Explore CFTR connections",
+                "name": "Disease genes and treatments",
                 "originSource": "manual",
-                "originNodeIds": ["GS/CFTR"],
+                "originNodeIds": ["MONDO/0009061"],
                 "previousPhaseId": None,
+                "originFilter": "all",
+                "settings": {
+                    "depth": 1,
+                    "edgeDirection": "ANY",
+                    "allowedCollections": ["GS", "CHEMBL"],
+                    "edgeFilters": {
+                        "Label": [
+                            "IS_GENETIC_BASIS_FOR_CONDITION",
+                            "IS_SUBSTANCE_THAT_TREATS",
+                        ],
+                        "Source": [],
+                    },
+                    "setOperation": "Union",
+                    "graphType": "phenotypes",
+                    "includeInterNodeEdges": True,
+                },
+                "perNodeSettings": {},
+            },
+            {
+                "id": "preset-uc6-phase-2",
+                "name": "Gene to cell types and anatomy",
+                "originSource": "previousPhase",
+                "originNodeIds": [],
+                "previousPhaseId": "preset-uc6-phase-1",
                 "originFilter": "all",
                 "settings": {
                     "depth": 2,
                     "edgeDirection": "ANY",
                     "allowedCollections": [
-                        "CL", "UBERON", "MONDO", "CHEMBL",
-                        "PR", "NCBITaxon",
+                        "CL", "UBERON", "NCBITaxon", "PR",
                     ],
-                    "edgeFilters": {"Label": [], "Source": []},
+                    "edgeFilters": {
+                        "Label": [
+                            "SELECTIVELY_EXPRESSES",
+                            "PART_OF",
+                            "PRESENT_IN_TAXON",
+                            "PRODUCES",
+                        ],
+                        "Source": [],
+                    },
                     "setOperation": "Union",
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,

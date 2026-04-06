@@ -81,7 +81,15 @@ const WorkflowBuilderPage = () => {
         // The setGraphData reducer also sets depth=0 and useFocusNodes=false
         // and snapshots lastAppliedSettings so the "Apply Changes" mechanism
         // works for query-affecting settings in the graph options panel.
-        dispatch(setGraphData({ graphData, originNodeIds: nodeIds, source: "workflow" }));
+        const collapseLeafNodes = activePhase?.settings?.collapseLeafNodes ?? false;
+        dispatch(
+          setGraphData({
+            graphData,
+            originNodeIds: nodeIds,
+            source: "workflow",
+            collapseLeafNodes,
+          }),
+        );
 
         setHasResults(true);
 

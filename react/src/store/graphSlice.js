@@ -186,6 +186,11 @@ const graphSlice = createSlice({
           // appears when the user changes query-affecting settings.
           state.settings.depth = 0;
           state.settings.useFocusNodes = false;
+          if (action.payload.collapseLeafNodes !== undefined) {
+            state.settings.collapseOnStart = action.payload.collapseLeafNodes;
+          }
+          // Reset collapsed state so ForceGraph can rebuild it from the new data.
+          state.collapsed = { initial: [], userDefined: [], userIgnored: [] };
           try {
             state.lastAppliedSettings = JSON.parse(JSON.stringify(state.settings));
           } catch (_err) {

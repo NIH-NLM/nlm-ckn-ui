@@ -445,6 +445,18 @@ const ForceGraph = ({
               break;
             }
 
+            // Build collapse list for workflow results (mirrors fetch/fulfilled logic).
+            let collapseList = finalCollapseList;
+            if (collapsed?.initial?.length === 0) {
+              const initialCollapseList = graphData.nodes
+                .filter((node) => !originNodeIds.includes(node._id))
+                .map((node) => node._id);
+              dispatch(setInitialCollapseList(initialCollapseList));
+              if (settings.collapseOnStart) {
+                collapseList = initialCollapseList;
+              }
+            }
+
             // Track this render and update the graph
             lastRenderedNodeIdsRef.current = currentNodeIds;
             lastRenderedLinkIdsRef.current = currentLinkIds;
@@ -453,6 +465,7 @@ const ForceGraph = ({
               newNodes: graphData.nodes,
               newLinks: graphData.links,
               resetData: true,
+              collapseNodes: collapseList,
               labelStates: settings.labelStates,
             });
 
