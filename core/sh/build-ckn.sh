@@ -187,11 +187,7 @@ if [[ ! -f ".built" ]] && [[ $run_results -eq 1 ]] \
     pushd src
     . .zshenv
     python ExternalApiResultsFetcher.py
-    python NSForestResultsTupleWriter.py
-    python AuthorToClResultsTupleWriter.py
-    python ExternalApiResultsTupleWriter.py
-    # TODO: Remove when confirmed
-    # python AnnotationResultsTupleWriter.py
+    python TupleWriterPipeline.py
     popd
     popd
 
