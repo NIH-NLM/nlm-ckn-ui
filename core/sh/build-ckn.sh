@@ -191,9 +191,7 @@ if [[ ! -f ".built" ]] && [[ $run_results -eq 1 ]] \
     popd
     popd
 
-    # Make a clean package, then build the results and phenotype
-    # graphs
-    mvn clean package -DskipTests
+    # Build the results graph and induced subgraph
     classpath="target/nlm-ckn-etl-1.0.jar"
     java -Xms32g -Xmx32g -cp $classpath gov.nih.nlm.ResultsGraphBuilder
     java -Xms32g -Xmx32g -cp $classpath gov.nih.nlm.InducedSubgraphBuilder
