@@ -1,21 +1,28 @@
 """
 Pre-built workflow presets for the Workflow Builder.
 
-These contain only query-semantic fields (no UI state like collapseLeafNodes,
-useFocusNodes, showAdvancedSettings, or result). Frontend clients apply their
-own UI defaults at load time.
+These contain query-semantic fields and optional UI overrides (e.g.
+collapseLeafNodes). Frontend clients merge UI_DEFAULTS at load time;
+preset values take precedence when present.
 
 This module is consumed by WorkflowPresetsView to serve presets over the API,
 making them discoverable by non-browser clients (MCP tools, agents, etc.).
 """
 
+PRESET_SECTIONS = [
+    {"id": "graph-results", "label": "Graph Result Examples"},
+    {"id": "list-results", "label": "List Result Examples"},
+]
+
 PRESET_CATEGORIES = [
-    {"id": "Use Cases", "label": "Use Cases"},
-    {"id": "Ontology Exploration", "label": "Ontology Exploration"},
-    {"id": "Cell Type Discovery", "label": "Cell Type Discovery"},
-    {"id": "Marker Gene Analysis", "label": "Marker Gene Analysis"},
-    {"id": "Disease Analysis", "label": "Disease Analysis"},
-    {"id": "Example: Pulmonary Hypertension", "label": "Example: Pulmonary Hypertension"},
+    # Graph result examples
+    {"id": "Use Cases", "label": "Use Cases", "section": "graph-results"},
+    # List result examples
+    {"id": "Ontology Exploration", "label": "Ontology Exploration", "section": "list-results"},
+    {"id": "Cell Type Discovery", "label": "Cell Type Discovery", "section": "list-results"},
+    {"id": "Marker Gene Analysis", "label": "Marker Gene Analysis", "section": "list-results"},
+    {"id": "Disease Analysis", "label": "Disease Analysis", "section": "list-results"},
+    {"id": "Example: Pulmonary Hypertension", "label": "Example: Pulmonary Hypertension", "section": "list-results"},
 ]
 
 # ---------------------------------------------------------------------------
@@ -183,104 +190,6 @@ WORKFLOW_PRESETS = [
         ],
     },
     {
-        "id": "cystic-fibrosis-uc6",
-        "name": "Cystic fibrosis pathogenesis (UC6)",
-        "description": (
-            "Big Dipper exploration of cystic fibrosis. Starting "
-            "from the disease, finds causal genes and treatments, "
-            "then traces genes to expressing cell types and their "
-            "anatomical locations."
-        ),
-        "category": "Use Cases",
-        "phases": [
-            {
-                "id": "preset-uc6-phase-1",
-                "name": "Disease genes and treatments",
-                "originSource": "manual",
-                "originNodeIds": ["MONDO/0009061"],
-                "previousPhaseId": None,
-                "originFilter": "all",
-                "settings": {
-                    "depth": 1,
-                    "edgeDirection": "ANY",
-                    "allowedCollections": ["GS", "CHEMBL"],
-                    "edgeFilters": {
-                        "Label": [
-                            "IS_GENETIC_BASIS_FOR_CONDITION",
-                            "IS_SUBSTANCE_THAT_TREATS",
-                        ],
-                        "Source": [],
-                    },
-                    "setOperation": "Union",
-                    "graphType": "phenotypes",
-                    "includeInterNodeEdges": True,
-                },
-                "perNodeSettings": {},
-            },
-            {
-                "id": "preset-uc6-phase-2",
-                "name": "Gene to cell types and anatomy",
-                "originSource": "previousPhase",
-                "originNodeIds": [],
-                "previousPhaseId": "preset-uc6-phase-1",
-                "originFilter": "all",
-                "settings": {
-                    "depth": 2,
-                    "edgeDirection": "ANY",
-                    "allowedCollections": [
-                        "CL", "UBERON", "NCBITaxon", "PR",
-                    ],
-                    "edgeFilters": {
-                        "Label": [
-                            "SELECTIVELY_EXPRESSES",
-                            "PART_OF",
-                            "PRESENT_IN_TAXON",
-                            "PRODUCES",
-                        ],
-                        "Source": [],
-                    },
-                    "setOperation": "Union",
-                    "graphType": "phenotypes",
-                    "includeInterNodeEdges": True,
-                },
-                "perNodeSettings": {},
-            },
-        ],
-    },
-    {
-        "id": "dataset-comparison-uc5",
-        "name": "Compare datasets: HLCA vs CellRef (UC5)",
-        "description": (
-            "Compares cell types between the HLCA (Sikkema et al.) "
-            "and CellRef (Guo et al.) lung datasets. Shared cell "
-            "types appear between the two dataset hubs."
-        ),
-        "category": "Use Cases",
-        "phases": [
-            {
-                "id": "preset-uc5-phase-1",
-                "name": "Show both datasets with cell types",
-                "originSource": "manual",
-                "originNodeIds": [
-                    "CSD/b351804c-293e-4aeb-9c4c-043db67f4540",
-                    "CSD/443f7fb8-2a27-47c3-98f6-6a603c7a294e",
-                ],
-                "previousPhaseId": None,
-                "originFilter": "all",
-                "settings": {
-                    "depth": 1,
-                    "edgeDirection": "INBOUND",
-                    "allowedCollections": ["CS", "CL"],
-                    "edgeFilters": {"Label": [], "Source": []},
-                    "setOperation": "Union",
-                    "graphType": "phenotypes",
-                    "includeInterNodeEdges": True,
-                },
-                "perNodeSettings": {},
-            },
-        ],
-    },
-    {
         "id": "dendritic-marker-genes-uc3",
         "name": "Dendritic cell marker genes in lung (UC3)",
         "description": (
@@ -289,6 +198,7 @@ WORKFLOW_PRESETS = [
             "combinations and associated marker genes."
         ),
         "category": "Use Cases",
+        "layoutMode": "hierarchical",
         "phases": [
             {
                 "id": "preset-uc3-phase-1",
@@ -345,6 +255,402 @@ WORKFLOW_PRESETS = [
         ],
     },
 
+    {
+        "id": "lung-spatial-panel-uc4",
+        "name": "Lung spatial transcriptomics panel (UC4)",
+        "description": (
+            "Builds a lung-specific marker gene panel for targeted "
+            "spatial transcriptomics. Phase 1 starts from lung "
+            "(UBERON) and traverses through cell sets to their "
+            "datasets (CSD), anchoring results to lung experiments. "
+            "Phase 2 fans out from those datasets to cell sets, "
+            "biomarker combinations, marker genes, and cell types."
+        ),
+        "category": "Use Cases",
+        "layoutMode": "strict-cluster",
+        "phases": [
+            {
+                "id": "preset-uc4-phase-1",
+                "name": "Lung cell set datasets",
+                "originSource": "manual",
+                "originNodeIds": ["UBERON/0002048"],
+                "previousPhaseId": None,
+                "originFilter": "all",
+                "settings": {
+                    "depth": 2,
+                    "edgeDirection": "ANY",
+                    "allowedCollections": ["CS", "CSD"],
+                    "edgeFilters": {
+                        "Label": [],
+                        "Source": [],
+                    },
+                    "setOperation": "Union",
+                    "graphType": "phenotypes",
+                    "includeInterNodeEdges": True,
+                    "returnCollections": ["CSD"],
+                    "collapseLeafNodes": "off",
+                },
+                "perNodeSettings": {},
+            },
+            {
+                "id": "preset-uc4-phase-2",
+                "name": "Cell types and marker genes",
+                "originSource": "previousPhase",
+                "originNodeIds": [],
+                "previousPhaseId": "preset-uc4-phase-1",
+                "originFilter": "all",
+                "settings": {
+                    "depth": 3,
+                    "edgeDirection": "ANY",
+                    "allowedCollections": ["CS", "BMC", "GS", "CL"],
+                    "edgeFilters": {
+                        "Label": [
+                            "SOURCE",
+                            "PART_OF",
+                            "HAS_CHARACTERIZING_MARKER_SET",
+                            "COMPOSED_PRIMARILY_OF",
+                            "HAS_CHARACTERIZING_SET",
+                            "IS_CHARACTERIZING_SET_FOR",
+                        ],
+                        "Source": [],
+                    },
+                    "setOperation": "Union",
+                    "graphType": "phenotypes",
+                    "includeInterNodeEdges": True,
+                    "collapseLeafNodes": "off",
+                },
+                "perNodeSettings": {},
+            },
+            {
+                "id": "preset-uc4-phase-3",
+                "name": "Marker gene panel",
+                "originSource": "filter",
+                "originNodeIds": [],
+                "previousPhaseId": "preset-uc4-phase-2",
+                "originFilter": "all",
+                "settings": {
+                    "returnCollections": ["GS"],
+                    "collapseLeafNodes": "off",
+                },
+                "perNodeSettings": {},
+            },
+        ],
+    },
+
+    {
+        "id": "dataset-comparison-uc5",
+        "name": "Compare datasets: HLCA vs CellRef (UC5)",
+        "description": (
+            "Compares cell types between the HLCA (Sikkema et al.) "
+            "and CellRef (Guo et al.) lung datasets. Shared cell "
+            "types appear between the two dataset hubs."
+        ),
+        "category": "Use Cases",
+        "phases": [
+            {
+                "id": "preset-uc5-phase-1",
+                "name": "Show both datasets with cell types",
+                "originSource": "manual",
+                "originNodeIds": [
+                    "CSD/b351804c-293e-4aeb-9c4c-043db67f4540",
+                    "CSD/443f7fb8-2a27-47c3-98f6-6a603c7a294e",
+                ],
+                "previousPhaseId": None,
+                "originFilter": "all",
+                "settings": {
+                    "depth": 1,
+                    "edgeDirection": "INBOUND",
+                    "allowedCollections": ["CS", "CL"],
+                    "edgeFilters": {"Label": [], "Source": []},
+                    "setOperation": "Union",
+                    "graphType": "phenotypes",
+                    "includeInterNodeEdges": True,
+                },
+                "perNodeSettings": {},
+            },
+        ],
+    },
+
+    {
+        "id": "cystic-fibrosis-uc6",
+        "name": "Cystic fibrosis pathogenesis (UC6)",
+        "description": (
+            "Big Dipper exploration of cystic fibrosis. Starting "
+            "from the disease, finds causal genes and treatments, "
+            "then traces genes to expressing cell types and their "
+            "anatomical locations."
+        ),
+        "category": "Use Cases",
+        "phases": [
+            {
+                "id": "preset-uc6-phase-1",
+                "name": "Disease genes and treatments",
+                "originSource": "manual",
+                "originNodeIds": ["MONDO/0009061"],
+                "previousPhaseId": None,
+                "originFilter": "all",
+                "settings": {
+                    "depth": 1,
+                    "edgeDirection": "ANY",
+                    "allowedCollections": ["GS", "CHEMBL"],
+                    "edgeFilters": {
+                        "Label": [
+                            "IS_GENETIC_BASIS_FOR_CONDITION",
+                            "IS_SUBSTANCE_THAT_TREATS",
+                        ],
+                        "Source": [],
+                    },
+                    "setOperation": "Union",
+                    "graphType": "phenotypes",
+                    "includeInterNodeEdges": True,
+                    "collapseLeafNodes": "off",
+                },
+                "perNodeSettings": {},
+            },
+            {
+                "id": "preset-uc6-phase-2",
+                "name": "Gene to cell types and anatomy",
+                "originSource": "previousPhase",
+                "originNodeIds": [],
+                "previousPhaseId": "preset-uc6-phase-1",
+                "originFilter": "all",
+                "settings": {
+                    "depth": 2,
+                    "edgeDirection": "ANY",
+                    "allowedCollections": [
+                        "CL", "UBERON", "NCBITaxon", "PR",
+                    ],
+                    "edgeFilters": {
+                        "Label": [
+                            "SELECTIVELY_EXPRESSES",
+                            "PART_OF",
+                            "PRESENT_IN_TAXON",
+                            "PRODUCES",
+                        ],
+                        "Source": [],
+                    },
+                    "setOperation": "Union",
+                    "graphType": "phenotypes",
+                    "includeInterNodeEdges": True,
+                    "collapseLeafNodes": "all",
+                },
+                "perNodeSettings": {},
+            },
+        ],
+    },
+    {
+        "id": "leber-rpe65-uc7",
+        "name": "RPE65-related Leber congenital amaurosis (UC7)",
+        "description": (
+            "Big Dipper exploration of RPE65-related Leber congenital "
+            "amaurosis. Starting from the disease, finds the causal "
+            "gene (RPE65) and gene therapy (voretigene neparvovec-rzyl), "
+            "then traces to expressing cell types and anatomy."
+        ),
+        "category": "Use Cases",
+        "phases": [
+            {
+                "id": "preset-uc7-phase-1",
+                "name": "Disease genes and treatments",
+                "originSource": "manual",
+                "originNodeIds": ["MONDO/0008765"],
+                "previousPhaseId": None,
+                "originFilter": "all",
+                "settings": {
+                    "depth": 1,
+                    "edgeDirection": "ANY",
+                    "allowedCollections": ["GS", "CHEMBL"],
+                    "edgeFilters": {
+                        "Label": [
+                            "IS_GENETIC_BASIS_FOR_CONDITION",
+                            "IS_SUBSTANCE_THAT_TREATS",
+                        ],
+                        "Source": [],
+                    },
+                    "setOperation": "Union",
+                    "graphType": "phenotypes",
+                    "includeInterNodeEdges": True,
+                    "collapseLeafNodes": "off",
+                },
+                "perNodeSettings": {},
+            },
+            {
+                "id": "preset-uc7-phase-2",
+                "name": "Gene to cell types, protein, and drugs",
+                "originSource": "previousPhase",
+                "originNodeIds": [],
+                "previousPhaseId": "preset-uc7-phase-1",
+                "originFilter": "all",
+                "settings": {
+                    "depth": 2,
+                    "edgeDirection": "ANY",
+                    "allowedCollections": [
+                        "CL", "UBERON", "NCBITaxon", "PR", "CHEMBL",
+                    ],
+                    "edgeFilters": {
+                        "Label": [
+                            "SELECTIVELY_EXPRESSES",
+                            "PART_OF",
+                            "PRESENT_IN_TAXON",
+                            "PRODUCES",
+                            "MOLECULARLY_INTERACTS_WITH",
+                        ],
+                        "Source": [],
+                    },
+                    "setOperation": "Union",
+                    "graphType": "phenotypes",
+                    "includeInterNodeEdges": True,
+                    "collapseLeafNodes": "off",
+                },
+                "perNodeSettings": {},
+            },
+        ],
+    },
+
+    {
+        "id": "parkinsons-disease-uc8",
+        "name": "Parkinson's disease exploration (UC8)",
+        "description": (
+            "Multi-phase exploration of Parkinson's disease. Phase 1 "
+            "identifies causal genes and therapeutic compounds. "
+            "Phase 2 traces genes to selectively expressing cell "
+            "types and their anatomical locations."
+        ),
+        "category": "Use Cases",
+        "layoutMode": "strict-cluster",
+        "phases": [
+            {
+                "id": "preset-uc8-phase-1",
+                "name": "Disease-associated genes",
+                "originSource": "manual",
+                "originNodeIds": ["MONDO/0005180"],
+                "previousPhaseId": None,
+                "originFilter": "all",
+                "settings": {
+                    "depth": 1,
+                    "edgeDirection": "ANY",
+                    "allowedCollections": ["GS"],
+                    "edgeFilters": {
+                        "Label": [
+                            "IS_GENETIC_BASIS_FOR_CONDITION",
+                        ],
+                        "Source": [],
+                    },
+                    "setOperation": "Union",
+                    "graphType": "phenotypes",
+                    "includeInterNodeEdges": True,
+                    "collapseLeafNodes": "off",
+                },
+                "perNodeSettings": {},
+            },
+            {
+                "id": "preset-uc8-phase-2",
+                "name": "Genes to cell types, drugs, and shared diseases",
+                "originSource": "previousPhase",
+                "originNodeIds": [],
+                "previousPhaseId": "preset-uc8-phase-1",
+                "originFilter": "all",
+                "settings": {
+                    "depth": 2,
+                    "edgeDirection": "ANY",
+                    "allowedCollections": [
+                        "CL", "UBERON", "NCBITaxon", "PR",
+                        "CHEMBL", "MONDO",
+                    ],
+                    "edgeFilters": {
+                        "Label": [
+                            "SELECTIVELY_EXPRESSES",
+                            "PART_OF",
+                            "PRESENT_IN_TAXON",
+                            "PRODUCES",
+                            "MOLECULARLY_INTERACTS_WITH",
+                            "IS_GENETIC_BASIS_FOR_CONDITION",
+                            "IS_SUBSTANCE_THAT_TREATS",
+                        ],
+                        "Source": [],
+                    },
+                    "setOperation": "Union",
+                    "graphType": "phenotypes",
+                    "includeInterNodeEdges": True,
+                    "collapseLeafNodes": "all",
+                },
+                "perNodeSettings": {},
+            },
+        ],
+    },
+
+    {
+        "id": "pah-kcnk3-uc9",
+        "name": "Pulmonary arterial hypertension / KCNK3 (UC9)",
+        "description": (
+            "Big Dipper exploration of KCNK3-related pulmonary "
+            "arterial hypertension. Finds the causal gene (KCNK3), "
+            "its protein targets and interacting compounds, and the "
+            "cell types that selectively express it (lung pericyte)."
+        ),
+        "category": "Use Cases",
+        "layoutMode": "clustered",
+        "phases": [
+            {
+                "id": "preset-uc9-phase-1",
+                "name": "Disease-associated genes",
+                "originSource": "manual",
+                "originNodeIds": ["MONDO/0014136"],
+                "previousPhaseId": None,
+                "originFilter": "all",
+                "settings": {
+                    "depth": 1,
+                    "edgeDirection": "ANY",
+                    "allowedCollections": ["GS"],
+                    "edgeFilters": {
+                        "Label": [
+                            "IS_GENETIC_BASIS_FOR_CONDITION",
+                        ],
+                        "Source": [],
+                    },
+                    "setOperation": "Union",
+                    "graphType": "phenotypes",
+                    "includeInterNodeEdges": True,
+                    "collapseLeafNodes": "off",
+                },
+                "perNodeSettings": {},
+            },
+            {
+                "id": "preset-uc9-phase-2",
+                "name": "Gene to cell types, protein, drugs, and variants",
+                "originSource": "previousPhase",
+                "originNodeIds": [],
+                "previousPhaseId": "preset-uc9-phase-1",
+                "originFilter": "all",
+                "settings": {
+                    "depth": 2,
+                    "edgeDirection": "ANY",
+                    "allowedCollections": [
+                        "CL", "UBERON", "NCBITaxon", "PR",
+                        "CHEMBL", "BMC", "MONDO",
+                    ],
+                    "edgeFilters": {
+                        "Label": [
+                            "SELECTIVELY_EXPRESSES",
+                            "PART_OF",
+                            "PRESENT_IN_TAXON",
+                            "PRODUCES",
+                            "MOLECULARLY_INTERACTS_WITH",
+                            "HAS_QUALITY",
+                            "IS_GENETIC_BASIS_FOR_CONDITION",
+                        ],
+                        "Source": [],
+                    },
+                    "setOperation": "Union",
+                    "graphType": "phenotypes",
+                    "includeInterNodeEdges": True,
+                    "collapseLeafNodes": "off",
+                },
+                "perNodeSettings": {},
+            },
+        ],
+    },
+
     # -------------------------------------------------------------------------
     # Ontology Exploration
     # -------------------------------------------------------------------------
@@ -356,12 +662,13 @@ WORKFLOW_PRESETS = [
             "cell types. Add a starting cell type to begin."
         ),
         "category": "Ontology Exploration",
+        "layoutMode": "hierarchical",
         "phases": [
             {
                 "id": "preset-hierarchy-phase-1",
                 "name": "Traverse cell type subclass hierarchy",
                 "originSource": "manual",
-                "originNodeIds": ["CL/0009089"],
+                "originNodeIds": ["CL/0000451"],
                 "previousPhaseId": None,
                 "originFilter": "all",
                 "settings": {

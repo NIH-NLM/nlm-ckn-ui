@@ -9,11 +9,12 @@ import { memo, useEffect, useMemo, useState } from "react";
 import { fetchWorkflowPresets } from "services";
 
 /**
- * PresetSelector displays available workflow presets grouped by category.
+ * PresetSelector displays available workflow presets grouped by section and category.
  */
 const PresetSelector = ({ onSelectPreset, onStartFromScratch }) => {
   const [presets, setPresets] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [sections, setSections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -24,11 +25,15 @@ const PresetSelector = ({ onSelectPreset, onStartFromScratch }) => {
         if (cancelled) return;
         const presetList = Array.isArray(data) ? data : data?.presets;
         const categoryList = data?.categories;
+        const sectionList = data?.sections;
         if (Array.isArray(presetList)) {
           setPresets(presetList);
         }
         if (Array.isArray(categoryList)) {
           setCategories(categoryList);
+        }
+        if (Array.isArray(sectionList)) {
+          setSections(sectionList);
         }
       })
       .catch((err) => {
@@ -73,6 +78,57 @@ const PresetSelector = ({ onSelectPreset, onStartFromScratch }) => {
     return derived;
   }, [categories, presets]);
 
+  // Build section -> categories mapping
+  const sectionStructure = useMemo(() => {
+    if (sections.length === 0) {
+      // No sections — flat category list (backward compatible)
+      return null;
+    }
+    // Map each section to its categories
+    const categoryBySection = {};
+    for (const section of sections) {
+      categoryBySection[section.id] = [];
+    }
+    // Collect categories without a section
+    const unsectioned = [];
+    for (const cat of displayCategories) {
+      const sectionId = cat.section;
+      if (sectionId && categoryBySection[sectionId]) {
+        categoryBySection[sectionId].push(cat);
+      } else {
+        unsectioned.push(cat);
+      }
+    }
+    return { categoryBySection, unsectioned };
+  }, [sections, displayCategories]);
+
+  const renderCategory = (category) => {
+    const categoryPresets = groupedPresets[category.id];
+    if (!categoryPresets || categoryPresets.length === 0) return null;
+
+    return (
+      <div key={category.id} className="preset-category">
+        <h5 className="category-label">{category.label}</h5>
+        <div className="preset-cards">
+          {categoryPresets.map((preset) => (
+            <button
+              type="button"
+              key={preset.id}
+              className="preset-card"
+              onClick={() => onSelectPreset(preset)}
+            >
+              <span className="preset-name">{preset.name}</span>
+              <span className="preset-card-description">{preset.description}</span>
+              <span className="preset-phases-count">
+                {preset.phases.length} phase{preset.phases.length > 1 ? "s" : ""}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="preset-selector custom-scrollbar">
       <div className="preset-selector-header">
@@ -83,6 +139,13 @@ const PresetSelector = ({ onSelectPreset, onStartFromScratch }) => {
         </p>
       </div>
 
+      <div className="preset-custom">
+        <button type="button" className="preset-card custom" onClick={onStartFromScratch}>
+          <span className="preset-name">+ Start from scratch</span>
+          <span className="preset-card-description">Build a custom workflow step by step</span>
+        </button>
+      </div>
+
       {loading ? (
         <div className="preset-loading">Loading presets...</div>
       ) : error ? (
@@ -90,43 +153,31 @@ const PresetSelector = ({ onSelectPreset, onStartFromScratch }) => {
           <p>Unable to load presets: {error}</p>
           <p>You can still build a workflow from scratch.</p>
         </div>
-      ) : (
+      ) : sectionStructure ? (
         <div className="preset-categories">
-          {displayCategories.map((category) => {
-            const categoryPresets = groupedPresets[category.id];
-            if (!categoryPresets || categoryPresets.length === 0) return null;
+          {sections.map((section) => {
+            const sectionCats = sectionStructure.categoryBySection[section.id] || [];
+            const hasPresets = sectionCats.some(
+              (cat) => groupedPresets[cat.id]?.length > 0,
+            );
+            if (!hasPresets) return null;
 
             return (
-              <div key={category.id} className="preset-category">
-                <h4 className="category-label">{category.label}</h4>
-                <div className="preset-cards">
-                  {categoryPresets.map((preset) => (
-                    <button
-                      type="button"
-                      key={preset.id}
-                      className="preset-card"
-                      onClick={() => onSelectPreset(preset)}
-                    >
-                      <span className="preset-name">{preset.name}</span>
-                      <span className="preset-card-description">{preset.description}</span>
-                      <span className="preset-phases-count">
-                        {preset.phases.length} phase{preset.phases.length > 1 ? "s" : ""}
-                      </span>
-                    </button>
-                  ))}
-                </div>
+              <div key={section.id} className="preset-section">
+                <h4 className="section-label">{section.label}</h4>
+                {sectionCats.map(renderCategory)}
               </div>
             );
           })}
+          {/* Render any unsectioned categories */}
+          {sectionStructure.unsectioned.map(renderCategory)}
+        </div>
+      ) : (
+        <div className="preset-categories">
+          {displayCategories.map(renderCategory)}
         </div>
       )}
 
-      <div className="preset-custom">
-        <button type="button" className="preset-card custom" onClick={onStartFromScratch}>
-          <span className="preset-name">+ Start from scratch</span>
-          <span className="preset-card-description">Build a custom workflow step by step</span>
-        </button>
-      </div>
     </div>
   );
 };

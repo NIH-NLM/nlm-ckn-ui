@@ -331,11 +331,16 @@ class WorkflowPresetsView(APIView):
     """Return pre-built workflow presets (query-only schema)."""
 
     def get(self, request):
-        from arango_api.workflow_presets import PRESET_CATEGORIES, WORKFLOW_PRESETS
+        from arango_api.workflow_presets import (
+            PRESET_CATEGORIES,
+            PRESET_SECTIONS,
+            WORKFLOW_PRESETS,
+        )
 
         return Response(
             {
                 "presets": WORKFLOW_PRESETS,
                 "categories": PRESET_CATEGORIES,
+                "sections": PRESET_SECTIONS,
             }
         )

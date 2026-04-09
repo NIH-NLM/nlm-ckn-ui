@@ -220,6 +220,19 @@
   gap: var(--spacing-md);
 }
 
+.preset-section {
+  margin-bottom: var(--spacing-lg);
+}
+
+.section-label {
+  font-size: var(--font-size-base);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-sm);
+  padding-bottom: var(--spacing-xs);
+  border-bottom: 2px solid var(--color-border);
+}
+
 .preset-category {
   margin-bottom: var(--spacing-sm);
 }
