@@ -190,6 +190,26 @@ export const executePhase = createAsyncThunk(
       // Falls through to normal execution below using collectionOriginNodeIds
     }
 
+    // Handle "filter" origin — no API call, just filter previous phase results
+    if (phase.originSource === "filter") {
+      const prevId = phase.previousPhaseId;
+      const prevResult = phaseResults[prevId];
+      if (!prevResult || !prevResult.nodes) {
+        throw new Error("Previous phase has no results. Execute it first.");
+      }
+
+      const finalResult = filterResultByCollections(
+        { nodes: [...prevResult.nodes], links: [...prevResult.links] },
+        phase.settings.returnCollections || [],
+      );
+
+      return {
+        phaseId: phase.id,
+        result: finalResult,
+        originNodeIds: finalResult.nodes.map((n) => n._id).filter(Boolean),
+      };
+    }
+
     // Handle "multiplePhases" combine origin — no API call, pure set operation
     if (phase.originSource === "multiplePhases") {
       const sourcePhaseIds = phase.previousPhaseIds || [];
@@ -291,7 +311,7 @@ export const executePhase = createAsyncThunk(
         },
         findShortestPaths: false,
         useFocusNodes: phase.settings.useFocusNodes ?? true,
-        collapseOnStart: phase.settings.collapseLeafNodes ?? false,
+        collapseOnStart: phase.settings.collapseLeafNodes ?? "standard",
         graphType: phase.settings.graphType,
         includeInterNodeEdges: phase.settings.includeInterNodeEdges ?? true,
         edgeFilters: nodeOverrides.edgeFilters ??

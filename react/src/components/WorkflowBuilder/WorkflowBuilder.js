@@ -256,7 +256,8 @@ const WorkflowBuilder = ({ onGraphReady }) => {
         (p.originSource === "manual" && p.originNodeIds.length > 0) ||
         (p.originSource === "collection" && !!p.originCollection) ||
         (p.originSource === "previousPhase" && i > 0) ||
-        (p.originSource === "multiplePhases" && (p.previousPhaseIds || []).length >= 2),
+        (p.originSource === "multiplePhases" && (p.previousPhaseIds || []).length >= 2) ||
+        (p.originSource === "filter" && i > 0),
     );
 
   // Show preset selector view

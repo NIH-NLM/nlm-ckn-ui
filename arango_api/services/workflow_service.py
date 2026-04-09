@@ -116,6 +116,12 @@ def _execute_phase(phase, all_phases, phase_results, phase_origin_ids, graph):
             phase, all_phases, phase_results, phase_origin_ids, settings, phase_graph
         )
 
+    # --- Handle filter phase (no API call) ---
+    if origin_source == "filter":
+        return _execute_filter_phase(
+            phase, all_phases, phase_results, phase_origin_ids, settings
+        )
+
     # --- Resolve origin node IDs ---
     origin_node_ids = _resolve_origin_node_ids(
         phase, all_phases, phase_results, phase_origin_ids, phase_graph
@@ -254,6 +260,31 @@ def _execute_combine_phase(
         )
 
     return combined_result, source_phase_ids
+
+
+def _execute_filter_phase(phase, all_phases, phase_results, phase_origin_ids, settings):
+    """Handle filter origin: take previous phase results and filter by collections."""
+    prev_id = phase.get("previousPhaseId")
+    if not prev_id:
+        raise ValueError("Filter phase requires a previousPhaseId.")
+
+    prev_result = phase_results.get(prev_id)
+    if not prev_result or not prev_result.get("nodes"):
+        raise ValueError(f"Previous phase '{prev_id}' has no results.")
+
+    # Start with a copy of the previous result
+    filtered = {
+        "nodes": list(prev_result.get("nodes", [])),
+        "links": list(prev_result.get("links", [])),
+    }
+
+    # Apply returnCollections filter
+    return_collections = settings.get("returnCollections", [])
+    if return_collections:
+        filtered = _apply_return_collections_filter(filtered, return_collections)
+
+    origin_ids = [n["_id"] for n in filtered["nodes"] if n.get("_id")]
+    return filtered, origin_ids
 
 
 def _resolve_origin_node_ids(phase, all_phases, phase_results, phase_origin_ids, graph):
