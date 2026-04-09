@@ -91,7 +91,7 @@
         "color": "#FF6B6B",
         "individual_labels": [
           {
-            "field_to_use": "Binary_genes",
+            "field_to_use": "Markers",
             "to_be_replaced": " ",
             "replace_with": "|",
             "make_lower_case": false
@@ -114,8 +114,8 @@
         ],
         "individual_fields": [
           {
-            "field_to_display": "Binary_genes",
-            "display_field_as": "Binary_genes",
+            "field_to_display": "Markers",
+            "display_field_as": "Markers",
             "field_url": "",
             "field_to_use": ""
           }
@@ -160,8 +160,8 @@
             "field_to_use": ""
           },
           {
-            "field_to_display": "F_beta_confidence_score",
-            "display_field_as": "F_beta_confidence_score",
+            "field_to_display": "F_beta_score",
+            "display_field_as": "F_beta_score",
             "field_url": "",
             "field_to_use": ""
           }
@@ -177,19 +177,13 @@
         "color": "#ffe119",
         "individual_labels": [
           {
-            "field_to_use": "Name",
+            "field_to_use": "Label",
             "to_be_replaced": "",
             "replace_with": "",
             "make_lower_case": false
           },
           {
-            "field_to_use": "Trade_names",
-            "to_be_replaced": "",
-            "replace_with": "",
-            "make_lower_case": false
-          },
-          {
-            "field_to_use": "Synonyms",
+            "field_to_use": "Exact_synonym",
             "to_be_replaced": "",
             "replace_with": "",
             "make_lower_case": false
@@ -212,38 +206,32 @@
         ],
         "individual_fields": [
           {
-            "field_to_display": "Name",
-            "display_field_as": "Name",
+            "field_to_display": "Label",
+            "display_field_as": "Label",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Indications",
-            "display_field_as": "Indications",
+            "field_to_display": "Protein",
+            "display_field_as": "Protein",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Target",
-            "display_field_as": "Target",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "Link_to_UniProt_ID",
+            "field_to_display": "Uniprot_id",
             "display_field_as": "UniProt_ID",
-            "field_url": "https://<FIELD_TO_USE>",
-            "field_to_use": "Link_to_UniProt_ID"
+            "field_url": "https://www.uniprot.org/uniprotkb/<FIELD_TO_USE>/entry",
+            "field_to_use": "Uniprot_id"
           },
           {
-            "field_to_display": "Type",
-            "display_field_as": "Type",
+            "field_to_display": "Drug_type",
+            "display_field_as": "Drug_type",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Description",
-            "display_field_as": "Description",
+            "field_to_display": "Definition",
+            "display_field_as": "Definition",
             "field_url": "",
             "field_to_use": ""
           },
@@ -254,20 +242,14 @@
             "field_to_use": ""
           },
           {
-            "field_to_display": "Trade_names",
-            "display_field_as": "Trade_names",
+            "field_to_display": "Exact_synonym",
+            "display_field_as": "Exact_synonyms",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Synonyms",
-            "display_field_as": "Synonyms",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "Approved",
-            "display_field_as": "Approved",
+            "field_to_display": "Approval_status",
+            "display_field_as": "Approval_status",
             "field_url": "",
             "field_to_use": ""
           }
@@ -376,64 +358,28 @@
             "field_to_use": ""
           },
           {
-            "field_to_display": "Cell_type",
-            "display_field_as": "Cell_type",
+            "field_to_display": "Cell_count",
+            "display_field_as": "Cell_count",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Total_cell_count",
-            "display_field_as": "Total_cell_count",
+            "field_to_display": "Biomarker_combination",
+            "display_field_as": "Biomarker_combination",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Median_silhouette_score",
-            "display_field_as": "Median_silhouette_score",
+            "field_to_display": "F_beta_score",
+            "display_field_as": "F_beta_score",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "F_beta_confidence_score",
-            "display_field_as": "F_beta_confidence_score",
+            "field_to_display": "Binary_gene_set",
+            "display_field_as": "Binary_gene_set",
             "field_url": "",
             "field_to_use": ""
-          },
-          {
-            "field_to_display": "Binary_genes",
-            "display_field_as": "Binary_genes",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "Markers",
-            "display_field_as": "Markers",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "Link_to_CELLxGENE_dataset",
-            "display_field_as": "CELLxGENE_dataset",
-            "field_url": "https://<FIELD_TO_USE>",
-            "field_to_use": "Link_to_CELLxGENE_dataset"
-          },
-          {
-            "field_to_display": "Link_to_CELLxGENE_collection",
-            "display_field_as": "CELLxGENE_collection",
-            "field_url": "https://<FIELD_TO_USE>",
-            "field_to_use": "Link_to_CELLxGENE_collection"
-          },
-          {
-            "field_to_display": "Dataset_name",
-            "display_field_as": "Dataset_name",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "Link_to_publication",
-            "display_field_as": "Publication",
-            "field_url": "https://<FIELD_TO_USE>",
-            "field_to_use": "Link_to_publication"
           }
         ],
         "more_info": "Author defined names for cell clusters"
@@ -482,14 +428,14 @@
             "field_to_use": ""
           },
           {
-            "field_to_display": "Organism",
-            "display_field_as": "Organism",
+            "field_to_display": "Species",
+            "display_field_as": "Species",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Tissue",
-            "display_field_as": "Tissue",
+            "field_to_display": "Anatomical_structure",
+            "display_field_as": "Anatomical_structure",
             "field_url": "",
             "field_to_use": ""
           },
@@ -500,46 +446,28 @@
             "field_to_use": ""
           },
           {
-            "field_to_display": "Number_of_cells",
-            "display_field_as": "Number_of_cells",
+            "field_to_display": "Cell_count",
+            "display_field_as": "Cell_count",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Cell_type",
-            "display_field_as": "Cell_type",
+            "field_to_display": "Collection_id",
+            "display_field_as": "Collection_id",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Collection_ID",
-            "display_field_as": "Collection_ID",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "Collection_version_ID",
-            "display_field_as": "Collection_version_ID",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "Dataset_ID",
-            "display_field_as": "Dataset_ID",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "Dataset_version_ID",
-            "display_field_as": "Dataset_version_ID",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "Link_to_CELLxGENE_collection",
+            "field_to_display": "Cellxgene_collection",
             "display_field_as": "CELLxGENE_collection",
             "field_url": "https://<FIELD_TO_USE>",
-            "field_to_use": "Link_to_CELLxGENE_collection"
+            "field_to_use": "CELLxGENE_collection"
+          },
+          {
+            "field_to_display": "Cellxgene_dataset",
+            "display_field_as": "CELLxGENE_dataset",
+            "field_url": "https://<FIELD_TO_USE>",
+            "field_to_use": "CELLxGENE_dataset"
           }
         ],
         "more_info": "Single cell datasets"
@@ -599,12 +527,6 @@
         "color": "#f032e6",
         "individual_labels": [
           {
-            "field_to_use": "Official_symbol",
-            "to_be_replaced": "",
-            "replace_with": "",
-            "make_lower_case": false
-          },
-          {
             "field_to_use": "_key",
             "to_be_replaced": "",
             "replace_with": "",
@@ -622,32 +544,14 @@
         ],
         "individual_fields": [
           {
-            "field_to_display": "Official_symbol",
-            "display_field_as": "Official_symbol",
+            "field_to_display": "Gene_id",
+            "display_field_as": "Gene_id",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Official_full_name",
-            "display_field_as": "Official_full_name",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "Also_known_as",
-            "display_field_as": "Also_known_as",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "UniProt_name",
-            "display_field_as": "UniProt_name",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "Organism",
-            "display_field_as": "Organism",
+            "field_to_display": "Exact_synonym",
+            "display_field_as": "Exact_synonym",
             "field_url": "",
             "field_to_use": ""
           },
@@ -658,20 +562,38 @@
             "field_to_use": ""
           },
           {
-            "field_to_display": "Summary",
-            "display_field_as": "Summary",
+            "field_to_display": "Label",
+            "display_field_as": "Label",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "mRNA_(NM)_and_protein_(NP)_sequences",
+            "field_to_display": "Refseq_summary",
+            "display_field_as": "Refseq_summary",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "Reference_sequence_identifier",
+            "display_field_as": "Reference_sequence_identifier",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "Uniprot_name",
+            "display_field_as": "Uniprot_name",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "Mrna__nm__and_protein__np__sequences",
             "display_field_as": "mRNA_(NM)_and_protein_(NP)_sequences",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "RefSeq_gene_ID",
-            "display_field_as": "RefSeq_gene_ID",
+            "field_to_display": "Species",
+            "display_field_as": "Species",
             "field_url": "",
             "field_to_use": ""
           }
@@ -1113,7 +1035,7 @@
         "individual_urls": [
           {
             "individual_url": "https://<FIELD_TO_USE>",
-            "field_to_use": "Link_to_publication",
+            "field_to_use": "DOI",
             "to_be_replaced": "",
             "replace_with": "",
             "make_lower_case": false
@@ -1121,95 +1043,43 @@
         ],
         "individual_fields": [
           {
-            "field_to_display": "Citation",
-            "display_field_as": "Citation",
+            "field_to_display": "Author",
+            "display_field_as": "Author",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Link_to_publication",
-            "display_field_as": "Publication",
-            "field_url": "https://<FIELD_TO_USE>",
-            "field_to_use": "Link_to_publication"
+            "field_to_display": "Year",
+            "display_field_as": "Year",
+            "field_url": "",
+            "field_to_use": ""
           },
           {
-            "field_to_display": "Link_to_CELLxGENE_collection",
-            "display_field_as": "CELLxGENE_collection",
-            "field_url": "https://<FIELD_TO_USE>",
-            "field_to_use": "Link_to_CELLxGENE_collection"
+            "field_to_display": "Title",
+            "display_field_as": "Title",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "Journal",
+            "display_field_as": "Journal",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "PMID",
+            "display_field_as": "PMID",
+            "field_url": "https://pubmed.ncbi.nlm.nih.gov/<FIELD_TO_USE>/",
+            "field_to_use": "PMID"
+          },
+          {
+            "field_to_display": "PMCID",
+            "display_field_as": "PMCID",
+            "field_url": "https://pmc.ncbi.nlm.nih.gov/articles/<FIELD_TO_USE>/",
+            "field_to_use": "PMCID"
           }
         ],
-        "more_info": "Publication metadata"
-      }
-    ],
-    [
-      "RS",
-      {
-        "abbreviated_name": "RS",
-        "display_name": "Variant",
-        "color": "#000075",
-        "individual_labels": [
-          {
-            "field_to_use": "_id",
-            "to_be_replaced": "/",
-            "replace_with": "",
-            "make_lower_case": false
-          }
-        ],
-        "individual_urls": [
-          {
-            "individual_url": "https://www.ncbi.nlm.nih.gov/snp/<FIELD_TO_USE>",
-            "field_to_use": "_id",
-            "to_be_replaced": "/",
-            "replace_with": "",
-            "make_lower_case": true
-          }
-        ],
-        "individual_fields": [
-          {
-            "field_to_display": "Genotype",
-            "display_field_as": "Genotype",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "Genotype_ID",
-            "display_field_as": "Genotype_ID",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "Genotype_annotation",
-            "display_field_as": "Genotype_annotation",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "Phenotype",
-            "display_field_as": "Phenotype",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "Evidence_level",
-            "display_field_as": "Evidence_level",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "Literature",
-            "display_field_as": "Literature",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "Source",
-            "display_field_as": "Source",
-            "field_url": "",
-            "field_to_use": ""
-          }
-        ],
-        "more_info": "Identiers from dbSNP which contains human single nucleotide variations, microsatellites, and small-scale insertions and deletions along with publication, population frequency, molecular consequence, and genomic and RefSeq mapping information for both common variations and clinical mutations."
+        "more_info": "Publication DOIs"
       }
     ],
     [
@@ -1242,9 +1112,22 @@
             "field_url": "",
             "field_to_use": ""
           },
+
           {
-            "field_to_display": "hasOBONamespace",
-            "display_field_as": "OBO_namespace",
+            "field_to_display": "definition",
+            "display_field_as": "Definition",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "hasExactSynonym",
+            "display_field_as": "Exact_synonym",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "hasRelatedSynonym",
+            "display_field_as": "Related_synonym",
             "field_url": "",
             "field_to_use": ""
           },
@@ -1282,30 +1165,6 @@
           {
             "field_to_display": "Source",
             "display_field_as": "Source",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "F_beta_confidence_score",
-            "display_field_as": "F-beta Score",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "Precision",
-            "display_field_as": "Precision",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "Marker_count",
-            "display_field_as": "Marker Count",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "Score",
-            "display_field_as": "Score",
             "field_url": "",
             "field_to_use": ""
           }
