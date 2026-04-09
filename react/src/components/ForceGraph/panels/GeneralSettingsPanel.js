@@ -5,7 +5,7 @@ import {
   LAYOUT_MODE_OPTIONS,
   PHENOTYPES_ENABLED,
 } from "constants/index";
-import { memo } from "react";
+import { memo, useId } from "react";
 
 const COLLAPSE_LABELS = { off: "None", standard: "Exclude Origin", all: "All" };
 
@@ -26,6 +26,8 @@ const GeneralSettingsPanel = ({
   onLayoutModeChange,
   onSimulationRestart,
 }) => {
+  const collapseLeafSelectId = useId();
+  const layoutModeSelectId = useId();
   return (
     // biome-ignore lint/correctness/useUniqueElementIds: legacy id
     <div id="tab-panel-general" className="tab-panel active">
@@ -114,9 +116,9 @@ const GeneralSettingsPanel = ({
       </div>
 
       <div className="option-group">
-        <label htmlFor="collapse-leaf-select">Collapse Leaf Nodes:</label>
+        <label htmlFor={collapseLeafSelectId}>Collapse Leaf Nodes:</label>
         <select
-          id="collapse-leaf-select"
+          id={collapseLeafSelectId}
           value={settings.collapseOnStart}
           onChange={onLeafModeChange}
         >
@@ -157,9 +159,9 @@ const GeneralSettingsPanel = ({
       )}
 
       <div className="option-group">
-        <label htmlFor="layout-mode-select">Layout:</label>
+        <label htmlFor={layoutModeSelectId}>Layout:</label>
         <select
-          id="layout-mode-select"
+          id={layoutModeSelectId}
           value={settings.layoutMode || "force"}
           onChange={onLayoutModeChange}
         >
