@@ -1,10 +1,13 @@
 import {
+  COLLAPSE_OPTIONS,
   DEPTH_OPTIONS,
   DIRECTION_OPTIONS,
   LAYOUT_MODE_OPTIONS,
   PHENOTYPES_ENABLED,
 } from "constants/index";
 import { memo } from "react";
+
+const COLLAPSE_LABELS = { off: "None", standard: "Exclude Origin", all: "All" };
 
 /**
  * General settings panel for graph visualization.
@@ -17,7 +20,7 @@ const GeneralSettingsPanel = ({
   onNodeFontSizeChange,
   onEdgeFontSizeChange,
   onLabelToggle,
-  onLeafToggle,
+  onLeafModeChange,
   onFocusNodesToggle,
   onGraphToggle,
   onLayoutModeChange,
@@ -110,14 +113,19 @@ const GeneralSettingsPanel = ({
         </div>
       </div>
 
-      <div className="option-group labels-toggle-container">
-        <h3 className="group-label">Collapse Leaf Nodes:</h3>
-        <div className="labels-toggle graph-source-toggle">
-          <label className="switch">
-            <input type="checkbox" checked={settings.collapseOnStart} onChange={onLeafToggle} />
-            <span className="slider round" />
-          </label>
-        </div>
+      <div className="option-group">
+        <label htmlFor="collapse-leaf-select">Collapse Leaf Nodes:</label>
+        <select
+          id="collapse-leaf-select"
+          value={settings.collapseOnStart}
+          onChange={onLeafModeChange}
+        >
+          {COLLAPSE_OPTIONS.map((opt) => (
+            <option key={opt} value={opt}>
+              {COLLAPSE_LABELS[opt]}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="option-group labels-toggle-container">

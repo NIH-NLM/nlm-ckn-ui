@@ -53,6 +53,12 @@ const ForceGraph = ({
   // (simulation end dispatches setGraphData with same nodes, causing re-render loop)
   const lastRenderedNodeIdsRef = useRef(null);
   const lastRenderedLinkIdsRef = useRef(null);
+  // Tracks the layoutMode the D3 instance was last told about. Used to skip the
+  // first run of the layoutMode useEffect — on initial mount, the constructor
+  // is created with the current layoutMode and updateGraph applies it after
+  // the simulation settles. Calling setLayoutMode() during that window would
+  // cancel the in-flight waitForAlpha and re-run dispersal on un-settled nodes.
+  const lastAppliedLayoutModeRef = useRef(null);
 
   // Selects origin node IDs from nodesSlice for NodesSlice driven graphs.
   const _nodesSliceOriginNodeIds = useSelector((state) => state.nodesSlice.originNodeIds);
@@ -170,7 +176,7 @@ const ForceGraph = ({
     ) {
       dispatch(updateSetting({ setting: "edgeDirection", value: edgeDirection }));
     }
-    if (typeof collapseOnStart === "boolean" && collapseOnStart !== settings.collapseOnStart) {
+    if (collapseOnStart && collapseOnStart !== settings.collapseOnStart) {
       dispatch(updateSetting({ setting: "collapseOnStart", value: collapseOnStart }));
     }
     if (Array.isArray(preferredPredicates)) {
@@ -241,9 +247,10 @@ const ForceGraph = ({
   }, []);
 
   // Memoizes calculation of final list of nodes to collapse.
+  const collapseMode = settings.collapseOnStart;
   const finalCollapseList = useMemo(() => {
     const nodesToCollapse = new Set(collapsed.userDefined);
-    if (settings.collapseOnStart) {
+    if (collapseMode && collapseMode !== "off") {
       for (const nodeId of collapsed.initial) {
         if (!collapsed.userIgnored.includes(nodeId)) {
           nodesToCollapse.add(nodeId);
@@ -251,7 +258,7 @@ const ForceGraph = ({
       }
     }
     return Array.from(nodesToCollapse);
-  }, [settings.collapseOnStart, collapsed]);
+  }, [collapseMode, collapsed]);
 
   // --- Event Handlers ---
   const handleNodeDragEnd = useCallback(
@@ -315,12 +322,16 @@ const ForceGraph = ({
           nodeGroup: (d) => d._id.split("/")[0],
           nodeHover: (d) => (d.label ? `${d._id}\n${d.label}` : `${d._id}`),
           label: getLabel,
-          nodeStrength: -100,
+          nodeForceStrength: -1000,
           width: svgRef.current.clientWidth,
           height: svgRef.current.clientHeight,
+          layoutMode: settings.layoutMode || "force",
         },
       );
       graphInstanceRef.current = newGraphInstance;
+      // Record the mode the constructor was created with so the layoutMode
+      // useEffect skips its initial run.
+      lastAppliedLayoutModeRef.current = settings.layoutMode || "force";
       newGraphInstance.resize(wrapperRef.current.clientWidth, wrapperRef.current.clientHeight);
       for (const labelClass in settings.labelStates) {
         newGraphInstance.toggleLabels(settings.labelStates[labelClass], labelClass);
@@ -389,7 +400,7 @@ const ForceGraph = ({
               .filter((node) => !originNodeIds.includes(node._id))
               .map((node) => node._id);
             dispatch(setInitialCollapseList(initialCollapseList));
-            if (settings.collapseOnStart) {
+            if (collapseMode && collapseMode !== "off") {
               collapseList = initialCollapseList;
             }
           }
@@ -400,6 +411,7 @@ const ForceGraph = ({
             newLinks: processedData.links,
             resetData: lastActionType === "fetch/fulfilled",
             collapseNodes: collapseList,
+            collapseMode: collapseMode || "standard",
             centerNodeId: nodeToCenter,
             labelStates: settings.labelStates,
           });
@@ -452,7 +464,7 @@ const ForceGraph = ({
                 .filter((node) => !originNodeIds.includes(node._id))
                 .map((node) => node._id);
               dispatch(setInitialCollapseList(initialCollapseList));
-              if (settings.collapseOnStart) {
+              if (collapseMode && collapseMode !== "off") {
                 collapseList = initialCollapseList;
               }
             }
@@ -466,9 +478,9 @@ const ForceGraph = ({
               newLinks: graphData.links,
               resetData: true,
               collapseNodes: collapseList,
+              collapseMode: collapseMode || "standard",
               labelStates: settings.labelStates,
             });
-
           }
           break;
         }
@@ -486,9 +498,21 @@ const ForceGraph = ({
   }, [settings.nodeFontSize]);
 
   // Applies layout mode changes to the D3 simulation.
+  // Skip the initial-mount call: the constructor is created with the current
+  // layoutMode and updateGraph's post-settle branch applies it once data lands.
+  // Calling setLayoutMode here would bump simulationGeneration and cancel that
+  // in-flight waitForAlpha, then re-run Phase 1 dispersal on un-settled nodes.
+  // Only fire when the mode actually changes from what was last applied.
   useEffect(() => {
-    if (graphInstanceRef.current?.setLayoutMode) {
-      graphInstanceRef.current.setLayoutMode(settings.layoutMode || "force");
+    try {
+      const desired = settings.layoutMode || "force";
+      if (lastAppliedLayoutModeRef.current === desired) return;
+      if (graphInstanceRef.current?.setLayoutMode) {
+        lastAppliedLayoutModeRef.current = desired;
+        graphInstanceRef.current.setLayoutMode(desired, settings.labelStates);
+      }
+    } catch (err) {
+      console.error("setLayoutMode error:", err);
     }
   }, [settings.layoutMode]);
 
@@ -587,7 +611,7 @@ const ForceGraph = ({
     handleSettingChange("nodeFontSize", Number.parseInt(e.target.value, 10));
   const handleEdgeFontSizeChange = (e) =>
     handleSettingChange("edgeFontSize", Number.parseInt(e.target.value, 10));
-  const handleLeafToggle = (e) => handleSettingChange("collapseOnStart", e.target.checked);
+  const handleLeafModeChange = (e) => handleSettingChange("collapseOnStart", e.target.value);
   const handleFocusNodesToggle = (e) => handleSettingChange("useFocusNodes", e.target.checked);
   const handleGraphToggle = () =>
     handleSettingChange(
@@ -612,10 +636,7 @@ const ForceGraph = ({
     handleGlobalSettingChange("findShortestPaths", e.target.checked);
 
   const handleSimulationRestart = () => {
-    graphInstanceRef.current?.updateGraph({
-      simulate: true,
-      labelStates: settings.labelStates,
-    });
+    graphInstanceRef.current?.setLayoutMode(settings.layoutMode || "force", settings.labelStates);
   };
 
   // --- Popup Handlers ---
@@ -680,11 +701,13 @@ const ForceGraph = ({
           <svg ref={svgRef} role="img" aria-label="Graph visualization">
             <title>Graph visualization</title>
           </svg>
-          {(status === "processing" || status === "succeeded") && !hasNodesInRawData(rawData) && (
-            <output className="no-data-message" aria-live="polite">
-              No data found.
-            </output>
-          )}
+          {(status === "processing" || status === "succeeded") &&
+            !hasNodesInRawData(rawData) &&
+            !graphData?.nodes?.length && (
+              <output className="no-data-message" aria-live="polite">
+                No data found.
+              </output>
+            )}
           {status === "failed" && (
             <div className="no-data-message error-message" role="alert">
               Failed to fetch data.
@@ -846,7 +869,7 @@ const ForceGraph = ({
                     onNodeFontSizeChange={handleNodeFontSizeChange}
                     onEdgeFontSizeChange={handleEdgeFontSizeChange}
                     onLabelToggle={handleLabelToggle}
-                    onLeafToggle={handleLeafToggle}
+                    onLeafModeChange={handleLeafModeChange}
                     onFocusNodesToggle={handleFocusNodesToggle}
                     onGraphToggle={handleGraphToggle}
                     onLayoutModeChange={(e) =>

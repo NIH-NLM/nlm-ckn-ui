@@ -30,7 +30,8 @@ export const DEFAULT_LABEL_STATES = {
 // Default graph behavior flags
 export const DEFAULT_FIND_SHORTEST_PATHS = false;
 export const DEFAULT_USE_FOCUS_NODES = true;
-export const DEFAULT_COLLAPSE_ON_START = true;
+export const DEFAULT_COLLAPSE_ON_START = "standard";
+export const COLLAPSE_OPTIONS = ["off", "standard", "all"];
 export const DEFAULT_INCLUDE_INTER_NODE_EDGES = true;
 
 // Dropdown option arrays (shared across PhaseEditor, GeneralSettingsPanel, etc.)
@@ -45,8 +46,12 @@ export const SET_OPERATION_OPTIONS = [
 ];
 export const LAYOUT_MODE_OPTIONS = [
   { value: "force", label: "Force" },
-  { value: "clustered", label: "Clustered" },
+  { value: "clustered", label: "Collection Cluster" },
+  { value: "strict-cluster", label: "Strict Collection Cluster" },
   { value: "radial", label: "Radial" },
+  { value: "circular", label: "Circular" },
+  { value: "grid", label: "Grid" },
+  { value: "hierarchical", label: "Hierarchical" },
 ];
 export const ORIGIN_FILTER_OPTIONS = [
   { value: "all", label: "All nodes" },
