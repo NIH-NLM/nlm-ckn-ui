@@ -464,6 +464,12 @@
             "field_to_use": "CELLxGENE_collection"
           },
           {
+            "field_to_display": "Dataset_identifier",
+            "display_field_as": "Dataset_identifier",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
             "field_to_display": "Cellxgene_dataset",
             "display_field_as": "CELLxGENE_dataset",
             "field_url": "https://<FIELD_TO_USE>",
@@ -542,6 +548,13 @@
             "make_lower_case": false
           }
         ],
+        "individual_fields": [
+          {
+            "field_to_display": "Gene_symbol",
+            "display_field_as": "Gene_symbol",
+            "field_url": "",
+            "field_to_use": ""
+          },
         "individual_fields": [
           {
             "field_to_display": "Gene_id",
