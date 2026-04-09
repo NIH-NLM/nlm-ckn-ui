@@ -555,7 +555,6 @@
             "field_url": "",
             "field_to_use": ""
           },
-        "individual_fields": [
           {
             "field_to_display": "Gene_id",
             "display_field_as": "Gene_id",
