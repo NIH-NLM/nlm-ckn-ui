@@ -6,6 +6,7 @@
  * Supports CSV download of results.
  */
 
+import { findLeafNodes } from "components/ForceGraphConstructor/graphDataProcessing";
 import React, { memo, useCallback, useMemo, useState } from "react";
 import {
   collectionConfigMap,
@@ -55,19 +56,48 @@ const edgeValueTransform = (field, link) => {
 /**
  * ResultsTable displays the workflow results as tables of nodes and edges.
  */
-const ResultsTable = ({ graphData }) => {
+const ResultsTable = ({ graphData, collapseMode = "off", originNodeIds = [] }) => {
   const [activeTab, setActiveTab] = useState("nodes");
   const [expandedRows, setExpandedRows] = useState(new Set());
 
+  // Filter out collapsed leaf nodes from both nodes and links
+  const filteredData = useMemo(() => {
+    if (!graphData?.nodes?.length || !collapseMode || collapseMode === "off") {
+      return graphData;
+    }
+    const allNodeIds = graphData.nodes.map((n) => n._id);
+    const collapseNodeIds = allNodeIds.filter((id) => !originNodeIds.includes(id));
+    const leafIds = findLeafNodes(
+      graphData.nodes.map((n) => ({ id: n._id, ...n })),
+      graphData.links.map((l) => ({
+        source: l._from || (typeof l.source === "string" ? l.source : l.source?._id),
+        target: l._to || (typeof l.target === "string" ? l.target : l.target?._id),
+        ...l,
+      })),
+      collapseNodeIds,
+      originNodeIds,
+      collapseMode,
+    );
+    const leafSet = new Set(leafIds);
+    return {
+      nodes: graphData.nodes.filter((n) => !leafSet.has(n._id)),
+      links: graphData.links.filter((l) => {
+        const fromId = l._from || (typeof l.source === "string" ? l.source : l.source?._id);
+        const toId = l._to || (typeof l.target === "string" ? l.target : l.target?._id);
+        return !leafSet.has(fromId) && !leafSet.has(toId);
+      }),
+    };
+  }, [graphData, collapseMode, originNodeIds]);
+
   // Determine which additional columns to show based on what's in the data
   const { dynamicColumns, nodesByCollection } = useMemo(() => {
-    if (!graphData?.nodes?.length) return { dynamicColumns: [], nodesByCollection: {} };
+    if (!filteredData?.nodes?.length) return { dynamicColumns: [], nodesByCollection: {} };
 
     // Group nodes by collection and track which fields have data
     const byCollection = {};
     const fieldCounts = {};
 
-    for (const node of graphData.nodes) {
+    for (const node of filteredData.nodes) {
       const collection = node._id?.split("/")[0] || "unknown";
       if (!byCollection[collection]) byCollection[collection] = [];
       byCollection[collection].push(node);
@@ -98,7 +128,7 @@ const ResultsTable = ({ graphData }) => {
       });
 
     return { dynamicColumns: sortedFields, nodesByCollection: byCollection };
-  }, [graphData?.nodes]);
+  }, [filteredData?.nodes]);
 
   // Toggle row expansion
   const toggleRowExpanded = useCallback((nodeId) => {
@@ -115,29 +145,29 @@ const ResultsTable = ({ graphData }) => {
 
   // Handle CSV download
   const handleDownloadCsv = useCallback(() => {
-    if (!graphData) return;
+    if (!filteredData) return;
 
     if (activeTab === "nodes") {
-      const csv = generateCsv(graphData.nodes || [], {
+      const csv = generateCsv(filteredData.nodes || [], {
         priorityFields: ["_id", "_key"],
         skipFields: NODE_SKIP_FIELDS,
       });
       downloadFile(csv, "workflow-nodes.csv");
     } else {
-      const csv = generateCsv(graphData.links || [], {
+      const csv = generateCsv(filteredData.links || [], {
         priorityFields: ["_from", "_to", "_id", "_key"],
         skipFields: EDGE_SKIP_FIELDS,
         valueTransform: edgeValueTransform,
       });
       downloadFile(csv, "workflow-edges.csv");
     }
-  }, [graphData, activeTab]);
+  }, [filteredData, activeTab]);
 
-  if (!graphData) {
+  if (!filteredData) {
     return null;
   }
 
-  const { nodes = [], links = [] } = graphData;
+  const { nodes = [], links = [] } = filteredData;
 
   return (
     <div className="results-table-container">

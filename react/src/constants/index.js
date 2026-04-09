@@ -29,6 +29,7 @@ export {
 
 // Graph configuration defaults
 export {
+  COLLAPSE_OPTIONS,
   DEFAULT_COLLAPSE_ON_START,
   DEFAULT_DEPTH,
   DEFAULT_EDGE_DIRECTION,
