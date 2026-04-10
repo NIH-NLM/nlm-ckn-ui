@@ -187,17 +187,11 @@ if [[ ! -f ".built" ]] && [[ $run_results -eq 1 ]] \
     pushd src
     . .zshenv
     python ExternalApiResultsFetcher.py
-    python NSForestResultsTupleWriter.py
-    python AuthorToClResultsTupleWriter.py
-    python ExternalApiResultsTupleWriter.py
-    # TODO: Remove when confirmed
-    # python AnnotationResultsTupleWriter.py
+    python TupleWriterPipeline.py
     popd
     popd
 
-    # Make a clean package, then build the results and phenotype
-    # graphs
-    mvn clean package -DskipTests
+    # Build the results graph and induced subgraph
     classpath="target/nlm-ckn-etl-1.0.jar"
     java -Xms32g -Xmx32g -cp $classpath gov.nih.nlm.ResultsGraphBuilder
     java -Xms32g -Xmx32g -cp $classpath gov.nih.nlm.InducedSubgraphBuilder
