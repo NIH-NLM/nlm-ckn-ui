@@ -186,7 +186,8 @@ if [[ ! -f ".built" ]] && [[ $run_results -eq 1 ]] \
     . .venv/bin/activate
     pushd src
     . .zshenv
-    python ExternalApiResultsFetcher.py
+    python DataFetcher.py
+    python DataTransformer.py
     python TupleWriterPipeline.py
     popd
     popd
