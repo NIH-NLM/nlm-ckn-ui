@@ -2,7 +2,13 @@ import * as d3 from "d3";
 import { getColorForCollection } from "../../utils";
 import { findLeafNodes, processGraphData, processGraphLinks } from "./graphDataProcessing";
 import { renderGraph, toggleFocusNodeRendering } from "./graphRendering";
-import { DEFAULT_GRAPH_OPTIONS, runSimulation, waitForAlpha } from "./simulationUtils";
+import {
+  applyLayoutMode,
+  DEFAULT_GRAPH_OPTIONS,
+  isPhaseTransitionActive,
+  runSimulation,
+  waitForAlpha,
+} from "./simulationUtils";
 
 // Re-export data processing functions for backwards compatibility
 export { processGraphData, processGraphLinks } from "./graphDataProcessing";
@@ -61,6 +67,11 @@ function ForceGraphConstructor(
   const forceLink = d3.forceLink().id((d) => d.id);
   forceLink.distance(mergedOptions.targetLinkDistance);
   const linkForceStrength = forceLink.strength();
+  const simulationGeneration = { value: 0 };
+  // Initialize from caller-provided layout mode so updateGraph can start in the
+  // correct mode on first render — avoids a race with the React layoutMode
+  // useEffect, and avoids a visible force-mode warmup before non-force modes.
+  let currentLayoutMode = mergedOptions.layoutMode || "force";
 
   // Create main simulation.
   const simulation = d3
@@ -93,7 +104,9 @@ function ForceGraphConstructor(
   let currentLabelStates = { ...mergedOptions.initialLabelStates };
 
   // Centralized function to manage label visibility based on zoom and user settings.
+  // Labels are hidden when the simulation is active (alpha above threshold).
   function updateLabelVisibilityOnZoom(k) {
+    if (simulation.alpha() > 0.001) return;
     // Calculate the zoom threshold needed to meet the minimum visible font size.
     const nodeLabelThreshold = mergedOptions.minVisibleFontSize / mergedOptions.nodeFontSize;
     const linkLabelThreshold = mergedOptions.minVisibleFontSize / mergedOptions.linkFontSize;
@@ -224,7 +237,12 @@ function ForceGraphConstructor(
       .scale(currentTransform.k);
 
     svg.call(zoomHandler.transform, newTransform);
-    simulation.alpha(1).restart();
+    // Only restart simulation in force mode when no phase transition is active.
+    // In clustered/radial modes, the layout is already settled or transitioning —
+    // restarting would disrupt it. Just update the viewBox and zoom.
+    if (currentLayoutMode === "force" && !isPhaseTransitionActive()) {
+      simulation.alpha(1).restart();
+    }
   }
 
   // Updates legend based on collections present in current nodes.
@@ -506,6 +524,25 @@ function ForceGraphConstructor(
     updateLabelVisibilityOnZoom(d3.zoomTransform(svg.node()).k);
   }
 
+  // Restore force strengths and apply the current layout mode.
+  // Shared between updateGraph (initial render) and setLayoutMode (manual switch).
+  function applyCurrentLayoutMode(onComplete) {
+    forceNode.strength(mergedOptions.nodeForceStrength);
+    forceCenter.strength(mergedOptions.centerForceStrength);
+    forceLink.strength(linkForceStrength);
+    forceLink.links(processedLinks);
+    applyLayoutMode(
+      d3,
+      simulation,
+      currentLayoutMode,
+      mergedOptions.width,
+      mergedOptions.height,
+      linkForceStrength,
+      onComplete,
+      simulationGeneration,
+    );
+  }
+
   // Core function to update graph with new data.
   // Handles data processing, rendering, and simulation lifecycle.
   function updateGraph({
@@ -513,6 +550,7 @@ function ForceGraphConstructor(
     newNodes = [],
     newLinks = [],
     collapseNodes = [],
+    collapseMode = "standard",
     removeNode = false,
     centerNodeId = null,
     resetData = false,
@@ -554,6 +592,7 @@ function ForceGraphConstructor(
         processedLinks,
         collapseNodes,
         mergedOptions.originNodeIds,
+        collapseMode,
       );
       processedNodes = processedNodes.filter((n) => !nodesToRemove.includes(n.id));
       processedLinks = processedLinks.filter(
@@ -596,6 +635,35 @@ function ForceGraphConstructor(
     );
     updateLegend(processedNodes);
 
+    // Hide labels during simulation for performance (alpha check in
+    // updateLabelVisibilityOnZoom will keep them hidden while sim is hot)
+    nodeContainer.selectAll("text").style("display", "none");
+    linkContainer.selectAll("text").style("display", "none");
+
+    // Non-force layout modes manage their own simulation lifecycle via
+    // applyLayoutMode's internal phase transitions — start directly in the
+    // target mode rather than running a visible force-mode warmup first.
+    if (currentLayoutMode && currentLayoutMode !== "force") {
+      isLiveSimulationRunning = false;
+      applyCurrentLayoutMode(() => {
+        updateLabelVisibilityOnZoom(d3.zoomTransform(svg.node()).k);
+        if (save === true && typeof mergedOptions.onSimulationEnd === "function") {
+          const finalNodes = processedNodes.map(({ x, y, index, vx, vy, ...rest }) => ({
+            x,
+            y,
+            ...rest,
+          }));
+          const finalLinks = processedLinks.map(({ source, target, ...rest }) => ({
+            ...rest,
+            source: source.id || source,
+            target: target.id || target,
+          }));
+          mergedOptions.onSimulationEnd(finalNodes, finalLinks);
+        }
+      });
+      return;
+    }
+
     // Start simulation to arrange new elements.
     runSimulation(
       true,
@@ -611,7 +679,8 @@ function ForceGraphConstructor(
 
     // Wait for graph layout to stabilize.
     const newThreshold = Math.max(1 / (processedNodes.length || 1), 0.002);
-    waitForAlpha(simulation, newThreshold).then(() => {
+    waitForAlpha(simulation, newThreshold, simulationGeneration).then((stillValid) => {
+      if (!stillValid) return;
       // Freeze graph once stable.
       runSimulation(false, simulation, forceNode, forceCenter, forceLink);
       // Ensure the live simulation flag is reset after auto-stabilization.
@@ -677,6 +746,22 @@ function ForceGraphConstructor(
         target: target.id || target,
       }));
       return { nodes: finalNodes, links: finalLinks };
+    },
+    setLayoutMode: (mode, labelStates = {}) => {
+      currentLayoutMode = mode;
+      // Invalidate any pending waitForAlpha promises
+      simulationGeneration.value++;
+
+      // Hide all labels during layout transitions for performance
+      if (mode !== "force") {
+        nodeContainer.selectAll("text").style("display", "none");
+        linkContainer.selectAll("text").style("display", "none");
+      }
+
+      // Apply layout-specific forces (this also adjusts charge and restarts)
+      applyCurrentLayoutMode(() => {
+        updateLabelVisibilityOnZoom(d3.zoomTransform(svg.node()).k);
+      });
     },
     toggleSimulation: (on, incomingLabelStates = {}) => {
       if (on) {

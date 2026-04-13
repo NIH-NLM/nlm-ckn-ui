@@ -28,10 +28,15 @@ const WorkflowBuilderPage = () => {
   // Local state
   const [hasResults, setHasResults] = useState(false);
   const [activeView, setActiveView] = useState("table"); // "table" | "graph"
+  // Defer mounting ForceGraph until the user first clicks the Graph tab.
+  // Once activated, stay mounted (hidden via display:none when on other tabs)
+  // so re-clicking the tab is instant and the simulation isn't re-run.
+  const [hasActivatedGraphTab, setHasActivatedGraphTab] = useState(false);
 
   // Workflow builder state
   const { activeGraph, activePhaseId, phases, phaseResults, status, executingPhaseId } =
     useSelector((state) => state.workflowBuilder);
+  const activePhase = phases.find((p) => p.id === activePhaseId);
 
   // Load workflow from URL on mount
   useEffect(() => {
@@ -81,7 +86,15 @@ const WorkflowBuilderPage = () => {
         // The setGraphData reducer also sets depth=0 and useFocusNodes=false
         // and snapshots lastAppliedSettings so the "Apply Changes" mechanism
         // works for query-affecting settings in the graph options panel.
-        dispatch(setGraphData({ graphData, originNodeIds: nodeIds, source: "workflow" }));
+        const collapseLeafNodes = activePhase?.settings?.collapseLeafNodes ?? "standard";
+        dispatch(
+          setGraphData({
+            graphData,
+            originNodeIds: nodeIds,
+            source: "workflow",
+            collapseLeafNodes,
+          }),
+        );
 
         setHasResults(true);
 
@@ -155,7 +168,10 @@ const WorkflowBuilderPage = () => {
                 <button
                   type="button"
                   className={`view-tab ${activeView === "graph" ? "active" : ""}`}
-                  onClick={() => setActiveView("graph")}
+                  onClick={() => {
+                    setActiveView("graph");
+                    setHasActivatedGraphTab(true);
+                  }}
                 >
                   Graph
                 </button>
@@ -164,19 +180,28 @@ const WorkflowBuilderPage = () => {
               {/* Table View */}
               {activeView === "table" && (
                 <div className="results-view-content">
-                  <ResultsTable graphData={activeGraph} />
+                  <ResultsTable
+                    graphData={activeGraph}
+                    collapseMode={activePhase?.settings?.collapseLeafNodes ?? "standard"}
+                    originNodeIds={
+                      activePhase?._executedOriginNodeIds || activePhase?.originNodeIds || []
+                    }
+                  />
                 </div>
               )}
 
-              {/* Graph View */}
-              <div
-                className="results-view-content graph-view"
-                style={{ display: activeView === "graph" ? "block" : "none" }}
-              >
-                <ErrorBoundary>
-                  <ForceGraph />
-                </ErrorBoundary>
-              </div>
+              {/* Graph View - mounted only after first activation of the Graph tab,
+                  then kept mounted (display:none) when navigating away. */}
+              {hasActivatedGraphTab && (
+                <div
+                  className="results-view-content graph-view"
+                  style={{ display: activeView === "graph" ? "block" : "none" }}
+                >
+                  <ErrorBoundary>
+                    <ForceGraph />
+                  </ErrorBoundary>
+                </div>
+              )}
             </>
           ) : (
             <div className="workflow-graph-placeholder">

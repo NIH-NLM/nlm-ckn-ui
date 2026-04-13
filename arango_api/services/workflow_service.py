@@ -116,6 +116,12 @@ def _execute_phase(phase, all_phases, phase_results, phase_origin_ids, graph):
             phase, all_phases, phase_results, phase_origin_ids, settings, phase_graph
         )
 
+    # --- Handle filter phase (no API call) ---
+    if origin_source == "filter":
+        return _execute_filter_phase(
+            phase, all_phases, phase_results, phase_origin_ids, settings
+        )
+
     # --- Resolve origin node IDs ---
     origin_node_ids = _resolve_origin_node_ids(
         phase, all_phases, phase_results, phase_origin_ids, phase_graph
@@ -143,24 +149,49 @@ def _execute_phase(phase, all_phases, phase_results, phase_origin_ids, graph):
             ),
         }
 
-    # --- Call graph traversal ---
+    # --- Execute query ---
     include_inter_node_edges = settings.get("includeInterNodeEdges", True)
-
-    raw_data = graph_service.traverse_graph_advanced(
-        node_ids=origin_node_ids,
-        advanced_settings=advanced_settings,
-        graph=phase_graph,
-        include_inter_node_edges=include_inter_node_edges,
-    )
-
-    # --- Apply set operation ---
-    graphs_array = [
-        {"nodes": data.get("nodes", []), "links": data.get("links", [])}
-        for data in raw_data.values()
-    ]
-
     set_operation = settings.get("setOperation", "Union")
-    merged_result = _perform_set_operation(graphs_array, set_operation)
+
+    if set_operation == "Connected Paths":
+        # Connected Paths uses K_SHORTEST_PATHS directly — no traversal needed
+        depth = settings.get("depth")
+        merged_result = graph_service.find_connecting_paths(
+            node_ids=origin_node_ids,
+            graph=phase_graph,
+            allowed_collections=settings.get("allowedCollections", []),
+            edge_filters=settings.get("edgeFilters", {}),
+            max_depth=depth if depth else None,
+        )
+    else:
+        # Standard flow: traverse from each origin, then merge with set op
+        raw_data = graph_service.traverse_graph_advanced(
+            node_ids=origin_node_ids,
+            advanced_settings=advanced_settings,
+            graph=phase_graph,
+            include_inter_node_edges=include_inter_node_edges,
+        )
+
+        graphs_array = [
+            {"nodes": data.get("nodes", []), "links": data.get("links", [])}
+            for data in raw_data.values()
+        ]
+
+        min_overlap = settings.get("minOverlap")
+        merged_result = _perform_set_operation(
+            graphs_array, set_operation, min_overlap=min_overlap
+        )
+
+        if set_operation == "Intersection with Origins":
+            merged_result = _add_origin_nodes(
+                merged_result, raw_data, origin_node_ids
+            )
+
+    # --- Find inter-node edges on the final merged node set ---
+    if include_inter_node_edges:
+        merged_result = _find_post_merge_inter_node_edges(
+            merged_result, phase_graph
+        )
 
     # --- Apply returnCollections filter ---
     return_collections = settings.get("returnCollections", [])
@@ -229,6 +260,31 @@ def _execute_combine_phase(
         )
 
     return combined_result, source_phase_ids
+
+
+def _execute_filter_phase(phase, all_phases, phase_results, phase_origin_ids, settings):
+    """Handle filter origin: take previous phase results and filter by collections."""
+    prev_id = phase.get("previousPhaseId")
+    if not prev_id:
+        raise ValueError("Filter phase requires a previousPhaseId.")
+
+    prev_result = phase_results.get(prev_id)
+    if not prev_result or not prev_result.get("nodes"):
+        raise ValueError(f"Previous phase '{prev_id}' has no results.")
+
+    # Start with a copy of the previous result
+    filtered = {
+        "nodes": list(prev_result.get("nodes", [])),
+        "links": list(prev_result.get("links", [])),
+    }
+
+    # Apply returnCollections filter
+    return_collections = settings.get("returnCollections", [])
+    if return_collections:
+        filtered = _apply_return_collections_filter(filtered, return_collections)
+
+    origin_ids = [n["_id"] for n in filtered["nodes"] if n.get("_id")]
+    return filtered, origin_ids
 
 
 def _resolve_origin_node_ids(phase, all_phases, phase_results, phase_origin_ids, graph):
@@ -302,13 +358,105 @@ def _filter_nodes_for_next_phase(nodes, filter_type, origin_node_ids=None):
     return [n["_id"] for n in nodes if n.get("_id")]
 
 
-def _perform_set_operation(graphs, operation):
+def _find_post_merge_inter_node_edges(merged_result, graph):
+    """
+    Re-scan for inter-node edges on the final merged node set.
+
+    The per-origin inter-node scan only finds edges whose both endpoints
+    live in a single origin's result.  After a set operation (especially
+    Intersection), the surviving node set may span multiple origins, so
+    there can be valid edges that were never discovered.
+    """
+    node_ids = [
+        n.get("_id") or n.get("id")
+        for n in merged_result.get("nodes", [])
+        if n.get("_id") or n.get("id")
+    ]
+    if not node_ids:
+        return merged_result
+
+    inter_edges = graph_service.find_inter_node_edges(node_ids, graph)
+    existing_link_ids = {
+        link.get("_id")
+        for link in merged_result.get("links", [])
+        if link.get("_id")
+    }
+    node_id_set = set(node_ids)
+    added_links = list(merged_result.get("links", []))
+    for edge in inter_edges:
+        if not edge or not edge.get("_id"):
+            continue
+        if edge["_id"] in existing_link_ids:
+            continue
+        if edge.get("_from") in node_id_set and edge.get("_to") in node_id_set:
+            added_links.append(edge)
+            existing_link_ids.add(edge["_id"])
+
+    return {"nodes": merged_result["nodes"], "links": added_links}
+
+
+def _add_origin_nodes(merged_result, raw_data, origin_node_ids):
+    """
+    Add origin nodes back into an intersection result.
+
+    For "Intersection with Origins", the intersection finds common nodes,
+    then this function adds each origin node and any edges that connect
+    an origin to a node already in the result.
+    """
+    existing_ids = {
+        n.get("_id") or n.get("id")
+        for n in merged_result.get("nodes", [])
+    }
+    existing_link_keys = {
+        link.get("_id") or f"{link.get('_from', '')}->{link.get('_to', '')}"
+        for link in merged_result.get("links", [])
+    }
+
+    added_nodes = list(merged_result.get("nodes", []))
+    added_links = list(merged_result.get("links", []))
+
+    # Add origin node documents from the raw traversal data
+    for origin_id in origin_node_ids:
+        if origin_id in existing_ids:
+            continue
+        # Find the origin node document in raw traversal results
+        if origin_id in raw_data:
+            for node in raw_data[origin_id].get("nodes", []):
+                node_id = node.get("_id") or node.get("id")
+                if node_id == origin_id:
+                    added_nodes.append(node)
+                    existing_ids.add(origin_id)
+                    break
+
+    # Add edges that connect any origin to any node in the result
+    for data in raw_data.values():
+        for link in data.get("links", []):
+            link_key = (
+                link.get("_id")
+                or f"{link.get('_from', '')}->{link.get('_to', '')}"
+            )
+            if link_key in existing_link_keys:
+                continue
+            src = link.get("_from")
+            dst = link.get("_to")
+            if src in existing_ids and dst in existing_ids:
+                added_links.append(link)
+                existing_link_keys.add(link_key)
+
+    return {"nodes": added_nodes, "links": added_links}
+
+
+def _perform_set_operation(graphs, operation, min_overlap=None):
     """
     Apply a set operation across multiple graph results.
 
     Args:
         graphs (list): List of {nodes: [], links: []} dicts.
         operation (str): "Union", "Intersection", or "Symmetric Difference".
+        min_overlap (int|None): Minimum number of origin graphs that must
+            contain a node for it to be kept.  Acts as a threshold between
+            Union (1) and Intersection (N).  None means use the operation's
+            default behavior.
 
     Returns:
         dict: Merged {nodes, links}.
@@ -335,12 +483,14 @@ def _perform_set_operation(graphs, operation):
                 node_frequency[node_id] = {"node": node, "count": 1}
 
     # Select nodes based on operation
-    if op == "intersection":
-        required = len(safe_graphs)
+    if op in ("intersection", "intersection with origins"):
+        # min_overlap relaxes intersection: instead of requiring ALL origins,
+        # require at least min_overlap origins.  Default = all (strict).
+        required = min_overlap if min_overlap and min_overlap > 1 else len(safe_graphs)
         final_nodes = [
             entry["node"]
             for entry in node_frequency.values()
-            if entry["count"] == required
+            if entry["count"] >= required
         ]
     elif op in ("symmetric difference", "symmetric_difference", "xor"):
         final_nodes = [

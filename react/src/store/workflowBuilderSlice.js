@@ -14,7 +14,13 @@
 
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { createEmptyPhase, DEFAULT_GRAPH_TYPE, GRAPH_STATUS, UI_DEFAULTS } from "../constants";
-import { fetchCollectionDocuments, fetchGraphData, fetchNodeDetailsByIds } from "../services";
+import {
+  fetchCollectionDocuments,
+  fetchConnectingPaths,
+  fetchEdgesBetween,
+  fetchGraphData,
+  fetchNodeDetailsByIds,
+} from "../services";
 import { performSetOperation } from "../utils";
 
 /**
@@ -184,6 +190,26 @@ export const executePhase = createAsyncThunk(
       // Falls through to normal execution below using collectionOriginNodeIds
     }
 
+    // Handle "filter" origin — no API call, just filter previous phase results
+    if (phase.originSource === "filter") {
+      const prevId = phase.previousPhaseId;
+      const prevResult = phaseResults[prevId];
+      if (!prevResult || !prevResult.nodes) {
+        throw new Error("Previous phase has no results. Execute it first.");
+      }
+
+      const finalResult = filterResultByCollections(
+        { nodes: [...prevResult.nodes], links: [...prevResult.links] },
+        phase.settings.returnCollections || [],
+      );
+
+      return {
+        phaseId: phase.id,
+        result: finalResult,
+        originNodeIds: finalResult.nodes.map((n) => n._id).filter(Boolean),
+      };
+    }
+
     // Handle "multiplePhases" combine origin — no API call, pure set operation
     if (phase.originSource === "multiplePhases") {
       const sourcePhaseIds = phase.previousPhaseIds || [];
@@ -285,7 +311,7 @@ export const executePhase = createAsyncThunk(
         },
         findShortestPaths: false,
         useFocusNodes: phase.settings.useFocusNodes ?? true,
-        collapseOnStart: phase.settings.collapseLeafNodes ?? false,
+        collapseOnStart: phase.settings.collapseLeafNodes ?? "standard",
         graphType: phase.settings.graphType,
         includeInterNodeEdges: phase.settings.includeInterNodeEdges ?? true,
         edgeFilters: nodeOverrides.edgeFilters ??
@@ -295,32 +321,108 @@ export const executePhase = createAsyncThunk(
       };
     }
 
-    // Build params for the graph API using advancedSettings format
-    const params = {
-      nodeIds: originNodeIds,
-      advancedSettings,
-      graphType: phase.settings.graphType,
-      includeInterNodeEdges: phase.settings.includeInterNodeEdges ?? true,
-    };
+    let mergedResult;
 
-    // Fetch the raw data from API
-    const rawData = await fetchGraphData(params);
+    // "Connected Paths" uses a dedicated API to find shortest paths between origins
+    if (phase.settings.setOperation === "Connected Paths") {
+      mergedResult = await fetchConnectingPaths({
+        nodeIds: originNodeIds,
+        graphType: phase.settings.graphType,
+        allowedCollections: phase.settings.allowedCollections,
+        edgeFilters: phase.settings.edgeFilters,
+        maxDepth: phase.settings.depth || undefined,
+      });
+    } else {
+      // Standard flow: traverse from each origin, then merge with set operation
+      const params = {
+        nodeIds: originNodeIds,
+        advancedSettings,
+        graphType: phase.settings.graphType,
+        includeInterNodeEdges: phase.settings.includeInterNodeEdges ?? true,
+      };
 
-    // The API returns { nodeId: { nodes: [], links: [] }, ... } for each origin node
-    // We need to merge these based on the set operation
-    const graphsArray = Object.values(rawData).map((data) => ({
-      nodes: data.nodes || [],
-      links: data.links || [],
-    }));
+      const rawData = await fetchGraphData(params);
 
-    // Apply set operation to merge results
-    const mergedResult = performSetOperation(graphsArray, phase.settings.setOperation || "Union");
+      const graphsArray = Object.values(rawData).map((data) => ({
+        nodes: data.nodes || [],
+        links: data.links || [],
+      }));
+
+      mergedResult = performSetOperation(
+        graphsArray,
+        phase.settings.setOperation || "Union",
+        phase.settings.minOverlap,
+      );
+
+      // For "Intersection with Origins", add back origin nodes and their edges
+      if (phase.settings.setOperation === "Intersection with Origins") {
+        const existingIds = new Set(mergedResult.nodes.map((n) => n._id || n.id));
+        const addedNodes = [...mergedResult.nodes];
+        const addedLinks = [...mergedResult.links];
+        const linkKeys = new Set(addedLinks.map((l) => l._id || `${l._from}->${l._to}`));
+
+        for (const originId of originNodeIds) {
+          if (existingIds.has(originId)) continue;
+          const originData = rawData[originId];
+          if (originData) {
+            const originNode = originData.nodes?.find((n) => (n._id || n.id) === originId);
+            if (originNode) {
+              addedNodes.push(originNode);
+              existingIds.add(originId);
+            }
+          }
+        }
+
+        for (const data of Object.values(rawData)) {
+          for (const link of data.links || []) {
+            const key = link._id || `${link._from}->${link._to}`;
+            if (linkKeys.has(key)) continue;
+            if (existingIds.has(link._from) && existingIds.has(link._to)) {
+              addedLinks.push(link);
+              linkKeys.add(key);
+            }
+          }
+        }
+
+        mergedResult = { nodes: addedNodes, links: addedLinks };
+      }
+    }
+
+    // Post-merge inter-node edge scan: find edges between nodes that
+    // came from different origins (e.g., origin nodes added back after
+    // intersection may have edges to result nodes not yet discovered).
+    if (phase.settings.includeInterNodeEdges !== false && mergedResult.nodes?.length >= 2) {
+      const allNodeIds = mergedResult.nodes.map((n) => n._id || n.id).filter(Boolean);
+      const existingLinkIds = new Set(mergedResult.links.map((l) => l._id).filter(Boolean));
+      const interEdges = await fetchEdgesBetween(allNodeIds, phase.settings.graphType);
+      const nodeIdSet = new Set(allNodeIds);
+      for (const edge of interEdges) {
+        if (!edge?._id || existingLinkIds.has(edge._id)) continue;
+        if (nodeIdSet.has(edge._from) && nodeIdSet.has(edge._to)) {
+          mergedResult.links.push(edge);
+          existingLinkIds.add(edge._id);
+        }
+      }
+    }
 
     // Filter results to only include nodes from specified collections (if set)
     const finalResult = filterResultByCollections(
       mergedResult,
       phase.settings.returnCollections || [],
     );
+
+    // Check for empty results and provide a helpful message
+    if (!finalResult.nodes || finalResult.nodes.length === 0) {
+      const op = phase.settings.setOperation || "Union";
+      if (op === "Connected Paths") {
+        const depth = phase.settings.depth;
+        throw new Error(
+          `No connecting paths found at depth ${depth}. ` +
+            "Try increasing the depth to find longer paths between the origin nodes.",
+        );
+      }
+      throw new Error("No results found for this phase configuration.");
+    }
 
     return {
       phaseId: phase.id,

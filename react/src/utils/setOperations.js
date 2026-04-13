@@ -11,7 +11,7 @@
  * @param {string} operation - The set operation: "Union", "Intersection", or "Symmetric Difference"
  * @returns {{nodes: Array, links: Array}} - Result graph with combined/filtered nodes and links
  */
-export function performSetOperation(graphs, operation) {
+export function performSetOperation(graphs, operation, minOverlap) {
   try {
     // Normalize inputs
     const safeGraphs = (Array.isArray(graphs) ? graphs : []).filter(Boolean);
@@ -43,9 +43,11 @@ export function performSetOperation(graphs, operation) {
     let finalNodes = [];
     const allEntries = Array.from(nodeFrequencyMap.values());
     switch (op) {
-      case "intersection": {
-        const required = safeGraphs.length;
-        finalNodes = allEntries.filter((e) => e.count === required).map((e) => e.node);
+      case "intersection":
+      case "intersection with origins": {
+        // minOverlap relaxes intersection: require at least N origins instead of all
+        const required = minOverlap && minOverlap > 1 ? Number(minOverlap) : safeGraphs.length;
+        finalNodes = allEntries.filter((e) => e.count >= required).map((e) => e.node);
         break;
       }
       case "symmetric difference":

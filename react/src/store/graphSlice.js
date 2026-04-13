@@ -122,6 +122,7 @@ const initialState = {
     collapseOnStart: DEFAULT_COLLAPSE_ON_START,
     graphType: DEFAULT_GRAPH_TYPE,
     includeInterNodeEdges: DEFAULT_INCLUDE_INTER_NODE_EDGES,
+    layoutMode: "force",
     edgeFilters: getFilterableEdgeFields().reduce((acc, field) => {
       acc[field] = [];
       return acc;
@@ -185,6 +186,11 @@ const graphSlice = createSlice({
           // appears when the user changes query-affecting settings.
           state.settings.depth = 0;
           state.settings.useFocusNodes = false;
+          if (action.payload.collapseLeafNodes !== undefined) {
+            state.settings.collapseOnStart = action.payload.collapseLeafNodes;
+          }
+          // Reset collapsed state so ForceGraph can rebuild it from the new data.
+          state.collapsed = { initial: [], userDefined: [], userIgnored: [] };
           try {
             state.lastAppliedSettings = JSON.parse(JSON.stringify(state.settings));
           } catch (_err) {

@@ -12,6 +12,7 @@
 import FilterableDropdown from "components/FilterableDropdown";
 import RangeSliderFilter from "components/RangeSliderFilter/RangeSliderFilter";
 import {
+  COLLAPSE_OPTIONS,
   DEPTH_OPTIONS,
   DIRECTION_OPTIONS,
   ORIGIN_FILTER_OPTIONS,
@@ -180,20 +181,23 @@ const PhaseEditor = ({
     [phase.settings.edgeFilters, onUpdateSettings],
   );
 
-  // Whether this is a combine phase
+  // Whether this is a combine phase or filter phase
   const isCombinePhase = phase.originSource === "multiplePhases";
+  const isFilterPhase = phase.originSource === "filter";
 
   // Determine if phase can be executed
   const canExecute =
     !isExecuting &&
-    (isCombinePhase
-      ? (phase.previousPhaseIds || []).length >= 2 &&
-        (phase.previousPhaseIds || []).every((id) => allPhaseResults[id]?.nodes?.length > 0)
-      : phase.originSource === "collection"
-        ? !!phase.originCollection
-        : phase.originSource === "previousPhase"
-          ? previousPhaseResult && previousPhaseResult.nodes?.length > 0
-          : phase.originNodeIds.length > 0);
+    (isFilterPhase
+      ? previousPhaseResult && previousPhaseResult.nodes?.length > 0
+      : isCombinePhase
+        ? (phase.previousPhaseIds || []).length >= 2 &&
+          (phase.previousPhaseIds || []).every((id) => allPhaseResults[id]?.nodes?.length > 0)
+        : phase.originSource === "collection"
+          ? !!phase.originCollection
+          : phase.originSource === "previousPhase"
+            ? previousPhaseResult && previousPhaseResult.nodes?.length > 0
+            : phase.originNodeIds.length > 0);
 
   // Check if advanced settings are enabled
   const showAdvancedSettings = phase.showAdvancedSettings && phase.originNodeIds.length > 1;
@@ -282,6 +286,18 @@ const PhaseEditor = ({
                 onChange={handleOriginSourceChange}
               />
               Combine results from multiple phases
+            </label>
+          )}
+          {phaseIndex > 0 && (
+            <label>
+              <input
+                type="radio"
+                name={`origin-source-${phase.id}`}
+                value="filter"
+                checked={phase.originSource === "filter"}
+                onChange={handleOriginSourceChange}
+              />
+              Filter results from Phase {phaseIndex}
             </label>
           )}
         </div>
@@ -408,14 +424,29 @@ const PhaseEditor = ({
             </div>
           </div>
         )}
+
+        {isFilterPhase && (
+          <div className="previous-phase-origin">
+            {previousPhaseResult ? (
+              <p className="previous-phase-info">
+                {previousPhaseResult.nodes?.length || 0} nodes available from Phase {phaseIndex}.
+                Select collections below to filter.
+              </p>
+            ) : (
+              <p className="previous-phase-warning">
+                Execute Phase {phaseIndex} first to use its results.
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Settings Section — hide traversal settings for combine phases */}
+      {/* Settings Section — hide traversal settings for combine/filter phases */}
       <div className="phase-section">
-        <h4>{isCombinePhase ? "Output Settings" : "Settings"}</h4>
+        <h4>{isCombinePhase || isFilterPhase ? "Output Settings" : "Settings"}</h4>
 
         {/* Graph Type toggle - only visible when phenotypes graph is enabled */}
-        {!isCombinePhase && PHENOTYPES_ENABLED && (
+        {!isCombinePhase && !isFilterPhase && PHENOTYPES_ENABLED && (
           <div className="setting-item full-width" style={{ marginBottom: "var(--spacing-md)" }}>
             <label htmlFor={`graph-type-${phase.id}`}>Graph</label>
             <select
@@ -429,7 +460,7 @@ const PhaseEditor = ({
           </div>
         )}
 
-        {!isCombinePhase && (
+        {!isCombinePhase && !isFilterPhase && (
           <>
             {/* Same settings toggle - only show when multiple nodes */}
             {phase.originNodeIds.length > 1 && (
@@ -471,6 +502,26 @@ const PhaseEditor = ({
                     onChange={(e) => onUpdateSettings("setOperation", e.target.value)}
                   />
                 )}
+                {(phase.settings.setOperation === "Intersection" ||
+                  phase.settings.setOperation === "Intersection with Origins") &&
+                  (phase.originNodeIds.length > 1 || phase.originSource === "previousPhase") && (
+                    <SettingsSelect
+                      id={`min-overlap-${phase.id}`}
+                      label="Require overlap"
+                      value={phase.settings.minOverlap || "all"}
+                      options={[
+                        { value: "all", label: "All origins (strict)" },
+                        ...[2, 3, 4, 5].map((n) => ({
+                          value: n,
+                          label: `At least ${n} origins`,
+                        })),
+                      ]}
+                      onChange={(e) => {
+                        const val = e.target.value === "all" ? undefined : Number(e.target.value);
+                        onUpdateSettings("minOverlap", val);
+                      }}
+                    />
+                  )}
               </div>
             )}
 
@@ -600,17 +651,21 @@ const PhaseEditor = ({
           <span className="setting-hint">Leave empty to include all collections in results</span>
         </div>
 
-        {/* Collapse Leaf Nodes toggle - not relevant for combine phases */}
-        {!isCombinePhase && (
+        {/* Collapse Leaf Nodes selector - not relevant for combine/filter phases */}
+        {!isCombinePhase && !isFilterPhase && (
           <div className="setting-item">
-            <label className="toggle-label">
-              <input
-                type="checkbox"
-                checked={phase.settings.collapseLeafNodes ?? true}
-                onChange={(e) => onUpdateSettings("collapseLeafNodes", e.target.checked)}
-              />
-              Collapse leaf nodes
-            </label>
+            <label htmlFor={`collapse-leaf-${phase.id}`}>Collapse leaf nodes:</label>
+            <select
+              id={`collapse-leaf-${phase.id}`}
+              value={phase.settings.collapseLeafNodes ?? "standard"}
+              onChange={(e) => onUpdateSettings("collapseLeafNodes", e.target.value)}
+            >
+              {COLLAPSE_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {{ off: "None", standard: "Exclude Origin", all: "All" }[opt]}
+                </option>
+              ))}
+            </select>
           </div>
         )}
       </div>

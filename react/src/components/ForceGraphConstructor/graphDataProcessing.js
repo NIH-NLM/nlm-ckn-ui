@@ -124,7 +124,7 @@ export function processGraphLinks(
  * @param {Array} originNodeIds - Origin nodes that cannot be leaves
  * @returns {Array} IDs of leaf nodes to remove
  */
-export function findLeafNodes(nodes, links, collapseNodes, originNodeIds = []) {
+export function findLeafNodes(nodes, links, collapseNodes, originNodeIds = [], mode = "standard") {
   const leafNodes = [];
   for (const node of nodes) {
     // Origin nodes cannot be leaves.
@@ -145,9 +145,12 @@ export function findLeafNodes(nodes, links, collapseNodes, originNodeIds = []) {
             (l.target.id || l.target) === firstNeighborId) ||
           ((l.target.id || l.target) === node.id && (l.source.id || l.source) === firstNeighborId),
       );
-      // If so, and neighbor is in collapse list, mark as leaf.
-      if (allLinksToSameNeighbor && collapseNodes.includes(firstNeighborId)) {
-        leafNodes.push(node.id);
+      // "standard": neighbor must be in collapse list (skips origin-adjacent leaves).
+      // "all": any single-neighbor node is a leaf (includes origin-adjacent).
+      if (allLinksToSameNeighbor) {
+        if (mode === "all" || collapseNodes.includes(firstNeighborId)) {
+          leafNodes.push(node.id);
+        }
       }
     }
   }

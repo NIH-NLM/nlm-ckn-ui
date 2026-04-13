@@ -28,6 +28,7 @@ import {
   updatePerNodeSetting,
   updatePhase,
   updatePhaseSettings,
+  updateSetting,
 } from "store";
 import PhaseEditor from "./PhaseEditor";
 import PresetSelector from "./PresetSelector";
@@ -68,7 +69,7 @@ const WorkflowBuilder = ({ onGraphReady }) => {
   // Auto-dismiss toast after 2 seconds
   useEffect(() => {
     if (toastMessage) {
-      const timer = setTimeout(() => setToastMessage(null), 2000);
+      const timer = setTimeout(() => setToastMessage(null), 4000);
       return () => clearTimeout(timer);
     }
   }, [toastMessage]);
@@ -97,6 +98,9 @@ const WorkflowBuilder = ({ onGraphReady }) => {
   const handleSelectPreset = useCallback(
     (preset) => {
       dispatch(loadWorkflow(preset));
+      if (preset.layoutMode) {
+        dispatch(updateSetting({ setting: "layoutMode", value: preset.layoutMode }));
+      }
     },
     [dispatch],
   );
@@ -252,7 +256,8 @@ const WorkflowBuilder = ({ onGraphReady }) => {
         (p.originSource === "manual" && p.originNodeIds.length > 0) ||
         (p.originSource === "collection" && !!p.originCollection) ||
         (p.originSource === "previousPhase" && i > 0) ||
-        (p.originSource === "multiplePhases" && (p.previousPhaseIds || []).length >= 2),
+        (p.originSource === "multiplePhases" && (p.previousPhaseIds || []).length >= 2) ||
+        (p.originSource === "filter" && i > 0),
     );
 
   // Show preset selector view

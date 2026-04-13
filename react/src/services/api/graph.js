@@ -3,6 +3,7 @@
  */
 
 import {
+  CONNECTING_PATHS_ENDPOINT,
   EDGE_FILTER_OPTIONS_ENDPOINT,
   EXPANSION_DEPTH,
   GRAPH_ENDPOINT,
@@ -73,6 +74,44 @@ export const fetchGraphData = async (params) => {
   }
 
   return postJson(endpoint, body);
+};
+
+/**
+ * Find connecting paths between origin nodes.
+ * @param {Object} params - Query parameters.
+ * @param {Array<string>} params.nodeIds - Origin node IDs to connect.
+ * @param {string} params.graphType - Graph type.
+ * @param {Array<string>} [params.allowedCollections] - Collections to traverse through.
+ * @param {Object} [params.edgeFilters] - Edge filters.
+ * @returns {Promise<Object>} Graph data with nodes and links on connecting paths.
+ */
+export const fetchConnectingPaths = async (params) => {
+  const { nodeIds, graphType, allowedCollections, edgeFilters, maxDepth } = params;
+  const body = {
+    node_ids: nodeIds,
+    graph: graphType,
+    allowed_collections: allowedCollections || [],
+    edge_filters: edgeFilters || {},
+  };
+  if (maxDepth != null) {
+    body.max_depth = maxDepth;
+  }
+  return postJson(CONNECTING_PATHS_ENDPOINT, body);
+};
+
+/**
+ * Find all edges between a set of nodes.
+ * Used as a post-merge scan to discover edges between nodes from different origins.
+ * @param {Array<string>} nodeIds - Node IDs to check for edges between.
+ * @param {string} graphType - Graph type.
+ * @returns {Promise<Array>} Array of edge documents.
+ */
+export const fetchEdgesBetween = async (nodeIds, graphType) => {
+  if (!nodeIds || nodeIds.length < 2) return [];
+  return postJson(`${GRAPH_ENDPOINT}edges-between/`, {
+    node_ids: nodeIds,
+    graph: graphType,
+  });
 };
 
 /**

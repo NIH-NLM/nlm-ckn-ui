@@ -24,7 +24,7 @@ export const QUERY_DEFAULTS = {
  * UI/visualization defaults -- only the frontend needs these.
  */
 export const UI_DEFAULTS = {
-  collapseLeafNodes: true,
+  collapseLeafNodes: "standard",
   useFocusNodes: true,
 };
 

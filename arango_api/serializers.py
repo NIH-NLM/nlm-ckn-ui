@@ -249,7 +249,10 @@ class PhaseSerializer(serializers.Serializer):
         default=list,
     )
     phaseCombineOperation = serializers.ChoiceField(
-        choices=["Union", "Intersection", "Symmetric Difference"],
+        choices=[
+            "Union", "Intersection", "Intersection with Origins",
+            "Connected Paths", "Symmetric Difference",
+        ],
         required=False,
         default="Intersection",
     )
@@ -282,7 +285,10 @@ class PhaseSerializer(serializers.Serializer):
                 )
 
         if "setOperation" in value:
-            allowed_ops = ("Union", "Intersection", "Symmetric Difference")
+            allowed_ops = (
+                "Union", "Intersection", "Intersection with Origins",
+                "Connected Paths", "Symmetric Difference",
+            )
             if value["setOperation"] not in allowed_ops:
                 raise serializers.ValidationError(
                     f"'setOperation' must be one of {allowed_ops}."
