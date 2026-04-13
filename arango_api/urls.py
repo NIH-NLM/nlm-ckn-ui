@@ -11,6 +11,7 @@ from arango_api.views import (
     RelatedEdgesView,
     GraphTraversalView,
     ShortestPathsView,
+    ConnectingPathsView,
     EdgesBetweenView,
     SearchView,
     GetAllView,
@@ -36,6 +37,7 @@ urlpatterns = [
     # Graph traversal endpoints
     path("graph/", GraphTraversalView.as_view(), name="get_graph"),
     path("shortest_paths/", ShortestPathsView.as_view(), name="get_shortest_paths"),
+    path("connecting_paths/", ConnectingPathsView.as_view(), name="get_connecting_paths"),
     path(
         "graph/edges-between/",
         EdgesBetweenView.as_view(),

@@ -16,7 +16,13 @@ const PER_NODE_SETTINGS = [
 
 // Settings that take effect immediately (display-only) and should NOT
 // trigger the "Apply Changes" banner when changed.
-const DISPLAY_ONLY_SETTINGS = ["useFocusNodes", "labelStates", "nodeFontSize", "edgeFontSize"];
+const DISPLAY_ONLY_SETTINGS = [
+  "useFocusNodes",
+  "labelStates",
+  "nodeFontSize",
+  "edgeFontSize",
+  "layoutMode",
+];
 
 /**
  * Hook for managing per-node settings in advanced mode.

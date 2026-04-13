@@ -174,7 +174,7 @@ test("Graph settings: shortest path filters union graph correctly", async ({ pag
     // Disable automatic collapsing so union graph retains all branch nodes
     store.dispatch({
       type: "graph/updateSetting",
-      payload: { setting: "collapseOnStart", value: false },
+      payload: { setting: "collapseOnStart", value: "off" },
     });
     // Disable focus nodes (donut rendering) just to avoid any conditional pruning differences
     store.dispatch({

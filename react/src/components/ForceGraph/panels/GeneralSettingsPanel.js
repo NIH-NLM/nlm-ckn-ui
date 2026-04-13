@@ -1,5 +1,13 @@
-import { DEPTH_OPTIONS, DIRECTION_OPTIONS, PHENOTYPES_ENABLED } from "constants/index";
-import { memo } from "react";
+import {
+  COLLAPSE_OPTIONS,
+  DEPTH_OPTIONS,
+  DIRECTION_OPTIONS,
+  LAYOUT_MODE_OPTIONS,
+  PHENOTYPES_ENABLED,
+} from "constants/index";
+import { memo, useId } from "react";
+
+const COLLAPSE_LABELS = { off: "None", standard: "Exclude Origin", all: "All" };
 
 /**
  * General settings panel for graph visualization.
@@ -12,11 +20,14 @@ const GeneralSettingsPanel = ({
   onNodeFontSizeChange,
   onEdgeFontSizeChange,
   onLabelToggle,
-  onLeafToggle,
+  onLeafModeChange,
   onFocusNodesToggle,
   onGraphToggle,
+  onLayoutModeChange,
   onSimulationRestart,
 }) => {
+  const collapseLeafSelectId = useId();
+  const layoutModeSelectId = useId();
   return (
     // biome-ignore lint/correctness/useUniqueElementIds: legacy id
     <div id="tab-panel-general" className="tab-panel active">
@@ -104,14 +115,19 @@ const GeneralSettingsPanel = ({
         </div>
       </div>
 
-      <div className="option-group labels-toggle-container">
-        <h3 className="group-label">Collapse Leaf Nodes:</h3>
-        <div className="labels-toggle graph-source-toggle">
-          <label className="switch">
-            <input type="checkbox" checked={settings.collapseOnStart} onChange={onLeafToggle} />
-            <span className="slider round" />
-          </label>
-        </div>
+      <div className="option-group">
+        <label htmlFor={collapseLeafSelectId}>Collapse Leaf Nodes:</label>
+        <select
+          id={collapseLeafSelectId}
+          value={settings.collapseOnStart}
+          onChange={onLeafModeChange}
+        >
+          {COLLAPSE_OPTIONS.map((opt) => (
+            <option key={opt} value={opt}>
+              {COLLAPSE_LABELS[opt]}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="option-group labels-toggle-container">
@@ -141,6 +157,21 @@ const GeneralSettingsPanel = ({
           </div>
         </div>
       )}
+
+      <div className="option-group">
+        <label htmlFor={layoutModeSelectId}>Layout:</label>
+        <select
+          id={layoutModeSelectId}
+          value={settings.layoutMode || "force"}
+          onChange={onLayoutModeChange}
+        >
+          {LAYOUT_MODE_OPTIONS.map(({ value, label }) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <div className="option-group">
         <button

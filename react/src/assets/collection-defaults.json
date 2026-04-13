@@ -3,7 +3,7 @@
     "graphType": "ontologies",
     "depth": 2,
     "edgeDirection": "ANY",
-    "collapseOnStart": false,
+    "collapseOnStart": "off",
     "allowedCollections": null,
     "preferredPredicates": []
   },
@@ -11,7 +11,7 @@
     "graphType": "ontologies",
     "depth": 2,
     "edgeDirection": "ANY",
-    "collapseOnStart": false,
+    "collapseOnStart": "off",
     "allowedCollections": ["UBERON"],
     "preferredPredicates": ["PART_OF"]
   },
@@ -19,7 +19,7 @@
     "graphType": "ontologies",
     "depth": 3,
     "edgeDirection": "ANY",
-    "collapseOnStart": false,
+    "collapseOnStart": "off",
     "allowedCollections": ["CL", "MONDO", "GS", "PR"],
     "preferredPredicates": [
       "MOLECULARLY_INTERACTS_WITH",
@@ -33,7 +33,7 @@
     "graphType": "ontologies",
     "depth": 2,
     "edgeDirection": "ANY",
-    "collapseOnStart": false,
+    "collapseOnStart": "off",
     "allowedCollections": ["CL"],
     "preferredPredicates": ["SUB_CLASS_OF"]
   },
@@ -41,7 +41,7 @@
     "graphType": "phenotypes",
     "depth": 1,
     "edgeDirection": "ANY",
-    "collapseOnStart": true,
+    "collapseOnStart": "standard",
     "allowedCollections": ["CS", "CL", "GS"],
     "preferredPredicates": []
   },
@@ -49,7 +49,7 @@
     "graphType": "phenotypes",
     "depth": 2,
     "edgeDirection": "ANY",
-    "collapseOnStart": true,
+    "collapseOnStart": "standard",
     "allowedCollections": ["UBERON", "BMC", "CSD", "CL", "GS"],
     "preferredPredicates": [
       "DERIVES_FROM",
@@ -66,7 +66,7 @@
     "graphType": "phenotypes",
     "depth": 1,
     "edgeDirection": "ANY",
-    "collapseOnStart": false,
+    "collapseOnStart": "off",
     "allowedCollections": ["CS", "CSD", "CL", "PUB"],
     "preferredPredicates": []
   },
@@ -74,7 +74,7 @@
     "graphType": "ontologies",
     "depth": 2,
     "edgeDirection": "ANY",
-    "collapseOnStart": false,
+    "collapseOnStart": "off",
     "allowedCollections": ["CHEBI", "CL", "MONDO", "GS", "PR"],
     "preferredPredicates": [
       "MOLECULARLY_INTERACTS_WITH",
@@ -89,7 +89,7 @@
     "graphType": "phenotypes",
     "depth": 2,
     "edgeDirection": "ANY",
-    "collapseOnStart": false,
+    "collapseOnStart": "off",
     "allowedCollections": ["CL", "GS"],
     "preferredPredicates": []
   },
@@ -97,7 +97,7 @@
     "graphType": "ontologies",
     "depth": 2,
     "edgeDirection": "ANY",
-    "collapseOnStart": false,
+    "collapseOnStart": "off",
     "allowedCollections": ["PR", "GS", "CL"],
     "preferredPredicates": []
   },
@@ -105,7 +105,7 @@
     "graphType": "phenotypes",
     "depth": 2,
     "edgeDirection": "ANY",
-    "collapseOnStart": false,
+    "collapseOnStart": "off",
     "allowedCollections": ["CS", "CSD", "CL", "PUB"],
     "preferredPredicates": []
   },
@@ -113,7 +113,7 @@
     "graphType": "ontologies",
     "depth": 2,
     "edgeDirection": "ANY",
-    "collapseOnStart": false,
+    "collapseOnStart": "off",
     "allowedCollections": ["NCBITaxon"],
     "preferredPredicates": []
   }

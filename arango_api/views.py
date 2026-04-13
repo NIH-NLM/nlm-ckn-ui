@@ -144,6 +144,28 @@ class ShortestPathsView(APIView):
         return Response(results)
 
 
+class ConnectingPathsView(APIView):
+    """Find paths connecting origin nodes through the graph."""
+
+    def post(self, request):
+        data = request.data
+        node_ids = data.get("node_ids", [])
+        if not isinstance(node_ids, list) or len(node_ids) < 2:
+            return Response(
+                {"error": "node_ids must contain at least 2 node IDs."},
+                status=400,
+            )
+        results = graph_service.find_connecting_paths(
+            node_ids=node_ids,
+            graph=data.get("graph", "phenotypes"),
+            allowed_collections=data.get("allowed_collections", []),
+            edge_filters=data.get("edge_filters", {}),
+            path_limit=int(data.get("path_limit", 100)),
+            max_depth=int(data["max_depth"]) if data.get("max_depth") else None,
+        )
+        return Response(results)
+
+
 class EdgesBetweenView(APIView):
     """Find all edges between a given set of nodes."""
 
@@ -309,11 +331,16 @@ class WorkflowPresetsView(APIView):
     """Return pre-built workflow presets (query-only schema)."""
 
     def get(self, request):
-        from arango_api.workflow_presets import PRESET_CATEGORIES, WORKFLOW_PRESETS
+        from arango_api.workflow_presets import (
+            PRESET_CATEGORIES,
+            PRESET_SECTIONS,
+            WORKFLOW_PRESETS,
+        )
 
         return Response(
             {
                 "presets": WORKFLOW_PRESETS,
                 "categories": PRESET_CATEGORIES,
+                "sections": PRESET_SECTIONS,
             }
         )

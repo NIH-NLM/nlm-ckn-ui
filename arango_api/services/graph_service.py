@@ -262,6 +262,105 @@ def find_inter_node_edges(node_ids, graph="ontologies"):
     return result if result else []
 
 
+def find_connecting_paths(node_ids, graph="phenotypes", allowed_collections=None,
+                         edge_filters=None, path_limit=100, max_depth=None):
+    """
+    Find paths between every pair of origin nodes via K_SHORTEST_PATHS.
+
+    Returns all nodes and edges that lie on any path between any pair of
+    the given origin nodes, restricted to the specified vertex collections
+    and optionally bounded by a maximum path depth.
+
+    Args:
+        node_ids (list): 2+ node _id strings.
+        graph (str): Graph type ("ontologies" or "phenotypes").
+        allowed_collections (list): Vertex collections allowed on paths.
+        edge_filters (dict): Reserved for future use.
+        path_limit (int): Max paths to enumerate per origin pair.
+        max_depth (int|None): Max number of edges per path. None = no limit.
+
+    Returns:
+        dict: {nodes: [...], links: [...]}
+    """
+    if not node_ids or len(node_ids) < 2:
+        return {"nodes": [], "links": []}
+
+    db, graph_name = get_db_and_graph(graph)
+
+    bind_vars = {"node_ids": node_ids, "graph": graph_name}
+
+    if max_depth is not None:
+        # With depth limit: use traversal (natively supports depth + vertexCollections)
+        options_parts = ['uniqueVertices: "path"']
+        if allowed_collections:
+            colls_str = ", ".join(f'"{c}"' for c in allowed_collections)
+            options_parts.append(f"vertexCollections: [{colls_str}]")
+        options_clause = ", ".join(options_parts)
+
+        bind_vars["depth"] = int(max_depth)
+
+        aql_query = f"""
+            LET all_paths = (
+                FOR start_node IN @node_ids
+                    FOR end_node IN @node_ids
+                        FILTER start_node < end_node
+                        FOR v, e, p IN 1..@depth ANY start_node
+                            GRAPH @graph
+                            OPTIONS {{{options_clause}}}
+                            FILTER v._id == end_node
+                            RETURN p
+            )
+
+            LET all_nodes = UNIQUE(FLATTEN(all_paths[*].vertices))
+            LET all_links = UNIQUE(FLATTEN(all_paths[*].edges))
+
+            RETURN {{
+                "nodes": all_nodes,
+                "links": all_links
+            }}
+        """
+    else:
+        # Without depth limit: use K_SHORTEST_PATHS with collection filter
+        coll_filter = ""
+        if allowed_collections:
+            coll_checks = " AND ".join(
+                f'NOT IS_SAME_COLLECTION("{c}", CURRENT)'
+                for c in allowed_collections
+            )
+            coll_filter = (
+                f"FILTER LENGTH(path.vertices[* "
+                f"FILTER {coll_checks}]) == 0"
+            )
+
+        bind_vars["path_limit"] = path_limit
+
+        aql_query = f"""
+            LET all_paths = (
+                FOR start_node IN @node_ids
+                    FOR end_node IN @node_ids
+                        FILTER start_node < end_node
+                        FOR path IN ANY K_SHORTEST_PATHS
+                            start_node TO end_node
+                            GRAPH @graph
+                        {coll_filter}
+                        LIMIT @path_limit
+                        RETURN path
+            )
+
+            LET all_nodes = UNIQUE(FLATTEN(all_paths[*].vertices))
+            LET all_links = UNIQUE(FLATTEN(all_paths[*].edges))
+
+            RETURN {{
+                "nodes": all_nodes,
+                "links": all_links
+            }}
+        """
+
+    cursor = db.aql.execute(aql_query, bind_vars=bind_vars, max_runtime=30)
+    result = cursor.next()
+    return result if result else {"nodes": [], "links": []}
+
+
 def find_shortest_paths(node_ids, edge_direction="ANY"):
     """
     Finds all shortest paths between every unique pair of nodes.
