@@ -359,9 +359,7 @@ export const executePhase = createAsyncThunk(
         const existingIds = new Set(mergedResult.nodes.map((n) => n._id || n.id));
         const addedNodes = [...mergedResult.nodes];
         const addedLinks = [...mergedResult.links];
-        const linkKeys = new Set(
-          addedLinks.map((l) => l._id || `${l._from}->${l._to}`),
-        );
+        const linkKeys = new Set(addedLinks.map((l) => l._id || `${l._from}->${l._to}`));
 
         for (const originId of originNodeIds) {
           if (existingIds.has(originId)) continue;

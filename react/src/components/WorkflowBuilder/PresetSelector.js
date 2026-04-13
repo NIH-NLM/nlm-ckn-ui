@@ -157,9 +157,7 @@ const PresetSelector = ({ onSelectPreset, onStartFromScratch }) => {
         <div className="preset-categories">
           {sections.map((section) => {
             const sectionCats = sectionStructure.categoryBySection[section.id] || [];
-            const hasPresets = sectionCats.some(
-              (cat) => groupedPresets[cat.id]?.length > 0,
-            );
+            const hasPresets = sectionCats.some((cat) => groupedPresets[cat.id]?.length > 0);
             if (!hasPresets) return null;
 
             return (
@@ -173,11 +171,8 @@ const PresetSelector = ({ onSelectPreset, onStartFromScratch }) => {
           {sectionStructure.unsectioned.map(renderCategory)}
         </div>
       ) : (
-        <div className="preset-categories">
-          {displayCategories.map(renderCategory)}
-        </div>
+        <div className="preset-categories">{displayCategories.map(renderCategory)}</div>
       )}
-
     </div>
   );
 };
