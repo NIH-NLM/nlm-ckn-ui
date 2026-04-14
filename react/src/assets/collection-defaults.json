@@ -23,7 +23,7 @@
     "allowedCollections": ["CL", "MONDO", "GS", "PR"],
     "preferredPredicates": [
       "MOLECULARLY_INTERACTS_WITH",
-      "GENETIC_BASIS_FOR",
+      "IS_GENETIC_BASIS_FOR_CONDITION",
       "PRODUCES",
       "PART_OF",
       "SELECTIVELY_EXPRESS"
@@ -78,7 +78,7 @@
     "allowedCollections": ["CHEBI", "CL", "MONDO", "GS", "PR"],
     "preferredPredicates": [
       "MOLECULARLY_INTERACTS_WITH",
-      "GENETIC_BASIS_FOR",
+      "IS_GENETIC_BASIS_FOR_CONDITION",
       "PRODUCES",
       "PART_OF",
       "SELECTIVELY_EXPRESS",

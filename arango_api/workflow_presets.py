@@ -909,7 +909,7 @@ WORKFLOW_PRESETS = [
                     "depth": 9,
                     "edgeDirection": "INBOUND",
                     "allowedCollections": ["MONDO", "GS"],
-                    "edgeFilters": {"Label": ["SUB_CLASS_OF", "GENETIC_BASIS_FOR"], "Source": []},
+                    "edgeFilters": {"Label": ["SUB_CLASS_OF", "IS_GENETIC_BASIS_FOR_CONDITION"], "Source": []},
                     "setOperation": "Union",
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
@@ -941,7 +941,7 @@ WORKFLOW_PRESETS = [
         "id": "druggable-disease-genes",
         "name": "Druggable disease genes",
         "description": (
-            "Identifies genes that both underlie a disease (GENETIC_BASIS_FOR) "
+            "Identifies genes that both underlie a disease (IS_GENETIC_BASIS_FOR_CONDITION) "
             "and are targeted by compounds that treat it. Combines two "
             "independent traversals across all MONDO diseases and intersects "
             "the results."
@@ -962,7 +962,7 @@ WORKFLOW_PRESETS = [
                     "depth": 1,
                     "edgeDirection": "INBOUND",
                     "allowedCollections": ["GS"],
-                    "edgeFilters": {"Label": ["GENETIC_BASIS_FOR"], "Source": []},
+                    "edgeFilters": {"Label": ["IS_GENETIC_BASIS_FOR_CONDITION"], "Source": []},
                     "setOperation": "Union",
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
