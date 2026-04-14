@@ -1,13 +1,4 @@
-{
-  "_defaults": {
-    "graphType": "ontologies",
-    "depth": 2,
-    "edgeDirection": "ANY",
-    "collapseOnStart": "off",
-    "allowedCollections": null,
-    "preferredPredicates": []
-  },
-  "UBERON": {
+{ "_defaults": { "graphType": "ontologies", "depth": 2, "edgeDirection": "ANY", "collapseOnStart": "off", "allowedCollections": null, "preferredPredicates": [] }, "UBERON": {
     "graphType": "ontologies",
     "depth": 2,
     "edgeDirection": "ANY",
@@ -23,7 +14,7 @@
     "allowedCollections": ["CL", "MONDO", "GS", "PR"],
     "preferredPredicates": [
       "MOLECULARLY_INTERACTS_WITH",
-      "GENETIC_BASIS_FOR",
+      "IS_GENETIC_BASIS_FOR_CONDITION",
       "PRODUCES",
       "PART_OF",
       "SELECTIVELY_EXPRESS"
@@ -78,7 +69,7 @@
     "allowedCollections": ["CHEBI", "CL", "MONDO", "GS", "PR"],
     "preferredPredicates": [
       "MOLECULARLY_INTERACTS_WITH",
-      "GENETIC_BASIS_FOR",
+      "IS_GENETIC_BASIS_FOR_CONDITION",
       "PRODUCES",
       "PART_OF",
       "SELECTIVELY_EXPRESS",
