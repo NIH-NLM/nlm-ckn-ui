@@ -1,4 +1,13 @@
-{ "_defaults": { "graphType": "ontologies", "depth": 2, "edgeDirection": "ANY", "collapseOnStart": "off", "allowedCollections": null, "preferredPredicates": [] }, "UBERON": {
+{
+  "_defaults": {
+    "graphType": "ontologies",
+    "depth": 2,
+    "edgeDirection": "ANY",
+    "collapseOnStart": "off",
+    "allowedCollections": null,
+    "preferredPredicates": []
+  },
+  "UBERON": {
     "graphType": "ontologies",
     "depth": 2,
     "edgeDirection": "ANY",
