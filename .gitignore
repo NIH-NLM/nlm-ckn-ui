@@ -9,16 +9,17 @@ arango_api/tests/arangodb/
 
 # Environment
 *~
-.DS_Store
 *.env
+*.log
+*.pem
+*.tar.gz
+.DS_Store
 .built
 .idea
 .tern-port
 .venv
 .zshenv
 venv/
-*.tar.gz
-*.pem
 /data
 /arangodb
 /.claude

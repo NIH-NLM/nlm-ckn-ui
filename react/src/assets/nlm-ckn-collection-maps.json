@@ -62,7 +62,7 @@
         ],
         "individual_fields": [
           {
-            "field_to_display": "Label",
+            "field_to_display": "label",
             "display_field_as": "Label",
             "field_url": "",
             "field_to_use": ""
@@ -91,9 +91,9 @@
         "color": "#FF6B6B",
         "individual_labels": [
           {
-            "field_to_use": "Markers",
-            "to_be_replaced": " ",
-            "replace_with": "|",
+            "field_to_use": "markers",
+            "to_be_replaced": ",",
+            "replace_with": " | ",
             "make_lower_case": false
           },
           {
@@ -114,8 +114,8 @@
         ],
         "individual_fields": [
           {
-            "field_to_display": "Markers",
-            "display_field_as": "Markers",
+            "field_to_display": "markers",
+            "display_field_as": "Marker(s)",
             "field_url": "",
             "field_to_use": ""
           }
@@ -131,9 +131,9 @@
         "color": "#e6194B",
         "individual_labels": [
           {
-            "field_to_use": "Markers",
-            "to_be_replaced": " ",
-            "replace_with": "|",
+            "field_to_use": "markers",
+            "to_be_replaced": ",",
+            "replace_with": " | ",
             "make_lower_case": false
           },
           {
@@ -154,13 +154,13 @@
         ],
         "individual_fields": [
           {
-            "field_to_display": "Markers",
-            "display_field_as": "Markers",
+            "field_to_display": "markers",
+            "display_field_as": "Marker(s)",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "F_beta_score",
+            "field_to_display": "f_beta_score",
             "display_field_as": "F_beta_score",
             "field_url": "",
             "field_to_use": ""
@@ -177,13 +177,13 @@
         "color": "#ffe119",
         "individual_labels": [
           {
-            "field_to_use": "Label",
+            "field_to_use": "label",
             "to_be_replaced": "",
             "replace_with": "",
             "make_lower_case": false
           },
           {
-            "field_to_use": "Exact_synonym",
+            "field_to_use": "exact_synonym",
             "to_be_replaced": "",
             "replace_with": "",
             "make_lower_case": false
@@ -206,49 +206,49 @@
         ],
         "individual_fields": [
           {
-            "field_to_display": "Label",
+            "field_to_display": "label",
             "display_field_as": "Label",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Protein",
+            "field_to_display": "protein",
             "display_field_as": "Protein",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Uniprot_id",
+            "field_to_display": "uniprot_id",
             "display_field_as": "UniProt_ID",
             "field_url": "https://www.uniprot.org/uniprotkb/<FIELD_TO_USE>/entry",
-            "field_to_use": "Uniprot_id"
+            "field_to_use": "uniprot_id"
           },
           {
-            "field_to_display": "Drug_type",
+            "field_to_display": "drug_type",
             "display_field_as": "Drug_type",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Definition",
+            "field_to_display": "definition",
             "display_field_as": "Definition",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Mechanism_of_action",
+            "field_to_display": "mechanism_of_action",
             "display_field_as": "Mechanism_of_action",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Exact_synonym",
-            "display_field_as": "Exact_synonyms",
+            "field_to_display": "exact_synonym",
+            "display_field_as": "Exact_synonym(s)",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Approval_status",
+            "field_to_display": "approval_status",
             "display_field_as": "Approval_status",
             "field_url": "",
             "field_to_use": ""
@@ -301,13 +301,7 @@
           },
           {
             "field_to_display": "hasExactSynonym",
-            "display_field_as": "Exact_synonym",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "hasRelatedSynonym",
-            "display_field_as": "Related_synonym",
+            "display_field_as": "Exact_synonym(s)",
             "field_url": "",
             "field_to_use": ""
           },
@@ -329,7 +323,7 @@
         "color": "#f58231",
         "individual_labels": [
           {
-            "field_to_use": "Author_cell_term",
+            "field_to_use": "author_cell_term",
             "to_be_replaced": "",
             "replace_with": "",
             "make_lower_case": false
@@ -352,31 +346,31 @@
         ],
         "individual_fields": [
           {
-            "field_to_display": "Author_cell_term",
+            "field_to_display": "author_cell_term",
             "display_field_as": "Author_cell_term",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Cell_count",
+            "field_to_display": "cell_count",
             "display_field_as": "Cell_count",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Biomarker_combination",
+            "field_to_display": "biomarker_combination",
             "display_field_as": "Biomarker_combination",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "F_beta_score",
+            "field_to_display": "f_beta_score",
             "display_field_as": "F_beta_score",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Binary_gene_set",
+            "field_to_display": "binary_gene_set",
             "display_field_as": "Binary_gene_set",
             "field_url": "",
             "field_to_use": ""
@@ -408,7 +402,7 @@
         "individual_urls": [
           {
             "individual_url": "https://cellxgene.cziscience.com/e/<FIELD_TO_USE>.cxg/",
-            "field_to_use": "Dataset_version_ID",
+            "field_to_use": "dataset_identifier",
             "to_be_replaced": "",
             "replace_with": "",
             "make_lower_case": false
@@ -422,58 +416,58 @@
             "field_to_use": "Link_to_publication"
           },
           {
-            "field_to_display": "Dataset_name",
+            "field_to_display": "dataset_name",
             "display_field_as": "Dataset_name",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Species",
+            "field_to_display": "species",
             "display_field_as": "Species",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Anatomical_structure",
+            "field_to_display": "anatomical_structure",
             "display_field_as": "Anatomical_structure",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Disease_status",
+            "field_to_display": "disease_status",
             "display_field_as": "Disease_status",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Cell_count",
+            "field_to_display": "cell_count",
             "display_field_as": "Cell_count",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Collection_id",
+            "field_to_display": "collection_id",
             "display_field_as": "Collection_id",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Cellxgene_collection",
+            "field_to_display": "cellxgene_collection",
             "display_field_as": "CELLxGENE_collection",
             "field_url": "https://<FIELD_TO_USE>",
-            "field_to_use": "CELLxGENE_collection"
+            "field_to_use": "cellxgene_collection"
           },
           {
-            "field_to_display": "Dataset_identifier",
+            "field_to_display": "dataset_identifier",
             "display_field_as": "Dataset_identifier",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Cellxgene_dataset",
+            "field_to_display": "cellxgene_dataset",
             "display_field_as": "CELLxGENE_dataset",
             "field_url": "https://<FIELD_TO_USE>",
-            "field_to_use": "CELLxGENE_dataset"
+            "field_to_use": "cellxgene_dataset"
           }
         ],
         "more_info": "Single cell datasets"
@@ -542,7 +536,7 @@
         "individual_urls": [
           {
             "individual_url": "https://www.ncbi.nlm.nih.gov/datasets/gene/<FIELD_TO_USE>/",
-            "field_to_use": "Gene_ID",
+            "field_to_use": "gene_id",
             "to_be_replaced": "",
             "replace_with": "",
             "make_lower_case": false
@@ -550,61 +544,61 @@
         ],
         "individual_fields": [
           {
-            "field_to_display": "Gene_symbol",
+            "field_to_display": "gene_symbol",
             "display_field_as": "Gene_symbol",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Gene_id",
+            "field_to_display": "gene_id",
             "display_field_as": "Gene_id",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Exact_synonym",
-            "display_field_as": "Exact_synonym",
+            "field_to_display": "exact_synonym",
+            "display_field_as": "Exact_synonym(s)",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Gene_type",
+            "field_to_display": "gene_type",
             "display_field_as": "Gene_type",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Label",
+            "field_to_display": "label",
             "display_field_as": "Label",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Refseq_summary",
-            "display_field_as": "Refseq_summary",
+            "field_to_display": "refseq_summary",
+            "display_field_as": "RefSeq_summary",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Reference_sequence_identifier",
+            "field_to_display": "reference_sequence_identifier",
             "display_field_as": "Reference_sequence_identifier",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Uniprot_name",
-            "display_field_as": "Uniprot_name",
+            "field_to_display": "uniprot_name",
+            "display_field_as": "UniProt_name",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Mrna__nm__and_protein__np__sequences",
+            "field_to_display": "mrna__nm__and_protein__np__sequences",
             "display_field_as": "mRNA_(NM)_and_protein_(NP)_sequences",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Species",
+            "field_to_display": "species",
             "display_field_as": "Species",
             "field_url": "",
             "field_to_use": ""
@@ -767,13 +761,7 @@
           },
           {
             "field_to_display": "hasExactSynonym",
-            "display_field_as": "Exact_synonym",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "hasRelatedSynonym",
-            "display_field_as": "Related_synonym",
+            "display_field_as": "Exact_synonym(s)",
             "field_url": "",
             "field_to_use": ""
           },
@@ -920,13 +908,13 @@
         "color": "#aaffc3",
         "individual_labels": [
           {
-            "field_to_use": "Protein_name",
+            "field_to_use": "label",
             "to_be_replaced": "",
             "replace_with": "",
             "make_lower_case": false
           },
           {
-            "field_to_use": "UniProt_ID",
+            "field_to_use": "uniprot_id",
             "to_be_replaced": "",
             "replace_with": "",
             "make_lower_case": false
@@ -949,43 +937,43 @@
         ],
         "individual_fields": [
           {
-            "field_to_display": "Protein_name",
+            "field_to_display": "label",
             "display_field_as": "Protein_name",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "UniProt_ID",
+            "field_to_display": "uniprot_id",
             "display_field_as": "UniProt_ID",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Number_of_amino_acids",
+            "field_to_display": "number_of_amino_acids",
             "display_field_as": "Number_of_amino_acids",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Function",
-            "display_field_as": "Function",
+            "field_to_display": "protein_function",
+            "display_field_as": "Protein_function",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Organism",
-            "display_field_as": "Organism",
+            "field_to_display": "species",
+            "display_field_as": "Species",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Gene_name",
-            "display_field_as": "Gene_name",
+            "field_to_display": "gene_symbol",
+            "display_field_as": "Gene_symbol",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Annotation_score",
+            "field_to_display": "annotation_score",
             "display_field_as": "Annotation_score",
             "field_url": "",
             "field_to_use": ""
@@ -1010,13 +998,7 @@
           },
           {
             "field_to_display": "hasExactSynonym",
-            "display_field_as": "Exact_synonym",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "hasRelatedSynonym",
-            "display_field_as": "Related_synonym",
+            "display_field_as": "Exact_synonym(s)",
             "field_url": "",
             "field_to_use": ""
           },
@@ -1047,7 +1029,7 @@
         "individual_urls": [
           {
             "individual_url": "https://<FIELD_TO_USE>",
-            "field_to_use": "DOI",
+            "field_to_use": "publication_doi",
             "to_be_replaced": "",
             "replace_with": "",
             "make_lower_case": false
@@ -1055,40 +1037,34 @@
         ],
         "individual_fields": [
           {
-            "field_to_display": "Author",
+            "field_to_display": "author_list",
             "display_field_as": "Author",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Year",
+            "field_to_display": "year",
             "display_field_as": "Year",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Title",
+            "field_to_display": "title",
             "display_field_as": "Title",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "Journal",
+            "field_to_display": "journal",
             "display_field_as": "Journal",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "PMID",
-            "display_field_as": "PMID",
-            "field_url": "https://pubmed.ncbi.nlm.nih.gov/<FIELD_TO_USE>/",
-            "field_to_use": "PMID"
-          },
-          {
-            "field_to_display": "PMCID",
-            "display_field_as": "PMCID",
-            "field_url": "https://pmc.ncbi.nlm.nih.gov/articles/<FIELD_TO_USE>/",
-            "field_to_use": "PMCID"
+            "field_to_display": "publication_doi",
+            "display_field_as": "DOI",
+            "field_url": "https://<FIELD_TO_USE>",
+            "field_to_use": "publication_doi"
           }
         ],
         "more_info": "Publication DOIs"
@@ -1133,13 +1109,7 @@
           },
           {
             "field_to_display": "hasExactSynonym",
-            "display_field_as": "Exact_synonym",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "hasRelatedSynonym",
-            "display_field_as": "Related_synonym",
+            "display_field_as": "Exact_synonym(s)",
             "field_url": "",
             "field_to_use": ""
           },
