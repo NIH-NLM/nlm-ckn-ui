@@ -141,7 +141,7 @@ jobs:
             echo "Biome made changes, committing and pushing..."
             git add react/
             git commit -m "style: auto-fix linting issues [biome auto-fix]"
-            git push
+            git push origin HEAD:${{ github.head_ref }}
             echo "Changes pushed. The workflow will re-run on the new commit."
           else
             echo "No changes needed"
