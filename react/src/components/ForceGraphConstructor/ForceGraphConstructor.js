@@ -104,9 +104,7 @@ function ForceGraphConstructor(
   let currentLabelStates = { ...mergedOptions.initialLabelStates };
 
   // Centralized function to manage label visibility based on zoom and user settings.
-  // Labels are hidden when the simulation is active (alpha above threshold).
   function updateLabelVisibilityOnZoom(k) {
-    if (simulation.alpha() > 0.001) return;
     // Calculate the zoom threshold needed to meet the minimum visible font size.
     const nodeLabelThreshold = mergedOptions.minVisibleFontSize / mergedOptions.nodeFontSize;
     const linkLabelThreshold = mergedOptions.minVisibleFontSize / mergedOptions.linkFontSize;
@@ -144,7 +142,11 @@ function ForceGraphConstructor(
     .zoom()
     .on("zoom", (event) => {
       g.attr("transform", event.transform);
-      // Update label visibility every time zoom changes.
+      // Skip label re-evaluation while the simulation is hot — the
+      // post-settle callback will apply final visibility. The guard lives
+      // here (not inside updateLabelVisibilityOnZoom) so that post-simulation
+      // callers can apply visibility regardless of the current alpha value.
+      if (simulation.alpha() > 0.001) return;
       updateLabelVisibilityOnZoom(event.transform.k);
     })
     .on("start", mergedOptions.interactionCallback);
