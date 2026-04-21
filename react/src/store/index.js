@@ -37,6 +37,7 @@ export { default as savedGraphsReducer, deleteGraph, saveGraph } from "./savedGr
 export { persistor, store } from "./store";
 // Workflow builder slice actions
 export {
+  addFinalStage,
   addPhase,
   addPhaseOriginNode,
   default as workflowBuilderReducer,
