@@ -270,7 +270,7 @@ test("Graph export buttons exist and trigger download", async ({ page }) => {
   await page.goto("/");
 
   // Search
-  await page.getByPlaceholder("Search NCKN...").fill("Root Node");
+  await page.getByPlaceholder("Search NLM-CKN...").fill("Root Node");
   // Wait for results
   await page.locator(".unified-search-results-list").waitFor({ state: "visible" });
 

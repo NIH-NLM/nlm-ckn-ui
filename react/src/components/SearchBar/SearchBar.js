@@ -34,7 +34,7 @@ const SearchBar = () => {
           <input
             type="text"
             className="search-input"
-            placeholder="Search NCKN..."
+            placeholder="Search NLM-CKN..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setIsOpen(true)}

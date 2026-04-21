@@ -25,3 +25,4 @@ venv/
 /.claude
 CLAUDE.md
 /core/sh/build-*
+.worktrees/

@@ -21,7 +21,7 @@ test("Navigating to invalid route shows 404 page", async ({ page }) => {
 
   // Verify we are back at home (Search page)
   await expect(page).toHaveURL(/#\/$/);
-  await expect(page.getByPlaceholder("Search NCKN...")).toBeVisible();
+  await expect(page.getByPlaceholder("Search NLM-CKN...")).toBeVisible();
 
   // Verify no "split of undefined" errors occurred
   expect(filterErrorsContaining(await getCollectedErrors(page), "split").length).toBe(0);

@@ -1,6 +1,6 @@
-# Cell-KN CloudFormation Infrastructure
+# NLM-CKN CloudFormation Infrastructure
 
-CloudFormation-based infrastructure for deploying Cell-KN application to AWS.
+CloudFormation-based infrastructure for deploying the NLM-CKN application to AWS.
 
 **IMPORTANT**: All stacks must be deployed in `us-east-1` due to CloudFront's ACM certificate region requirement.
 

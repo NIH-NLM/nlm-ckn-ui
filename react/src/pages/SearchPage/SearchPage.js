@@ -12,7 +12,7 @@ const SearchPage = () => {
       </div>
 
       <div className="about-section-container">
-        <h2 className="about-title">About NCKN</h2>
+        <h2 className="about-title">About NLM-CKN</h2>
         <p>
           The National Library of Medicine (NLM) Cell Knowledge Network is a knowledgebase focused
           on cell characteristics (phenotypes) derived from single-cell technologies. It integrates
