@@ -2,7 +2,7 @@
 
 ## Overview
 
-This test suite uses **Playwright** for end-to-end (E2E) testing of the Cell Knowledge Network MVP UI. The tests validate:
+This test suite uses **Playwright** for end-to-end (E2E) testing of the NLM-CKN MVP UI. The tests validate:
 
 - **Page navigation** and routing behavior
 - **User interactions** with forms, search, and visualizations

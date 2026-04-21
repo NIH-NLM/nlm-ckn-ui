@@ -1,6 +1,6 @@
 # Deployment Scripts
 
-Automated deployment scripts for Cell-KN CloudFormation infrastructure and applications.
+Automated deployment scripts for NLM-CKN CloudFormation infrastructure and applications.
 
 ```
 scripts/

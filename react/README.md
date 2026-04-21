@@ -1,6 +1,6 @@
-# Cell Knowledge Network - React Frontend
+# NLM-CKN - React Frontend
 
-This is the React frontend for the NLM Cell Knowledge Network MVP application. It provides interactive visualizations for exploring biological knowledge graphs including cell types, anatomical structures, and their relationships.
+This is the React frontend for the NLM Cell Knowledge Network (NLM-CKN) MVP application. It provides interactive visualizations for exploring biological knowledge graphs including cell types, anatomical structures, and their relationships.
 
 ## 🛠 Tech Stack
 

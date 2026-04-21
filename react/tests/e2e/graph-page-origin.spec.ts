@@ -99,7 +99,7 @@ test("Graph page shows two selected nodes and builds graph with both origins", a
 
   // Add from Search
   await page.goto("/");
-  await page.getByPlaceholder("Search NCKN...").fill("sea");
+  await page.getByPlaceholder("Search NLM-CKN...").fill("sea");
   // Ensure result
   await expect(page.locator(".unified-search-results-list")).toContainText("Search Node");
   // Click add button

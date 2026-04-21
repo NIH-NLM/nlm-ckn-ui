@@ -34,7 +34,7 @@ describe("SearchBar Component", () => {
   it("renders the input field and child components", () => {
     renderWithContext(<SearchBar />);
 
-    const input = screen.getByPlaceholderText("Search NCKN...");
+    const input = screen.getByPlaceholderText("Search NLM-CKN...");
     expect(input).toBeInTheDocument();
 
     const resultsTable = screen.getByTestId("search-results-table");
@@ -43,7 +43,7 @@ describe("SearchBar Component", () => {
 
   it("shows search results dropdown when input has focus and text", async () => {
     renderWithContext(<SearchBar />);
-    const input = screen.getByPlaceholderText("Search NCKN...");
+    const input = screen.getByPlaceholderText("Search NLM-CKN...");
 
     // Focus and type in the input
     fireEvent.focus(input);
@@ -63,7 +63,7 @@ describe("SearchBar Component", () => {
 
   it("hides search results when clicking outside", async () => {
     renderWithContext(<SearchBar />);
-    const input = screen.getByPlaceholderText("Search NCKN...");
+    const input = screen.getByPlaceholderText("Search NLM-CKN...");
 
     // Focus and type to show results
     fireEvent.focus(input);
