@@ -94,9 +94,8 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit, fetchChildren }) => {
       const contentHeight = right.x - left.x + marginTop + marginBottom;
       const height = Math.max(contentHeight, containerHeight);
       // Center content vertically when it's smaller than the container
-      const verticalPad = contentHeight < containerHeight
-        ? (containerHeight - contentHeight) / 2
-        : 0;
+      const verticalPad =
+        contentHeight < containerHeight ? (containerHeight - contentHeight) / 2 : 0;
       const offsetY = -left.x + marginTop + verticalPad;
 
       const transition = svg
@@ -105,9 +104,7 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit, fetchChildren }) => {
         .attr("height", height)
         .style("min-height", `${height}px`);
 
-      g.transition()
-        .duration(duration)
-        .attr("transform", `translate(${marginLeft}, ${offsetY})`);
+      g.transition().duration(duration).attr("transform", `translate(${marginLeft}, ${offsetY})`);
 
       // --- Node Selection ---
       const node = gNode.selectAll("g.node-group").data(nodes, (d) => d.id);

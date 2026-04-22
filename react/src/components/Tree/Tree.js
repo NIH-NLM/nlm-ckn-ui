@@ -114,7 +114,12 @@ const Tree = () => {
   return (
     <div className="tree-container">
       {/* Render d3 tree */}
-      <TreeConstructor data={treeData} onNodeEnter={handleNodeEnter} onNodeExit={handleNodeExit} fetchChildren={fetchTreeChildren} />
+      <TreeConstructor
+        data={treeData}
+        onNodeEnter={handleNodeEnter}
+        onNodeExit={handleNodeExit}
+        fetchChildren={fetchTreeChildren}
+      />
       {Array.from(mountPoints.entries()).map(([nodeId, element]) =>
         ReactDOM.createPortal(<AddToGraphButton nodeId={nodeId} />, element),
       )}

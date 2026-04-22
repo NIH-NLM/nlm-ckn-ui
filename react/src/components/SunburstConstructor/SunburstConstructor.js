@@ -13,7 +13,9 @@ function buildHierarchy(data) {
   // Assign a tree-position-unique key to each node. A gene (GS) can appear
   // under multiple cell types, so _id alone isn't unique in the tree.
   let idx = 0;
-  h.each((d) => { d._uid = `${d.data._id}__${idx++}`; });
+  h.each((d) => {
+    d._uid = `${d.data._id}__${idx++}`;
+  });
   return h;
 }
 
@@ -330,7 +332,12 @@ function SunburstConstructor(
       } else {
         // New node: start collapsed at parent's current position
         d.current = d.parent?.current
-          ? { x0: d.parent.current.x0, x1: d.parent.current.x1, y0: d.parent.current.y0, y1: d.parent.current.y0 }
+          ? {
+              x0: d.parent.current.x0,
+              x1: d.parent.current.x1,
+              y0: d.parent.current.y0,
+              y1: d.parent.current.y0,
+            }
           : { x0: 0, x1: 2 * Math.PI, y0: 0, y1: 0 };
       }
     });
@@ -371,13 +378,15 @@ function SunburstConstructor(
       .duration(400)
       .tween("data", (d_node) => {
         const i = d3.interpolate(d_node.current, d_node.target);
-        return (time) => { d_node.current = i(time); };
+        return (time) => {
+          d_node.current = i(time);
+        };
       })
       .attr("fill-opacity", (d) => {
         if (d === root && d.depth === 0) return 0;
-        return arcVisible(d.target) ? ((d.children || d.data._hasChildren) ? 0.6 : 0.4) : 0;
+        return arcVisible(d.target) ? (d.children || d.data._hasChildren ? 0.6 : 0.4) : 0;
       })
-      .attr("pointer-events", (d) => arcVisible(d.target) ? "auto" : "none")
+      .attr("pointer-events", (d) => (arcVisible(d.target) ? "auto" : "none"))
       .attrTween("d", (d) => () => arc(d));
 
     // 6. Data join — labels
@@ -406,7 +415,9 @@ function SunburstConstructor(
       .attrTween("transform", (d) => () => labelTransform(d.current));
 
     // Update center text
-    centerText.transition().duration(400)
+    centerText
+      .transition()
+      .duration(400)
       .text(getLabel(root.data) || "Root");
 
     return root;
@@ -417,7 +428,12 @@ function SunburstConstructor(
     // Save each node's correct position, keyed by tree-unique _uid
     const targets = new Map();
     root.each((d) => {
-      targets.set(d._uid, { x0: d.current.x0, x1: d.current.x1, y0: d.current.y0, y1: d.current.y1 });
+      targets.set(d._uid, {
+        x0: d.current.x0,
+        x1: d.current.x1,
+        y0: d.current.y0,
+        y1: d.current.y1,
+      });
     });
 
     // Collapse radially (keep angular positions, zero out radius)
@@ -426,29 +442,41 @@ function SunburstConstructor(
     });
 
     // Render collapsed + invisible
-    pathUpdate.attr("d", (d) => arc(d)).attr("fill-opacity", 0).attr("pointer-events", "none");
+    pathUpdate
+      .attr("d", (d) => arc(d))
+      .attr("fill-opacity", 0)
+      .attr("pointer-events", "none");
     labelUpdate.attr("fill-opacity", 0);
 
     // Animate to real positions
-    pathUpdate.transition().duration(duration).ease(d3.easeCubicOut)
+    pathUpdate
+      .transition()
+      .duration(duration)
+      .ease(d3.easeCubicOut)
       .tween("bloom", (d_node) => {
         const target = targets.get(d_node._uid);
         if (!target) return () => {};
         const i = d3.interpolate({ ...d_node.current }, target);
-        return (t) => { d_node.current = i(t); };
+        return (t) => {
+          d_node.current = i(t);
+        };
       })
       .attrTween("d", (d) => () => arc(d))
       .attr("fill-opacity", (d) => {
         if (d === root && d.depth === 0) return 0;
         const t = targets.get(d._uid);
-        return t && arcVisible(t) ? ((d.children || d.data._hasChildren) ? 0.6 : 0.4) : 0;
+        return t && arcVisible(t) ? (d.children || d.data._hasChildren ? 0.6 : 0.4) : 0;
       })
       .attr("pointer-events", (d) => {
         const t = targets.get(d._uid);
         return t && arcVisible(t) ? "auto" : "none";
       });
 
-    labelUpdate.transition().duration(duration).delay(duration * 0.4).ease(d3.easeCubicOut)
+    labelUpdate
+      .transition()
+      .duration(duration)
+      .delay(duration * 0.4)
+      .ease(d3.easeCubicOut)
       .attr("fill-opacity", (d) => {
         if (d === root && d.depth === 0) return 0;
         const t = targets.get(d._uid);
