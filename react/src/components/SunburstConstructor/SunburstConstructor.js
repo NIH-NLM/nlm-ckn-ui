@@ -213,7 +213,7 @@ function SunburstConstructor(
   parentCircle = svg
     .append("circle")
     .attr("r", radius)
-    .attr("fill", "none")
+    .attr("fill", "white")
     .attr("pointer-events", "all")
     .style("cursor", "pointer")
     .on("click", () => {
