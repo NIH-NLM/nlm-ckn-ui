@@ -155,7 +155,7 @@ def get_phenotypes_sunburst(parent_id=None):
             db_error = e.response.text
         raise SunburstServiceError(
             "Failed to fetch phenotype structure.", db_error=db_error
-        )
+        ) from e
 
 
 def _aggregate_cl_for_organ(db, graph_name, organ_id):
