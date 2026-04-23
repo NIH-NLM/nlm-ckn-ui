@@ -48,6 +48,8 @@ const Sunburst = ({ addSelectedItem }) => {
   const mergeQueueRef = useRef([]);
   const rafIdRef = useRef(null);
 
+  const returnTimerRef = useRef(null);
+
   const graphType = "phenotypes";
 
   // --- Debounced merge: batches multiple prefetch results into one setState ---
@@ -79,6 +81,10 @@ const Sunburst = ({ addSelectedItem }) => {
   // --- Primary data fetch (shows loading bar) ---
   const fetchSunburstData = useCallback(async (parentId = null, isInitialLoad = false) => {
     if (!isInitialLoad && isLoadingRef.current) return;
+    if (returnTimerRef.current != null) {
+      clearTimeout(returnTimerRef.current);
+      returnTimerRef.current = null;
+    }
     setIsLoading(true);
     isLoadingRef.current = true;
     try {
@@ -127,6 +133,10 @@ const Sunburst = ({ addSelectedItem }) => {
     if (rafIdRef.current != null) {
       cancelAnimationFrame(rafIdRef.current);
       rafIdRef.current = null;
+    }
+    if (returnTimerRef.current != null) {
+      clearTimeout(returnTimerRef.current);
+      returnTimerRef.current = null;
     }
 
     const drilldownGeneration = prefetchGenerationRef.current;
@@ -191,7 +201,11 @@ const Sunburst = ({ addSelectedItem }) => {
       oldSvg.style.opacity = "0";
     }
 
-    setTimeout(() => {
+    if (returnTimerRef.current != null) {
+      clearTimeout(returnTimerRef.current);
+    }
+    returnTimerRef.current = setTimeout(() => {
+      returnTimerRef.current = null;
       isDrilledDownRef.current = false;
       mountedRef.current = false;
       setGraphData({ ...overviewDataRef.current });
@@ -252,6 +266,15 @@ const Sunburst = ({ addSelectedItem }) => {
   useEffect(() => {
     isLoadingRef.current = isLoading;
   }, [isLoading]);
+
+  useEffect(() => {
+    return () => {
+      if (returnTimerRef.current != null) {
+        clearTimeout(returnTimerRef.current);
+        returnTimerRef.current = null;
+      }
+    };
+  }, []);
 
   // Initial data fetch on mount
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional - only run on mount
