@@ -42,9 +42,7 @@ PHENOTYPES_TOP_ORGANS = [
     "UBERON/0002113",  # kidney
     "UBERON/0002371",  # bone_marrow
 ]
-PHENOTYPES_ROOT_ID = "root_phenotypes_full"
 PHENOTYPES_HUMAN_ID = "NCBITaxon/9606"
-UBERON_STRUCTURAL_LABELS = ["PART_OF", "SUB_CLASS_OF"]
 UBERON_SUBTREE_DEPTH = 5
 
 
@@ -85,27 +83,6 @@ def _get_uberon_cl_counts(db, graph_name):
             time.monotonic() - start,
         )
         return entries
-
-
-def _apply_uberon_values(nodes, counts):
-    """Walk sunburst nodes and apply cached CL-count values. Sets both
-    ``value`` (used by the current d3 .sum()) and ``subtree_size`` (a
-    layout-stable weight that doesn't change as children stream in).
-    UBERON nodes get the cached count; everything else gets 1."""
-    if not nodes:
-        return
-    for n in nodes:
-        if n is None:
-            continue
-        node_id = n.get("_id", "")
-        if node_id.startswith("UBERON/"):
-            cl_count = counts.get(node_id, 1)
-            n["value"] = cl_count
-            n["subtree_size"] = cl_count
-        else:
-            n["subtree_size"] = 1
-        if n.get("children"):
-            _apply_uberon_values(n["children"], counts)
 
 
 def get_phenotypes_sunburst(parent_id=None):
