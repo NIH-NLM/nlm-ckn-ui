@@ -319,9 +319,7 @@ function SunburstConstructor(
     const newHierarchy = buildHierarchy(newData);
     root = d3.partition().size([2 * Math.PI, newHierarchy.height + 1])(newHierarchy);
 
-    const zoomRef = activeZoomedNodeId
-      ? root.find((d) => d.data._id === activeZoomedNodeId)
-      : null;
+    const zoomRef = activeZoomedNodeId ? root.find((d) => d.data._id === activeZoomedNodeId) : null;
 
     // 3. Compute target positions (relative to the currently-zoomed node if
     //    any, else the overview frame) AND seed d.current from old state for
