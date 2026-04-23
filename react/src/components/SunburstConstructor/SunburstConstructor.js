@@ -12,9 +12,13 @@ function buildHierarchy(data) {
     .sort((a, b) => (b.value || 1) - (a.value || 1));
   // Assign a tree-position-unique key to each node. A gene (GS) can appear
   // under multiple cell types, so _id alone isn't unique in the tree.
-  let idx = 0;
   h.each((d) => {
-    d._uid = `${d.data._id}__${idx++}`;
+    if (!d.parent) {
+      d._uid = d.data._id;
+    } else {
+      const siblingIdx = d.parent.children.indexOf(d);
+      d._uid = `${d.parent._uid}>${d.data._id}#${siblingIdx}`;
+    }
   });
   return h;
 }
