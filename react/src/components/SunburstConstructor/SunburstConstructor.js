@@ -293,7 +293,7 @@ function SunburstConstructor(
   }
 
   // --- update(newData): incremental data-join that transitions to new positions ---
-  function update(newData) {
+  function update(newData, activeZoomedNodeId) {
     if (!newData) return;
 
     // 1. Save old animation state keyed by _id.
@@ -319,16 +319,35 @@ function SunburstConstructor(
     const newHierarchy = buildHierarchy(newData);
     root = d3.partition().size([2 * Math.PI, newHierarchy.height + 1])(newHierarchy);
 
-    // 3. Compute target positions (new partition relative to root center)
-    //    AND seed d.current from old state for smooth transitions
+    const zoomRef = activeZoomedNodeId
+      ? root.find((d) => d.data._id === activeZoomedNodeId)
+      : null;
+
+    // 3. Compute target positions (relative to the currently-zoomed node if
+    //    any, else the overview frame) AND seed d.current from old state for
+    //    smooth transitions
     root.each((d) => {
-      // Target = natural position in the new layout
-      d.target = {
-        x0: d.x0,
-        x1: d.x1,
-        y0: d.y0,
-        y1: d.y1,
-      };
+      if (zoomRef) {
+        const x0 =
+          Math.max(0, Math.min(1, (d.x0 - zoomRef.x0) / (zoomRef.x1 - zoomRef.x0))) * 2 * Math.PI;
+        const x1 =
+          Math.max(0, Math.min(1, (d.x1 - zoomRef.x0) / (zoomRef.x1 - zoomRef.x0))) * 2 * Math.PI;
+        const y0 = Math.max(0, d.y0 - zoomRef.depth);
+        const y1 = Math.max(0, d.y1 - zoomRef.depth);
+        d.target = {
+          x0: Number.isNaN(x0) ? 0 : x0,
+          x1: Number.isNaN(x1) ? 0 : x1,
+          y0: Number.isNaN(y0) ? 0 : y0,
+          y1: Number.isNaN(y1) ? 0 : y1,
+        };
+      } else {
+        d.target = {
+          x0: d.x0,
+          x1: d.x1,
+          y0: d.y0,
+          y1: d.y1,
+        };
+      }
       // Start from old position if available, else from parent or collapsed
       const old = oldMap.get(d._uid);
       if (old) {
@@ -388,9 +407,13 @@ function SunburstConstructor(
       })
       .attr("fill-opacity", (d) => {
         if (d === root && d.depth === 0) return 0;
+        if (zoomRef && d.data._id === activeZoomedNodeId) return 0;
         return arcVisible(d.target) ? (d.children || d.data._hasChildren ? 0.6 : 0.4) : 0;
       })
-      .attr("pointer-events", (d) => (arcVisible(d.target) ? "auto" : "none"))
+      .attr("pointer-events", (d) => {
+        if (zoomRef && d.data._id === activeZoomedNodeId) return "none";
+        return arcVisible(d.target) ? "auto" : "none";
+      })
       .attrTween("d", (d) => () => arc(d));
 
     // 6. Data join — labels
@@ -414,15 +437,18 @@ function SunburstConstructor(
       .duration(400)
       .attr("fill-opacity", (d) => {
         if (d === root && d.depth === 0) return 0;
+        if (zoomRef && d.data._id === activeZoomedNodeId) return 0;
         return +labelVisible(d.target);
       })
       .attrTween("transform", (d) => () => labelTransform(d.current));
 
     // Update center text
+    const centerNode = zoomRef || root;
     centerText
       .transition()
       .duration(400)
-      .text(getLabel(root.data) || "Root");
+      .text(getLabel(centerNode.data) || centerNode.data._key || "Root");
+    updateCursor(centerNode);
 
     return root;
   }

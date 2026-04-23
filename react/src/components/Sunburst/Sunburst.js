@@ -451,7 +451,7 @@ const Sunburst = ({ addSelectedItem }) => {
       return; // skip — mount effect already handled this render
     }
     if (!mountedRef.current || !updateRef.current || !graphData) return;
-    const newRoot = updateRef.current(graphData);
+    const newRoot = updateRef.current(graphData, zoomedNodeId);
     // Re-expose the current hierarchy root after data-join rebuild.
     // update() now returns the rebuilt root directly so we don't have to
     // fish it out of DOM-bound data (which includes fading-out exit nodes
