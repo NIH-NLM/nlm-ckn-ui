@@ -136,7 +136,8 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit, fetchChildren }) => {
           }
 
           // Lazy load: has children on server but none loaded yet
-          if (d.data._hasChildren && fetchChildren) {
+          if (d.data._hasChildren && fetchChildren && !d._loading) {
+            d._loading = true;
             try {
               const childrenData = await fetchChildren(d.data._id);
               if (!Array.isArray(childrenData) || childrenData.length === 0) return;
@@ -166,6 +167,8 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit, fetchChildren }) => {
               update(event, d);
             } catch (err) {
               console.error(`Failed to fetch children for ${d.data._id}:`, err);
+            } finally {
+              d._loading = false;
             }
           }
         });
