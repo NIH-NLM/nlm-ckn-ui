@@ -597,6 +597,35 @@ a.document-popup-button {
   flex: 2;
 }
 
+.sunburst-error-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: 928px;
+  margin: 0 auto 10px auto;
+  padding: 8px 12px;
+  background-color: #fdecea;
+  border: 1px solid #f5c2c0;
+  border-radius: 4px;
+  color: #842029;
+  font-size: 0.9em;
+}
+
+.sunburst-error-banner-message {
+  flex: 1;
+}
+
+.sunburst-error-banner-dismiss {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 1.2em;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
 /* FTU Explorer */
 
 .max-height-limited {

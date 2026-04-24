@@ -11,6 +11,7 @@ const PREFETCH_SKIP_PREFIXES = ["CL/", "GS/", "MONDO/", "PR/", "CHEMBL/"];
 const Sunburst = ({ addSelectedItem }) => {
   const [graphData, setGraphData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [clickedItem, setClickedItem] = useState(null);
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
@@ -87,6 +88,7 @@ const Sunburst = ({ addSelectedItem }) => {
     }
     setIsLoading(true);
     isLoadingRef.current = true;
+    setError(null);
     try {
       const data = await fetchHierarchyData(parentId, graphType);
       if (parentId) {
@@ -113,77 +115,14 @@ const Sunburst = ({ addSelectedItem }) => {
         setZoomedNodeId(null);
         currentHierarchyRootRef.current = null;
       }
-    } catch (error) {
-      console.error("Fetch/Process Error:", error);
+    } catch (err) {
+      console.error("Fetch/Process Error:", err);
+      setError(err.message);
       setGraphData(null);
       setZoomedNodeId(null);
       currentHierarchyRootRef.current = null;
     } finally {
       setIsLoading(false);
-      isLoadingRef.current = false;
-    }
-  }, []);
-
-  // --- Drilldown: zoom → fetch → full SVG rebuild ---
-  const drillIntoOrgan = useCallback(async (organNode, d3Node, event) => {
-    if (isLoadingRef.current) return;
-
-    prefetchGenerationRef.current += 1;
-    mergeQueueRef.current = [];
-    if (rafIdRef.current != null) {
-      cancelAnimationFrame(rafIdRef.current);
-      rafIdRef.current = null;
-    }
-    if (returnTimerRef.current != null) {
-      clearTimeout(returnTimerRef.current);
-      returnTimerRef.current = null;
-    }
-
-    const drilldownGeneration = prefetchGenerationRef.current;
-
-    // 1. Zoom + fetch in parallel
-    if (d3ClickedRef.current && d3Node) {
-      d3ClickedRef.current(event, d3Node);
-    }
-    setZoomedNodeId(organNode._id);
-
-    isLoadingRef.current = true;
-    try {
-      const [clList] = await Promise.all([
-        fetchHierarchyData(organNode._id, graphType),
-        new Promise((resolve) => setTimeout(resolve, 800)),
-      ]);
-
-      if (drilldownGeneration !== prefetchGenerationRef.current) return;
-      if (!Array.isArray(clList)) throw new Error(`Drilldown error for ${organNode._id}`);
-
-      const drilldownRoot = {
-        _id: organNode._id,
-        _key: organNode._key,
-        label: organNode.label,
-        value: organNode.value,
-        subtree_size: organNode.subtree_size,
-        _hasChildren: clList.length > 0,
-        children: clList,
-      };
-
-      // 2. Fade out old SVG
-      const oldSvg = svgNodeRef.current;
-      if (oldSvg) {
-        oldSvg.style.transition = "opacity 200ms ease-out";
-        oldSvg.style.opacity = "0";
-      }
-      await new Promise((resolve) => setTimeout(resolve, 200));
-      if (drilldownGeneration !== prefetchGenerationRef.current) return;
-
-      // 3. Full rebuild — clean slate, no stale d3 state
-      isDrilledDownRef.current = true;
-      mountedRef.current = false;
-      setGraphData(drilldownRoot);
-      setZoomedNodeId(null);
-    } catch (error) {
-      console.error("Drilldown error:", error);
-    } finally {
       isLoadingRef.current = false;
     }
   }, []);
@@ -212,6 +151,76 @@ const Sunburst = ({ addSelectedItem }) => {
       setZoomedNodeId(null);
     }, 200);
   }, []);
+
+  // --- Drilldown: zoom → fetch → full SVG rebuild ---
+  const drillIntoOrgan = useCallback(
+    async (organNode, d3Node, event) => {
+      if (isLoadingRef.current) return;
+
+      setError(null);
+      prefetchGenerationRef.current += 1;
+      mergeQueueRef.current = [];
+      if (rafIdRef.current != null) {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
+      if (returnTimerRef.current != null) {
+        clearTimeout(returnTimerRef.current);
+        returnTimerRef.current = null;
+      }
+
+      const drilldownGeneration = prefetchGenerationRef.current;
+
+      // 1. Zoom + fetch in parallel
+      if (d3ClickedRef.current && d3Node) {
+        d3ClickedRef.current(event, d3Node);
+      }
+      setZoomedNodeId(organNode._id);
+
+      isLoadingRef.current = true;
+      try {
+        const [clList] = await Promise.all([
+          fetchHierarchyData(organNode._id, graphType),
+          new Promise((resolve) => setTimeout(resolve, 800)),
+        ]);
+
+        if (drilldownGeneration !== prefetchGenerationRef.current) return;
+        if (!Array.isArray(clList)) throw new Error(`Drilldown error for ${organNode._id}`);
+
+        const drilldownRoot = {
+          _id: organNode._id,
+          _key: organNode._key,
+          label: organNode.label,
+          value: organNode.value,
+          subtree_size: organNode.subtree_size,
+          _hasChildren: clList.length > 0,
+          children: clList,
+        };
+
+        // 2. Fade out old SVG
+        const oldSvg = svgNodeRef.current;
+        if (oldSvg) {
+          oldSvg.style.transition = "opacity 200ms ease-out";
+          oldSvg.style.opacity = "0";
+        }
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        if (drilldownGeneration !== prefetchGenerationRef.current) return;
+
+        // 3. Full rebuild — clean slate, no stale d3 state
+        isDrilledDownRef.current = true;
+        mountedRef.current = false;
+        setGraphData(drilldownRoot);
+        setZoomedNodeId(null);
+      } catch (err) {
+        console.error("Drilldown error:", err);
+        setError(err.message);
+        returnToOverview();
+      } finally {
+        isLoadingRef.current = false;
+      }
+    },
+    [returnToOverview],
+  );
 
   // --- Background prefetch (silent, no loading bar) ---
   const prefetchNode = useCallback(
@@ -482,6 +491,19 @@ const Sunburst = ({ addSelectedItem }) => {
 
   return (
     <div className="sunburst-component-wrapper">
+      {error && (
+        <div className="sunburst-error-banner" role="alert">
+          <span className="sunburst-error-banner-message">Error: {error}</span>
+          <button
+            type="button"
+            className="sunburst-error-banner-dismiss"
+            aria-label="Dismiss error"
+            onClick={() => setError(null)}
+          >
+            ×
+          </button>
+        </div>
+      )}
       {/* biome-ignore lint/correctness/useUniqueElementIds: legacy id */}
       <div
         data-testid="sunburst-container"
