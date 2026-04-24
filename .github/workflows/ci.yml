@@ -298,7 +298,7 @@ jobs:
         run: python manage.py test --exclude-tag=integration --verbosity=2
         env:
           DJANGO_SETTINGS_MODULE: core.settings
-          SECRET_KEY: ${{ secrets.SECRET_KEY || 'ci-test-only-not-secret' }}
+          SECRET_KEY: ci-test-only-not-secret
           ARANGO_TEST_MODE: 'true'
 
   # Backend integration tests - requires ArangoDB
@@ -352,7 +352,7 @@ jobs:
         env:
           DJANGO_SETTINGS_MODULE: core.settings
           ARANGO_TEST_MODE: 'true'
-          SECRET_KEY: ${{ secrets.SECRET_KEY || 'ci-test-only-not-secret' }}
+          SECRET_KEY: ci-test-only-not-secret
 
   # Backend Docker build - verify the image builds successfully
   backend-docker-build:
