@@ -144,22 +144,24 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit, fetchChildren }) => {
 
               // Attach fetched data and build hierarchy nodes
               d.data.children = childrenData;
-              let nextId = root.descendants().length;
               for (const childData of childrenData) {
                 const childNode = d3.hierarchy(childData);
                 childNode.parent = d;
                 childNode.depth = d.depth + 1;
-                childNode.each((n) => {
-                  n.id = nextId++;
+                const allNodes = childNode.descendants();
+                for (const n of allNodes) {
+                  n.id = root._nextId++;
                   n.depth = n.parent ? n.parent.depth + 1 : d.depth + 1;
                   n.x0 = d.x0;
                   n.y0 = d.y0;
-                  // Collapse loaded grandchildren by default
-                  if (n.children) {
+                }
+                // Collapse loaded grandchildren by default
+                for (const n of allNodes) {
+                  if (n !== childNode && n.children) {
                     n._children = n.children;
                     n.children = null;
                   }
-                });
+                }
                 if (!d.children) d.children = [];
                 d.children.push(childNode);
               }
@@ -273,14 +275,16 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit, fetchChildren }) => {
     const containerHeight = svgRef.current?.clientHeight || 500;
     root.x0 = containerHeight / 2;
     root.y0 = 0;
-    root.descendants().forEach((d, i) => {
-      d.id = i;
+    let _idCounter = 0;
+    root.descendants().forEach((d) => {
+      d.id = _idCounter++;
       d._children = d.children;
       // Collapse all nodes by default on initial render.
       if (d.children) {
         d.children = null;
       }
     });
+    root._nextId = _idCounter;
 
     // Start the initial render.
     update(null, root);
