@@ -22,6 +22,12 @@ export default defineConfig({
         // Ensure CRA starts on 3000 without prompts
         BROWSER: "none",
         PORT: "3000",
+        // Disable HMR/Fast Refresh so the webpack-dev-server-client overlay
+        // doesn't appear and intercept clicks when the HMR websocket can't
+        // connect on CI runners.
+        FAST_REFRESH: "false",
+        WDS_SOCKET_HOST: "localhost",
+        WDS_SOCKET_PORT: "3000",
       },
     },
   ],
