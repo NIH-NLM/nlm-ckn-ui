@@ -76,6 +76,12 @@ def _get_uberon_cl_counts(db, graph_name):
             batch_size=5000,
         )
         entries = {row[0]: row[1] for row in cursor}
+        if not entries:
+            logger.warning(
+                "UBERON CL-count query returned no rows for %s; not caching",
+                graph_name,
+            )
+            return entries
         _UBERON_CL_COUNT_CACHE[graph_name] = entries
         logger.info(
             "Cached CL counts for %d UBERON nodes (%.2fs)",
