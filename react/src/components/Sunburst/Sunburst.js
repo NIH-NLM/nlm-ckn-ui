@@ -282,6 +282,7 @@ const Sunburst = ({ addSelectedItem }) => {
         clearTimeout(returnTimerRef.current);
         returnTimerRef.current = null;
       }
+      prefetchGenerationRef.current += 1;
     };
   }, []);
 
