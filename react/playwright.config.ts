@@ -14,20 +14,20 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: "npm start",
+      // In CI: build once and serve the static bundle. The CRA dev server's
+      // webpack-dev-server-client overlay iframe intercepts clicks on the
+      // GitHub Actions runners (HMR websocket can't connect), so e2e times
+      // out. The production build has no dev-server overlay.
+      // Locally: keep `npm start` for fast HMR-friendly development.
+      command: process.env.CI
+        ? "npm run build && npx -y serve -s build -l 3000"
+        : "npm start",
       url: "http://localhost:3000",
       reuseExistingServer: !process.env.CI,
-      timeout: 120_000,
+      timeout: 180_000,
       env: {
-        // Ensure CRA starts on 3000 without prompts
         BROWSER: "none",
         PORT: "3000",
-        // Disable HMR/Fast Refresh so the webpack-dev-server-client overlay
-        // doesn't appear and intercept clicks when the HMR websocket can't
-        // connect on CI runners.
-        FAST_REFRESH: "false",
-        WDS_SOCKET_HOST: "localhost",
-        WDS_SOCKET_PORT: "3000",
       },
     },
   ],
