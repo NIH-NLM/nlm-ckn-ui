@@ -255,18 +255,16 @@
 /* Tree Constructor */
 
 .tree-constructor-container {
-  display: flex;
-  min-height: 60vh;
-  overflow-x: auto;
-  /* Allow horizontal scrolling for wide trees on desktop */
-  overflow-y: auto;
+  display: block;
+  height: 70vh;
+  overflow: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
 }
 
 /* Tree SVG Base Styles */
 .tree-svg {
-  max-width: 100%;
-  height: auto;
-  font-size: 12px;
+  font-size: 13px;
   font-family: sans-serif;
   user-select: none;
 }
