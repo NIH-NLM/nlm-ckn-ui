@@ -177,5 +177,4 @@ class SunburstServiceTestCase(ArangoDBTestCase):
 
     def test_get_phenotypes_sunburst(self):
         result = sunburst_service.get_phenotypes_sunburst()
-        self.assertEqual(result["_id"], "root_phenotypes_full")
-        self.assertEqual(result["children"][0]["_id"], "NCBITaxon/9606")
+        self.assertEqual(result["_id"], "NCBITaxon/9606")
