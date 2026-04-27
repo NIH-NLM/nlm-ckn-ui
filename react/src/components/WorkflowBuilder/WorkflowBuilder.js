@@ -370,7 +370,9 @@ const WorkflowBuilder = ({ onGraphReady }) => {
           title={
             phases.length < 2
               ? "Requires at least 2 phases"
-              : "Add a phase that combines all previous phases"
+              : phases[phases.length - 1]?.originSource === "multiplePhases"
+                ? "A final stage has already been added"
+                : "Add a phase that combines all previous phases"
           }
         >
           + Add Final Stage
