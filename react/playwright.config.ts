@@ -19,7 +19,7 @@ export default defineConfig({
       // GitHub Actions runners (HMR websocket can't connect), so e2e times
       // out. The production build has no dev-server overlay.
       // Locally: keep `npm start` for fast HMR-friendly development.
-      command: process.env.CI ? "npm run build && npx -y serve -s build -l 3000" : "npm start",
+      command: process.env.CI ? "npm run build-react && npx -y serve -s build -l 3000" : "npm start",
       url: "http://localhost:3000",
       reuseExistingServer: !process.env.CI,
       timeout: 180_000,
