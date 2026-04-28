@@ -1,0 +1,49 @@
+name: Promote to NIH-NLM upstream
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  open-upstream-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Open or update PR to upstream
+        env:
+          GH_TOKEN: ${{ secrets.UPSTREAM_PR_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          EXISTING=$(gh pr list \
+            --repo NIH-NLM/nlm-ckn-ui \
+            --head Springbok-LLC:main \
+            --base main \
+            --state open \
+            --json number --jq '.[0].number // empty')
+
+          if [ -z "$EXISTING" ]; then
+            echo "No open PR found - creating one."
+            PR_URL=$(gh api repos/NIH-NLM/nlm-ckn-ui/pulls \
+              -f title="Promote Springbok-LLC main to upstream" \
+              -f head="Springbok-LLC:main" \
+              -f base="main" \
+              -f body="Automated promotion from Springbok-LLC fork. Auto-merges once required checks pass." \
+              --jq '.html_url')
+            echo "Created: $PR_URL"
+          else
+            echo "PR already open: #$EXISTING"
+            PR_URL=$(gh pr view "$EXISTING" --repo NIH-NLM/nlm-ckn-ui --json url --jq .url)
+          fi
+
+          for i in 1 2 3 4 5; do
+            if gh pr merge --auto --squash --repo NIH-NLM/nlm-ckn-ui "$PR_URL"; then
+              echo "Auto-merge enabled."
+              exit 0
+            fi
+            echo "Auto-merge attempt $i failed; sleeping $((i * 10))s before retry."
+            sleep $((i * 10))
+          done
+
+          echo "::error::Failed to enable auto-merge after 5 attempts."
+          exit 1
