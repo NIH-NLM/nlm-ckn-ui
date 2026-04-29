@@ -65,6 +65,11 @@ export function runSimulation(
     forceLink.links(links);
   } else {
     simulation.stop();
+    // Drain alpha so callers that read simulation.alpha() after stopping see
+    // a settled value. Without this, alpha retains whatever it was when the
+    // timer stopped (typically 0.002–0.05), and the alpha-based invariant in
+    // updateLabelVisibilityOnZoom would treat the sim as still hot.
+    simulation.alpha(0);
     forceNode.strength(0);
     forceCenter.strength(0);
     forceLink.strength(0);

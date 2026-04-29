@@ -95,6 +95,14 @@ function ForceGraphConstructor(
     .force("center", forceCenter)
     .on("tick", ticked);
 
+  // Apply the user's current label visibility whenever the sim cools naturally
+  // (e.g., after a drag-induced reheat). updateGraph's waitForAlpha callback
+  // already does this for full rebuilds; this catches the cases that don't
+  // route through there. Namespaced to coexist with other "end" handlers.
+  simulation.on("end.labelRestore", () => {
+    updateLabelVisibilityOnZoom(d3.zoomTransform(svg.node()).k);
+  });
+
   // Select and configure SVG element.
   const svg = d3
     .select(svgElement)
@@ -119,6 +127,19 @@ function ForceGraphConstructor(
 
   // Centralized function to manage label visibility based on zoom and user settings.
   function updateLabelVisibilityOnZoom(k) {
+    // Invariant: while the sim is not settled, all labels are hidden.
+    // Repositioning visible labels every tick destroys framerate on dense
+    // graphs. Callers (zoom, toggleLabels, font-size changes, layout-phase
+    // onComplete) don't need to know whether the sim is hot — this guard
+    // collapses every hot-sim caller to a force-hide. Restoration happens
+    // via the on("end") handler when the sim cools naturally, or via the
+    // explicit post-settle calls after runSimulation(false) drains alpha.
+    if (simulation.alpha() > simulation.alphaMin()) {
+      nodeContainer.selectAll("text").style("display", "none");
+      linkContainer.selectAll("text").style("display", "none");
+      return;
+    }
+
     // Calculate the zoom threshold needed to meet the minimum visible font size.
     const nodeLabelThreshold = mergedOptions.minVisibleFontSize / mergedOptions.nodeFontSize;
     const linkLabelThreshold = mergedOptions.minVisibleFontSize / mergedOptions.linkFontSize;
@@ -156,11 +177,6 @@ function ForceGraphConstructor(
     .zoom()
     .on("zoom", (event) => {
       g.attr("transform", event.transform);
-      // Skip label re-evaluation while the simulation is hot — the
-      // post-settle callback will apply final visibility. The guard lives
-      // here (not inside updateLabelVisibilityOnZoom) so that post-simulation
-      // callers can apply visibility regardless of the current alpha value.
-      if (simulation.alpha() > 0.001) return;
       updateLabelVisibilityOnZoom(event.transform.k);
     })
     .on("start", mergedOptions.interactionCallback);
@@ -432,7 +448,7 @@ function ForceGraphConstructor(
     if (typeof currentLabelStates[labelClass] !== "undefined") {
       currentLabelStates[labelClass] = show;
     }
-    // Immediately apply the new visibility rule based on the current zoom.
+    // updateLabelVisibilityOnZoom enforces the alpha-settled invariant.
     updateLabelVisibilityOnZoom(d3.zoomTransform(svg.node()).k);
   }
 
