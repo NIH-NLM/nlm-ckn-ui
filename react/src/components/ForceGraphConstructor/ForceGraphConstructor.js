@@ -35,6 +35,7 @@ function ForceGraphConstructor(
       .drag()
       .on("start", (event, _d) => {
         if (!event.active) simulation.alphaTarget(0.1).restart();
+        activeDrags += 1;
         event.subject.fx = event.subject.x;
         event.subject.fy = event.subject.y;
         mergedOptions.interactionCallback();
@@ -56,6 +57,9 @@ function ForceGraphConstructor(
           x: event.subject.x,
           y: event.subject.y,
         });
+        // Decrement after the dispatch so any synchronous subscriber observes
+        // isDragging() as still true during its own work.
+        activeDrags -= 1;
       });
 
   // Setup color scale for node groups if provided.
@@ -76,6 +80,12 @@ function ForceGraphConstructor(
   // correct mode on first render — avoids a race with the React layoutMode
   // useEffect, and avoids a visible force-mode warmup before non-force modes.
   let currentLayoutMode = mergedOptions.layoutMode || "force";
+
+  // Counter mirrors d3's event.active: 0 when no drag in flight, > 0 while at
+  // least one is active. External code (resize, settle-end callbacks) checks
+  // isDragging() to skip full reheats that would override the drag's gentle
+  // alphaTarget(0.1) warmup.
+  let activeDrags = 0;
 
   // Create main simulation.
   const simulation = d3
@@ -243,10 +253,12 @@ function ForceGraphConstructor(
       .scale(currentTransform.k);
 
     svg.call(zoomHandler.transform, newTransform);
-    // Only restart simulation in force mode when no phase transition is active.
-    // In clustered/radial modes, the layout is already settled or transitioning —
-    // restarting would disrupt it. Just update the viewBox and zoom.
-    if (currentLayoutMode === "force" && !isPhaseTransitionActive()) {
+    // Only restart simulation in force mode when no phase transition is active
+    // and no drag is in flight. In clustered/radial modes the layout is already
+    // settled or transitioning — restarting would disrupt it. During a drag, a
+    // full alpha(1) reheat would clobber the drag handler's gentle
+    // alphaTarget(0.1) warmup and visibly jolt the graph.
+    if (currentLayoutMode === "force" && !isPhaseTransitionActive() && activeDrags === 0) {
       simulation.alpha(1).restart();
     }
   }
@@ -739,6 +751,7 @@ function ForceGraphConstructor(
     toggleFocusNodes,
     centerOnNode,
     resize,
+    isDragging: () => activeDrags > 0,
     // Returns the current node/link state suitable for saving.
     getCurrentGraph: () => {
       const finalNodes = processedNodes.map(({ x, y, index, vx, vy, ...rest }) => ({
