@@ -112,10 +112,15 @@ test("Graph page shows two selected nodes and builds graph with both origins", a
   // Add from Tree
   await page.getByRole("link", { name: "Explore" }).click();
   await expect(page).toHaveURL(/#\/tree$/);
-  // Wait for portal add buttons
+  // Tree starts with all children collapsed. Expand the root so TREE_DOC and
+  // its add-to-graph button portal render.
+  const treeContainer = page.locator(".tree-constructor-container");
+  const rootNodeGroup = treeContainer.locator("g.node-group").first();
+  await expect(rootNodeGroup).toBeVisible();
+  await rootNodeGroup.click();
+  await expect(treeContainer.getByText("Tree Node").first()).toBeVisible();
+  // Click every visible add-to-graph button (order may vary).
   const addButtons = page.locator(".add-to-graph-button");
-  await addButtons.first().waitFor({ state: "visible" });
-  // Click through buttons (order may vary)
   const btnCount = await addButtons.count();
   for (let i = 0; i < btnCount; i++) {
     await addButtons.nth(i).click();

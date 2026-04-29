@@ -32,6 +32,9 @@ export default defineConfig({
       env: {
         BROWSER: "none",
         PORT: "3000",
+        // Compile-time flag read by store.js to expose window.__STORE__ on the
+        // production bundle that CI serves. Tests rely on this to drive Redux.
+        REACT_APP_EXPOSE_STORE: "true",
       },
     },
   ],
