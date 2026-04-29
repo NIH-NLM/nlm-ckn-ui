@@ -45,8 +45,12 @@ function ForceGraphConstructor(
       })
       .on("end", (event, _d) => {
         if (!event.active) simulation.alphaTarget(0);
-        event.subject.fx = null;
-        event.subject.fy = null;
+        // Pin the node at the dropped position so it stays put while the
+        // simulation continues to settle the rest of the graph. The post-rebuild
+        // unpin loop in updateGraph (and restoreGraph) is the existing release
+        // path — rebuilding the graph clears all pins.
+        event.subject.fx = event.x;
+        event.subject.fy = event.y;
         mergedOptions.onNodeDragEnd({
           nodeId: event.subject.id,
           x: event.subject.x,
