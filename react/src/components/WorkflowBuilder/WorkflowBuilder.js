@@ -12,6 +12,7 @@ import { useGraphDataInit } from "hooks";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
+  addFinalStage,
   addPhase,
   addPhaseOriginNode,
   executePhase,
@@ -139,6 +140,10 @@ const WorkflowBuilder = ({ onGraphReady }) => {
   // Handle adding a new phase
   const handleAddPhase = useCallback(() => {
     dispatch(addPhase());
+  }, [dispatch]);
+
+  const handleAddFinalStage = useCallback(() => {
+    dispatch(addFinalStage());
   }, [dispatch]);
 
   // Handle removing a phase
@@ -354,6 +359,23 @@ const WorkflowBuilder = ({ onGraphReady }) => {
       <div className="workflow-footer">
         <button type="button" className="add-phase-btn" onClick={handleAddPhase}>
           + Add Phase
+        </button>
+        <button
+          type="button"
+          className="add-phase-btn"
+          onClick={handleAddFinalStage}
+          disabled={
+            phases.length < 2 || phases[phases.length - 1]?.originSource === "multiplePhases"
+          }
+          title={
+            phases.length < 2
+              ? "Requires at least 2 phases"
+              : phases[phases.length - 1]?.originSource === "multiplePhases"
+                ? "A final stage has already been added"
+                : "Add a phase that combines all previous phases"
+          }
+        >
+          + Add Final Stage
         </button>
         <button
           type="button"
