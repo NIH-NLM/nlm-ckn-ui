@@ -4,7 +4,7 @@ import {
   getCollectedErrors,
   installErrorInstrumentation,
 } from "./utils/errorInstrumentation";
-import { deepChildren, smallGraphWithEdges, sunburstRoot, treeApiWrapper } from "./utils/testSeeds";
+import { deepChildren, smallGraphWithEdges, sunburstRoot } from "./utils/testSeeds";
 
 const COLL = "TEST_DOCUMENT_COLLECTION";
 // This color is defined in nlm-ckn-collection-maps.json for TEST_DOCUMENT_COLLECTION
@@ -167,9 +167,7 @@ test.describe("Collection colors consistency", () => {
   test("Tree nodes use predefined collection color from config", async ({ page }) => {
     await installErrorInstrumentation(page);
 
-    const mockApiResponse = treeApiWrapper(
-      sunburstRoot({ label: "Root", children: deepChildren() }),
-    );
+    const mockApiResponse = sunburstRoot({ label: "Root", children: deepChildren() });
 
     // Mock sunburst API (used by tree)
     await page.route("**/arango_api/sunburst/", async (route) => {
@@ -213,9 +211,7 @@ test.describe("Collection colors consistency", () => {
 
     const originId = `${COLL}/ROOT`;
     const mockSunburstRoot = sunburstRoot({ children: deepChildren() });
-    const mockTreeResponse = treeApiWrapper(
-      sunburstRoot({ label: "Root", children: deepChildren() }),
-    );
+    const mockTreeResponse = sunburstRoot({ label: "Root", children: deepChildren() });
 
     // Mock all APIs
     await page.route("**/arango_api/collections/", async (route) => {
