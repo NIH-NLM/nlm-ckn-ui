@@ -52,14 +52,19 @@ function ForceGraphConstructor(
         // path — rebuilding the graph clears all pins.
         event.subject.fx = event.x;
         event.subject.fy = event.y;
-        mergedOptions.onNodeDragEnd({
-          nodeId: event.subject.id,
-          x: event.subject.x,
-          y: event.subject.y,
-        });
-        // Decrement after the dispatch so any synchronous subscriber observes
-        // isDragging() as still true during its own work.
-        activeDrags -= 1;
+        try {
+          mergedOptions.onNodeDragEnd({
+            nodeId: event.subject.id,
+            x: event.subject.x,
+            y: event.subject.y,
+          });
+        } finally {
+          // Decrement after the dispatch so any synchronous subscriber observes
+          // isDragging() as still true during its own work. Use finally so a
+          // throwing subscriber can't strand activeDrags > 0 — that would leave
+          // isDragging() stuck true and silently suppress all future reheats.
+          activeDrags -= 1;
+        }
       });
 
   // Setup color scale for node groups if provided.
