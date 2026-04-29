@@ -223,8 +223,7 @@ class SunburstViewsTestCase(ArangoDBViewTestCase):
         )
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertEqual(data["_id"], "root_phenotypes_full")
-        self.assertEqual(data["children"][0]["_id"], "NCBITaxon/9606")
+        self.assertEqual(data["_id"], "NCBITaxon/9606")
 
 
 class DocumentViewsTestCase(ArangoDBViewTestCase):

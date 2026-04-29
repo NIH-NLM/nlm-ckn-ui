@@ -17,6 +17,13 @@ permissions:
   pull-requests: write
   id-token: write  # Required for GitHub OIDC (deploy jobs)
 
+# Mirrors react/.env (which is gitignored). CRA's build-time ESLint loads
+# eslint-config-react-app/base, which omits the react-hooks plugin - causing
+# any react-hooks/* eslint-disable comment to fail with "rule not found".
+# Project linting is handled by Biome (see react/package.json scripts).
+env:
+  DISABLE_ESLINT_PLUGIN: 'true'
+
 jobs:
   # Detect which parts of the codebase changed to skip unnecessary tests
   detect-changes:
@@ -131,7 +138,7 @@ jobs:
         continue-on-error: true
 
       - name: Check for changes and push
-        if: steps.check-autofix.outputs.skip != 'true' && github.event_name == 'pull_request_target'
+        if: steps.check-autofix.outputs.skip != 'true' && github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name == github.repository
         run: |
           cd ..
           git config user.name "github-actions[bot]"
