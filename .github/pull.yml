@@ -3,9 +3,5 @@ rules:
   - base: main
     upstream: NIH-NLM:main
     mergeMethod: squash
-    autoMerge: true
-    autoMergeHardReset: false
-    assignees: []
-    reviewers: []
-    conflictReviewers: []
-    label: "sync from upstream"
+    mergeUnstable: false
+label: "sync from upstream"
