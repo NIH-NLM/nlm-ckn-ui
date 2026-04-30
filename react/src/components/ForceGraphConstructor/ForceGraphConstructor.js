@@ -28,48 +28,49 @@ function ForceGraphConstructor(
 
   const mergedOptions = { ...DEFAULT_GRAPH_OPTIONS, ...options };
 
-  // Setup default drag behavior.
-  mergedOptions.drag =
-    options.drag ||
-    d3
-      .drag()
-      .on("start", (event, _d) => {
-        if (!event.active) simulation.alphaTarget(0.1).restart();
-        activeDrags += 1;
-        event.subject.fx = event.subject.x;
-        event.subject.fy = event.subject.y;
-        mergedOptions.interactionCallback();
-      })
-      .on("drag", (event, _d) => {
-        event.subject.fx = event.x;
-        event.subject.fy = event.y;
-      })
-      .on("end", (event, _d) => {
-        if (!event.active) simulation.alphaTarget(0);
-        // Pin the node at the dropped position so it stays put while the
-        // simulation continues to settle the rest of the graph. The post-rebuild
-        // unpin loop in updateGraph (and restoreGraph) is the existing release
-        // path — rebuilding the graph clears all pins.
-        event.subject.fx = event.x;
-        event.subject.fy = event.y;
-        try {
-          // Emit the same coords we just pinned (event.x/y), not
-          // event.subject.x/y — the latter is the simulation's last-tick
-          // position and can lag by a frame, so subscribers (e.g., Redux
-          // updateNodePosition) would otherwise receive stale coordinates.
-          mergedOptions.onNodeDragEnd({
-            nodeId: event.subject.id,
-            x: event.x,
-            y: event.y,
-          });
-        } finally {
-          // Decrement after the dispatch so any synchronous subscriber observes
-          // isDragging() as still true during its own work. Use finally so a
-          // throwing subscriber can't strand activeDrags > 0 — that would leave
-          // isDragging() stuck true and silently suppress all future reheats.
-          activeDrags -= 1;
-        }
-      });
+  // Setup drag behavior. The constructor owns the handler outright — overrides
+  // were removed because any external drag would bypass the activeDrags
+  // bookkeeping that resize/settle suppression depends on, silently disabling
+  // those guards.
+  mergedOptions.drag = d3
+    .drag()
+    .on("start", (event, _d) => {
+      if (!event.active) simulation.alphaTarget(0.1).restart();
+      activeDrags += 1;
+      event.subject.fx = event.subject.x;
+      event.subject.fy = event.subject.y;
+      mergedOptions.interactionCallback();
+    })
+    .on("drag", (event, _d) => {
+      event.subject.fx = event.x;
+      event.subject.fy = event.y;
+    })
+    .on("end", (event, _d) => {
+      if (!event.active) simulation.alphaTarget(0);
+      // Pin the node at the dropped position so it stays put while the
+      // simulation continues to settle the rest of the graph. The post-rebuild
+      // unpin loop in updateGraph (and restoreGraph) is the existing release
+      // path — rebuilding the graph clears all pins.
+      event.subject.fx = event.x;
+      event.subject.fy = event.y;
+      try {
+        // Emit the same coords we just pinned (event.x/y), not
+        // event.subject.x/y — the latter is the simulation's last-tick
+        // position and can lag by a frame, so subscribers (e.g., Redux
+        // updateNodePosition) would otherwise receive stale coordinates.
+        mergedOptions.onNodeDragEnd({
+          nodeId: event.subject.id,
+          x: event.x,
+          y: event.y,
+        });
+      } finally {
+        // Decrement after the dispatch so any synchronous subscriber observes
+        // isDragging() as still true during its own work. Use finally so a
+        // throwing subscriber can't strand activeDrags > 0 — that would leave
+        // isDragging() stuck true and silently suppress all future reheats.
+        activeDrags -= 1;
+      }
+    });
 
   // Setup color scale for node groups if provided.
   if (mergedOptions.nodeGroup && mergedOptions.nodeGroups.length > 0) {
@@ -109,6 +110,10 @@ function ForceGraphConstructor(
   // already does this for full rebuilds; this catches the cases that don't
   // route through there. Namespaced to coexist with other "end" handlers.
   simulation.on("end.labelRestore", () => {
+    // Skip during live-simulation mode — toggleSimulation(true) explicitly
+    // hides labels for the duration; the natural cooldown after alpha decay
+    // would otherwise unhide them mid-session before the user toggles off.
+    if (isLiveSimulationRunning) return;
     updateLabelVisibilityOnZoom(d3.zoomTransform(svg.node()).k);
   });
 
