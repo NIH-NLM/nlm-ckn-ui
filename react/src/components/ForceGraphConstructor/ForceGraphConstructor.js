@@ -28,31 +28,49 @@ function ForceGraphConstructor(
 
   const mergedOptions = { ...DEFAULT_GRAPH_OPTIONS, ...options };
 
-  // Setup default drag behavior.
-  mergedOptions.drag =
-    options.drag ||
-    d3
-      .drag()
-      .on("start", (event, _d) => {
-        if (!event.active) simulation.alphaTarget(0.1).restart();
-        event.subject.fx = event.subject.x;
-        event.subject.fy = event.subject.y;
-        mergedOptions.interactionCallback();
-      })
-      .on("drag", (event, _d) => {
-        event.subject.fx = event.x;
-        event.subject.fy = event.y;
-      })
-      .on("end", (event, _d) => {
-        if (!event.active) simulation.alphaTarget(0);
-        event.subject.fx = null;
-        event.subject.fy = null;
+  // Setup drag behavior. The constructor owns the handler outright — overrides
+  // were removed because any external drag would bypass the activeDrags
+  // bookkeeping that resize/settle suppression depends on, silently disabling
+  // those guards.
+  mergedOptions.drag = d3
+    .drag()
+    .on("start", (event, _d) => {
+      if (!event.active) simulation.alphaTarget(0.1).restart();
+      activeDrags += 1;
+      event.subject.fx = event.subject.x;
+      event.subject.fy = event.subject.y;
+      mergedOptions.interactionCallback();
+    })
+    .on("drag", (event, _d) => {
+      event.subject.fx = event.x;
+      event.subject.fy = event.y;
+    })
+    .on("end", (event, _d) => {
+      if (!event.active) simulation.alphaTarget(0);
+      // Pin the node at the dropped position so it stays put while the
+      // simulation continues to settle the rest of the graph. The post-rebuild
+      // unpin loop in updateGraph (and restoreGraph) is the existing release
+      // path — rebuilding the graph clears all pins.
+      event.subject.fx = event.x;
+      event.subject.fy = event.y;
+      try {
+        // Emit the same coords we just pinned (event.x/y), not
+        // event.subject.x/y — the latter is the simulation's last-tick
+        // position and can lag by a frame, so subscribers (e.g., Redux
+        // updateNodePosition) would otherwise receive stale coordinates.
         mergedOptions.onNodeDragEnd({
           nodeId: event.subject.id,
-          x: event.subject.x,
-          y: event.subject.y,
+          x: event.x,
+          y: event.y,
         });
-      });
+      } finally {
+        // Decrement after the dispatch so any synchronous subscriber observes
+        // isDragging() as still true during its own work. Use finally so a
+        // throwing subscriber can't strand activeDrags > 0 — that would leave
+        // isDragging() stuck true and silently suppress all future reheats.
+        activeDrags -= 1;
+      }
+    });
 
   // Setup color scale for node groups if provided.
   if (mergedOptions.nodeGroup && mergedOptions.nodeGroups.length > 0) {
@@ -73,6 +91,12 @@ function ForceGraphConstructor(
   // useEffect, and avoids a visible force-mode warmup before non-force modes.
   let currentLayoutMode = mergedOptions.layoutMode || "force";
 
+  // Counter mirrors d3's event.active: 0 when no drag in flight, > 0 while at
+  // least one is active. External code (resize, settle-end callbacks) checks
+  // isDragging() to skip full reheats that would override the drag's gentle
+  // alphaTarget(0.1) warmup.
+  let activeDrags = 0;
+
   // Create main simulation.
   const simulation = d3
     .forceSimulation()
@@ -80,6 +104,18 @@ function ForceGraphConstructor(
     .force("charge", forceNode)
     .force("center", forceCenter)
     .on("tick", ticked);
+
+  // Apply the user's current label visibility whenever the sim cools naturally
+  // (e.g., after a drag-induced reheat). updateGraph's waitForAlpha callback
+  // already does this for full rebuilds; this catches the cases that don't
+  // route through there. Namespaced to coexist with other "end" handlers.
+  simulation.on("end.labelRestore", () => {
+    // Skip during live-simulation mode — toggleSimulation(true) explicitly
+    // hides labels for the duration; the natural cooldown after alpha decay
+    // would otherwise unhide them mid-session before the user toggles off.
+    if (isLiveSimulationRunning) return;
+    updateLabelVisibilityOnZoom(d3.zoomTransform(svg.node()).k);
+  });
 
   // Select and configure SVG element.
   const svg = d3
@@ -105,6 +141,19 @@ function ForceGraphConstructor(
 
   // Centralized function to manage label visibility based on zoom and user settings.
   function updateLabelVisibilityOnZoom(k) {
+    // Invariant: while the sim is not settled, all labels are hidden.
+    // Repositioning visible labels every tick destroys framerate on dense
+    // graphs. Callers (zoom, toggleLabels, font-size changes, layout-phase
+    // onComplete) don't need to know whether the sim is hot — this guard
+    // collapses every hot-sim caller to a force-hide. Restoration happens
+    // via the on("end") handler when the sim cools naturally, or via the
+    // explicit post-settle calls after runSimulation(false) drains alpha.
+    if (simulation.alpha() > simulation.alphaMin()) {
+      nodeContainer.selectAll("text").style("display", "none");
+      linkContainer.selectAll("text").style("display", "none");
+      return;
+    }
+
     // Calculate the zoom threshold needed to meet the minimum visible font size.
     const nodeLabelThreshold = mergedOptions.minVisibleFontSize / mergedOptions.nodeFontSize;
     const linkLabelThreshold = mergedOptions.minVisibleFontSize / mergedOptions.linkFontSize;
@@ -142,11 +191,6 @@ function ForceGraphConstructor(
     .zoom()
     .on("zoom", (event) => {
       g.attr("transform", event.transform);
-      // Skip label re-evaluation while the simulation is hot — the
-      // post-settle callback will apply final visibility. The guard lives
-      // here (not inside updateLabelVisibilityOnZoom) so that post-simulation
-      // callers can apply visibility regardless of the current alpha value.
-      if (simulation.alpha() > 0.001) return;
       updateLabelVisibilityOnZoom(event.transform.k);
     })
     .on("start", mergedOptions.interactionCallback);
@@ -239,10 +283,12 @@ function ForceGraphConstructor(
       .scale(currentTransform.k);
 
     svg.call(zoomHandler.transform, newTransform);
-    // Only restart simulation in force mode when no phase transition is active.
-    // In clustered/radial modes, the layout is already settled or transitioning —
-    // restarting would disrupt it. Just update the viewBox and zoom.
-    if (currentLayoutMode === "force" && !isPhaseTransitionActive()) {
+    // Only restart simulation in force mode when no phase transition is active
+    // and no drag is in flight. In clustered/radial modes the layout is already
+    // settled or transitioning — restarting would disrupt it. During a drag, a
+    // full alpha(1) reheat would clobber the drag handler's gentle
+    // alphaTarget(0.1) warmup and visibly jolt the graph.
+    if (currentLayoutMode === "force" && !isPhaseTransitionActive() && activeDrags === 0) {
       simulation.alpha(1).restart();
     }
   }
@@ -416,7 +462,7 @@ function ForceGraphConstructor(
     if (typeof currentLabelStates[labelClass] !== "undefined") {
       currentLabelStates[labelClass] = show;
     }
-    // Immediately apply the new visibility rule based on the current zoom.
+    // updateLabelVisibilityOnZoom enforces the alpha-settled invariant.
     updateLabelVisibilityOnZoom(d3.zoomTransform(svg.node()).k);
   }
 
@@ -735,6 +781,7 @@ function ForceGraphConstructor(
     toggleFocusNodes,
     centerOnNode,
     resize,
+    isDragging: () => activeDrags > 0,
     // Returns the current node/link state suitable for saving.
     getCurrentGraph: () => {
       const finalNodes = processedNodes.map(({ x, y, index, vx, vy, ...rest }) => ({
