@@ -148,6 +148,7 @@ if [[ ! -f ".built" ]] && [[ $run_ontology -eq 1 ]] \
     mvn clean package -DskipTests
     classpath="target/nlm-ckn-etl-1.0.jar"
     java -cp $classpath gov.nih.nlm.OntologyDownloader
+    java -cp $classpath gov.nih.nlm.OntologySlimmer
     java -Xms32g -Xmx32g -cp $classpath gov.nih.nlm.OntologyGraphBuilder
 
     # Checkout the current branch, and apply the stash so that changes
@@ -176,8 +177,7 @@ if [[ ! -f ".built" ]] && [[ $run_results -eq 1 ]] \
     git checkout $NLM_CKN_ETL_VERSION
 
     # Remove existing tuples
-    rm data/tuples/*.json
-    rm data/tumpes/summaries/*.json
+    rm data/tuples-full/*.json
 
     # Activate the Python environment, fetch external data, and write
     # all tuples. Note that the local .zshenv contains E-Utilities
@@ -186,11 +186,8 @@ if [[ ! -f ".built" ]] && [[ $run_results -eq 1 ]] \
     . .venv/bin/activate
     pushd src
     . .zshenv
-    # TODO: Restore this ...
-    # python ExternalApiResultsFetcher.py
-    # ... or this?
-    # python DataFetcher.py
-    # python DataTransformer.py
+    python DataFetcher.py
+    python DataTransformer.py
     python TupleWriterPipeline.py
     popd
     popd
