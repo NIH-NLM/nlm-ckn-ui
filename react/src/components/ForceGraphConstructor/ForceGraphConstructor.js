@@ -53,10 +53,14 @@ function ForceGraphConstructor(
         event.subject.fx = event.x;
         event.subject.fy = event.y;
         try {
+          // Emit the same coords we just pinned (event.x/y), not
+          // event.subject.x/y — the latter is the simulation's last-tick
+          // position and can lag by a frame, so subscribers (e.g., Redux
+          // updateNodePosition) would otherwise receive stale coordinates.
           mergedOptions.onNodeDragEnd({
             nodeId: event.subject.id,
-            x: event.subject.x,
-            y: event.subject.y,
+            x: event.x,
+            y: event.y,
           });
         } finally {
           // Decrement after the dispatch so any synchronous subscriber observes
