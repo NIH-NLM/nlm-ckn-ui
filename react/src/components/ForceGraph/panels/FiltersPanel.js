@@ -1,6 +1,6 @@
 import { memo, useCallback, useMemo } from "react";
 import { useDispatch } from "react-redux";
-import { updateEdgeFilter, updateNumericEdgeFilter } from "../../../store";
+import { setEdgeFilters, updateEdgeFilter, updateNumericEdgeFilter } from "../../../store";
 import FilterableDropdown from "../../FilterableDropdown/FilterableDropdown";
 import RangeSliderFilter from "../../RangeSliderFilter/RangeSliderFilter";
 
@@ -16,6 +16,7 @@ const FiltersPanel = ({
   availableEdgeFilters,
   edgeFilterStatus,
   onCollectionChange,
+  onCollectionsClearAll,
   graphLinks = [],
 }) => {
   const dispatch = useDispatch();
@@ -52,6 +53,7 @@ const FiltersPanel = ({
           options={settings.allCollections}
           selectedOptions={settings.allowedCollections}
           onOptionToggle={onCollectionChange}
+          onClearAll={onCollectionsClearAll}
           getOptionLabel={(collectionId) =>
             collectionMaps.has(collectionId)
               ? collectionMaps.get(collectionId).display_name
@@ -96,6 +98,7 @@ const FiltersPanel = ({
                 options={filterData.values || []}
                 selectedOptions={settings.edgeFilters[field] || []}
                 onOptionToggle={(value) => dispatch(updateEdgeFilter({ field, value }))}
+                onClearAll={() => dispatch(setEdgeFilters({ [field]: [] }))}
               />
             ),
           )}
