@@ -682,6 +682,21 @@ const ForceGraph = ({
     handlePopupClose();
   };
 
+  const handleRemoveEdge = () => {
+    if (!popup.nodeId || !popup.isEdge) return;
+    const linkId = popup.nodeId;
+    const currentGraph = graphInstanceRef.current?.getCurrentGraph?.();
+    if (currentGraph) {
+      const newLinks = currentGraph.links.filter((l) => l._id !== linkId);
+      dispatch(setGraphData({ nodes: currentGraph.nodes, links: newLinks }));
+    }
+    graphInstanceRef.current?.updateGraph({
+      removeLink: linkId,
+      labelStates: settings.labelStates,
+    });
+    handlePopupClose();
+  };
+
   const toggleOptionsVisibility = () => setOptionsVisible(!optionsVisible);
 
   return (
@@ -755,6 +770,14 @@ const ForceGraph = ({
             style={{ display: !popup.isEdge ? "block" : "none" }}
           >
             Remove Node
+          </button>
+          <button
+            type="button"
+            className="document-popup-button"
+            onClick={handleRemoveEdge}
+            style={{ display: popup.isEdge ? "block" : "none" }}
+          >
+            Remove Edge
           </button>
           <AddToGraphButton nodeId={popup.nodeId} text="Add to Graph" />
         </DocumentPopup>
