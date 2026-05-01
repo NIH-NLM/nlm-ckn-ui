@@ -183,14 +183,12 @@ def _execute_phase(phase, all_phases, phase_results, phase_origin_ids, graph):
         )
 
         if set_operation == "Intersection with Origins":
-            merged_result = _add_origin_nodes(
-                merged_result, raw_data, origin_node_ids
-            )
+            merged_result = _add_origin_nodes(merged_result, raw_data, origin_node_ids)
 
     # --- Find inter-node edges on the final merged node set ---
     if include_inter_node_edges:
         merged_result = _find_post_merge_inter_node_edges(
-            merged_result, phase_graph
+            merged_result, phase_graph, edge_filters=settings.get("edgeFilters", {})
         )
 
     # --- Apply returnCollections filter ---
@@ -242,7 +240,9 @@ def _execute_combine_phase(
     if settings.get("includeInterNodeEdges", True) and graph:
         node_ids = [n["_id"] for n in combined_result.get("nodes", []) if n.get("_id")]
         if len(node_ids) >= 2:
-            inter_edges = graph_service.find_inter_node_edges(node_ids, graph)
+            inter_edges = graph_service.find_inter_node_edges(
+                node_ids, graph, edge_filters=settings.get("edgeFilters", {})
+            )
             existing_ids = {
                 l["_id"]
                 for l in (combined_result.get("links") or [])
@@ -358,7 +358,7 @@ def _filter_nodes_for_next_phase(nodes, filter_type, origin_node_ids=None):
     return [n["_id"] for n in nodes if n.get("_id")]
 
 
-def _find_post_merge_inter_node_edges(merged_result, graph):
+def _find_post_merge_inter_node_edges(merged_result, graph, edge_filters=None):
     """
     Re-scan for inter-node edges on the final merged node set.
 
@@ -375,11 +375,11 @@ def _find_post_merge_inter_node_edges(merged_result, graph):
     if not node_ids:
         return merged_result
 
-    inter_edges = graph_service.find_inter_node_edges(node_ids, graph)
+    inter_edges = graph_service.find_inter_node_edges(
+        node_ids, graph, edge_filters=edge_filters
+    )
     existing_link_ids = {
-        link.get("_id")
-        for link in merged_result.get("links", [])
-        if link.get("_id")
+        link.get("_id") for link in merged_result.get("links", []) if link.get("_id")
     }
     node_id_set = set(node_ids)
     added_links = list(merged_result.get("links", []))
@@ -403,10 +403,7 @@ def _add_origin_nodes(merged_result, raw_data, origin_node_ids):
     then this function adds each origin node and any edges that connect
     an origin to a node already in the result.
     """
-    existing_ids = {
-        n.get("_id") or n.get("id")
-        for n in merged_result.get("nodes", [])
-    }
+    existing_ids = {n.get("_id") or n.get("id") for n in merged_result.get("nodes", [])}
     existing_link_keys = {
         link.get("_id") or f"{link.get('_from', '')}->{link.get('_to', '')}"
         for link in merged_result.get("links", [])
@@ -432,8 +429,7 @@ def _add_origin_nodes(merged_result, raw_data, origin_node_ids):
     for data in raw_data.values():
         for link in data.get("links", []):
             link_key = (
-                link.get("_id")
-                or f"{link.get('_from', '')}->{link.get('_to', '')}"
+                link.get("_id") or f"{link.get('_from', '')}->{link.get('_to', '')}"
             )
             if link_key in existing_link_keys:
                 continue

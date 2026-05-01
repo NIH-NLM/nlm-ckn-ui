@@ -104,6 +104,12 @@ class EdgesBetweenSerializer(GraphRequestSerializer):
         min_length=2,
         help_text="List of at least 2 node IDs to find edges between",
     )
+    edge_filters = serializers.DictField(
+        required=False,
+        allow_null=True,
+        default=None,
+        help_text="Dictionary of edge filters",
+    )
 
 
 class SearchRequestSerializer(serializers.Serializer):
@@ -250,8 +256,11 @@ class PhaseSerializer(serializers.Serializer):
     )
     phaseCombineOperation = serializers.ChoiceField(
         choices=[
-            "Union", "Intersection", "Intersection with Origins",
-            "Connected Paths", "Symmetric Difference",
+            "Union",
+            "Intersection",
+            "Intersection with Origins",
+            "Connected Paths",
+            "Symmetric Difference",
         ],
         required=False,
         default="Intersection",
@@ -286,8 +295,11 @@ class PhaseSerializer(serializers.Serializer):
 
         if "setOperation" in value:
             allowed_ops = (
-                "Union", "Intersection", "Intersection with Origins",
-                "Connected Paths", "Symmetric Difference",
+                "Union",
+                "Intersection",
+                "Intersection with Origins",
+                "Connected Paths",
+                "Symmetric Difference",
             )
             if value["setOperation"] not in allowed_ops:
                 raise serializers.ValidationError(

@@ -254,7 +254,11 @@ export const executePhase = createAsyncThunk(
       if (phase.settings.includeInterNodeEdges !== false && combinedResult.nodes?.length >= 2) {
         const allNodeIds = combinedResult.nodes.map((n) => n._id || n.id).filter(Boolean);
         const existingLinkIds = new Set(combinedResult.links.map((l) => l._id).filter(Boolean));
-        const interEdges = await fetchEdgesBetween(allNodeIds, phase.settings.graphType);
+        const interEdges = await fetchEdgesBetween(
+          allNodeIds,
+          phase.settings.graphType,
+          phase.settings.edgeFilters || {},
+        );
         const nodeIdSet = new Set(allNodeIds);
         for (const edge of interEdges) {
           if (!edge?._id || existingLinkIds.has(edge._id)) continue;
@@ -411,7 +415,11 @@ export const executePhase = createAsyncThunk(
     if (phase.settings.includeInterNodeEdges !== false && mergedResult.nodes?.length >= 2) {
       const allNodeIds = mergedResult.nodes.map((n) => n._id || n.id).filter(Boolean);
       const existingLinkIds = new Set(mergedResult.links.map((l) => l._id).filter(Boolean));
-      const interEdges = await fetchEdgesBetween(allNodeIds, phase.settings.graphType);
+      const interEdges = await fetchEdgesBetween(
+        allNodeIds,
+        phase.settings.graphType,
+        phase.settings.edgeFilters || {},
+      );
       const nodeIdSet = new Set(allNodeIds);
       for (const edge of interEdges) {
         if (!edge?._id || existingLinkIds.has(edge._id)) continue;
