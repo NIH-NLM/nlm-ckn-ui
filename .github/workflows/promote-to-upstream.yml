@@ -5,6 +5,13 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Serialize runs so concurrent pushes can't both pass the EXISTING-empty check
+# and race on PR creation (which would 422 the loser). Don't cancel the
+# in-flight run — its commits still need promoting.
+concurrency:
+  group: promote-to-upstream
+  cancel-in-progress: false
+
 jobs:
   open-upstream-pr:
     runs-on: ubuntu-latest
@@ -26,7 +33,16 @@ jobs:
             --jq '.[0].number // empty')
 
           if [ -z "$EXISTING" ]; then
-            echo "No open PR found - creating one."
+            # Short-circuit when there's no diff to promote. GitHub rejects
+            # pulls.create with HTTP 422 when base...head has no commits, and
+            # workflow_dispatch can fire in that state if everything's already
+            # been promoted.
+            AHEAD=$(gh api repos/NIH-NLM/nlm-ckn-ui/compare/main...Springbok-LLC:main --jq '.ahead_by')
+            if [ "$AHEAD" = "0" ]; then
+              echo "Springbok-LLC:main is not ahead of upstream — nothing to promote."
+              exit 0
+            fi
+            echo "No open PR found - creating one ($AHEAD commits ahead)."
             PR_NUM=$(gh api repos/NIH-NLM/nlm-ckn-ui/pulls \
               -f title="Promote Springbok-LLC main to upstream" \
               -f head="Springbok-LLC:main" \
