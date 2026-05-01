@@ -13,6 +13,7 @@ Test Configuration:
     To start a test ArangoDB instance:
         docker run -d --name arangodb-test -p 8530:8529 -e ARANGO_ROOT_PASSWORD=test arangodb
 """
+
 from django.test import TestCase, tag
 
 from arango_api.services import (
@@ -21,7 +22,9 @@ from arango_api.services import (
     graph_service,
     search_service,
     sunburst_service,
+    workflow_service,
 )
+from arango_api.services.workflow_service import _find_post_merge_inter_node_edges
 from arango_api.tests.seed_test_db import seed_test_databases
 
 
@@ -53,14 +56,18 @@ class CollectionServiceTestCase(ArangoDBTestCase):
 
     def test_get_by_id(self):
         result = collection_service.get_by_id("CL", "CL/0002145")
-        self.assertEqual(result["label"], "ciliated columnar cell of tracheobronchial tree")
+        self.assertEqual(
+            result["label"], "ciliated columnar cell of tracheobronchial tree"
+        )
 
     def test_get_by_id_not_found(self):
         result = collection_service.get_by_id("CL", "CL/nonexistent")
         self.assertIsNone(result)
 
     def test_get_edges_by_id(self):
-        result = list(collection_service.get_edges_by_id("CL-CL", "_from", "CL", "0000061"))
+        result = list(
+            collection_service.get_edges_by_id("CL-CL", "_from", "CL", "0000061")
+        )
         self.assertEqual(len(result), 3)
 
 
@@ -75,7 +82,9 @@ class DocumentServiceTestCase(ArangoDBTestCase):
         self.assertEqual(len(result), 2)
 
     def test_get_documents_empty_list(self):
-        result = document_service.get_documents(document_ids=[], graph_name="ontologies")
+        result = document_service.get_documents(
+            document_ids=[], graph_name="ontologies"
+        )
         self.assertEqual(result, [])
 
     def test_get_documents_nonexistent(self):
@@ -88,7 +97,10 @@ class DocumentServiceTestCase(ArangoDBTestCase):
     def test_get_edge_filter_options(self):
         result = document_service.get_edge_filter_options(fields_to_query=["label"])
         self.assertEqual(result["label"]["type"], "categorical")
-        self.assertEqual(sorted(result["label"]["values"]), sorted(["subClassOf", "participates_in", "part_of"]))
+        self.assertEqual(
+            sorted(result["label"]["values"]),
+            sorted(["subClassOf", "participates_in", "part_of"]),
+        )
 
 
 class GraphServiceTestCase(ArangoDBTestCase):
@@ -147,6 +159,161 @@ class GraphServiceTestCase(ArangoDBTestCase):
             graph="ontologies",
         )
         self.assertIn("CL/0000061", result)
+
+    def test_traverse_graph_with_categorical_filter(self):
+        # Regression guard: filter clause path is exercised. From CL/0000061
+        # OUTBOUND, filter to label="subClassOf" — only CL-CL subClassOf edges
+        # should appear in the links. CL-GO (participates_in) and CL-UBERON
+        # (part_of) edges must be excluded.
+        result = graph_service.traverse_graph(
+            node_ids=["CL/0000061"],
+            depth=1,
+            edge_direction="OUTBOUND",
+            allowed_collections=["CL", "GO", "UBERON"],
+            graph="ontologies",
+            edge_filters={"label": ["subClassOf"]},
+            include_inter_node_edges=False,
+        )
+        links = result["CL/0000061"]["links"]
+        self.assertGreater(len(links), 0)
+        for link in links:
+            self.assertEqual(link["label"], "subClassOf")
+
+    def test_traverse_graph_with_numeric_filter(self):
+        # Regression guard: numeric range filter path. No seed edges have a
+        # numeric `score` attribute, so the e.field != null guard excludes all.
+        result = graph_service.traverse_graph(
+            node_ids=["CL/0000061"],
+            depth=1,
+            edge_direction="OUTBOUND",
+            allowed_collections=["CL", "GO", "UBERON"],
+            graph="ontologies",
+            edge_filters={"score": {"min": 0.5, "max": 1.0}},
+            include_inter_node_edges=False,
+        )
+        self.assertEqual(result["CL/0000061"]["links"], [])
+
+    def test_find_inter_node_edges_no_filters(self):
+        # Without filters, all edges between the given nodes are returned.
+        # CL/0000061 connects to CL/0000151 (subClassOf), GO/0008150
+        # (participates_in), UBERON/0000061 (part_of).
+        result = graph_service.find_inter_node_edges(
+            node_ids=["CL/0000061", "CL/0000151", "GO/0008150", "UBERON/0000061"],
+            graph="ontologies",
+        )
+        self.assertEqual(len(result), 3)
+
+    def test_find_inter_node_edges_categorical_filter(self):
+        result = graph_service.find_inter_node_edges(
+            node_ids=["CL/0000061", "CL/0000151", "GO/0008150", "UBERON/0000061"],
+            graph="ontologies",
+            edge_filters={"label": ["subClassOf"]},
+        )
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["label"], "subClassOf")
+
+    def test_find_inter_node_edges_numeric_filter(self):
+        # No edges have a `score` attribute, so range filter excludes all.
+        result = graph_service.find_inter_node_edges(
+            node_ids=["CL/0000061", "CL/0000151", "GO/0008150", "UBERON/0000061"],
+            graph="ontologies",
+            edge_filters={"score": {"min": 0.5, "max": 1.0}},
+        )
+        self.assertEqual(result, [])
+
+    def test_traverse_graph_inter_node_edges_respect_filters(self):
+        # When traverse_graph's self-call to find_inter_node_edges runs,
+        # the filter must propagate. With label=subClassOf, the post-traversal
+        # inter-node scan should respect the filter.
+        result = graph_service.traverse_graph(
+            node_ids=["CL/0000061"],
+            depth=1,
+            edge_direction="OUTBOUND",
+            allowed_collections=["CL", "GO", "UBERON"],
+            graph="ontologies",
+            edge_filters={"label": ["subClassOf"]},
+            include_inter_node_edges=True,
+        )
+        links = result["CL/0000061"]["links"]
+        for link in links:
+            self.assertEqual(link["label"], "subClassOf")
+
+
+class WorkflowServiceTestCase(ArangoDBTestCase):
+    """Tests for workflow_service functions, focused on edge_filters propagation."""
+
+    NODES_WITH_LINKS = [
+        {"_id": "CL/0000061"},
+        {"_id": "CL/0000151"},
+        {"_id": "GO/0008150"},
+        {"_id": "UBERON/0000061"},
+    ]
+
+    def test_post_merge_inter_node_edges_no_filters(self):
+        # Baseline: all 3 edges between the merged nodes are added.
+        merged = {"nodes": self.NODES_WITH_LINKS, "links": []}
+        result = _find_post_merge_inter_node_edges(merged, "ontologies")
+        self.assertEqual(len(result["links"]), 3)
+
+    def test_post_merge_inter_node_edges_respect_filters(self):
+        # With label=subClassOf filter, only the CL-CL subClassOf edge survives.
+        merged = {"nodes": self.NODES_WITH_LINKS, "links": []}
+        result = _find_post_merge_inter_node_edges(
+            merged, "ontologies", edge_filters={"label": ["subClassOf"]}
+        )
+        self.assertEqual(len(result["links"]), 1)
+        self.assertEqual(result["links"][0]["label"], "subClassOf")
+
+    def test_combine_phase_inter_node_edges_respect_filters(self):
+        # Two phases that each return one node, and the combine phase scans
+        # for inter-node edges between them. With label=subClassOf, only
+        # CL-CL/subClassOf edges should appear, not the CL-GO participates_in.
+        phases = [
+            {
+                "id": "phase1",
+                "originSource": "manual",
+                "originNodeIds": ["CL/0000061"],
+                "settings": {
+                    "depth": 1,
+                    "edgeDirection": "OUTBOUND",
+                    "allowedCollections": ["CL"],
+                    "graphType": "ontologies",
+                    "includeInterNodeEdges": False,
+                    "setOperation": "Union",
+                },
+            },
+            {
+                "id": "phase2",
+                "originSource": "manual",
+                "originNodeIds": ["GO/0008150"],
+                "settings": {
+                    "depth": 1,
+                    "edgeDirection": "ANY",
+                    "allowedCollections": ["GO"],
+                    "graphType": "ontologies",
+                    "includeInterNodeEdges": False,
+                    "setOperation": "Union",
+                },
+            },
+            {
+                "id": "combine",
+                "originSource": "multiplePhases",
+                "previousPhaseIds": ["phase1", "phase2"],
+                "phaseCombineOperation": "Union",
+                "originFilter": "all",
+                "settings": {
+                    "graphType": "ontologies",
+                    "includeInterNodeEdges": True,
+                    "edgeFilters": {"label": ["subClassOf"]},
+                },
+            },
+        ]
+        result = workflow_service.execute_workflow(phases, graph="ontologies")
+        combine_links = result["phases"]["combine"]["links"]
+        # The CL/0000061 -> GO/0008150 participates_in edge would normally be
+        # included by the combine post-merge scan, but the filter excludes it.
+        for link in combine_links:
+            self.assertEqual(link["label"], "subClassOf")
 
 
 class SearchServiceTestCase(ArangoDBTestCase):

@@ -177,6 +177,7 @@ class EdgesBetweenView(APIView):
         edges = graph_service.find_inter_node_edges(
             node_ids=data["node_ids"],
             graph=data.get("graph", "ontologies"),
+            edge_filters=data.get("edge_filters") or {},
         )
         return Response(edges)
 
