@@ -53,8 +53,14 @@ export const store = configureStore({
 
 export const persistor = persistStore(store);
 
-// Expose store for E2E/tests in non-production environments
-if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
+// Expose store for E2E/tests. Always on in dev; in production builds gated on
+// REACT_APP_EXPOSE_STORE so the e2e CI webServer (which serves the production
+// bundle) can still drive the store. The CRA build inlines REACT_APP_* vars at
+// compile time, so this stays out of real production deployments.
+if (
+  typeof window !== "undefined" &&
+  (process.env.NODE_ENV !== "production" || process.env.REACT_APP_EXPOSE_STORE === "true")
+) {
   window.__STORE__ = store;
   window.__ACTIONS__ = window.__ACTIONS__ || {};
   window.__ACTIONS__.fetchNow = () => store.dispatch(fetchAndProcessGraph());

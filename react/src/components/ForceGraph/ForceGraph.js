@@ -270,6 +270,10 @@ const ForceGraph = ({
 
   const handleSimulationEnd = useCallback(
     (finalNodes, finalLinks) => {
+      // Skip if a drag is in flight — otherwise the natural-settle dispatch
+      // would route through updateGraph -> runSimulation(true) -> alpha(1)
+      // and clobber the drag's gentle warmup.
+      if (graphInstanceRef.current?.isDragging?.()) return;
       dispatch(setGraphData({ nodes: finalNodes, links: finalLinks, skipUndo: true }));
     },
     [dispatch],

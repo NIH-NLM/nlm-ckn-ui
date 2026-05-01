@@ -4,10 +4,12 @@ import {
   getCollectedErrors,
   installErrorInstrumentation,
 } from "./utils/errorInstrumentation";
-import { deepChildren, sunburstRoot, treeApiWrapper } from "./utils/testSeeds";
+import { deepChildren, sunburstRoot } from "./utils/testSeeds";
 
-// Shape: Tree uses data.children[0] as root; wrap root accordingly.
-const mockApiResponse = treeApiWrapper(sunburstRoot({ label: "Root", children: deepChildren() }));
+// Tree.js consumes the API response as the root directly (post lazy-load
+// refactor). Children are inlined so the click handler hits the cached-
+// children branch and never triggers a lazy fetch.
+const mockApiResponse = sunburstRoot({ label: "Root", children: deepChildren() });
 
 test("Explore shows Root then expands to children", async ({ page }) => {
   await installErrorInstrumentation(page);
