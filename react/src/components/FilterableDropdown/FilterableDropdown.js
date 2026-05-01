@@ -26,6 +26,7 @@ const FilterableDropdown = ({
   options,
   selectedOptions,
   onOptionToggle,
+  onClearAll,
   getOptionLabel = defaultGetOptionLabel,
   getColorForOption = () => null,
 }) => {
@@ -107,6 +108,11 @@ const FilterableDropdown = ({
       )}
 
       <div className="selected-options-pills">
+        {onClearAll && selectedOptions.length > 0 && (
+          <button type="button" className="pill-clear-all" onClick={onClearAll}>
+            Clear all
+          </button>
+        )}
         {selectedOptions.map((selectedString) => (
           <div key={selectedString} className="pill">
             {getColorForOption(selectedString) && (
