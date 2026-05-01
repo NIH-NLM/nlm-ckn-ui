@@ -628,6 +628,7 @@ const ForceGraph = ({
       : [...settings.allowedCollections, name];
     handleSettingChange("allowedCollections", newAllowed);
   };
+  const handleCollectionsClearAll = () => handleSettingChange("allowedCollections", []);
   const handleLabelToggle = (labelClass) => {
     const newLabelStates = {
       ...settings.labelStates,
@@ -889,6 +890,7 @@ const ForceGraph = ({
                     availableEdgeFilters={availableEdgeFilters}
                     edgeFilterStatus={edgeFilterStatus}
                     onCollectionChange={handleCollectionChange}
+                    onCollectionsClearAll={handleCollectionsClearAll}
                     graphLinks={graphData.links}
                   />
                 )}

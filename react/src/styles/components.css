@@ -797,6 +797,20 @@ input:checked + .slider:before {
   color: var(--color-text);
 }
 
+.pill-clear-all {
+  background: none;
+  border: none;
+  color: var(--color-gray);
+  font-size: 0.8em;
+  cursor: pointer;
+  padding: 0;
+  align-self: center;
+}
+
+.pill-clear-all:hover {
+  color: var(--color-text);
+}
+
 /* Modals and Popups */
 
 .modal-overlay {
