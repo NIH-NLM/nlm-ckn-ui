@@ -71,11 +71,11 @@ _PH_TARGETS_PHASE_SETTINGS = {
 }
 
 _PH_CELL_TYPES_PHASE_SETTINGS = {
-    "depth": 2,
+    "depth": 3,
     "edgeDirection": "ANY",
-    "allowedCollections": ["CS", "CL"],
+    "allowedCollections": ["GS", "CS", "CL"],
     "edgeFilters": {
-        "Label": ["EXPRESSES", "COMPOSED_PRIMARILY_OF"],
+        "Label": ["PRODUCES", "EXPRESSES", "COMPOSED_PRIMARILY_OF"],
         "Source": [],
     },
     "setOperation": "Union",
@@ -780,7 +780,15 @@ WORKFLOW_PRESETS = [
                     "depth": 4,
                     "edgeDirection": "ANY",
                     "allowedCollections": ["CL", "CS", "BMC", "GS"],
-                    "edgeFilters": {"Label": [], "Source": []},
+                    "edgeFilters": {
+                        "Label": [
+                            "PART_OF",
+                            "COMPOSED_PRIMARILY_OF",
+                            "HAS_CHARACTERIZING_MARKER_SET",
+                            "EXPRESSES",
+                        ],
+                        "Source": [],
+                    },
                     "setOperation": "Union",
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
@@ -831,7 +839,15 @@ WORKFLOW_PRESETS = [
                     "depth": 3,
                     "edgeDirection": "ANY",
                     "allowedCollections": ["BMC", "GS", "UBERON", "CS"],
-                    "edgeFilters": {"Label": [], "Source": []},
+                    "edgeFilters": {
+                        "Label": [
+                            "COMPOSED_PRIMARILY_OF",
+                            "HAS_CHARACTERIZING_MARKER_SET",
+                            "EXPRESSES",
+                            "PART_OF",
+                        ],
+                        "Source": [],
+                    },
                     "setOperation": "Union",
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
@@ -933,7 +949,15 @@ WORKFLOW_PRESETS = [
                     "depth": 2,
                     "edgeDirection": "ANY",
                     "allowedCollections": ["BMC", "CL", "GS", "PR", "CS"],
-                    "edgeFilters": {"Label": [], "Source": []},
+                    "edgeFilters": {
+                        "Label": [
+                            "EXPRESSES",
+                            "COMPOSED_PRIMARILY_OF",
+                            "HAS_CHARACTERIZING_MARKER_SET",
+                            "PRODUCES",
+                        ],
+                        "Source": [],
+                    },
                     "setOperation": "Union",
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
