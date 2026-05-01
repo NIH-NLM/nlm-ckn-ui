@@ -242,22 +242,23 @@ class GraphServiceTestCase(ArangoDBTestCase):
 class WorkflowServiceTestCase(ArangoDBTestCase):
     """Tests for workflow_service functions, focused on edge_filters propagation."""
 
-    NODES_WITH_LINKS = [
-        {"_id": "CL/0000061"},
-        {"_id": "CL/0000151"},
-        {"_id": "GO/0008150"},
-        {"_id": "UBERON/0000061"},
-    ]
+    def _nodes_with_links(self):
+        return [
+            {"_id": "CL/0000061"},
+            {"_id": "CL/0000151"},
+            {"_id": "GO/0008150"},
+            {"_id": "UBERON/0000061"},
+        ]
 
     def test_post_merge_inter_node_edges_no_filters(self):
         # Baseline: all 3 edges between the merged nodes are added.
-        merged = {"nodes": self.NODES_WITH_LINKS, "links": []}
+        merged = {"nodes": self._nodes_with_links(), "links": []}
         result = _find_post_merge_inter_node_edges(merged, "ontologies")
         self.assertEqual(len(result["links"]), 3)
 
     def test_post_merge_inter_node_edges_respect_filters(self):
         # With label=subClassOf filter, only the CL-CL subClassOf edge survives.
-        merged = {"nodes": self.NODES_WITH_LINKS, "links": []}
+        merged = {"nodes": self._nodes_with_links(), "links": []}
         result = _find_post_merge_inter_node_edges(
             merged, "ontologies", edge_filters={"label": ["subClassOf"]}
         )
