@@ -105,7 +105,7 @@ No change required. `setGraphData` is already in the redux-undo filter (it creat
 
 ## Data Flow
 
-```
+```text
 user right-clicks edge
   → onNodeClick (existing) opens DocumentPopup with popup.isEdge=true, popup.nodeId=edge._id
 user clicks "Remove Edge"

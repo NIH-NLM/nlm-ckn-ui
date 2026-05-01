@@ -686,10 +686,14 @@ const ForceGraph = ({
     if (!popup.nodeId || !popup.isEdge) return;
     const linkId = popup.nodeId;
     const currentGraph = graphInstanceRef.current?.getCurrentGraph?.();
-    if (currentGraph) {
-      const newLinks = currentGraph.links.filter((l) => l._id !== linkId);
-      dispatch(setGraphData({ nodes: currentGraph.nodes, links: newLinks }));
+    // Bail out without mutating D3 if we can't snapshot the graph for Redux —
+    // otherwise the visual would diverge from store state and break undo.
+    if (!currentGraph) {
+      handlePopupClose();
+      return;
     }
+    const newLinks = currentGraph.links.filter((l) => l._id !== linkId);
+    dispatch(setGraphData({ nodes: currentGraph.nodes, links: newLinks }));
     graphInstanceRef.current?.updateGraph({
       removeLink: linkId,
       labelStates: settings.labelStates,
