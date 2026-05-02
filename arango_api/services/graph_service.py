@@ -12,6 +12,77 @@ from arango_api.services.collection_service import get_collections
 logger = logging.getLogger(__name__)
 
 
+def _build_edge_filter_clause(edge_filters, bind_vars):
+    """
+    Translate an edge_filters dict into AQL clause condition lists.
+
+    Returns a (positive_conditions, negative_conditions) tuple of lists of
+    raw clause strings (no FILTER/PRUNE keywords). Mutates bind_vars in
+    place to add filter bind variables. Handles both categorical filters
+    (list of values, matched with IN) and numeric range filters (dict with
+    min/max keys, matched with TO_NUMBER).
+
+    Callers compose the final AQL by joining positive_conditions with
+    " AND " (for FILTER) and negative_conditions with " OR " (for PRUNE).
+    """
+    positive_conditions = []
+    negative_conditions = []
+
+    if not edge_filters:
+        return positive_conditions, negative_conditions
+
+    for key, values in edge_filters.items():
+        safe_key = re.sub(r"[^a-zA-Z0-9_]", "", key)
+
+        # Numeric range filter: values is a dict with min/max keys
+        if isinstance(values, dict):
+            filter_min = values.get("min")
+            filter_max = values.get("max")
+            if filter_min is None and filter_max is None:
+                continue
+
+            range_parts = [f"e.`{key}` != null", f'e.`{key}` != ""']
+            if filter_min is not None:
+                bind_min = f"filter_min_{safe_key}"
+                range_parts.append(f"TO_NUMBER(e.`{key}`) >= @{bind_min}")
+                bind_vars[bind_min] = filter_min
+            if filter_max is not None:
+                bind_max = f"filter_max_{safe_key}"
+                range_parts.append(f"TO_NUMBER(e.`{key}`) <= @{bind_max}")
+                bind_vars[bind_max] = filter_max
+
+            pos_cond = f"({' AND '.join(range_parts)})"
+            positive_conditions.append(pos_cond)
+
+            neg_cond = f"(e.`{key}` != null AND NOT ({' AND '.join(range_parts[2:])}))"
+            negative_conditions.append(neg_cond)
+            continue
+
+        # Categorical filter: values is a list
+        if values:
+            bind_key = f"filter_value_{safe_key}"
+
+            pos_cond = (
+                f"(e.`{key}` != null AND ("
+                f"(IS_STRING(e.`{key}`) AND e.`{key}` IN @{bind_key}) OR "
+                f"(IS_ARRAY(e.`{key}`) AND LENGTH(INTERSECTION(e.`{key}`, @{bind_key})) > 0)"
+                f"))"
+            )
+            positive_conditions.append(pos_cond)
+
+            neg_cond = (
+                f"(e.`{key}` != null AND NOT ("
+                f"(IS_STRING(e.`{key}`) AND e.`{key}` IN @{bind_key}) OR "
+                f"(IS_ARRAY(e.`{key}`) AND LENGTH(INTERSECTION(e.`{key}`, @{bind_key})) > 0)"
+                f"))"
+            )
+            negative_conditions.append(neg_cond)
+
+            bind_vars[bind_key] = values
+
+    return positive_conditions, negative_conditions
+
+
 def traverse_graph(
     node_ids,
     depth,
@@ -56,64 +127,12 @@ def traverse_graph(
     # Build the filtering and pruning logic
     filter_string = ""
     prune_string = ""
-    if edge_filters:
-        positive_conditions = []
-        negative_conditions = []
-
-        for key, values in edge_filters.items():
-            safe_key = re.sub(r"[^a-zA-Z0-9_]", "", key)
-
-            # Numeric range filter: values is a dict with min/max keys
-            if isinstance(values, dict):
-                filter_min = values.get("min")
-                filter_max = values.get("max")
-                if filter_min is None and filter_max is None:
-                    continue
-
-                range_parts = [f"e.`{key}` != null", f'e.`{key}` != ""']
-                if filter_min is not None:
-                    bind_min = f"filter_min_{safe_key}"
-                    range_parts.append(f"TO_NUMBER(e.`{key}`) >= @{bind_min}")
-                    bind_vars[bind_min] = filter_min
-                if filter_max is not None:
-                    bind_max = f"filter_max_{safe_key}"
-                    range_parts.append(f"TO_NUMBER(e.`{key}`) <= @{bind_max}")
-                    bind_vars[bind_max] = filter_max
-
-                pos_cond = f"({' AND '.join(range_parts)})"
-                positive_conditions.append(pos_cond)
-
-                neg_cond = (
-                    f"(e.`{key}` != null AND NOT ({' AND '.join(range_parts[2:])}))"
-                )
-                negative_conditions.append(neg_cond)
-                continue
-
-            # Categorical filter: values is a list
-            if values:
-                bind_key = f"filter_value_{safe_key}"
-
-                pos_cond = (
-                    f"(e.`{key}` != null AND ("
-                    f"(IS_STRING(e.`{key}`) AND e.`{key}` IN @{bind_key}) OR "
-                    f"(IS_ARRAY(e.`{key}`) AND LENGTH(INTERSECTION(e.`{key}`, @{bind_key})) > 0)"
-                    f"))"
-                )
-                positive_conditions.append(pos_cond)
-
-                neg_cond = (
-                    f"(e.`{key}` != null AND NOT ("
-                    f"(IS_STRING(e.`{key}`) AND e.`{key}` IN @{bind_key}) OR "
-                    f"(IS_ARRAY(e.`{key}`) AND LENGTH(INTERSECTION(e.`{key}`, @{bind_key})) > 0)"
-                    f"))"
-                )
-                negative_conditions.append(neg_cond)
-
-                bind_vars[bind_key] = values
-
-        if positive_conditions:
-            filter_string = f"FILTER {' AND '.join(positive_conditions)}"
-            prune_string = f"PRUNE {' OR '.join(negative_conditions)}"
+    positive_conditions, negative_conditions = _build_edge_filter_clause(
+        edge_filters, bind_vars
+    )
+    if positive_conditions:
+        filter_string = f"FILTER {' AND '.join(positive_conditions)}"
+        prune_string = f"PRUNE {' OR '.join(negative_conditions)}"
 
     aql_query = f"""
      FOR start_node_id IN @node_ids
@@ -158,7 +177,9 @@ def traverse_graph(
                     all_node_ids.add(node["_id"])
 
         if all_node_ids:
-            inter_edges = find_inter_node_edges(list(all_node_ids), graph)
+            inter_edges = find_inter_node_edges(
+                list(all_node_ids), graph, edge_filters=edge_filters
+            )
             inter_by_id = {e["_id"]: e for e in inter_edges if e and e.get("_id")}
 
             for data in results.values():
@@ -226,13 +247,16 @@ def traverse_graph_advanced(
     return aggregated_results
 
 
-def find_inter_node_edges(node_ids, graph="ontologies"):
+def find_inter_node_edges(node_ids, graph="ontologies", edge_filters=None):
     """
     Find all edges between a given set of nodes using direct edge collection scans.
 
     Args:
         node_ids (list): A list of node _id strings.
         graph (str): The graph type ("ontologies" or "phenotypes").
+        edge_filters (dict): Optional edge attribute filters. Categorical
+            filters use a list of values (matched with IN); numeric range
+            filters use a dict with min/max keys (matched with TO_NUMBER).
 
     Returns:
         list: A list of edge documents connecting nodes in the set.
@@ -247,12 +271,17 @@ def find_inter_node_edges(node_ids, graph="ontologies"):
         return []
 
     bind_vars = {"vertex_ids": node_ids}
+    positive_conditions, _ = _build_edge_filter_clause(edge_filters, bind_vars)
+    extra_filter = (
+        f" AND ({' AND '.join(positive_conditions)})" if positive_conditions else ""
+    )
+
     subqueries = []
     for i, coll in enumerate(edge_collections):
         bind_key = f"@coll_{i}"
         subqueries.append(
             f"(FOR e IN @@coll_{i} FILTER e._from IN @vertex_ids"
-            f" AND e._to IN @vertex_ids RETURN e)"
+            f" AND e._to IN @vertex_ids{extra_filter} RETURN e)"
         )
         bind_vars[bind_key] = coll
 
@@ -262,8 +291,14 @@ def find_inter_node_edges(node_ids, graph="ontologies"):
     return result if result else []
 
 
-def find_connecting_paths(node_ids, graph="phenotypes", allowed_collections=None,
-                         edge_filters=None, path_limit=100, max_depth=None):
+def find_connecting_paths(
+    node_ids,
+    graph="phenotypes",
+    allowed_collections=None,
+    edge_filters=None,
+    path_limit=100,
+    max_depth=None,
+):
     """
     Find paths between every pair of origin nodes via K_SHORTEST_PATHS.
 
@@ -324,12 +359,10 @@ def find_connecting_paths(node_ids, graph="phenotypes", allowed_collections=None
         coll_filter = ""
         if allowed_collections:
             coll_checks = " AND ".join(
-                f'NOT IS_SAME_COLLECTION("{c}", CURRENT)'
-                for c in allowed_collections
+                f'NOT IS_SAME_COLLECTION("{c}", CURRENT)' for c in allowed_collections
             )
             coll_filter = (
-                f"FILTER LENGTH(path.vertices[* "
-                f"FILTER {coll_checks}]) == 0"
+                f"FILTER LENGTH(path.vertices[* " f"FILTER {coll_checks}]) == 0"
             )
 
         bind_vars["path_limit"] = path_limit

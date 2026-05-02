@@ -270,6 +270,10 @@ const ForceGraph = ({
 
   const handleSimulationEnd = useCallback(
     (finalNodes, finalLinks) => {
+      // Skip if a drag is in flight — otherwise the natural-settle dispatch
+      // would route through updateGraph -> runSimulation(true) -> alpha(1)
+      // and clobber the drag's gentle warmup.
+      if (graphInstanceRef.current?.isDragging?.()) return;
       dispatch(setGraphData({ nodes: finalNodes, links: finalLinks, skipUndo: true }));
     },
     [dispatch],
@@ -624,6 +628,7 @@ const ForceGraph = ({
       : [...settings.allowedCollections, name];
     handleSettingChange("allowedCollections", newAllowed);
   };
+  const handleCollectionsClearAll = () => handleSettingChange("allowedCollections", []);
   const handleLabelToggle = (labelClass) => {
     const newLabelStates = {
       ...settings.labelStates,
@@ -672,6 +677,25 @@ const ForceGraph = ({
     graphInstanceRef.current?.updateGraph({
       collapseNodes: [popup.nodeId],
       removeNode: true,
+      labelStates: settings.labelStates,
+    });
+    handlePopupClose();
+  };
+
+  const handleRemoveEdge = () => {
+    if (!popup.nodeId || !popup.isEdge) return;
+    const linkId = popup.nodeId;
+    const currentGraph = graphInstanceRef.current?.getCurrentGraph?.();
+    // Bail out without mutating D3 if we can't snapshot the graph for Redux —
+    // otherwise the visual would diverge from store state and break undo.
+    if (!currentGraph) {
+      handlePopupClose();
+      return;
+    }
+    const newLinks = currentGraph.links.filter((l) => l._id !== linkId);
+    dispatch(setGraphData({ nodes: currentGraph.nodes, links: newLinks }));
+    graphInstanceRef.current?.updateGraph({
+      removeLink: linkId,
       labelStates: settings.labelStates,
     });
     handlePopupClose();
@@ -750,6 +774,14 @@ const ForceGraph = ({
             style={{ display: !popup.isEdge ? "block" : "none" }}
           >
             Remove Node
+          </button>
+          <button
+            type="button"
+            className="document-popup-button"
+            onClick={handleRemoveEdge}
+            style={{ display: popup.isEdge ? "block" : "none" }}
+          >
+            Remove Edge
           </button>
           <AddToGraphButton nodeId={popup.nodeId} text="Add to Graph" />
         </DocumentPopup>
@@ -885,6 +917,7 @@ const ForceGraph = ({
                     availableEdgeFilters={availableEdgeFilters}
                     edgeFilterStatus={edgeFilterStatus}
                     onCollectionChange={handleCollectionChange}
+                    onCollectionsClearAll={handleCollectionsClearAll}
                     graphLinks={graphData.links}
                   />
                 )}

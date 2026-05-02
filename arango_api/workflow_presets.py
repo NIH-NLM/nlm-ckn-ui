@@ -71,10 +71,13 @@ _PH_TARGETS_PHASE_SETTINGS = {
 }
 
 _PH_CELL_TYPES_PHASE_SETTINGS = {
-    "depth": 1,
+    "depth": 3,
     "edgeDirection": "ANY",
-    "allowedCollections": ["CL"],
-    "edgeFilters": {"Label": [], "Source": []},
+    "allowedCollections": ["GS", "CS", "CL"],
+    "edgeFilters": {
+        "Label": ["PRODUCES", "EXPRESSES", "COMPOSED_PRIMARILY_OF"],
+        "Source": [],
+    },
     "setOperation": "Union",
     "graphType": "phenotypes",
     "includeInterNodeEdges": True,
@@ -198,7 +201,7 @@ WORKFLOW_PRESETS = [
             "combinations and associated marker genes."
         ),
         "category": "Use Cases",
-        "layoutMode": "hierarchical",
+        "layoutMode": "force",
         "phases": [
             {
                 "id": "preset-uc3-phase-1",
@@ -237,7 +240,7 @@ WORKFLOW_PRESETS = [
                     "allowedCollections": ["BMC", "GS", "CS"],
                     "edgeFilters": {
                         "Label": [
-                            "DERIVES_FROM",
+                            "EXPRESSES",
                             "PART_OF",
                             "HAS_CHARACTERIZING_MARKER_SET",
                             "COMPOSED_PRIMARILY_OF",
@@ -305,12 +308,11 @@ WORKFLOW_PRESETS = [
                     "allowedCollections": ["CS", "BMC", "GS", "CL"],
                     "edgeFilters": {
                         "Label": [
-                            "SOURCE",
+                            "MEMBER_OF",
                             "PART_OF",
                             "HAS_CHARACTERIZING_MARKER_SET",
                             "COMPOSED_PRIMARILY_OF",
-                            "HAS_CHARACTERIZING_SET",
-                            "IS_CHARACTERIZING_SET_FOR",
+                            "EXPRESSES",
                         ],
                         "Source": [],
                     },
@@ -415,17 +417,18 @@ WORKFLOW_PRESETS = [
                 "previousPhaseId": "preset-uc6-phase-1",
                 "originFilter": "all",
                 "settings": {
-                    "depth": 2,
+                    "depth": 3,
                     "edgeDirection": "ANY",
                     "allowedCollections": [
-                        "CL", "UBERON", "NCBITaxon", "PR",
+                        "CL", "UBERON", "NCBITaxon", "PR", "CS",
                     ],
                     "edgeFilters": {
                         "Label": [
-                            "SELECTIVELY_EXPRESSES",
                             "PART_OF",
                             "PRESENT_IN_TAXON",
                             "PRODUCES",
+                            "EXPRESSES",
+                            "COMPOSED_PRIMARILY_OF",
                         ],
                         "Source": [],
                     },
@@ -482,18 +485,19 @@ WORKFLOW_PRESETS = [
                 "previousPhaseId": "preset-uc7-phase-1",
                 "originFilter": "all",
                 "settings": {
-                    "depth": 2,
+                    "depth": 3,
                     "edgeDirection": "ANY",
                     "allowedCollections": [
-                        "CL", "UBERON", "NCBITaxon", "PR", "CHEMBL",
+                        "CL", "UBERON", "NCBITaxon", "PR", "CHEMBL", "CS",
                     ],
                     "edgeFilters": {
                         "Label": [
-                            "SELECTIVELY_EXPRESSES",
                             "PART_OF",
                             "PRESENT_IN_TAXON",
                             "PRODUCES",
                             "MOLECULARLY_INTERACTS_WITH",
+                            "EXPRESSES",
+                            "COMPOSED_PRIMARILY_OF",
                         ],
                         "Source": [],
                     },
@@ -551,21 +555,22 @@ WORKFLOW_PRESETS = [
                 "previousPhaseId": "preset-uc8-phase-1",
                 "originFilter": "all",
                 "settings": {
-                    "depth": 2,
+                    "depth": 3,
                     "edgeDirection": "ANY",
                     "allowedCollections": [
                         "CL", "UBERON", "NCBITaxon", "PR",
-                        "CHEMBL", "MONDO",
+                        "CHEMBL", "MONDO", "CS",
                     ],
                     "edgeFilters": {
                         "Label": [
-                            "SELECTIVELY_EXPRESSES",
                             "PART_OF",
                             "PRESENT_IN_TAXON",
                             "PRODUCES",
                             "MOLECULARLY_INTERACTS_WITH",
                             "IS_GENETIC_BASIS_FOR_CONDITION",
                             "IS_SUBSTANCE_THAT_TREATS",
+                            "EXPRESSES",
+                            "COMPOSED_PRIMARILY_OF",
                         ],
                         "Source": [],
                     },
@@ -623,21 +628,22 @@ WORKFLOW_PRESETS = [
                 "previousPhaseId": "preset-uc9-phase-1",
                 "originFilter": "all",
                 "settings": {
-                    "depth": 2,
+                    "depth": 3,
                     "edgeDirection": "ANY",
                     "allowedCollections": [
                         "CL", "UBERON", "NCBITaxon", "PR",
-                        "CHEMBL", "BMC", "MONDO",
+                        "CHEMBL", "BMC", "MONDO", "CS",
                     ],
                     "edgeFilters": {
                         "Label": [
-                            "SELECTIVELY_EXPRESSES",
                             "PART_OF",
                             "PRESENT_IN_TAXON",
                             "PRODUCES",
                             "MOLECULARLY_INTERACTS_WITH",
                             "HAS_QUALITY",
                             "IS_GENETIC_BASIS_FOR_CONDITION",
+                            "EXPRESSES",
+                            "COMPOSED_PRIMARILY_OF",
                         ],
                         "Source": [],
                     },
@@ -771,10 +777,18 @@ WORKFLOW_PRESETS = [
                 "previousPhaseId": None,
                 "originFilter": "all",
                 "settings": {
-                    "depth": 2,
+                    "depth": 4,
                     "edgeDirection": "ANY",
-                    "allowedCollections": ["CL", "BMC", "GS"],
-                    "edgeFilters": {"Label": [], "Source": []},
+                    "allowedCollections": ["CL", "CS", "BMC", "GS"],
+                    "edgeFilters": {
+                        "Label": [
+                            "PART_OF",
+                            "COMPOSED_PRIMARILY_OF",
+                            "HAS_CHARACTERIZING_MARKER_SET",
+                            "EXPRESSES",
+                        ],
+                        "Source": [],
+                    },
                     "setOperation": "Union",
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
@@ -822,10 +836,18 @@ WORKFLOW_PRESETS = [
                 "previousPhaseId": "preset-dendritic-phase-1",
                 "originFilter": "all",
                 "settings": {
-                    "depth": 2,
+                    "depth": 3,
                     "edgeDirection": "ANY",
-                    "allowedCollections": ["BMC", "GS", "UBERON"],
-                    "edgeFilters": {"Label": [], "Source": []},
+                    "allowedCollections": ["BMC", "GS", "UBERON", "CS"],
+                    "edgeFilters": {
+                        "Label": [
+                            "COMPOSED_PRIMARILY_OF",
+                            "HAS_CHARACTERIZING_MARKER_SET",
+                            "EXPRESSES",
+                            "PART_OF",
+                        ],
+                        "Source": [],
+                    },
                     "setOperation": "Union",
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
@@ -924,10 +946,18 @@ WORKFLOW_PRESETS = [
                 "previousPhaseId": "preset-pathogenesis-phase-1",
                 "originFilter": "all",
                 "settings": {
-                    "depth": 1,
+                    "depth": 2,
                     "edgeDirection": "ANY",
-                    "allowedCollections": ["BMC", "CL", "GS", "PR"],
-                    "edgeFilters": {"Label": [], "Source": []},
+                    "allowedCollections": ["BMC", "CL", "GS", "PR", "CS"],
+                    "edgeFilters": {
+                        "Label": [
+                            "EXPRESSES",
+                            "COMPOSED_PRIMARILY_OF",
+                            "HAS_CHARACTERIZING_MARKER_SET",
+                            "PRODUCES",
+                        ],
+                        "Source": [],
+                    },
                     "setOperation": "Union",
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,

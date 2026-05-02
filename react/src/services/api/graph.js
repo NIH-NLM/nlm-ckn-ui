@@ -104,13 +104,15 @@ export const fetchConnectingPaths = async (params) => {
  * Used as a post-merge scan to discover edges between nodes from different origins.
  * @param {Array<string>} nodeIds - Node IDs to check for edges between.
  * @param {string} graphType - Graph type.
+ * @param {Object} [edgeFilters] - Edge attribute filters (categorical or numeric).
  * @returns {Promise<Array>} Array of edge documents.
  */
-export const fetchEdgesBetween = async (nodeIds, graphType) => {
+export const fetchEdgesBetween = async (nodeIds, graphType, edgeFilters) => {
   if (!nodeIds || nodeIds.length < 2) return [];
   return postJson(`${GRAPH_ENDPOINT}edges-between/`, {
     node_ids: nodeIds,
     graph: graphType,
+    edge_filters: edgeFilters || {},
   });
 };
 
