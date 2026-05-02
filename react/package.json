@@ -35,8 +35,8 @@
     }
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build-react": "react-scripts build",
+    "start": "DISABLE_ESLINT_PLUGIN=true react-scripts start",
+    "build-react": "DISABLE_ESLINT_PLUGIN=true react-scripts build",
     "collectstatic-django": "(cd .. && python manage.py collectstatic --noinput)",
     "build": "npm run build-react && npm run collectstatic-django",
     "test": "react-scripts test",

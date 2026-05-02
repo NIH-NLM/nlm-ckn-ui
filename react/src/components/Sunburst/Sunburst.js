@@ -407,6 +407,7 @@ const Sunburst = ({ addSelectedItem }) => {
   }, [latestHandleNodeClick, latestHandleCenterClick, latestHandleSunburstClick]);
 
   // --- MOUNT EFFECT: build SVG once ---
+  // biome-ignore lint/correctness/useExhaustiveDependencies: handlers come from refs; only re-mount on graphData
   useEffect(() => {
     const container = svgContainerRef.current;
     if (!container || !graphData || mountedRef.current) return;
@@ -451,7 +452,6 @@ const Sunburst = ({ addSelectedItem }) => {
         rafIdRef.current = null;
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [graphData]);
 
   // --- UPDATE EFFECT: patch existing SVG when data changes ---
