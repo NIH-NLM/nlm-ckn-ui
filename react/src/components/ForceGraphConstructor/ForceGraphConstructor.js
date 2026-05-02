@@ -1,6 +1,11 @@
 import * as d3 from "d3";
 import { getColorForCollection } from "../../utils";
-import { findLeafNodes, processGraphData, processGraphLinks } from "./graphDataProcessing";
+import {
+  filterRemovedLink,
+  findLeafNodes,
+  processGraphData,
+  processGraphLinks,
+} from "./graphDataProcessing";
 import { renderGraph, toggleFocusNodeRendering } from "./graphRendering";
 import {
   applyLayoutMode,
@@ -600,6 +605,7 @@ function ForceGraphConstructor(
     collapseNodes = [],
     collapseMode = "standard",
     removeNode = false,
+    removeLink = null,
     centerNodeId = null,
     resetData = false,
     save = true,
@@ -653,6 +659,9 @@ function ForceGraphConstructor(
         );
       }
     }
+
+    // Remove a single link by _id without touching its endpoint nodes.
+    processedLinks = filterRemovedLink(processedLinks, removeLink);
 
     // Update simulation with current data.
     simulation.nodes(processedNodes);
