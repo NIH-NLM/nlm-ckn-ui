@@ -1,10 +1,43 @@
 import { getColorForCollection } from "../../utils/colors";
-import { processGraphData, processGraphLinks } from "./graphDataProcessing";
+import { filterRemovedLink, processGraphData, processGraphLinks } from "./graphDataProcessing";
 
 // Mock the color utilities
 jest.mock("../../utils/colors", () => ({
   getColorForCollection: jest.fn((collection) => `color-${collection}`),
 }));
+
+describe("filterRemovedLink", () => {
+  const links = [
+    { _id: "edges/AB", source: { id: "A" }, target: { id: "B" } },
+    { _id: "edges/BC", source: { id: "B" }, target: { id: "C" } },
+  ];
+
+  it("removes the link with matching _id", () => {
+    const result = filterRemovedLink(links, "edges/AB");
+    expect(result).toHaveLength(1);
+    expect(result[0]._id).toBe("edges/BC");
+  });
+
+  it("returns the same list when removeLink is null", () => {
+    expect(filterRemovedLink(links, null)).toBe(links);
+  });
+
+  it("returns the same list when removeLink is undefined", () => {
+    expect(filterRemovedLink(links, undefined)).toBe(links);
+  });
+
+  it("returns the list unchanged when no link matches", () => {
+    const result = filterRemovedLink(links, "edges/ZZ");
+    expect(result).toHaveLength(2);
+  });
+
+  it("removes a self-loop link by _id", () => {
+    const withSelfLoop = [...links, { _id: "edges/AA", source: { id: "A" }, target: { id: "A" } }];
+    const result = filterRemovedLink(withSelfLoop, "edges/AA");
+    expect(result.find((l) => l._id === "edges/AA")).toBeUndefined();
+    expect(result).toHaveLength(2);
+  });
+});
 
 describe("ForceGraphConstructor data tests", () => {
   beforeEach(() => {

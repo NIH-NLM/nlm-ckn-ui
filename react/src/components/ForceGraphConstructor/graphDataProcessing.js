@@ -117,6 +117,19 @@ export function processGraphLinks(
 }
 
 /**
+ * Filters out a single link by _id, leaving the rest of the list untouched.
+ * Returns the same array reference when no removal is requested so callers
+ * can cheaply detect a no-op.
+ * @param {Array} links - Current links in graph
+ * @param {string|null|undefined} removeLinkId - _id of the link to remove
+ * @returns {Array} Links with the matching _id removed
+ */
+export function filterRemovedLink(links, removeLinkId) {
+  if (!removeLinkId) return links;
+  return links.filter((l) => l._id !== removeLinkId);
+}
+
+/**
  * Identifies leaf nodes connected only to a single neighbor from collapse list.
  * @param {Array} nodes - All nodes in the graph
  * @param {Array} links - All links in the graph
