@@ -91,14 +91,16 @@ export const fetchWithErrorHandling = async (endpoint, options = {}, config = {}
  * @param {string} endpoint - The API endpoint URL.
  * @param {Object} body - Request body to be JSON stringified.
  * @param {Object} [config={}] - Additional configuration (silent, fallback).
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request.
  * @returns {Promise<*>} Parsed JSON response.
  */
-export const postJson = async (endpoint, body, config = {}) => {
+export const postJson = async (endpoint, body, config = {}, signal = undefined) => {
   return fetchWithErrorHandling(
     endpoint,
     {
       method: "POST",
       body: JSON.stringify(body),
+      ...(signal !== undefined && { signal }),
     },
     config,
   );

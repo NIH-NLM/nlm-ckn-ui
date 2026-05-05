@@ -83,22 +83,28 @@ export const fetchEdgeFilterOptions = createAsyncThunk(
   },
 );
 
+/** @typedef {{ nodeId: string, collectionOverride?: string|null }} ExpandNodeArg */
+
 // Async thunk for expanding a single node.
 // Fetches neighbors at depth 1 and returns new nodes/links.
+// @param {ExpandNodeArg} arg
 export const expandNode = createAsyncThunk(
   "graph/expandNode",
-  async (nodeIdToExpand, { getState }) => {
+  async ({ nodeId, collectionOverride = null }, { getState }) => {
     const { settings } = getState().graph.present;
+    const allowedCollections = collectionOverride
+      ? [collectionOverride]
+      : settings.allowedCollections;
     const expansionData = await fetchNodeExpansion(
-      nodeIdToExpand,
+      nodeId,
       settings.graphType,
-      settings.allowedCollections,
+      allowedCollections,
       settings.includeInterNodeEdges ?? true,
     );
     return {
-      newNodes: expansionData?.[nodeIdToExpand].nodes || [],
-      newLinks: expansionData?.[nodeIdToExpand].links || [],
-      centerNodeId: nodeIdToExpand,
+      newNodes: expansionData?.[nodeId]?.nodes || [],
+      newLinks: expansionData?.[nodeId]?.links || [],
+      centerNodeId: nodeId,
     };
   },
 );

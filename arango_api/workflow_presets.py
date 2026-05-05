@@ -18,11 +18,27 @@ PRESET_CATEGORIES = [
     # Graph result examples
     {"id": "Use Cases", "label": "Use Cases", "section": "graph-results"},
     # List result examples
-    {"id": "Ontology Exploration", "label": "Ontology Exploration", "section": "list-results"},
-    {"id": "Cell Type Discovery", "label": "Cell Type Discovery", "section": "list-results"},
-    {"id": "Marker Gene Analysis", "label": "Marker Gene Analysis", "section": "list-results"},
+    {
+        "id": "Ontology Exploration",
+        "label": "Ontology Exploration",
+        "section": "list-results",
+    },
+    {
+        "id": "Cell Type Discovery",
+        "label": "Cell Type Discovery",
+        "section": "list-results",
+    },
+    {
+        "id": "Marker Gene Analysis",
+        "label": "Marker Gene Analysis",
+        "section": "list-results",
+    },
     {"id": "Disease Analysis", "label": "Disease Analysis", "section": "list-results"},
-    {"id": "Example: Pulmonary Hypertension", "label": "Example: Pulmonary Hypertension", "section": "list-results"},
+    {
+        "id": "Example: Pulmonary Hypertension",
+        "label": "Example: Pulmonary Hypertension",
+        "section": "list-results",
+    },
 ]
 
 # ---------------------------------------------------------------------------
@@ -113,16 +129,18 @@ def _build_ph_phases(id_prefix, count):
     for i in range(count):
         template = _PH_PHASE_TEMPLATES[i]
         phase_id = f"{id_prefix}-phase-{i + 1}"
-        phases.append({
-            "id": phase_id,
-            "name": template["name"],
-            "originSource": template.get("originSource", "previousPhase"),
-            "originNodeIds": list(template.get("originNodeIds", [])),
-            "previousPhaseId": phases[-1]["id"] if phases else None,
-            "originFilter": "all",
-            "settings": {**template["settings"]},
-            "perNodeSettings": {},
-        })
+        phases.append(
+            {
+                "id": phase_id,
+                "name": template["name"],
+                "originSource": template.get("originSource", "previousPhase"),
+                "originNodeIds": list(template.get("originNodeIds", [])),
+                "previousPhaseId": phases[-1]["id"] if phases else None,
+                "originFilter": "all",
+                "settings": {**template["settings"]},
+                "perNodeSettings": {},
+            }
+        )
     return phases
 
 
@@ -163,7 +181,6 @@ WORKFLOW_PRESETS = [
             },
         ],
     },
-
     {
         "id": "epithelial-cells-lung-uc2",
         "name": "Epithelial cells in the lung (UC2)",
@@ -257,7 +274,6 @@ WORKFLOW_PRESETS = [
             },
         ],
     },
-
     {
         "id": "lung-spatial-panel-uc4",
         "name": "Lung spatial transcriptomics panel (UC4)",
@@ -338,7 +354,6 @@ WORKFLOW_PRESETS = [
             },
         ],
     },
-
     {
         "id": "dataset-comparison-uc5",
         "name": "Compare datasets: HLCA vs CellRef (UC5)",
@@ -372,7 +387,6 @@ WORKFLOW_PRESETS = [
             },
         ],
     },
-
     {
         "id": "cystic-fibrosis-uc6",
         "name": "Cystic fibrosis pathogenesis (UC6)",
@@ -420,7 +434,11 @@ WORKFLOW_PRESETS = [
                     "depth": 3,
                     "edgeDirection": "ANY",
                     "allowedCollections": [
-                        "CL", "UBERON", "NCBITaxon", "PR", "CS",
+                        "CL",
+                        "UBERON",
+                        "NCBITaxon",
+                        "PR",
+                        "CS",
                     ],
                     "edgeFilters": {
                         "Label": [
@@ -488,7 +506,12 @@ WORKFLOW_PRESETS = [
                     "depth": 3,
                     "edgeDirection": "ANY",
                     "allowedCollections": [
-                        "CL", "UBERON", "NCBITaxon", "PR", "CHEMBL", "CS",
+                        "CL",
+                        "UBERON",
+                        "NCBITaxon",
+                        "PR",
+                        "CHEMBL",
+                        "CS",
                     ],
                     "edgeFilters": {
                         "Label": [
@@ -510,7 +533,6 @@ WORKFLOW_PRESETS = [
             },
         ],
     },
-
     {
         "id": "parkinsons-disease-uc8",
         "name": "Parkinson's disease exploration (UC8)",
@@ -558,8 +580,13 @@ WORKFLOW_PRESETS = [
                     "depth": 3,
                     "edgeDirection": "ANY",
                     "allowedCollections": [
-                        "CL", "UBERON", "NCBITaxon", "PR",
-                        "CHEMBL", "MONDO", "CS",
+                        "CL",
+                        "UBERON",
+                        "NCBITaxon",
+                        "PR",
+                        "CHEMBL",
+                        "MONDO",
+                        "CS",
                     ],
                     "edgeFilters": {
                         "Label": [
@@ -583,7 +610,6 @@ WORKFLOW_PRESETS = [
             },
         ],
     },
-
     {
         "id": "pah-kcnk3-uc9",
         "name": "Pulmonary arterial hypertension / KCNK3 (UC9)",
@@ -631,8 +657,14 @@ WORKFLOW_PRESETS = [
                     "depth": 3,
                     "edgeDirection": "ANY",
                     "allowedCollections": [
-                        "CL", "UBERON", "NCBITaxon", "PR",
-                        "CHEMBL", "BMC", "MONDO", "CS",
+                        "CL",
+                        "UBERON",
+                        "NCBITaxon",
+                        "PR",
+                        "CHEMBL",
+                        "BMC",
+                        "MONDO",
+                        "CS",
                     ],
                     "edgeFilters": {
                         "Label": [
@@ -656,7 +688,6 @@ WORKFLOW_PRESETS = [
             },
         ],
     },
-
     # -------------------------------------------------------------------------
     # Ontology Exploration
     # -------------------------------------------------------------------------
@@ -690,7 +721,6 @@ WORKFLOW_PRESETS = [
             },
         ],
     },
-
     # -------------------------------------------------------------------------
     # Cell Type Discovery
     # -------------------------------------------------------------------------
@@ -756,7 +786,6 @@ WORKFLOW_PRESETS = [
             },
         ],
     },
-
     # -------------------------------------------------------------------------
     # Marker Gene Analysis
     # -------------------------------------------------------------------------
@@ -857,7 +886,6 @@ WORKFLOW_PRESETS = [
             },
         ],
     },
-
     # -------------------------------------------------------------------------
     # Disease Analysis
     # -------------------------------------------------------------------------
@@ -931,7 +959,10 @@ WORKFLOW_PRESETS = [
                     "depth": 9,
                     "edgeDirection": "INBOUND",
                     "allowedCollections": ["MONDO", "GS"],
-                    "edgeFilters": {"Label": ["SUB_CLASS_OF", "IS_GENETIC_BASIS_FOR_CONDITION"], "Source": []},
+                    "edgeFilters": {
+                        "Label": ["SUB_CLASS_OF", "IS_GENETIC_BASIS_FOR_CONDITION"],
+                        "Source": [],
+                    },
                     "setOperation": "Union",
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
@@ -992,7 +1023,10 @@ WORKFLOW_PRESETS = [
                     "depth": 1,
                     "edgeDirection": "INBOUND",
                     "allowedCollections": ["GS"],
-                    "edgeFilters": {"Label": ["IS_GENETIC_BASIS_FOR_CONDITION"], "Source": []},
+                    "edgeFilters": {
+                        "Label": ["IS_GENETIC_BASIS_FOR_CONDITION"],
+                        "Source": [],
+                    },
                     "setOperation": "Union",
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
@@ -1055,7 +1089,6 @@ WORKFLOW_PRESETS = [
             },
         ],
     },
-
     # -------------------------------------------------------------------------
     # Example: Pulmonary Hypertension
     #

@@ -1,6 +1,7 @@
 """
 Service for sunburst visualization data.
 """
+
 import logging
 import threading
 import time
@@ -212,9 +213,16 @@ def _get_cl_names_for_organ(db, graph_name, organ_id):
                     _hasChildren: true, children: null
                 })
     """
-    return list(db.aql.execute(
-        query, bind_vars={"organ": organ_id, "g": graph_name, "depth": UBERON_SUBTREE_DEPTH}
-    ))
+    return list(
+        db.aql.execute(
+            query,
+            bind_vars={
+                "organ": organ_id,
+                "g": graph_name,
+                "depth": UBERON_SUBTREE_DEPTH,
+            },
+        )
+    )
 
 
 def _phenotypes_initial_load(db, graph_name):
@@ -236,7 +244,9 @@ def _phenotypes_initial_load(db, graph_name):
         doc["children"] = cl_children
         organ_nodes.append(doc)
 
-    cursor = db.aql.execute("RETURN DOCUMENT(@id)", bind_vars={"id": PHENOTYPES_HUMAN_ID})
+    cursor = db.aql.execute(
+        "RETURN DOCUMENT(@id)", bind_vars={"id": PHENOTYPES_HUMAN_ID}
+    )
     human_list = list(cursor)
     human_doc = human_list[0] if human_list else None
 
@@ -300,9 +310,7 @@ def _phenotypes_cl_children(db, graph_name, parent_id):
                 children: gs_kids
             })
     """
-    return list(
-        db.aql.execute(query, bind_vars={"pid": parent_id, "g": graph_name})
-    )
+    return list(db.aql.execute(query, bind_vars={"pid": parent_id, "g": graph_name}))
 
 
 def _phenotypes_gs_children(db, graph_name, parent_id):
@@ -315,9 +323,7 @@ def _phenotypes_gs_children(db, graph_name, parent_id):
                 OR IS_SAME_COLLECTION("PR", v)
             RETURN MERGE(v, { value: 1, subtree_size: 1, _hasChildren: false, children: null })
     """
-    return list(
-        db.aql.execute(query, bind_vars={"pid": parent_id, "g": graph_name})
-    )
+    return list(db.aql.execute(query, bind_vars={"pid": parent_id, "g": graph_name}))
 
 
 def get_ontologies_sunburst(parent_id=None):
