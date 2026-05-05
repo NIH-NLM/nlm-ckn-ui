@@ -616,9 +616,17 @@ const ForceGraph = ({
   }, [dispatch, lassoMode, lassoSelectedNodeIds.length]);
 
   // Bulk delete: remove every node currently in the lasso selection in a
-  // single store update + a single graph mutation.
+  // single store update + a single graph mutation. Confirms first because
+  // the action is effectively irreversible — `collapseNodes` and the
+  // simulation-end `setGraphData` are both excluded from the redux-undo
+  // filter, so Ctrl+Z can't recover the deleted nodes.
   const handleBulkDelete = useCallback(() => {
     if (lassoSelectedNodeIds.length === 0) return;
+    const count = lassoSelectedNodeIds.length;
+    const ok = window.confirm(
+      `Remove ${count} selected node${count === 1 ? "" : "s"} from the graph?`,
+    );
+    if (!ok) return;
     const ids = [...lassoSelectedNodeIds];
     dispatch(collapseNodes(ids));
     graphInstanceRef.current?.updateGraph({

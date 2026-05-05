@@ -88,7 +88,13 @@ function ForceGraphConstructor(
         for (const { node, startX, startY } of groupDragSnapshot.nodes.values()) {
           node.fx = startX + dx;
           node.fy = startY + dy;
+          // ticked() paints from node.x/y, not fx/fy — copy through so the
+          // group visibly tracks the pointer when the simulation is settled
+          // (we deliberately skipped the alphaTarget reheat).
+          node.x = node.fx;
+          node.y = node.fy;
         }
+        ticked();
         return;
       }
 
@@ -101,13 +107,21 @@ function ForceGraphConstructor(
         if (groupDragSnapshot && groupDragSnapshot.subjectId === event.subject.id) {
           const positions = [];
           for (const [id, { node }] of groupDragSnapshot.nodes.entries()) {
+            // Mirror fx/fy into x/y for any final-frame correction before the
+            // last paint — the drag handler already does this, but be defensive
+            // in case "end" fires without a preceding "drag" (zero-distance
+            // click on a selected node).
+            node.x = node.fx;
+            node.y = node.fy;
             positions.push({ nodeId: id, x: node.fx, y: node.fy });
           }
           mergedOptions.onMultiNodeDragEnd?.(positions);
           groupDragSnapshot = null;
-          // Re-render the simulation tick so the pinned positions paint at
-          // their final coords without waiting for an external reheat.
-          simulation.alpha(Math.max(simulation.alpha(), 0));
+          // Repaint at final positions. simulation.alpha(...) without restart()
+          // won't run a tick once the simulation has cooled, so call ticked()
+          // directly — this matches the explicit-render pattern used after the
+          // initial settle in updateGraph.
+          ticked();
           return;
         }
 
