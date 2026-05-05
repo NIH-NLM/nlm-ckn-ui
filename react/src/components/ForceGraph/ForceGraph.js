@@ -616,10 +616,10 @@ const ForceGraph = ({
   }, [dispatch, lassoMode, lassoSelectedNodeIds.length]);
 
   // Bulk delete: remove every node currently in the lasso selection in a
-  // single store update + a single graph mutation. Confirms first because
-  // the action is effectively irreversible — `collapseNodes` and the
-  // simulation-end `setGraphData` are both excluded from the redux-undo
-  // filter, so Ctrl+Z can't recover the deleted nodes.
+  // single store update + a single graph mutation. The setGraphData snapshot
+  // creates a redux-undo checkpoint so Ctrl+Z restores the deleted nodes;
+  // the confirm dialog still gates the action because wiping many nodes by
+  // accident is disruptive even when recoverable.
   const handleBulkDelete = useCallback(() => {
     if (lassoSelectedNodeIds.length === 0) return;
     const count = lassoSelectedNodeIds.length;
@@ -628,6 +628,12 @@ const ForceGraph = ({
     );
     if (!ok) return;
     const ids = [...lassoSelectedNodeIds];
+    const currentGraph = graphInstanceRef.current?.getCurrentGraph?.();
+    if (!currentGraph) return;
+    const idSet = new Set(ids);
+    const newNodes = currentGraph.nodes.filter((n) => !idSet.has(n._id) && !idSet.has(n.id));
+    const newLinks = currentGraph.links.filter((l) => !idSet.has(l.source) && !idSet.has(l.target));
+    dispatch(setGraphData({ nodes: newNodes, links: newLinks }));
     dispatch(collapseNodes(ids));
     graphInstanceRef.current?.updateGraph({
       collapseNodes: ids,
@@ -829,9 +835,25 @@ const ForceGraph = ({
 
   const handleRemove = () => {
     if (!popup.nodeId) return;
-    dispatch(collapseNode(popup.nodeId));
+    const targetId = popup.nodeId;
+    const currentGraph = graphInstanceRef.current?.getCurrentGraph?.();
+    // Bail out without mutating D3 if we can't snapshot the graph for Redux —
+    // otherwise the visual would diverge from store state and break undo.
+    if (!currentGraph) {
+      handlePopupClose();
+      return;
+    }
+    const newNodes = currentGraph.nodes.filter((n) => (n._id || n.id) !== targetId);
+    const newLinks = currentGraph.links.filter(
+      (l) => l.source !== targetId && l.target !== targetId,
+    );
+    // setGraphData is the only filter-accepted action in this sequence, so it
+    // creates the undo checkpoint. past[] captures the pre-delete state, so
+    // Ctrl+Z restores both graphData and the clean collapsed.userDefined.
+    dispatch(setGraphData({ nodes: newNodes, links: newLinks }));
+    dispatch(collapseNode(targetId));
     graphInstanceRef.current?.updateGraph({
-      collapseNodes: [popup.nodeId],
+      collapseNodes: [targetId],
       removeNode: true,
       labelStates: settings.labelStates,
     });
