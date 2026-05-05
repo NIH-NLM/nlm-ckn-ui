@@ -17,6 +17,7 @@ export const NODES_DETAILS_ENDPOINT = `${API_BASE}/nodes/details`;
 
 // Graph endpoints
 export const GRAPH_ENDPOINT = `${API_BASE}/graph/`;
+export const NEIGHBOR_COLLECTIONS_ENDPOINT = `${API_BASE}/graph/neighbor-collections/`;
 export const SHORTEST_PATHS_ENDPOINT = `${API_BASE}/shortest_paths/`;
 export const CONNECTING_PATHS_ENDPOINT = `${API_BASE}/connecting_paths/`;
 export const EDGE_FILTER_OPTIONS_ENDPOINT = `${API_BASE}/edge_filter_options/`;

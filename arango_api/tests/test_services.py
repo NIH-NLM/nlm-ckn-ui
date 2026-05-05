@@ -238,6 +238,37 @@ class GraphServiceTestCase(ArangoDBTestCase):
         for link in links:
             self.assertEqual(link["label"], "subClassOf")
 
+    def test_get_neighbor_collections_returns_distinct_collections(self):
+        # CL/0000061 has OUTBOUND edges to CL, GO, and UBERON in the seed data.
+        result = graph_service.get_neighbor_collections(
+            node_id="CL/0000061",
+            graph="ontologies",
+            edge_direction="OUTBOUND",
+        )
+        self.assertIsInstance(result, list)
+        self.assertEqual(result, sorted(result), "Result must be sorted")
+        self.assertIn("CL", result)
+        self.assertIn("GO", result)
+        self.assertIn("UBERON", result)
+        self.assertEqual(len(result), len(set(result)), "Result must be distinct")
+
+    def test_get_neighbor_collections_nonexistent_node_returns_empty(self):
+        # A non-existent node id should return no neighbors regardless of direction.
+        result = graph_service.get_neighbor_collections(
+            node_id="CL/nonexistent",
+            graph="ontologies",
+            edge_direction="INBOUND",
+        )
+        self.assertEqual(result, [])
+
+    def test_get_neighbor_collections_invalid_direction_raises(self):
+        with self.assertRaises(ValueError):
+            graph_service.get_neighbor_collections(
+                node_id="CL/0000061",
+                graph="ontologies",
+                edge_direction="bad",
+            )
+
 
 class WorkflowServiceTestCase(ArangoDBTestCase):
     """Tests for workflow_service functions, focused on edge_filters propagation."""

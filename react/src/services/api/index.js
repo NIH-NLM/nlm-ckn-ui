@@ -17,6 +17,7 @@ export {
   fetchEdgeFilterOptions,
   fetchEdgesBetween,
   fetchGraphData,
+  fetchNeighborCollections,
   fetchNodeExpansion,
 } from "./graph";
 

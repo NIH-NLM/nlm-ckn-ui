@@ -170,6 +170,28 @@ class GraphViewsTestCase(ArangoDBViewTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("NCBITaxon/9606", response.json())
 
+    def test_neighbor_collections_valid_request(self):
+        response = self.client.post(
+            reverse("get_neighbor_collections"),
+            data={"node_id": "CL/0000061", "edge_direction": "OUTBOUND"},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("collections", data)
+        self.assertIsInstance(data["collections"], list)
+        self.assertIn("CL", data["collections"])
+        self.assertIn("GO", data["collections"])
+        self.assertIn("UBERON", data["collections"])
+
+    def test_neighbor_collections_missing_node_id(self):
+        response = self.client.post(
+            reverse("get_neighbor_collections"),
+            data={"edge_direction": "ANY"},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
 
 class EdgesBetweenViewTestCase(ArangoDBViewTestCase):
     """Tests for the /graph/edges-between/ endpoint."""

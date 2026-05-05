@@ -23,6 +23,7 @@ from arango_api.serializers import (
     GraphRequestSerializer,
     GraphTraversalSerializer,
     AdvancedGraphTraversalSerializer,
+    NeighborCollectionsSerializer,
     ShortestPathsSerializer,
     EdgesBetweenSerializer,
     SearchRequestSerializer,
@@ -127,6 +128,22 @@ class GraphTraversalView(APIView):
             )
 
         return Response(results)
+
+
+class NeighborCollectionsView(APIView):
+    """Return the distinct vertex collection names reachable in one hop from a node."""
+
+    def post(self, request):
+        serializer = NeighborCollectionsSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        collections = graph_service.get_neighbor_collections(
+            node_id=data["node_id"],
+            graph=data.get("graph", "ontologies"),
+            edge_direction=data.get("edge_direction", "ANY"),
+        )
+        return Response({"collections": collections})
 
 
 class ShortestPathsView(APIView):

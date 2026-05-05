@@ -23,4 +23,8 @@ db_ontologies = client.db(
 db_phenotypes = client.db(
     ARANGO_DB_NAME_PHENOTYPES, username=ARANGO_DB_USER, password=ARANGO_DB_PASSWORD
 )
-logger.info("Connected to databases: %s, %s", ARANGO_DB_NAME_ONTOLOGIES, ARANGO_DB_NAME_PHENOTYPES)
+logger.info(
+    "Connected to databases: %s, %s",
+    ARANGO_DB_NAME_ONTOLOGIES,
+    ARANGO_DB_NAME_PHENOTYPES,
+)

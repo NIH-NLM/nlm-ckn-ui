@@ -7,6 +7,7 @@ import { useGraphDataInit, useHotkeyHold, useHotkeys } from "hooks";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { shallowEqual, useDispatch, useSelector } from "react-redux";
 import { ActionCreators } from "redux-undo";
+import { fetchNeighborCollections } from "services";
 import {
   clearGraphData,
   clearNodeToCenter,
@@ -122,6 +123,14 @@ const ForceGraph = ({
     nodeLabel: null,
     position: { x: 0, y: 0 },
   });
+  const [collectionMenu, setCollectionMenu] = useState({
+    open: false,
+    loading: false,
+    collections: [],
+    error: null,
+  });
+  const abortRef = useRef(null);
+  const collectionMenuTriggerRef = useRef(null);
   const [isLoadModalOpen, setIsLoadModalOpen] = useState(false);
 
   // State for two-tiered tab navigation.
@@ -279,7 +288,12 @@ const ForceGraph = ({
     [dispatch],
   );
 
-  const handlePopupClose = () => setPopup({ ...popup, visible: false });
+  const handlePopupClose = () => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setCollectionMenu({ open: false, loading: false, collections: [], error: null });
+    setPopup({ ...popup, visible: false });
+  };
 
   const handleNodeClick = (e, nodeData) => {
     const chartRect = wrapperRef.current.getBoundingClientRect();
@@ -657,8 +671,71 @@ const ForceGraph = ({
       );
     }
     dispatch(uncollapseNode(popup.nodeId));
-    dispatch(expandNode(popup.nodeId));
+    dispatch(expandNode({ nodeId: popup.nodeId }));
     handlePopupClose();
+  };
+
+  const handleOpenCollectionMenu = async () => {
+    if (collectionMenu.open) {
+      abortRef.current?.abort();
+      abortRef.current = null;
+      setCollectionMenu((s) => ({ ...s, open: false }));
+      return;
+    }
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setCollectionMenu({ open: true, loading: true, collections: [], error: null });
+    try {
+      const collections = await fetchNeighborCollections(
+        popup.nodeId,
+        settings.graphType,
+        "ANY",
+        controller.signal,
+      );
+      if (abortRef.current !== controller) return;
+      setCollectionMenu({
+        open: true,
+        loading: false,
+        collections: [...collections].sort(),
+        error: null,
+      });
+    } catch (err) {
+      if (err.name === "AbortError") return;
+      if (abortRef.current !== controller) return;
+      setCollectionMenu((s) => ({ ...s, loading: false, error: "Failed to load collections" }));
+    }
+  };
+
+  const handleExpandToCollection = (collectionName) => {
+    if (!popup.nodeId) return;
+    const currentGraph = graphInstanceRef.current?.getCurrentGraph?.();
+    if (currentGraph) {
+      dispatch(
+        setGraphData({ nodes: currentGraph.nodes, links: currentGraph.links, skipUndo: true }),
+      );
+    }
+    dispatch(uncollapseNode(popup.nodeId));
+    dispatch(expandNode({ nodeId: popup.nodeId, collectionOverride: collectionName }));
+    handlePopupClose();
+  };
+
+  const handleCollectionSubmenuKeyDown = (e) => {
+    const items = e.currentTarget.querySelectorAll('[role="menuitem"]');
+    const focused = document.activeElement;
+    const idx = Array.from(items).indexOf(focused);
+    if (e.key === "Escape") {
+      setCollectionMenu((s) => ({ ...s, open: false }));
+      collectionMenuTriggerRef.current?.focus();
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const next = items[(idx + 1) % items.length];
+      next?.focus();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const prev = items[(idx - 1 + items.length) % items.length];
+      prev?.focus();
+    }
   };
 
   const handleCollapse = () => {
@@ -759,6 +836,62 @@ const ForceGraph = ({
           >
             Expand
           </button>
+          <button
+            ref={collectionMenuTriggerRef}
+            type="button"
+            className="document-popup-button"
+            aria-haspopup="menu"
+            aria-expanded={collectionMenu.open}
+            aria-controls="expand-by-collection-submenu"
+            onClick={handleOpenCollectionMenu}
+            style={{ display: !popup.isEdge ? "block" : "none" }}
+          >
+            Expand by Collection {collectionMenu.open ? "▴" : "▾"}
+          </button>
+          {collectionMenu.open && (
+            // biome-ignore lint/correctness/useUniqueElementIds: single popup instance; id referenced by aria-controls
+            <div
+              id="expand-by-collection-submenu"
+              role="menu"
+              className="document-popup-submenu"
+              onKeyDown={handleCollectionSubmenuKeyDown}
+            >
+              {collectionMenu.loading && (
+                <div className="document-popup-submenu-status" aria-live="polite">
+                  Loading…
+                </div>
+              )}
+              {!collectionMenu.loading && collectionMenu.error && (
+                <div
+                  className="document-popup-submenu-status document-popup-submenu-error"
+                  role="alert"
+                >
+                  {collectionMenu.error}
+                </div>
+              )}
+              {!collectionMenu.loading &&
+                !collectionMenu.error &&
+                collectionMenu.collections.length === 0 && (
+                  <div className="document-popup-submenu-status">
+                    No neighbors in other collections
+                  </div>
+                )}
+              {!collectionMenu.loading &&
+                !collectionMenu.error &&
+                collectionMenu.collections.map((name) => (
+                  <div role="none" key={name}>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="document-popup-submenu-item"
+                      onClick={() => handleExpandToCollection(name)}
+                    >
+                      {collectionMaps.get(name)?.display_name ?? name}
+                    </button>
+                  </div>
+                ))}
+            </div>
+          )}
           <button
             type="button"
             className="document-popup-button"

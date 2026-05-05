@@ -54,7 +54,7 @@ test("Expanding a node creates undo history and undo restores the previous graph
 
   const popup = page.locator(".document-popup");
   await expect(popup).toBeVisible();
-  await popup.getByRole("button", { name: "Expand" }).click();
+  await popup.getByRole("button", { name: "Expand", exact: true }).click();
 
   // Wait for expansion: should now have 3 nodes (ROOT, CHILD1, GC1)
   await expect(async () => {
@@ -137,7 +137,7 @@ test("Undo after expand preserves link source text from collection map", async (
   await childNode.click({ button: "right", force: true });
   const popup = page.locator(".document-popup");
   await expect(popup).toBeVisible();
-  await popup.getByRole("button", { name: "Expand" }).click();
+  await popup.getByRole("button", { name: "Expand", exact: true }).click();
 
   await expect(async () => {
     expect(await page.locator("g.node").count()).toBe(3);

@@ -177,7 +177,7 @@ test("Expand button fetches and adds new nodes to graph", async ({ page }) => {
   await expect(popup).toBeVisible();
 
   // Click the Expand button
-  const expandButton = popup.getByRole("button", { name: "Expand" });
+  const expandButton = popup.getByRole("button", { name: "Expand", exact: true });
   await expect(expandButton).toBeVisible();
   await expandButton.click();
 
@@ -305,7 +305,7 @@ test("Expand button closes popup after triggering expansion", async ({ page }) =
   await expect(popup).toBeVisible();
 
   // Click expand
-  await popup.getByRole("button", { name: "Expand" }).click();
+  await popup.getByRole("button", { name: "Expand", exact: true }).click();
 
   // Popup should close after clicking expand
   await expect(popup).toBeHidden({ timeout: 3000 });
