@@ -9,17 +9,22 @@ import { shallowEqual, useDispatch, useSelector } from "react-redux";
 import { ActionCreators } from "redux-undo";
 import { fetchNeighborCollections } from "services";
 import {
+  addToLassoSelection,
   clearGraphData,
+  clearLassoSelection,
   clearNodeToCenter,
   collapseNode,
+  collapseNodes,
   expandNode,
   fetchAndProcessGraph,
   initializeGraph,
   saveGraph,
   setGraphData,
   setInitialCollapseList,
+  setLassoSelection,
   syncSettingsToLastApplied,
   uncollapseNode,
+  updateNodePositions,
   updateSetting,
 } from "store";
 import { getLabel, hasNodesInRawData, isMac, LoadingBar, performSetOperation } from "utils";
@@ -76,6 +81,7 @@ const ForceGraph = ({
     availableEdgeFilters,
     edgeFilterStatus,
     source,
+    lassoSelectedNodeIds,
   } = useSelector((state) => state.graph.present, shallowEqual);
 
   // Select undo and redo state
@@ -132,6 +138,7 @@ const ForceGraph = ({
   const abortRef = useRef(null);
   const collectionMenuTriggerRef = useRef(null);
   const [isLoadModalOpen, setIsLoadModalOpen] = useState(false);
+  const [lassoMode, setLassoMode] = useState(false);
 
   // State for two-tiered tab navigation.
   const [activePrimaryTab, setActivePrimaryTab] = useState("settings");
@@ -295,6 +302,30 @@ const ForceGraph = ({
     setPopup({ ...popup, visible: false });
   };
 
+  // Lasso selection callback: replace the selection by default; shift-drag
+  // unions with the existing selection. Auto-exits lasso mode so pan/zoom
+  // resumes immediately after a drag completes.
+  const handleLassoSelection = useCallback(
+    (ids, { shift } = {}) => {
+      if (shift) {
+        dispatch(addToLassoSelection(ids));
+      } else {
+        dispatch(setLassoSelection(ids));
+      }
+      setLassoMode(false);
+    },
+    [dispatch],
+  );
+
+  // Group-drag commit: dispatched once at the end of dragging a selected
+  // node so all selected positions land in the store as a single update.
+  const handleMultiNodeDragEnd = useCallback(
+    (positions) => {
+      dispatch(updateNodePositions(positions));
+    },
+    [dispatch],
+  );
+
   const handleNodeClick = (e, nodeData) => {
     const chartRect = wrapperRef.current.getBoundingClientRect();
     const popupWidth = 200;
@@ -336,6 +367,8 @@ const ForceGraph = ({
           collectionMaps: collectionMaps,
           onNodeClick: handleNodeClick,
           onNodeDragEnd: handleNodeDragEnd,
+          onLassoSelection: handleLassoSelection,
+          onMultiNodeDragEnd: handleMultiNodeDragEnd,
           interactionCallback: handlePopupClose,
           nodeGroup: (d) => d._id.split("/")[0],
           nodeHover: (d) => (d.label ? `${d._id}\n${d.label}` : `${d._id}`),
@@ -557,6 +590,44 @@ const ForceGraph = ({
       graphInstanceRef.current.toggleFocusNodes(settings.useFocusNodes);
     }
   }, [settings.useFocusNodes]);
+
+  // Push lasso-mode changes into the D3 instance.
+  useEffect(() => {
+    graphInstanceRef.current?.setLassoMode?.(lassoMode);
+  }, [lassoMode]);
+
+  // Push lasso-selection changes into the D3 instance so the selected nodes
+  // get the highlight class applied.
+  useEffect(() => {
+    graphInstanceRef.current?.setSelectedNodeIds?.(lassoSelectedNodeIds);
+  }, [lassoSelectedNodeIds]);
+
+  // Escape key clears the lasso selection and exits lasso mode. This is the
+  // single escape hatch if the lasso state ever gets stuck (e.g., if a
+  // selection callback throws).
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key !== "Escape") return;
+      if (lassoMode) setLassoMode(false);
+      if (lassoSelectedNodeIds.length > 0) dispatch(clearLassoSelection());
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [dispatch, lassoMode, lassoSelectedNodeIds.length]);
+
+  // Bulk delete: remove every node currently in the lasso selection in a
+  // single store update + a single graph mutation.
+  const handleBulkDelete = useCallback(() => {
+    if (lassoSelectedNodeIds.length === 0) return;
+    const ids = [...lassoSelectedNodeIds];
+    dispatch(collapseNodes(ids));
+    graphInstanceRef.current?.updateGraph({
+      collapseNodes: ids,
+      removeNode: true,
+      labelStates: settings.labelStates,
+    });
+    dispatch(clearLassoSelection());
+  }, [dispatch, lassoSelectedNodeIds, settings.labelStates]);
 
   // --- History & Save/Load Handlers ---
   const handleUndo = useCallback(() => {
@@ -795,10 +866,35 @@ const ForceGraph = ({
           {optionsVisible ? "> Hide Options" : "< Show Options"}
         </button>
 
+        <button
+          type="button"
+          onClick={() => setLassoMode((m) => !m)}
+          className={`lasso-toggle-button${lassoMode ? " active" : ""}`}
+          aria-pressed={lassoMode}
+          title="Drag to select multiple nodes (shift to add to selection, Esc to exit)"
+        >
+          {lassoMode ? "Lasso: on" : "Lasso"}
+        </button>
+
         {status === "loading" && <LoadingBar />}
 
         {/* biome-ignore lint/correctness/useUniqueElementIds: legacy id */}
         <div id="chart-container-wrapper" ref={wrapperRef}>
+          {lassoSelectedNodeIds.length > 0 && (
+            <div className="lasso-action-bar" role="toolbar" aria-label="Selection actions">
+              <span className="lasso-action-bar-count">{lassoSelectedNodeIds.length} selected</span>
+              <button type="button" onClick={handleBulkDelete} className="lasso-action-bar-button">
+                Delete
+              </button>
+              <button
+                type="button"
+                onClick={() => dispatch(clearLassoSelection())}
+                className="lasso-action-bar-button"
+              >
+                Clear
+              </button>
+            </div>
+          )}
           <svg ref={svgRef} role="img" aria-label="Graph visualization">
             <title>Graph visualization</title>
           </svg>
