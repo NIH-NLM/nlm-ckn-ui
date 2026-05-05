@@ -303,7 +303,9 @@ function ForceGraphConstructor(
   // Attach the lasso pointer behavior. The polygon is drawn inside `g` so it
   // moves with the current zoom transform, and `getNodes` reads the live
   // simulation array so it always reflects the rendered graph.
-  attachLasso({
+  // We capture the returned `detach` so a future teardown method can remove
+  // the pointer listeners and any in-flight `.lasso-path` element.
+  const _detachLasso = attachLasso({
     svg,
     g,
     getNodes: () => simulation.nodes(),
@@ -912,9 +914,9 @@ function ForceGraphConstructor(
       currentSelectedNodeIds = new Set(ids || []);
       applySelectionHighlight();
     },
-    // Reads the current selection. Used by the drag handler to decide
-    // whether to enter group-drag mode.
-    getSelectedNodeIds: () => currentSelectedNodeIds,
+    // Reads the current selection. Returns a copy so callers can't mutate
+    // the internal Set used by the drag handler and applySelectionHighlight.
+    getSelectedNodeIds: () => new Set(currentSelectedNodeIds),
     // Returns the current node/link state suitable for saving.
     getCurrentGraph: () => {
       const finalNodes = processedNodes.map(({ x, y, index, vx, vy, ...rest }) => ({
