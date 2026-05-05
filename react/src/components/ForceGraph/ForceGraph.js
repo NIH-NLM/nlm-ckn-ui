@@ -59,6 +59,11 @@ const ForceGraph = ({
   // (simulation end dispatches setGraphData with same nodes, causing re-render loop)
   const lastRenderedNodeIdsRef = useRef(null);
   const lastRenderedLinkIdsRef = useRef(null);
+  // Set to true while we know an undo/loadGraph just ran. Concurrent React
+  // can commit a stale "setGraphData" render *after* the restore render,
+  // which would otherwise drive a case-482 reconciliation that clobbers
+  // D3 with the pre-undo data. This ref makes that effect a no-op once.
+  const justRestoredRef = useRef(false);
   // Tracks the layoutMode the D3 instance was last told about. Used to skip the
   // first run of the layoutMode useEffect — on initial mount, the constructor
   // is created with the current layoutMode and updateGraph applies it after
@@ -418,7 +423,14 @@ const ForceGraph = ({
           links: graphData.links,
           labelStates: settings.labelStates,
         });
+        lastRenderedNodeIdsRef.current = new Set(graphData.nodes.map((n) => n._id || n.id));
+        lastRenderedLinkIdsRef.current = new Set(
+          graphData.links.map((l) => l._id || `${l.source}-${l.target}`),
+        );
       }
+      // Suppress one round of case-482 reconciliation in case a stale
+      // setGraphData render commits after this restore.
+      justRestoredRef.current = true;
       setIsRestoring(false);
     } else {
       switch (lastActionType) {
@@ -480,6 +492,14 @@ const ForceGraph = ({
           break;
         }
         case "setGraphData": {
+          // If a restore just happened, swallow one stale "setGraphData"
+          // render that React's concurrent scheduler may have committed
+          // after the restore. Re-running updateGraph here would clobber
+          // the just-restored D3 state with the pre-undo data.
+          if (justRestoredRef.current) {
+            justRestoredRef.current = false;
+            break;
+          }
           // Handle direct graph data setting (e.g., from WorkflowBuilder).
           // Use graphInstanceRef.current since graphInstance may be stale if
           // the instance was just created in this same effect run.
@@ -633,6 +653,12 @@ const ForceGraph = ({
     const idSet = new Set(ids);
     const newNodes = currentGraph.nodes.filter((n) => !idSet.has(n._id) && !idSet.has(n.id));
     const newLinks = currentGraph.links.filter((l) => !idSet.has(l.source) && !idSet.has(l.target));
+    // See handleRemove for why we need a skipUndo pre-state dispatch — without
+    // it, past[] may capture an earlier (often empty) graphData if the initial
+    // sim-end hasn't fired yet.
+    dispatch(
+      setGraphData({ nodes: currentGraph.nodes, links: currentGraph.links, skipUndo: true }),
+    );
     dispatch(setGraphData({ nodes: newNodes, links: newLinks }));
     dispatch(collapseNodes(ids));
     graphInstanceRef.current?.updateGraph({
@@ -847,9 +873,18 @@ const ForceGraph = ({
     const newLinks = currentGraph.links.filter(
       (l) => l.source !== targetId && l.target !== targetId,
     );
-    // setGraphData is the only filter-accepted action in this sequence, so it
-    // creates the undo checkpoint. past[] captures the pre-delete state, so
-    // Ctrl+Z restores both graphData and the clean collapsed.userDefined.
+    // First sync Redux to the pre-delete state with skipUndo. This pushes
+    // _latestUnfiltered up to the current D3 graph without creating an undo
+    // entry — necessary because the redux-undo "syncFilter" pattern only
+    // tracks accepted/skipUndo dispatches, and the sim-end dispatch from the
+    // initial graph load may not have fired yet. Without this, the next
+    // accepted dispatch's past[] entry would capture an earlier (often empty)
+    // graphData and undo would restore that instead of the pre-delete graph.
+    // Then the post-delete dispatch (filter-accepted) creates the actual undo
+    // checkpoint capturing the pre-delete state in past[].
+    dispatch(
+      setGraphData({ nodes: currentGraph.nodes, links: currentGraph.links, skipUndo: true }),
+    );
     dispatch(setGraphData({ nodes: newNodes, links: newLinks }));
     dispatch(collapseNode(targetId));
     graphInstanceRef.current?.updateGraph({
@@ -871,6 +906,11 @@ const ForceGraph = ({
       return;
     }
     const newLinks = currentGraph.links.filter((l) => l._id !== linkId);
+    // See handleRemove for the rationale on this two-step skipUndo+accepted
+    // dispatch dance.
+    dispatch(
+      setGraphData({ nodes: currentGraph.nodes, links: currentGraph.links, skipUndo: true }),
+    );
     dispatch(setGraphData({ nodes: currentGraph.nodes, links: newLinks }));
     graphInstanceRef.current?.updateGraph({
       removeLink: linkId,

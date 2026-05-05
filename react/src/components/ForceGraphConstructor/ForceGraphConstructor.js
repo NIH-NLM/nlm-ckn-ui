@@ -618,6 +618,11 @@ function ForceGraphConstructor(
   // Rebuilds graph from a saved state object.
   // Fixes node positions initially to prevent simulation drift on restore.
   function restoreGraph({ nodes, links, labelStates }) {
+    // Invalidate any in-flight waitForAlpha promises from prior updateGraph
+    // calls — without this, a callback resolving after restoreGraph would
+    // call onSimulationEnd with stale `processedNodes` and dispatch
+    // setGraphData, overwriting the just-restored Redux state.
+    simulationGeneration.value++;
     resetGraph(false);
     // Sync internal label state with restored state.
     currentLabelStates = { ...labelStates };
