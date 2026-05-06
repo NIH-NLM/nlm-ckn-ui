@@ -104,6 +104,11 @@ test("Bulk delete via lasso creates undo history and undo restores all selected 
   const right = Math.min(wrapperBox.x + wrapperBox.width, viewport.width) - padding;
   const top = Math.max(wrapperBox.y, 0) + padding;
   const bottom = Math.min(wrapperBox.y + wrapperBox.height, viewport.height) - padding;
+  if (right <= left || bottom <= top) {
+    throw new Error(
+      `Degenerate lasso bounds after clamping: left=${left} right=${right} top=${top} bottom=${bottom} wrapperBox=${JSON.stringify(wrapperBox)} viewport=${JSON.stringify(viewport)}`,
+    );
+  }
 
   await page.mouse.move(left, top);
   await page.mouse.down();
