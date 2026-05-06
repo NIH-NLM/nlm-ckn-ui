@@ -78,32 +78,44 @@ test("Bulk delete via lasso creates undo history and undo restores all selected 
   // window.confirm gates bulk delete — auto-accept it
   page.on("dialog", (dialog) => dialog.accept());
 
+  // Wait for the simulation to settle so nodes are at their final positions
+  // before we draw the lasso polygon. Without this, the drag races the sim
+  // and the polygon may not enclose any node.
+  await page.waitForTimeout(500);
+
+  // Scroll the graph wrapper into view so the simulation's nodes (which D3
+  // places relative to the SVG center) sit inside the browser viewport —
+  // mouse events at viewport coordinates won't reach the SVG otherwise.
+  const wrapper = page.locator("#chart-container-wrapper");
+  await wrapper.scrollIntoViewIfNeeded();
+
   // Enable lasso mode
   await page.getByRole("button", { name: "Lasso", exact: false }).click();
   await expect(page.getByRole("button", { name: /Lasso/ })).toHaveAttribute("aria-pressed", "true");
 
-  // Drag a polygon that encloses every node. Use the SVG's bounding box so we
-  // cover the whole graph regardless of where the simulation settled.
-  const svg = page.locator("#chart-container-wrapper svg");
-  const box = await svg.boundingBox();
-  if (!box) throw new Error("graph svg has no bounding box");
-  const padding = 4;
-  const left = box.x + padding;
-  const right = box.x + box.width - padding;
-  const top = box.y + padding;
-  const bottom = box.y + box.height - padding;
+  // Drag a polygon over the wrapper's visible viewport intersection.
+  // The wrapper bounding box may extend past the viewport in headless CI;
+  // clamping keeps every mouse coord on-screen so events reach the SVG.
+  const wrapperBox = await wrapper.boundingBox();
+  if (!wrapperBox) throw new Error("wrapper has no bounding box");
+  const viewport = page.viewportSize() ?? { width: 1280, height: 720 };
+  const padding = 8;
+  const left = Math.max(wrapperBox.x, 0) + padding;
+  const right = Math.min(wrapperBox.x + wrapperBox.width, viewport.width) - padding;
+  const top = Math.max(wrapperBox.y, 0) + padding;
+  const bottom = Math.min(wrapperBox.y + wrapperBox.height, viewport.height) - padding;
 
   await page.mouse.move(left, top);
   await page.mouse.down();
-  await page.mouse.move(right, top, { steps: 5 });
-  await page.mouse.move(right, bottom, { steps: 5 });
-  await page.mouse.move(left, bottom, { steps: 5 });
-  await page.mouse.move(left, top, { steps: 5 });
+  await page.mouse.move(right, top, { steps: 10 });
+  await page.mouse.move(right, bottom, { steps: 10 });
+  await page.mouse.move(left, bottom, { steps: 10 });
+  await page.mouse.move(left, top, { steps: 10 });
   await page.mouse.up();
 
   // Action bar appears with the selected count; click "Delete"
   const actionBar = page.locator(".lasso-action-bar");
-  await expect(actionBar).toBeVisible();
+  await expect(actionBar).toBeVisible({ timeout: 10000 });
   await actionBar.getByRole("button", { name: "Delete" }).click();
 
   // After bulk delete: 0 nodes
