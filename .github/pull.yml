@@ -4,4 +4,4 @@ rules:
     upstream: NIH-NLM:main
     mergeMethod: merge
     mergeUnstable: false
-label: "sync from upstream"
+    label: "sync from upstream"
