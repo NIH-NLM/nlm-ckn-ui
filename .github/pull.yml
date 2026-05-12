@@ -2,6 +2,6 @@ version: "1"
 rules:
   - base: main
     upstream: NIH-NLM:main
-    mergeMethod: squash
+    mergeMethod: merge
     mergeUnstable: false
-label: "sync from upstream"
+    label: "sync from upstream"
