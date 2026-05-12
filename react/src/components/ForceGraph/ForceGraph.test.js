@@ -140,9 +140,9 @@ describe("ForceGraph", () => {
     );
 
     // Get the button that toggles the options visibility
-    // Button text is "< Show Options" when closed, "> Hide Options" when open
+    // Button text is "Settings" when closed, "Hide Settings" when open
     const toggleButton = screen.getByRole("button", {
-      name: /show options/i,
+      name: /settings/i,
     });
     // Get the graph-options panel by its ID
     const optionsPanel = document.getElementById("graph-options-panel");
@@ -155,9 +155,9 @@ describe("ForceGraph", () => {
     // After clicking, the options should be visible
     expect(optionsPanel).toHaveStyle("display: flex");
 
-    // Click the toggle button again (now should say "Hide Options")
+    // Click the toggle button again (now should say "Hide Settings")
     const hideButton = screen.getByRole("button", {
-      name: /hide options/i,
+      name: /hide settings/i,
     });
     fireEvent.click(hideButton);
     // After clicking again, the options should be hidden
