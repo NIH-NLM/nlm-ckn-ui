@@ -13,37 +13,83 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  open-upstream-pr:
+  promote:
     runs-on: ubuntu-latest
     steps:
-      - name: Open or update PR to upstream
+      - name: Fast-forward or merge fork into upstream
         env:
           GH_TOKEN: ${{ secrets.UPSTREAM_PR_TOKEN }}
         run: |
           set -euo pipefail
 
-          # Use the pulls API directly. `gh pr list --head Springbok-LLC:main`
-          # silently returns empty when run against a different upstream repo,
-          # which previously made the script try to create a duplicate PR and
-          # fail with HTTP 422.
-          EXISTING=$(gh api -X GET repos/NIH-NLM/nlm-ckn-ui/pulls \
+          UPSTREAM=NIH-NLM/nlm-ckn-ui
+          FORK=Springbok-LLC/nlm-ckn-ui
+
+          COMPARE=$(gh api "repos/$UPSTREAM/compare/main...Springbok-LLC:main")
+          AHEAD=$(echo "$COMPARE" | jq -r '.ahead_by')
+          BEHIND=$(echo "$COMPARE" | jq -r '.behind_by')
+          echo "Compare upstream/main...fork/main: ahead_by=$AHEAD, behind_by=$BEHIND"
+
+          if [ "$AHEAD" = "0" ]; then
+            echo "Fork is not ahead of upstream — nothing to promote."
+            exit 0
+          fi
+
+          # Fast-forward path: upstream has no independent commits, so we can
+          # point upstream/main at the fork's exact SHA via the Git Refs API.
+          # This preserves commit SHAs across the boundary, so pull[bot] sees
+          # zero divergence on the next upstream→fork sync. (gh pr merge
+          # --rebase rewrites committer signatures and changes SHAs, defeating
+          # the purpose; the squash method had the same problem.)
+          if [ "$BEHIND" = "0" ]; then
+            echo "Attempting fast-forward of $UPSTREAM main."
+            FF_SUCCEEDED=false
+            for i in 1 2 3 4 5; do
+              # Re-fetch fork tip each iteration so concurrent fork pushes are
+              # picked up rather than chasing a stale SHA.
+              HEAD_SHA=$(gh api "repos/$FORK/commits/main" --jq '.sha')
+              if gh api -X PATCH "repos/$UPSTREAM/git/refs/heads/main" \
+                   -f sha="$HEAD_SHA" -F force=false; then
+                echo "Fast-forward complete (upstream/main → $HEAD_SHA)."
+                FF_SUCCEEDED=true
+                break
+              fi
+              # Re-check whether upstream drifted during the attempt. If it did,
+              # abandon FF on this run and let the drift path below handle it
+              # rather than burning the rest of the retry budget on a SHA that
+              # can never fast-forward.
+              BEHIND=$(gh api "repos/$UPSTREAM/compare/main...Springbok-LLC:main" --jq '.behind_by')
+              if [ "$BEHIND" != "0" ]; then
+                echo "Upstream drifted mid-run (now behind_by=$BEHIND); falling through to drift path."
+                break
+              fi
+              echo "FF attempt $i failed but upstream still aligned; sleeping $((i * 10))s before retry."
+              sleep $((i * 10))
+            done
+            if [ "$FF_SUCCEEDED" = "true" ]; then
+              exit 0
+            fi
+            if [ "$BEHIND" = "0" ]; then
+              echo "::error::Fast-forward failed after 5 attempts despite upstream still aligned."
+              exit 1
+            fi
+            # BEHIND>0: fall through to the drift path below.
+          fi
+
+          # Drift path: upstream has commits the fork doesn't (typically because
+          # pull[bot] hasn't yet brought them down, or the fork branched off
+          # before they landed). Open or reuse a PR and admin-merge it with a
+          # real merge commit so the fork's SHAs are preserved on upstream as
+          # the merge commit's second-parent ancestry.
+          EXISTING=$(gh api -X GET "repos/$UPSTREAM/pulls" \
             -F head=Springbok-LLC:main \
             -F base=main \
             -F state=open \
             --jq '.[0].number // empty')
 
           if [ -z "$EXISTING" ]; then
-            # Short-circuit when there's no diff to promote. GitHub rejects
-            # pulls.create with HTTP 422 when base...head has no commits, and
-            # workflow_dispatch can fire in that state if everything's already
-            # been promoted.
-            AHEAD=$(gh api repos/NIH-NLM/nlm-ckn-ui/compare/main...Springbok-LLC:main --jq '.ahead_by')
-            if [ "$AHEAD" = "0" ]; then
-              echo "Springbok-LLC:main is not ahead of upstream — nothing to promote."
-              exit 0
-            fi
-            echo "No open PR found - creating one ($AHEAD commits ahead)."
-            PR_NUM=$(gh api repos/NIH-NLM/nlm-ckn-ui/pulls \
+            echo "Opening upstream PR ($AHEAD ahead, $BEHIND behind)."
+            PR_NUM=$(gh api "repos/$UPSTREAM/pulls" \
               -f title="Promote Springbok-LLC main to upstream" \
               -f head="Springbok-LLC:main" \
               -f base="main" \
@@ -52,17 +98,18 @@ jobs:
             echo "Created: #$PR_NUM"
           else
             PR_NUM=$EXISTING
-            echo "PR already open: #$PR_NUM"
+            echo "Reusing open PR: #$PR_NUM"
           fi
 
-          # Admin-bypass merge. The upstream Ruleset requires 1 approval which
-          # auto-merge would wait on indefinitely; the head commits have already
-          # passed Springbok-LLC's required checks (that's how they reached
-          # main), so the upstream PR doesn't need separate gating here.
-          # UPSTREAM_PR_TOKEN must belong to a user in the ruleset's bypass list.
+          # Admin-bypass merge commit. The upstream Ruleset requires 1 approval
+          # which auto-merge would wait on indefinitely; the head commits have
+          # already passed Springbok-LLC's required checks (that's how they
+          # reached main), so the upstream PR doesn't need separate gating
+          # here. UPSTREAM_PR_TOKEN must belong to a user in the ruleset's
+          # bypass list.
           for i in 1 2 3 4 5; do
-            if gh pr merge --admin --squash --repo NIH-NLM/nlm-ckn-ui "$PR_NUM"; then
-              echo "Merged."
+            if gh pr merge --admin --merge --repo "$UPSTREAM" "$PR_NUM"; then
+              echo "Merged (merge commit)."
               exit 0
             fi
             echo "Merge attempt $i failed; sleeping $((i * 10))s before retry."
