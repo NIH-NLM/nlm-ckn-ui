@@ -14,6 +14,9 @@ concurrency:
 
 jobs:
   promote:
+    # Skip when this workflow runs on the NIH-NLM upstream (it gets there via
+    # the FF/merge promotions). Only fire on the Springbok-LLC fork.
+    if: github.repository_owner == 'Springbok-LLC'
     runs-on: ubuntu-latest
     steps:
       - name: Fast-forward or merge fork into upstream
