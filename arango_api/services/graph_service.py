@@ -247,6 +247,39 @@ def traverse_graph_advanced(
     return aggregated_results
 
 
+def get_neighbor_collections(node_id, graph="ontologies", edge_direction="ANY"):
+    """
+    Return the distinct vertex collection names reachable in exactly one hop
+    from a given node.
+
+    Args:
+        node_id (str): The starting node _id (e.g. "CL/0000061").
+        graph (str): The graph type ("ontologies" or "phenotypes").
+        edge_direction (str): 'INBOUND', 'OUTBOUND', or 'ANY'.
+
+    Returns:
+        list: Sorted list of distinct collection name strings.
+
+    Raises:
+        ValueError: If edge_direction is not valid.
+    """
+    if edge_direction not in ["INBOUND", "OUTBOUND", "ANY"]:
+        raise ValueError("edge_direction must be 'INBOUND', 'OUTBOUND', or 'ANY'")
+
+    db, graph_name = get_db_and_graph(graph)
+
+    aql_query = f"""
+        FOR v IN 1..1 {edge_direction} @node_id GRAPH @graph
+            OPTIONS {{ uniqueVertices: "global", bfs: true }}
+            LIMIT 5000
+            RETURN DISTINCT PARSE_COLLECTION(v._id)
+    """
+
+    bind_vars = {"node_id": node_id, "graph": graph_name}
+    cursor = db.aql.execute(aql_query, bind_vars=bind_vars)
+    return sorted(x for x in cursor if x is not None)
+
+
 def find_inter_node_edges(node_ids, graph="ontologies", edge_filters=None):
     """
     Find all edges between a given set of nodes using direct edge collection scans.

@@ -1,6 +1,7 @@
 """
 Service for collection-related operations.
 """
+
 import logging
 
 from arango_api.db import db_ontologies

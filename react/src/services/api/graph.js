@@ -7,6 +7,7 @@ import {
   EDGE_FILTER_OPTIONS_ENDPOINT,
   EXPANSION_DEPTH,
   GRAPH_ENDPOINT,
+  NEIGHBOR_COLLECTIONS_ENDPOINT,
   SHORTEST_PATHS_ENDPOINT,
 } from "constants/index";
 import { postJson } from "./fetchWrapper";
@@ -139,6 +140,29 @@ export const fetchNodeExpansion = async (
     edge_filters: {},
     include_inter_node_edges: includeInterNodeEdges,
   });
+};
+
+/**
+ * Fetch the vertex collection names reachable in one hop from a node.
+ * @param {string} nodeId - The source node ID.
+ * @param {string} graphType - Graph/database type.
+ * @param {string} [edgeDirection="ANY"] - Traversal direction: ANY, INBOUND, or OUTBOUND.
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request.
+ * @returns {Promise<Array<string>>} Sorted list of distinct collection names.
+ */
+export const fetchNeighborCollections = async (
+  nodeId,
+  graphType,
+  edgeDirection = "ANY",
+  signal = undefined,
+) => {
+  const result = await postJson(
+    NEIGHBOR_COLLECTIONS_ENDPOINT,
+    { node_id: nodeId, graph: graphType, edge_direction: edgeDirection },
+    {},
+    signal,
+  );
+  return result.collections;
 };
 
 /**

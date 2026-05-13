@@ -20,11 +20,16 @@ Environment variables:
     - ARANGO_DB_USER: Database user (default: root)
     - ARANGO_TEST_PASSWORD: Database password for tests (default: test)
 """
+
 import os
 import sys
 
 from arango import ArangoClient
-from arango.exceptions import DatabaseCreateError, CollectionCreateError, GraphCreateError
+from arango.exceptions import (
+    DatabaseCreateError,
+    CollectionCreateError,
+    GraphCreateError,
+)
 
 
 # Configuration - use port 8530 by default to avoid conflicts with dev instance
@@ -46,26 +51,70 @@ GRAPH_NAME_PHENOTYPES = "phenotypes"
 # Document collections and their test documents
 DOCUMENT_COLLECTIONS = {
     "CL": [
-        {"_key": "0000000", "label": "cell", "definition": "A material entity of anatomical origin."},
-        {"_key": "0000061", "label": "crypt cell of Lieberkuhn", "definition": "An epithelial cell of the intestinal crypt."},
-        {"_key": "0000062", "label": "osteoblast", "definition": "A cell that secretes an extracellular matrix."},
-        {"_key": "0000151", "label": "secretory cell", "definition": "A cell that specializes in secretion."},
-        {"_key": "0002145", "label": "ciliated columnar cell of tracheobronchial tree", "definition": "A ciliated cell."},
-        {"_key": "0007002", "label": "intestinal epithelial cell", "definition": "An epithelial cell of the intestine."},
+        {
+            "_key": "0000000",
+            "label": "cell",
+            "definition": "A material entity of anatomical origin.",
+        },
+        {
+            "_key": "0000061",
+            "label": "crypt cell of Lieberkuhn",
+            "definition": "An epithelial cell of the intestinal crypt.",
+        },
+        {
+            "_key": "0000062",
+            "label": "osteoblast",
+            "definition": "A cell that secretes an extracellular matrix.",
+        },
+        {
+            "_key": "0000151",
+            "label": "secretory cell",
+            "definition": "A cell that specializes in secretion.",
+        },
+        {
+            "_key": "0002145",
+            "label": "ciliated columnar cell of tracheobronchial tree",
+            "definition": "A ciliated cell.",
+        },
+        {
+            "_key": "0007002",
+            "label": "intestinal epithelial cell",
+            "definition": "An epithelial cell of the intestine.",
+        },
     ],
     "GO": [
-        {"_key": "0008150", "label": "biological_process", "definition": "A biological process."},
-        {"_key": "0003674", "label": "molecular_function", "definition": "A molecular function."},
+        {
+            "_key": "0008150",
+            "label": "biological_process",
+            "definition": "A biological process.",
+        },
+        {
+            "_key": "0003674",
+            "label": "molecular_function",
+            "definition": "A molecular function.",
+        },
     ],
     "UBERON": [
-        {"_key": "0000061", "label": "anatomical structure", "definition": "Material anatomical entity."},
-        {"_key": "0000465", "label": "material anatomical entity", "definition": "Anatomical entity that has mass."},
+        {
+            "_key": "0000061",
+            "label": "anatomical structure",
+            "definition": "Material anatomical entity.",
+        },
+        {
+            "_key": "0000465",
+            "label": "material anatomical entity",
+            "definition": "Anatomical entity that has mass.",
+        },
     ],
     "NCBITaxon": [
         {"_key": "9606", "label": "Homo sapiens", "definition": "Human"},
     ],
     "CHEBI": [
-        {"_key": "0000001", "label": "chemical entity", "definition": "A chemical entity."},
+        {
+            "_key": "0000001",
+            "label": "chemical entity",
+            "definition": "A chemical entity.",
+        },
     ],
     "PATO": [
         {"_key": "0000001", "label": "quality", "definition": "A quality."},
@@ -137,6 +186,7 @@ EDGE_COLLECTIONS = {
 # =============================================================================
 # Seeding Functions
 # =============================================================================
+
 
 def create_database(sys_db, db_name):
     """Create a database if it doesn't exist."""
@@ -253,8 +303,7 @@ def seed_phenotypes_db(client):
     # Insert test documents
     # NCBITaxon - root of the phenotypes tree
     db.collection("NCBITaxon").insert(
-        {"_key": "9606", "label": "Homo sapiens"},
-        overwrite=True
+        {"_key": "9606", "label": "Homo sapiens"}, overwrite=True
     )
     print("    Inserted 1 document into NCBITaxon")
 
@@ -270,34 +319,31 @@ def seed_phenotypes_db(client):
 
     # CL - cell type linked to UBERON
     db.collection("CL").insert(
-        {"_key": "0000066", "label": "epithelial cell"},
-        overwrite=True
+        {"_key": "0000066", "label": "epithelial cell"}, overwrite=True
     )
     print("    Inserted 1 document into CL")
 
     # GS - gene set linked to CL
     db.collection("GS").insert(
-        {"_key": "test_gs_1", "label": "Test Gene Set"},
-        overwrite=True
+        {"_key": "test_gs_1", "label": "Test Gene Set"}, overwrite=True
     )
     print("    Inserted 1 document into GS")
 
     # MONDO - disease linked to GS
     db.collection("MONDO").insert(
-        {"_key": "0000001", "label": "disease or disorder"},
-        overwrite=True
+        {"_key": "0000001", "label": "disease or disorder"}, overwrite=True
     )
     print("    Inserted 1 document into MONDO")
 
     # Create edge collections with the exact names the sunburst service expects
     edge_collections = [
         "UBERON-NCBITaxon",  # NCBITaxon -> UBERON (INBOUND from NCBITaxon perspective)
-        "UBERON-CL",         # UBERON -> CL
-        "CL-UBERON",         # CL -> UBERON (alternate direction)
-        "CL-GS",             # CL -> GS
-        "GS-MONDO",          # GS -> MONDO
-        "GS-PR",             # GS -> PR
-        "CHEMBL-PR",         # PR -> CHEMBL
+        "UBERON-CL",  # UBERON -> CL
+        "CL-UBERON",  # CL -> UBERON (alternate direction)
+        "CL-GS",  # CL -> GS
+        "GS-MONDO",  # GS -> MONDO
+        "GS-PR",  # GS -> PR
+        "CHEMBL-PR",  # PR -> CHEMBL
     ]
     for edge_coll in edge_collections:
         create_collection(db, edge_coll, edge=True)
@@ -305,41 +351,89 @@ def seed_phenotypes_db(client):
     # Insert edges to create the path: NCBITaxon -> UBERON -> CL -> GS -> MONDO
     # UBERON-NCBITaxon: links UBERON to NCBITaxon (traversed INBOUND from NCBITaxon)
     db.collection("UBERON-NCBITaxon").insert(
-        {"_key": "0002048-9606", "_from": "UBERON/0002048", "_to": "NCBITaxon/9606", "label": "in_taxon"},
-        overwrite=True
+        {
+            "_key": "0002048-9606",
+            "_from": "UBERON/0002048",
+            "_to": "NCBITaxon/9606",
+            "label": "in_taxon",
+        },
+        overwrite=True,
     )
     print("    Inserted 1 edge into UBERON-NCBITaxon")
 
     # UBERON-CL: links CL to UBERON (traversed INBOUND from UBERON)
     db.collection("UBERON-CL").insert(
-        {"_key": "0000066-0002048", "_from": "CL/0000066", "_to": "UBERON/0002048", "label": "part_of"},
-        overwrite=True
+        {
+            "_key": "0000066-0002048",
+            "_from": "CL/0000066",
+            "_to": "UBERON/0002048",
+            "label": "part_of",
+        },
+        overwrite=True,
     )
     print("    Inserted 1 edge into UBERON-CL")
 
     # CL-GS: links CL to GS (traversed OUTBOUND from CL)
     db.collection("CL-GS").insert(
-        {"_key": "0000066-test_gs_1", "_from": "CL/0000066", "_to": "GS/test_gs_1", "label": "has_gene_set"},
-        overwrite=True
+        {
+            "_key": "0000066-test_gs_1",
+            "_from": "CL/0000066",
+            "_to": "GS/test_gs_1",
+            "label": "has_gene_set",
+        },
+        overwrite=True,
     )
     print("    Inserted 1 edge into CL-GS")
 
     # GS-MONDO: links GS to MONDO (traversed OUTBOUND from GS)
     db.collection("GS-MONDO").insert(
-        {"_key": "test_gs_1-0000001", "_from": "GS/test_gs_1", "_to": "MONDO/0000001", "label": "associated_with"},
-        overwrite=True
+        {
+            "_key": "test_gs_1-0000001",
+            "_from": "GS/test_gs_1",
+            "_to": "MONDO/0000001",
+            "label": "associated_with",
+        },
+        overwrite=True,
     )
     print("    Inserted 1 edge into GS-MONDO")
 
     # Create the phenotypes graph with all edge definitions
     edge_definitions = [
-        {"edge_collection": "UBERON-NCBITaxon", "from_vertex_collections": ["UBERON"], "to_vertex_collections": ["NCBITaxon"]},
-        {"edge_collection": "UBERON-CL", "from_vertex_collections": ["CL"], "to_vertex_collections": ["UBERON"]},
-        {"edge_collection": "CL-UBERON", "from_vertex_collections": ["CL"], "to_vertex_collections": ["UBERON"]},
-        {"edge_collection": "CL-GS", "from_vertex_collections": ["CL"], "to_vertex_collections": ["GS"]},
-        {"edge_collection": "GS-MONDO", "from_vertex_collections": ["GS"], "to_vertex_collections": ["MONDO"]},
-        {"edge_collection": "GS-PR", "from_vertex_collections": ["GS"], "to_vertex_collections": ["PR"]},
-        {"edge_collection": "CHEMBL-PR", "from_vertex_collections": ["CHEMBL"], "to_vertex_collections": ["PR"]},
+        {
+            "edge_collection": "UBERON-NCBITaxon",
+            "from_vertex_collections": ["UBERON"],
+            "to_vertex_collections": ["NCBITaxon"],
+        },
+        {
+            "edge_collection": "UBERON-CL",
+            "from_vertex_collections": ["CL"],
+            "to_vertex_collections": ["UBERON"],
+        },
+        {
+            "edge_collection": "CL-UBERON",
+            "from_vertex_collections": ["CL"],
+            "to_vertex_collections": ["UBERON"],
+        },
+        {
+            "edge_collection": "CL-GS",
+            "from_vertex_collections": ["CL"],
+            "to_vertex_collections": ["GS"],
+        },
+        {
+            "edge_collection": "GS-MONDO",
+            "from_vertex_collections": ["GS"],
+            "to_vertex_collections": ["MONDO"],
+        },
+        {
+            "edge_collection": "GS-PR",
+            "from_vertex_collections": ["GS"],
+            "to_vertex_collections": ["PR"],
+        },
+        {
+            "edge_collection": "CHEMBL-PR",
+            "from_vertex_collections": ["CHEMBL"],
+            "to_vertex_collections": ["PR"],
+        },
     ]
     create_graph(db, GRAPH_NAME_PHENOTYPES, edge_definitions)
 
@@ -387,8 +481,12 @@ def seed_test_databases(host=None, user=None, password=None, verbose=True):
     if verbose:
         print("\nTest database seeding complete!")
         print("\nTest data summary:")
-        print(f"  - {sum(len(docs) for docs in DOCUMENT_COLLECTIONS.values())} documents across {len(DOCUMENT_COLLECTIONS)} collections")
-        print(f"  - {sum(len(edges) for edges in EDGE_COLLECTIONS.values())} edges across {len(EDGE_COLLECTIONS)} collections")
+        print(
+            f"  - {sum(len(docs) for docs in DOCUMENT_COLLECTIONS.values())} documents across {len(DOCUMENT_COLLECTIONS)} collections"
+        )
+        print(
+            f"  - {sum(len(edges) for edges in EDGE_COLLECTIONS.values())} edges across {len(EDGE_COLLECTIONS)} collections"
+        )
 
     return True
 

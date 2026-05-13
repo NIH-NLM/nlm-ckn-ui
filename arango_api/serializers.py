@@ -79,6 +79,20 @@ class AdvancedGraphTraversalSerializer(GraphRequestSerializer):
     )
 
 
+class NeighborCollectionsSerializer(GraphRequestSerializer):
+    """Serializer for neighbor-collections discovery requests."""
+
+    node_id = serializers.CharField(
+        required=True,
+        help_text="Starting node _id",
+    )
+    edge_direction = serializers.ChoiceField(
+        choices=["INBOUND", "OUTBOUND", "ANY"],
+        required=False,
+        default="ANY",
+    )
+
+
 class ShortestPathsSerializer(serializers.Serializer):
     """Serializer for shortest paths requests."""
 

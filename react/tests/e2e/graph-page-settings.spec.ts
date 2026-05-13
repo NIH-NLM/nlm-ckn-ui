@@ -358,7 +358,7 @@ test("Graph node click opens popup with actions", async ({ page }) => {
 
   // Check buttons
   await expect(popup.getByText(/Go To/)).toBeVisible();
-  await expect(popup.getByRole("button", { name: "Expand" })).toBeVisible();
+  await expect(popup.getByRole("button", { name: "Expand", exact: true })).toBeVisible();
   await expect(popup.getByRole("button", { name: "Collapse Leaves" })).toBeVisible();
   await expect(popup.getByRole("button", { name: "Remove Node" })).toBeVisible();
 });

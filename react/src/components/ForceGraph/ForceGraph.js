@@ -7,18 +7,24 @@ import { useGraphDataInit, useHotkeyHold, useHotkeys } from "hooks";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { shallowEqual, useDispatch, useSelector } from "react-redux";
 import { ActionCreators } from "redux-undo";
+import { fetchNeighborCollections } from "services";
 import {
+  addToLassoSelection,
   clearGraphData,
+  clearLassoSelection,
   clearNodeToCenter,
   collapseNode,
+  collapseNodes,
   expandNode,
   fetchAndProcessGraph,
   initializeGraph,
   saveGraph,
   setGraphData,
   setInitialCollapseList,
+  setLassoSelection,
   syncSettingsToLastApplied,
   uncollapseNode,
+  updateNodePositions,
   updateSetting,
 } from "store";
 import { getLabel, hasNodesInRawData, isMac, LoadingBar, performSetOperation } from "utils";
@@ -53,6 +59,11 @@ const ForceGraph = ({
   // (simulation end dispatches setGraphData with same nodes, causing re-render loop)
   const lastRenderedNodeIdsRef = useRef(null);
   const lastRenderedLinkIdsRef = useRef(null);
+  // Set to true while we know an undo/loadGraph just ran. Concurrent React
+  // can commit a stale "setGraphData" render *after* the restore render,
+  // which would otherwise drive a case-482 reconciliation that clobbers
+  // D3 with the pre-undo data. This ref makes that effect a no-op once.
+  const justRestoredRef = useRef(false);
   // Tracks the layoutMode the D3 instance was last told about. Used to skip the
   // first run of the layoutMode useEffect — on initial mount, the constructor
   // is created with the current layoutMode and updateGraph applies it after
@@ -75,6 +86,7 @@ const ForceGraph = ({
     availableEdgeFilters,
     edgeFilterStatus,
     source,
+    lassoSelectedNodeIds,
   } = useSelector((state) => state.graph.present, shallowEqual);
 
   // Select undo and redo state
@@ -122,7 +134,16 @@ const ForceGraph = ({
     nodeLabel: null,
     position: { x: 0, y: 0 },
   });
+  const [collectionMenu, setCollectionMenu] = useState({
+    open: false,
+    loading: false,
+    collections: [],
+    error: null,
+  });
+  const abortRef = useRef(null);
+  const collectionMenuTriggerRef = useRef(null);
   const [isLoadModalOpen, setIsLoadModalOpen] = useState(false);
+  const [lassoMode, setLassoMode] = useState(false);
 
   // State for two-tiered tab navigation.
   const [activePrimaryTab, setActivePrimaryTab] = useState("settings");
@@ -279,7 +300,36 @@ const ForceGraph = ({
     [dispatch],
   );
 
-  const handlePopupClose = () => setPopup({ ...popup, visible: false });
+  const handlePopupClose = () => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setCollectionMenu({ open: false, loading: false, collections: [], error: null });
+    setPopup({ ...popup, visible: false });
+  };
+
+  // Lasso selection callback: replace the selection by default; shift-drag
+  // unions with the existing selection. Auto-exits lasso mode so pan/zoom
+  // resumes immediately after a drag completes.
+  const handleLassoSelection = useCallback(
+    (ids, { shift } = {}) => {
+      if (shift) {
+        dispatch(addToLassoSelection(ids));
+      } else {
+        dispatch(setLassoSelection(ids));
+      }
+      setLassoMode(false);
+    },
+    [dispatch],
+  );
+
+  // Group-drag commit: dispatched once at the end of dragging a selected
+  // node so all selected positions land in the store as a single update.
+  const handleMultiNodeDragEnd = useCallback(
+    (positions) => {
+      dispatch(updateNodePositions(positions));
+    },
+    [dispatch],
+  );
 
   const handleNodeClick = (e, nodeData) => {
     const chartRect = wrapperRef.current.getBoundingClientRect();
@@ -322,6 +372,8 @@ const ForceGraph = ({
           collectionMaps: collectionMaps,
           onNodeClick: handleNodeClick,
           onNodeDragEnd: handleNodeDragEnd,
+          onLassoSelection: handleLassoSelection,
+          onMultiNodeDragEnd: handleMultiNodeDragEnd,
           interactionCallback: handlePopupClose,
           nodeGroup: (d) => d._id.split("/")[0],
           nodeHover: (d) => (d.label ? `${d._id}\n${d.label}` : `${d._id}`),
@@ -371,7 +423,14 @@ const ForceGraph = ({
           links: graphData.links,
           labelStates: settings.labelStates,
         });
+        lastRenderedNodeIdsRef.current = new Set(graphData.nodes.map((n) => n._id || n.id));
+        lastRenderedLinkIdsRef.current = new Set(
+          graphData.links.map((l) => l._id || `${l.source}-${l.target}`),
+        );
       }
+      // Suppress one round of case-482 reconciliation in case a stale
+      // setGraphData render commits after this restore.
+      justRestoredRef.current = true;
       setIsRestoring(false);
     } else {
       switch (lastActionType) {
@@ -433,6 +492,14 @@ const ForceGraph = ({
           break;
         }
         case "setGraphData": {
+          // If a restore just happened, swallow one stale "setGraphData"
+          // render that React's concurrent scheduler may have committed
+          // after the restore. Re-running updateGraph here would clobber
+          // the just-restored D3 state with the pre-undo data.
+          if (justRestoredRef.current) {
+            justRestoredRef.current = false;
+            break;
+          }
           // Handle direct graph data setting (e.g., from WorkflowBuilder).
           // Use graphInstanceRef.current since graphInstance may be stale if
           // the instance was just created in this same effect run.
@@ -543,6 +610,64 @@ const ForceGraph = ({
       graphInstanceRef.current.toggleFocusNodes(settings.useFocusNodes);
     }
   }, [settings.useFocusNodes]);
+
+  // Push lasso-mode changes into the D3 instance.
+  useEffect(() => {
+    graphInstanceRef.current?.setLassoMode?.(lassoMode);
+  }, [lassoMode]);
+
+  // Push lasso-selection changes into the D3 instance so the selected nodes
+  // get the highlight class applied.
+  useEffect(() => {
+    graphInstanceRef.current?.setSelectedNodeIds?.(lassoSelectedNodeIds);
+  }, [lassoSelectedNodeIds]);
+
+  // Escape key clears the lasso selection and exits lasso mode. This is the
+  // single escape hatch if the lasso state ever gets stuck (e.g., if a
+  // selection callback throws).
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key !== "Escape") return;
+      if (lassoMode) setLassoMode(false);
+      if (lassoSelectedNodeIds.length > 0) dispatch(clearLassoSelection());
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [dispatch, lassoMode, lassoSelectedNodeIds.length]);
+
+  // Bulk delete: remove every node currently in the lasso selection in a
+  // single store update + a single graph mutation. The setGraphData snapshot
+  // creates a redux-undo checkpoint so Ctrl+Z restores the deleted nodes;
+  // the confirm dialog still gates the action because wiping many nodes by
+  // accident is disruptive even when recoverable.
+  const handleBulkDelete = useCallback(() => {
+    if (lassoSelectedNodeIds.length === 0) return;
+    const count = lassoSelectedNodeIds.length;
+    const ok = window.confirm(
+      `Remove ${count} selected node${count === 1 ? "" : "s"} from the graph?`,
+    );
+    if (!ok) return;
+    const ids = [...lassoSelectedNodeIds];
+    const currentGraph = graphInstanceRef.current?.getCurrentGraph?.();
+    if (!currentGraph) return;
+    const idSet = new Set(ids);
+    const newNodes = currentGraph.nodes.filter((n) => !idSet.has(n._id) && !idSet.has(n.id));
+    const newLinks = currentGraph.links.filter((l) => !idSet.has(l.source) && !idSet.has(l.target));
+    // See handleRemove for why we need a skipUndo pre-state dispatch — without
+    // it, past[] may capture an earlier (often empty) graphData if the initial
+    // sim-end hasn't fired yet.
+    dispatch(
+      setGraphData({ nodes: currentGraph.nodes, links: currentGraph.links, skipUndo: true }),
+    );
+    dispatch(setGraphData({ nodes: newNodes, links: newLinks }));
+    dispatch(collapseNodes(ids));
+    graphInstanceRef.current?.updateGraph({
+      collapseNodes: ids,
+      removeNode: true,
+      labelStates: settings.labelStates,
+    });
+    dispatch(clearLassoSelection());
+  }, [dispatch, lassoSelectedNodeIds, settings.labelStates]);
 
   // --- History & Save/Load Handlers ---
   const handleUndo = useCallback(() => {
@@ -657,8 +782,71 @@ const ForceGraph = ({
       );
     }
     dispatch(uncollapseNode(popup.nodeId));
-    dispatch(expandNode(popup.nodeId));
+    dispatch(expandNode({ nodeId: popup.nodeId }));
     handlePopupClose();
+  };
+
+  const handleOpenCollectionMenu = async () => {
+    if (collectionMenu.open) {
+      abortRef.current?.abort();
+      abortRef.current = null;
+      setCollectionMenu((s) => ({ ...s, open: false }));
+      return;
+    }
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setCollectionMenu({ open: true, loading: true, collections: [], error: null });
+    try {
+      const collections = await fetchNeighborCollections(
+        popup.nodeId,
+        settings.graphType,
+        "ANY",
+        controller.signal,
+      );
+      if (abortRef.current !== controller) return;
+      setCollectionMenu({
+        open: true,
+        loading: false,
+        collections: [...collections].sort(),
+        error: null,
+      });
+    } catch (err) {
+      if (err.name === "AbortError") return;
+      if (abortRef.current !== controller) return;
+      setCollectionMenu((s) => ({ ...s, loading: false, error: "Failed to load collections" }));
+    }
+  };
+
+  const handleExpandToCollection = (collectionName) => {
+    if (!popup.nodeId) return;
+    const currentGraph = graphInstanceRef.current?.getCurrentGraph?.();
+    if (currentGraph) {
+      dispatch(
+        setGraphData({ nodes: currentGraph.nodes, links: currentGraph.links, skipUndo: true }),
+      );
+    }
+    dispatch(uncollapseNode(popup.nodeId));
+    dispatch(expandNode({ nodeId: popup.nodeId, collectionOverride: collectionName }));
+    handlePopupClose();
+  };
+
+  const handleCollectionSubmenuKeyDown = (e) => {
+    const items = e.currentTarget.querySelectorAll('[role="menuitem"]');
+    const focused = document.activeElement;
+    const idx = Array.from(items).indexOf(focused);
+    if (e.key === "Escape") {
+      setCollectionMenu((s) => ({ ...s, open: false }));
+      collectionMenuTriggerRef.current?.focus();
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const next = items[(idx + 1) % items.length];
+      next?.focus();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const prev = items[(idx - 1 + items.length) % items.length];
+      prev?.focus();
+    }
   };
 
   const handleCollapse = () => {
@@ -673,9 +861,34 @@ const ForceGraph = ({
 
   const handleRemove = () => {
     if (!popup.nodeId) return;
-    dispatch(collapseNode(popup.nodeId));
+    const targetId = popup.nodeId;
+    const currentGraph = graphInstanceRef.current?.getCurrentGraph?.();
+    // Bail out without mutating D3 if we can't snapshot the graph for Redux —
+    // otherwise the visual would diverge from store state and break undo.
+    if (!currentGraph) {
+      handlePopupClose();
+      return;
+    }
+    const newNodes = currentGraph.nodes.filter((n) => (n._id || n.id) !== targetId);
+    const newLinks = currentGraph.links.filter(
+      (l) => l.source !== targetId && l.target !== targetId,
+    );
+    // First sync Redux to the pre-delete state with skipUndo. This pushes
+    // _latestUnfiltered up to the current D3 graph without creating an undo
+    // entry — necessary because the redux-undo "syncFilter" pattern only
+    // tracks accepted/skipUndo dispatches, and the sim-end dispatch from the
+    // initial graph load may not have fired yet. Without this, the next
+    // accepted dispatch's past[] entry would capture an earlier (often empty)
+    // graphData and undo would restore that instead of the pre-delete graph.
+    // Then the post-delete dispatch (filter-accepted) creates the actual undo
+    // checkpoint capturing the pre-delete state in past[].
+    dispatch(
+      setGraphData({ nodes: currentGraph.nodes, links: currentGraph.links, skipUndo: true }),
+    );
+    dispatch(setGraphData({ nodes: newNodes, links: newLinks }));
+    dispatch(collapseNode(targetId));
     graphInstanceRef.current?.updateGraph({
-      collapseNodes: [popup.nodeId],
+      collapseNodes: [targetId],
       removeNode: true,
       labelStates: settings.labelStates,
     });
@@ -693,6 +906,11 @@ const ForceGraph = ({
       return;
     }
     const newLinks = currentGraph.links.filter((l) => l._id !== linkId);
+    // See handleRemove for the rationale on this two-step skipUndo+accepted
+    // dispatch dance.
+    dispatch(
+      setGraphData({ nodes: currentGraph.nodes, links: currentGraph.links, skipUndo: true }),
+    );
     dispatch(setGraphData({ nodes: currentGraph.nodes, links: newLinks }));
     graphInstanceRef.current?.updateGraph({
       removeLink: linkId,
@@ -718,10 +936,35 @@ const ForceGraph = ({
           {optionsVisible ? "> Hide Options" : "< Show Options"}
         </button>
 
+        <button
+          type="button"
+          onClick={() => setLassoMode((m) => !m)}
+          className={`lasso-toggle-button${lassoMode ? " active" : ""}`}
+          aria-pressed={lassoMode}
+          title="Drag to select multiple nodes (shift to add to selection, Esc to exit)"
+        >
+          {lassoMode ? "Lasso: on" : "Lasso"}
+        </button>
+
         {status === "loading" && <LoadingBar />}
 
         {/* biome-ignore lint/correctness/useUniqueElementIds: legacy id */}
         <div id="chart-container-wrapper" ref={wrapperRef}>
+          {lassoSelectedNodeIds.length > 0 && (
+            <div className="lasso-action-bar" role="toolbar" aria-label="Selection actions">
+              <span className="lasso-action-bar-count">{lassoSelectedNodeIds.length} selected</span>
+              <button type="button" onClick={handleBulkDelete} className="lasso-action-bar-button">
+                Delete
+              </button>
+              <button
+                type="button"
+                onClick={() => dispatch(clearLassoSelection())}
+                className="lasso-action-bar-button"
+              >
+                Clear
+              </button>
+            </div>
+          )}
           <svg ref={svgRef} role="img" aria-label="Graph visualization">
             <title>Graph visualization</title>
           </svg>
@@ -759,6 +1002,62 @@ const ForceGraph = ({
           >
             Expand
           </button>
+          <button
+            ref={collectionMenuTriggerRef}
+            type="button"
+            className="document-popup-button"
+            aria-haspopup="menu"
+            aria-expanded={collectionMenu.open}
+            aria-controls="expand-by-collection-submenu"
+            onClick={handleOpenCollectionMenu}
+            style={{ display: !popup.isEdge ? "block" : "none" }}
+          >
+            Expand by Collection {collectionMenu.open ? "▴" : "▾"}
+          </button>
+          {collectionMenu.open && (
+            // biome-ignore lint/correctness/useUniqueElementIds: single popup instance; id referenced by aria-controls
+            <div
+              id="expand-by-collection-submenu"
+              role="menu"
+              className="document-popup-submenu"
+              onKeyDown={handleCollectionSubmenuKeyDown}
+            >
+              {collectionMenu.loading && (
+                <div className="document-popup-submenu-status" aria-live="polite">
+                  Loading…
+                </div>
+              )}
+              {!collectionMenu.loading && collectionMenu.error && (
+                <div
+                  className="document-popup-submenu-status document-popup-submenu-error"
+                  role="alert"
+                >
+                  {collectionMenu.error}
+                </div>
+              )}
+              {!collectionMenu.loading &&
+                !collectionMenu.error &&
+                collectionMenu.collections.length === 0 && (
+                  <div className="document-popup-submenu-status">
+                    No neighbors in other collections
+                  </div>
+                )}
+              {!collectionMenu.loading &&
+                !collectionMenu.error &&
+                collectionMenu.collections.map((name) => (
+                  <div role="none" key={name}>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="document-popup-submenu-item"
+                      onClick={() => handleExpandToCollection(name)}
+                    >
+                      {collectionMaps.get(name)?.display_name ?? name}
+                    </button>
+                  </div>
+                ))}
+            </div>
+          )}
           <button
             type="button"
             className="document-popup-button"

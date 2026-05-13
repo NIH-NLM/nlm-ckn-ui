@@ -1,0 +1,41 @@
+.document-popup-submenu {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 8px;
+  border-left: 2px solid #ccc;
+  margin-bottom: 4px;
+}
+
+.document-popup-submenu-item {
+  display: block;
+  width: 100%;
+  padding: 4px 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-size: inherit;
+  color: inherit;
+  border-radius: 3px;
+}
+
+.document-popup-submenu-item:hover {
+  background-color: #e8f4fd;
+}
+
+.document-popup-submenu-item:focus-visible {
+  background-color: #e8f4fd;
+  outline: 2px solid currentColor;
+  outline-offset: -2px;
+}
+
+.document-popup-submenu-status {
+  font-style: italic;
+  color: #888;
+  padding: 4px 8px;
+  font-size: 0.9em;
+}
+
+.document-popup-submenu-error {
+  color: var(--color-error, #c0392b);
+}

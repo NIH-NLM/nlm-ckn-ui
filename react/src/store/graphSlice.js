@@ -83,22 +83,28 @@ export const fetchEdgeFilterOptions = createAsyncThunk(
   },
 );
 
+/** @typedef {{ nodeId: string, collectionOverride?: string|null }} ExpandNodeArg */
+
 // Async thunk for expanding a single node.
 // Fetches neighbors at depth 1 and returns new nodes/links.
+// @param {ExpandNodeArg} arg
 export const expandNode = createAsyncThunk(
   "graph/expandNode",
-  async (nodeIdToExpand, { getState }) => {
+  async ({ nodeId, collectionOverride = null }, { getState }) => {
     const { settings } = getState().graph.present;
+    const allowedCollections = collectionOverride
+      ? [collectionOverride]
+      : settings.allowedCollections;
     const expansionData = await fetchNodeExpansion(
-      nodeIdToExpand,
+      nodeId,
       settings.graphType,
-      settings.allowedCollections,
+      allowedCollections,
       settings.includeInterNodeEdges ?? true,
     );
     return {
-      newNodes: expansionData?.[nodeIdToExpand].nodes || [],
-      newLinks: expansionData?.[nodeIdToExpand].links || [],
-      centerNodeId: nodeIdToExpand,
+      newNodes: expansionData?.[nodeId]?.nodes || [],
+      newLinks: expansionData?.[nodeId]?.links || [],
+      centerNodeId: nodeId,
     };
   },
 );
@@ -158,6 +164,8 @@ const initialState = {
   isAdvancedMode: false,
   // Stores the settings for each origin node when in advanced mode.
   perNodeSettings: {},
+  // IDs of nodes currently selected via the lasso tool.
+  lassoSelectedNodeIds: [],
 };
 // Redux slice for managing all graph-related state.
 const graphSlice = createSlice({
@@ -220,6 +228,7 @@ const graphSlice = createSlice({
       state.rawData = {};
       state.originNodeIds = [];
       state.source = null;
+      state.lassoSelectedNodeIds = [];
       state.lastActionType = null;
     },
     // Resets graph state for new query.
@@ -238,6 +247,7 @@ const graphSlice = createSlice({
       state.rawData = {};
       state.graphData = { nodes: [], links: [] };
       state.collapsed = { initial: [], userDefined: [], userIgnored: [] };
+      state.lassoSelectedNodeIds = [];
     },
     // Populates available collections after initial fetch.
     setAvailableCollections: (state, action) => {
@@ -344,6 +354,7 @@ const graphSlice = createSlice({
       }
       state.lastActionType = "loadGraph";
       state.rawData = {};
+      state.lassoSelectedNodeIds = [];
     },
     loadGraphFromJson: (state, action) => {
       const graphDataFromFile = action.payload; // Expects { nodes: [], links: [] }
@@ -369,6 +380,54 @@ const graphSlice = createSlice({
       }
       state.lastActionType = "loadGraph";
       state.rawData = {};
+      state.lassoSelectedNodeIds = [];
+    },
+    // Replaces the lasso selection with the given node IDs.
+    setLassoSelection: (state, action) => {
+      state.lassoSelectedNodeIds = [...new Set(action.payload || [])];
+      state.lastActionType = "setLassoSelection";
+    },
+    // Adds node IDs to the existing lasso selection (set union).
+    addToLassoSelection: (state, action) => {
+      const incoming = action.payload || [];
+      const merged = new Set(state.lassoSelectedNodeIds);
+      for (const id of incoming) merged.add(id);
+      state.lassoSelectedNodeIds = Array.from(merged);
+      state.lastActionType = "addToLassoSelection";
+    },
+    // Empties the lasso selection.
+    clearLassoSelection: (state) => {
+      state.lassoSelectedNodeIds = [];
+      state.lastActionType = "clearLassoSelection";
+    },
+    // Bulk version of collapseNode: records multiple node IDs as user-collapsed
+    // in a single dispatch. Used by the lasso bulk-delete flow so the graph
+    // mutation is a single store update rather than N sequential dispatches.
+    collapseNodes: (state, action) => {
+      const ids = action.payload || [];
+      const userDefined = new Set(state.collapsed.userDefined);
+      const ignored = new Set(state.collapsed.userIgnored);
+      for (const id of ids) {
+        userDefined.add(id);
+        ignored.delete(id);
+      }
+      state.collapsed.userDefined = Array.from(userDefined);
+      state.collapsed.userIgnored = Array.from(ignored);
+      state.lastActionType = "collapseNodes";
+    },
+    // Bulk version of updateNodePosition: commits final positions for many
+    // nodes after a group drag in a single dispatch.
+    updateNodePositions: (state, action) => {
+      const positions = action.payload || [];
+      const byId = new Map(positions.map((p) => [p.nodeId, p]));
+      for (const node of state.graphData.nodes) {
+        const next = byId.get(node.id);
+        if (next) {
+          node.x = next.x;
+          node.y = next.y;
+        }
+      }
+      state.lastActionType = "updateNodePositions";
     },
     // Resets settings to match lastAppliedSettings after undo/redo so the
     // "Apply Changes" banner doesn't appear for the restored graph.
@@ -482,14 +541,19 @@ export const {
   setAllCollections,
   clearNodeToCenter,
   updateNodePosition,
+  updateNodePositions,
   setInitialCollapseList,
   uncollapseNode,
   collapseNode,
+  collapseNodes,
   updateEdgeFilter,
   updateNumericEdgeFilter,
   setEdgeFilters,
   loadGraph,
   loadGraphFromJson,
+  setLassoSelection,
+  addToLassoSelection,
+  clearLassoSelection,
   syncSettingsToLastApplied,
 } = graphSlice.actions;
 
@@ -512,6 +576,7 @@ const undoableGraphReducer = undoable(graphSlice.reducer, {
     return (
       action.type === setGraphData.type ||
       action.type === updateNodePosition.type ||
+      action.type === updateNodePositions.type ||
       action.type === expandNode.fulfilled.type
     );
   },
