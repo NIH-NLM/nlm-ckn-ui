@@ -7,6 +7,7 @@ import {
   processGraphLinks,
 } from "./graphDataProcessing";
 import { renderGraph, toggleFocusNodeRendering } from "./graphRendering";
+import { attachLasso } from "./lassoSelection";
 import {
   applyLayoutMode,
   DEFAULT_GRAPH_OPTIONS,
@@ -33,6 +34,15 @@ function ForceGraphConstructor(
 
   const mergedOptions = { ...DEFAULT_GRAPH_OPTIONS, ...options };
 
+  // Per-drag state for group-drag mode (when the dragged node is part of the
+  // current lasso selection): captures the starting position of the subject
+  // and snapshots of every selected node so each frame can apply a uniform
+  // delta. Lives in module scope so the handler closure can read/clear it.
+  let groupDragSnapshot = null;
+
+  const isGroupDragActive = (subjectId) =>
+    currentSelectedNodeIds.size > 1 && currentSelectedNodeIds.has(subjectId);
+
   // Setup drag behavior. The constructor owns the handler outright — overrides
   // were removed because any external drag would bypass the activeDrags
   // bookkeeping that resize/settle suppression depends on, silently disabling
@@ -40,25 +50,88 @@ function ForceGraphConstructor(
   mergedOptions.drag = d3
     .drag()
     .on("start", (event, _d) => {
-      if (!event.active) simulation.alphaTarget(0.1).restart();
       activeDrags += 1;
+      mergedOptions.interactionCallback();
+
+      if (isGroupDragActive(event.subject.id)) {
+        // Snapshot every selected node's current position so the drag handler
+        // can apply (event.x - subject.startX, event.y - subject.startY) as
+        // a uniform delta. Skip the alphaTarget reheat — pinning many nodes
+        // simultaneously makes the simulation jitter visibly.
+        const nodesById = new Map(simulation.nodes().map((n) => [n.id, n]));
+        const snapshot = new Map();
+        for (const id of currentSelectedNodeIds) {
+          const node = nodesById.get(id);
+          if (!node) continue;
+          snapshot.set(id, { node, startX: node.x, startY: node.y });
+          node.fx = node.x;
+          node.fy = node.y;
+        }
+        groupDragSnapshot = {
+          subjectId: event.subject.id,
+          subjectStartX: event.subject.x,
+          subjectStartY: event.subject.y,
+          nodes: snapshot,
+        };
+        return;
+      }
+
+      // Single-node fallback path — unchanged from the pre-lasso behavior.
+      if (!event.active) simulation.alphaTarget(0.1).restart();
       event.subject.fx = event.subject.x;
       event.subject.fy = event.subject.y;
-      mergedOptions.interactionCallback();
     })
     .on("drag", (event, _d) => {
+      if (groupDragSnapshot && groupDragSnapshot.subjectId === event.subject.id) {
+        const dx = event.x - groupDragSnapshot.subjectStartX;
+        const dy = event.y - groupDragSnapshot.subjectStartY;
+        for (const { node, startX, startY } of groupDragSnapshot.nodes.values()) {
+          node.fx = startX + dx;
+          node.fy = startY + dy;
+          // ticked() paints from node.x/y, not fx/fy — copy through so the
+          // group visibly tracks the pointer when the simulation is settled
+          // (we deliberately skipped the alphaTarget reheat).
+          node.x = node.fx;
+          node.y = node.fy;
+        }
+        ticked();
+        return;
+      }
+
+      // Single-node fallback path — unchanged.
       event.subject.fx = event.x;
       event.subject.fy = event.y;
     })
     .on("end", (event, _d) => {
-      if (!event.active) simulation.alphaTarget(0);
-      // Pin the node at the dropped position so it stays put while the
-      // simulation continues to settle the rest of the graph. The post-rebuild
-      // unpin loop in updateGraph (and restoreGraph) is the existing release
-      // path — rebuilding the graph clears all pins.
-      event.subject.fx = event.x;
-      event.subject.fy = event.y;
       try {
+        if (groupDragSnapshot && groupDragSnapshot.subjectId === event.subject.id) {
+          const positions = [];
+          for (const [id, { node }] of groupDragSnapshot.nodes.entries()) {
+            // Mirror fx/fy into x/y for any final-frame correction before the
+            // last paint — the drag handler already does this, but be defensive
+            // in case "end" fires without a preceding "drag" (zero-distance
+            // click on a selected node).
+            node.x = node.fx;
+            node.y = node.fy;
+            positions.push({ nodeId: id, x: node.fx, y: node.fy });
+          }
+          mergedOptions.onMultiNodeDragEnd?.(positions);
+          groupDragSnapshot = null;
+          // Repaint at final positions. simulation.alpha(...) without restart()
+          // won't run a tick once the simulation has cooled, so call ticked()
+          // directly — this matches the explicit-render pattern used after the
+          // initial settle in updateGraph.
+          ticked();
+          return;
+        }
+
+        if (!event.active) simulation.alphaTarget(0);
+        // Pin the node at the dropped position so it stays put while the
+        // simulation continues to settle the rest of the graph. The post-rebuild
+        // unpin loop in updateGraph (and restoreGraph) is the existing release
+        // path — rebuilding the graph clears all pins.
+        event.subject.fx = event.x;
+        event.subject.fy = event.y;
         // Emit the same coords we just pinned (event.x/y), not
         // event.subject.x/y — the latter is the simulation's last-tick
         // position and can lag by a frame, so subscribers (e.g., Redux
@@ -191,9 +264,29 @@ function ForceGraphConstructor(
     );
   }
 
+  // Lasso-mode flag — flipped via the public setLassoMode method. Used by
+  // the zoom filter (to suppress pan/zoom while drawing) and by the lasso
+  // attachment itself (to gate pointerdown).
+  let lassoEnabled = false;
+
+  // The current set of lasso-selected node IDs. Used by renderGraph to apply
+  // the .selected class on the parent <g> and by the drag handler to detect
+  // group-drag mode. Updated via the public setSelectedNodeIds method.
+  let currentSelectedNodeIds = new Set();
+  const applySelectionHighlight = () => {
+    nodeContainer.selectAll("g.node").classed("selected", (d) => currentSelectedNodeIds.has(d.id));
+  };
+
   // Setup zoom and pan behavior.
   const zoomHandler = d3
     .zoom()
+    .filter((event) => {
+      // Suppress all pan/zoom gestures while the lasso tool is active.
+      if (lassoEnabled) return false;
+      // Otherwise preserve d3's default filter: ignore non-primary buttons
+      // and ignore ctrl-modified events that aren't wheel events.
+      return (!event.ctrlKey || event.type === "wheel") && !event.button;
+    })
     .on("zoom", (event) => {
       g.attr("transform", event.transform);
       updateLabelVisibilityOnZoom(event.transform.k);
@@ -206,6 +299,21 @@ function ForceGraphConstructor(
     zoomHandler.transform,
     d3.zoomIdentity.translate(0, 0).scale(mergedOptions.initialScale),
   );
+
+  // Attach the lasso pointer behavior. The polygon is drawn inside `g` so it
+  // moves with the current zoom transform, and `getNodes` reads the live
+  // simulation array so it always reflects the rendered graph.
+  // We capture the returned `detach` so a future teardown method can remove
+  // the pointer listeners and any in-flight `.lasso-path` element.
+  const _detachLasso = attachLasso({
+    svg,
+    g,
+    getNodes: () => simulation.nodes(),
+    onSelectionComplete: (ids, modifiers) => {
+      mergedOptions.onLassoSelection?.(ids, modifiers);
+    },
+    isEnabled: () => lassoEnabled,
+  });
 
   // Define arrow markers for link directions.
   const defs = g.append("defs");
@@ -510,6 +618,11 @@ function ForceGraphConstructor(
   // Rebuilds graph from a saved state object.
   // Fixes node positions initially to prevent simulation drift on restore.
   function restoreGraph({ nodes, links, labelStates }) {
+    // Invalidate any in-flight waitForAlpha promises from prior updateGraph
+    // calls — without this, a callback resolving after restoreGraph would
+    // call onSimulationEnd with stale `processedNodes` and dispatch
+    // setGraphData, overwriting the just-restored Redux state.
+    simulationGeneration.value++;
     resetGraph(false);
     // Sync internal label state with restored state.
     currentLabelStates = { ...labelStates };
@@ -559,6 +672,7 @@ function ForceGraphConstructor(
         originNodeIds: mergedOptions.originNodeIds,
         useFocusNodes: mergedOptions.useFocusNodes,
         collectionMaps: mergedOptions.collectionMaps,
+        selectedNodeIds: currentSelectedNodeIds,
       },
     );
     updateLegend(processedNodes);
@@ -688,6 +802,7 @@ function ForceGraphConstructor(
         originNodeIds: mergedOptions.originNodeIds,
         useFocusNodes: mergedOptions.useFocusNodes,
         collectionMaps: mergedOptions.collectionMaps,
+        selectedNodeIds: currentSelectedNodeIds,
       },
     );
     updateLegend(processedNodes);
@@ -791,6 +906,22 @@ function ForceGraphConstructor(
     centerOnNode,
     resize,
     isDragging: () => activeDrags > 0,
+    // Toggles lasso-selection mode. While enabled, pan/zoom is suppressed
+    // and pointer drags inside the SVG draw a freeform selection polygon.
+    setLassoMode: (enabled) => {
+      lassoEnabled = !!enabled;
+      svg.style("cursor", lassoEnabled ? "crosshair" : null);
+    },
+    // Updates the set of lasso-selected node IDs and applies the visual
+    // highlight to the rendered nodes. Cheap — does not trigger a full
+    // renderGraph.
+    setSelectedNodeIds: (ids) => {
+      currentSelectedNodeIds = new Set(ids || []);
+      applySelectionHighlight();
+    },
+    // Reads the current selection. Returns a copy so callers can't mutate
+    // the internal Set used by the drag handler and applySelectionHighlight.
+    getSelectedNodeIds: () => new Set(currentSelectedNodeIds),
     // Returns the current node/link state suitable for saving.
     getCurrentGraph: () => {
       const finalNodes = processedNodes.map(({ x, y, index, vx, vy, ...rest }) => ({
