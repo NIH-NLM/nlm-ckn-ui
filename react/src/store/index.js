@@ -1,8 +1,11 @@
 // Graph slice actions and thunks
 export {
+  addToLassoSelection,
   clearGraphData,
+  clearLassoSelection,
   clearNodeToCenter,
   collapseNode,
+  collapseNodes,
   default as graphReducer,
   expandNode,
   fetchAndProcessGraph,
@@ -15,10 +18,12 @@ export {
   setEdgeFilters,
   setGraphData,
   setInitialCollapseList,
+  setLassoSelection,
   syncSettingsToLastApplied,
   uncollapseNode,
   updateEdgeFilter,
   updateNodePosition,
+  updateNodePositions,
   updateNumericEdgeFilter,
   updateSetting,
 } from "./graphSlice";
