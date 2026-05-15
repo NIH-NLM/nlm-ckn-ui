@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { MemoryRouter } from "react-router-dom";
 import nodesReducer from "../../store/nodesSlice";
+import { ToastProvider } from "../Toast";
 import SearchResultsTable from "./SearchResultsTable";
 
 // Create a test store
@@ -34,7 +35,9 @@ jest.mock("../../utils", () => {
 const renderWithProviders = (component) => {
   return render(
     <Provider store={createTestStore()}>
-      <MemoryRouter>{component}</MemoryRouter>
+      <MemoryRouter>
+        <ToastProvider>{component}</ToastProvider>
+      </MemoryRouter>
     </Provider>,
   );
 };
