@@ -71,7 +71,7 @@ function ToastContainer({ toasts, onRemove }) {
   return createPortal(
     <output className="toast-container" aria-live="polite" aria-atomic="false">
       {toasts.map((toast) => (
-        <div key={toast.id} className="toast-item" role="status">
+        <div key={toast.id} className="toast-item">
           <div className="toast-content">{toast.content}</div>
           <button
             type="button"
