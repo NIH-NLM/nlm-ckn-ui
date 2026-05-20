@@ -908,6 +908,12 @@
         "color": "#aaffc3",
         "individual_labels": [
           {
+            "field_to_use": "gene_symbol",
+            "to_be_replaced": "",
+            "replace_with": "",
+            "make_lower_case": false
+          },
+          {
             "field_to_use": "label",
             "to_be_replaced": "",
             "replace_with": "",
