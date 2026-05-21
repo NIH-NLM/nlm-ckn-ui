@@ -6,6 +6,24 @@ on:
     paths:
       - 'ETL_VERSION'
   workflow_dispatch:
+    # Uncomment the inputs block below when sandbox/prod environments are ready.
+    # inputs:
+    #   environment:
+    #     description: 'Target environment'
+    #     required: true
+    #     default: dev
+    #     type: choice
+    #     options:
+    #       - dev
+    #       # - sandbox
+    #       # - prod
+
+# Prevent simultaneous deploys to the same environment.
+# cancel-in-progress: false ensures a running restore is never interrupted
+# mid-swap; the newer run queues and starts after the current one finishes.
+concurrency:
+  group: deploy-dataset
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -18,18 +36,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Read ETL version
-        id: version
-        run: |
-          VERSION=$(cat ETL_VERSION | tr -d '[:space:]')
-          if [ -z "$VERSION" ]; then
-            echo "ETL_VERSION file is empty"
-            exit 1
-          fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "s3_key=runs/$VERSION/06-golden-dump.tar.gz" >> $GITHUB_OUTPUT
-          echo "Deploying ETL version: $VERSION"
-
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -38,6 +44,7 @@ jobs:
           aws-region: us-east-1
 
       - name: Deploy dataset to dev
-        env:
-          S3_KEY: ${{ steps.version.outputs.s3_key }}
-        run: ./scripts/app/deploy-dataset.sh dev "$S3_KEY"
+        run: ./scripts/app/deploy-dataset.sh dev
+      # Uncomment below (and comment out the step above) once sandbox/prod are deployed.
+      # - name: Deploy dataset
+      #   run: ./scripts/app/deploy-dataset.sh ${{ inputs.environment || 'dev' }}
