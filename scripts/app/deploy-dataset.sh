@@ -26,9 +26,15 @@
 #   - CloudFormation environment stack deployed
 #   - Dataset tar.gz uploaded to S3 at runs/<version>/06-golden-dump.tar.gz
 #
+# ENVIRONMENT VARIABLES (optional):
+#   EXPECTED_DBS   Space-separated list of ArangoDB databases verified after
+#                  restore (default: "Cell-KN-Ontologies Cell-KN-Phenotypes
+#                  Cell-KN-Schema"). Override when the schema changes without
+#                  modifying the script.
+#
 # EXAMPLES:
 #   ./scripts/app/deploy-dataset.sh dev
-#   ./scripts/app/deploy-dataset.sh prod
+#   EXPECTED_DBS="DB1 DB2 DB3" ./scripts/app/deploy-dataset.sh dev
 # ==============================================================================
 set -e
 
@@ -169,6 +175,10 @@ APPS_DIR=/var/lib/arangodb3-apps
 # the EBS mount point and cannot itself be mv'd ("Device or resource busy").
 GREEN_DATA=/var/lib/arangodb3/_green
 GREEN_APPS=/var/lib/arangodb3-apps-green
+# Space-separated list of ArangoDB databases that must exist after restore.
+# Override with the EXPECTED_DBS env var when the schema changes rather than
+# editing this default (e.g. export EXPECTED_DBS="DB1 DB2" before running).
+EXPECTED_DBS="${EXPECTED_DBS:-Cell-KN-Ontologies Cell-KN-Phenotypes Cell-KN-Schema}"
 
 echo "==> Starting ArangoDB blue-green dataset restore $(date)"
 
@@ -298,7 +308,9 @@ if [ -z "$DB_LIST" ]; then
 fi
 
 MISSING_DBS=()
-for EXPECTED_DB in "Cell-KN-Ontologies" "Cell-KN-Phenotypes" "Cell-KN-Schema"; do
+# Iterate over EXPECTED_DBS (configurable — see variable definition above).
+# shellcheck disable=SC2086  # intentional word-split on space-separated list
+for EXPECTED_DB in $EXPECTED_DBS; do
   if ! echo "$DB_LIST" | grep -q "\"$EXPECTED_DB\""; then
     MISSING_DBS+=("$EXPECTED_DB")
   fi
