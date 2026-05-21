@@ -1,0 +1,43 @@
+name: Deploy ETL Dataset
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ETL_VERSION'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy-dataset:
+    runs-on: ubuntu-latest
+    timeout-minutes: 110  # matches the 90-min SSM timeout plus overhead
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read ETL version
+        id: version
+        run: |
+          VERSION=$(cat ETL_VERSION | tr -d '[:space:]')
+          if [ -z "$VERSION" ]; then
+            echo "ETL_VERSION file is empty"
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "s3_key=runs/$VERSION/06-golden-dump.tar.gz" >> $GITHUB_OUTPUT
+          echo "Deploying ETL version: $VERSION"
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          # Role created by cloudformation/bootstrap/bootstrap.yaml
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/cell-kn-github-actions
+          aws-region: us-east-1
+
+      - name: Deploy dataset to dev
+        env:
+          S3_KEY: ${{ steps.version.outputs.s3_key }}
+        run: ./scripts/app/deploy-dataset.sh dev "$S3_KEY"
