@@ -20,6 +20,10 @@ The `nlm-ckn-ui` repository provides the user interface for querying, visualizin
 
 ## Setup & Installation
 
+For day-to-day local development startup, especially when using an already
+loaded local ArangoDB instance on port `8529`, see
+[STARTUP.md](STARTUP.md).
+
 ### 1. Clone Repository
 
 ```bash

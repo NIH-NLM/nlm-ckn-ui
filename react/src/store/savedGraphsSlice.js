@@ -16,11 +16,11 @@ const savedGraphsSlice = createSlice({
      * action.payload should be: { name: string, originNodeIds: string[], settings: object }
      */
     saveGraph: (state, action) => {
-      const { name, originNodeIds, settings, graphData } = action.payload;
+      const { id, name, timestamp, originNodeIds, settings, graphData } = action.payload;
       const newSavedGraph = {
-        id: uuidv4(),
+        id: id || uuidv4(),
         name: name,
-        timestamp: new Date().toISOString(),
+        timestamp: timestamp || new Date().toISOString(),
         originNodeIds: originNodeIds,
         settings: settings,
         graphData: graphData,

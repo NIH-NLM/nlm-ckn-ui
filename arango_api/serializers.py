@@ -15,6 +15,8 @@ See: https://www.django-rest-framework.org/api-guide/serializers/
 from rest_framework import serializers
 
 GRAPH_CHOICES = ["ontologies", "phenotypes"]
+QUESTION_GRAPH_CHOICES = ["auto", *GRAPH_CHOICES]
+QUESTION_MODE_CHOICES = ["new", "refine"]
 
 
 class GraphRequestSerializer(serializers.Serializer):
@@ -182,6 +184,116 @@ class AQLQuerySerializer(serializers.Serializer):
                 )
 
         return value
+
+
+class QuestionRequestSerializer(serializers.Serializer):
+    """Serializer for natural-language question requests."""
+
+    question = serializers.CharField(
+        required=True,
+        min_length=1,
+        max_length=2000,
+        help_text="Natural-language question to translate into AQL",
+    )
+    graph = serializers.ChoiceField(
+        choices=QUESTION_GRAPH_CHOICES,
+        required=False,
+        default="auto",
+        help_text="Database/graph to query",
+    )
+    mode = serializers.ChoiceField(
+        choices=QUESTION_MODE_CHOICES,
+        required=False,
+        default="new",
+        help_text="Whether to start a new search or refine the current graph",
+    )
+    history = serializers.ListField(
+        child=serializers.DictField(),
+        required=False,
+        default=list,
+        help_text="Recent conversation history",
+    )
+
+
+class QuestionSummaryRequestSerializer(serializers.Serializer):
+    """Serializer for summarizing the active ask-a-question result."""
+
+    question = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        max_length=2000,
+        help_text="Original natural-language question that produced the result",
+    )
+    answer = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        max_length=4000,
+        help_text="Short assistant answer generated with the AQL result",
+    )
+    graph = serializers.ChoiceField(
+        choices=QUESTION_GRAPH_CHOICES,
+        required=False,
+        default="auto",
+        help_text="Database/graph context used for the result",
+    )
+    columns = serializers.ListField(
+        child=serializers.CharField(),
+        required=False,
+        default=list,
+        help_text="Visible table columns",
+    )
+    rows = serializers.ListField(
+        child=serializers.JSONField(),
+        required=False,
+        default=list,
+        help_text="Result table rows to summarize",
+    )
+    nodes = serializers.ListField(
+        child=serializers.JSONField(),
+        required=False,
+        default=list,
+        help_text="Graph nodes extracted from the result",
+    )
+    links = serializers.ListField(
+        child=serializers.JSONField(),
+        required=False,
+        default=list,
+        help_text="Graph links extracted from the result",
+    )
+
+
+class NodeSuggestionRequestSerializer(GraphRequestSerializer):
+    """Serializer for graph node follow-up suggestions."""
+
+    graph = serializers.ChoiceField(
+        choices=QUESTION_GRAPH_CHOICES,
+        required=False,
+        default="auto",
+    )
+
+    node_id = serializers.CharField(
+        required=True,
+        min_length=1,
+        help_text="Arango _id for the selected graph node",
+    )
+    visible_edge_count = serializers.IntegerField(
+        required=False,
+        min_value=0,
+        default=0,
+        help_text="Number of currently visible edges incident on the selected node",
+    )
+    visible_neighbor_counts = serializers.DictField(
+        child=serializers.IntegerField(min_value=0),
+        required=False,
+        default=dict,
+        help_text="Currently visible incident neighbor counts keyed by collection",
+    )
+    visible_neighbor_ids = serializers.DictField(
+        child=serializers.ListField(child=serializers.CharField()),
+        required=False,
+        default=dict,
+        help_text="Currently visible incident neighbor ids keyed by collection",
+    )
 
 
 class SunburstRequestSerializer(GraphRequestSerializer):

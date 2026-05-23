@@ -7,6 +7,7 @@ import Footer from "./components/Footer/Footer";
 import Header from "./components/Header/Header";
 import { ActiveNavProvider, FtuPartsProvider, GraphProvider } from "./contexts";
 import AboutPage from "./pages/AboutPage/AboutPage";
+import AskQuestionPage from "./pages/AskQuestionPage/AskQuestionPage";
 import CollectionsPage from "./pages/CollectionsPage/CollectionsPage";
 import DocumentPage from "./pages/DocumentPage/DocumentPage";
 import FTUExplorerPage from "./pages/FTUExplorerPage/FTUExplorerPage";
@@ -34,6 +35,7 @@ function App() {
                   <Route path="/workflow-builder" element={<WorkflowBuilderPage />} />
                   <Route path="/ftu" element={<FTUExplorerPage />} />
                   <Route path="/about" element={<AboutPage />} />
+                  <Route path="/ask" element={<AskQuestionPage />} />
                   <Route path="/tree" element={<TreePage />} />
                   <Route path="/sunburst" element={<SunburstPage />} />
                   <Route path="/" element={<SearchPage />} />

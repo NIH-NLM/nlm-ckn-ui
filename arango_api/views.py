@@ -27,13 +27,16 @@ from arango_api.serializers import (
     EdgesBetweenSerializer,
     SearchRequestSerializer,
     AQLQuerySerializer,
+    QuestionRequestSerializer,
+    QuestionSummaryRequestSerializer,
+    NodeSuggestionRequestSerializer,
     SunburstRequestSerializer,
     EdgeFilterOptionsSerializer,
     DocumentsRequestSerializer,
     WorkflowExecuteSerializer,
 )
 from arango_api.services import collection_service, graph_service, search_service
-from arango_api.services import document_service, sunburst_service, workflow_service
+from arango_api.services import document_service, question_service, sunburst_service, workflow_service
 from arango_api.services.sunburst_service import SunburstServiceError
 
 logger = logging.getLogger(__name__)
@@ -217,6 +220,85 @@ class AQLQueryView(APIView):
             return Response(results)
         except Exception as e:
             logger.exception("Error running AQL query")
+            return Response(
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class QuestionAnswerView(APIView):
+    """Answer natural-language questions by generating and executing read-only AQL."""
+
+    def post(self, request):
+        serializer = QuestionRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        try:
+            results = question_service.answer_question(
+                question=data["question"],
+                graph=data.get("graph", "ontologies"),
+                mode=data.get("mode", "new"),
+                history=data.get("history", []),
+            )
+            return Response(results)
+        except question_service.QuestionServiceError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.exception("Error answering natural-language question")
+            return Response(
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class NodeSuggestionsView(APIView):
+    """Suggest follow-up questions for a selected graph node."""
+
+    def post(self, request):
+        serializer = NodeSuggestionRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        try:
+            results = question_service.suggest_questions_for_node(
+                node_id=data["node_id"],
+                graph=data.get("graph", "ontologies"),
+                visible_edge_count=data.get("visible_edge_count", 0),
+                visible_neighbor_counts=data.get("visible_neighbor_counts", {}),
+                visible_neighbor_ids=data.get("visible_neighbor_ids", {}),
+            )
+            return Response(results)
+        except question_service.QuestionServiceError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.exception("Error generating node suggestions")
+            return Response(
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class QuestionSummaryView(APIView):
+    """Generate a narrative interpretation of the active ask-a-question result."""
+
+    def post(self, request):
+        serializer = QuestionSummaryRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        try:
+            results = question_service.summarize_question_result(
+                question=data.get("question", ""),
+                answer=data.get("answer", ""),
+                graph=data.get("graph", "auto"),
+                columns=data.get("columns", []),
+                rows=data.get("rows", []),
+                nodes=data.get("nodes", []),
+                links=data.get("links", []),
+            )
+            return Response(results)
+        except question_service.QuestionServiceError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.exception("Error generating experimental summary")
             return Response(
                 {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

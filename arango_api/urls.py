@@ -16,6 +16,9 @@ from arango_api.views import (
     SearchView,
     GetAllView,
     AQLQueryView,
+    QuestionAnswerView,
+    QuestionSummaryView,
+    NodeSuggestionsView,
     SunburstView,
     EdgeFilterOptionsView,
     DocumentsView,
@@ -53,6 +56,9 @@ urlpatterns = [
     path("search/", SearchView.as_view(), name="get_search_items"),
     path("get_all/", GetAllView.as_view(), name="get_all"),
     path("aql/", AQLQueryView.as_view(), name="run_aql_query"),
+    path("ask/", QuestionAnswerView.as_view(), name="ask_question"),
+    path("ask/summary/", QuestionSummaryView.as_view(), name="ask_question_summary"),
+    path("ask/node-suggestions/", NodeSuggestionsView.as_view(), name="ask_node_suggestions"),
     # Visualization endpoints
     path("sunburst/", SunburstView.as_view(), name="get_sunburst"),
     # Document endpoints
