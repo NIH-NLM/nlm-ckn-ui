@@ -21,6 +21,23 @@
   left: 0;
 }
 
+/* Lasso selection polygon drawn while a lasso drag is in progress. */
+.lasso-path {
+  stroke: #555;
+  stroke-width: 1.5px;
+  stroke-dasharray: 4, 2;
+  fill: rgba(100, 100, 200, 0.08);
+  pointer-events: none;
+}
+
+/* Highlight applied to graph nodes that are part of the lasso selection.
+   Excludes the inner donut circle so origin nodes still read as donuts. */
+g.node.selected circle:not(.donut-inner) {
+  stroke: #ffb74d;
+  stroke-width: 3px;
+  filter: drop-shadow(0 0 4px rgba(255, 183, 77, 0.6));
+}
+
 /* Graph Component Wrapper - Mobile First */
 
 .graph-component-wrapper {
@@ -239,6 +256,64 @@
   box-shadow: var(--shadow-sm);
 }
 
+/* Lasso-mode toggle: stacked under the options toggle so they don't overlap. */
+.lasso-toggle-button {
+  position: absolute;
+  top: 50px;
+  right: 10px;
+  z-index: 20;
+  padding: 8px 12px;
+  margin: 0;
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+  box-shadow: var(--shadow-sm);
+}
+
+.lasso-toggle-button.active {
+  background-color: #ffb74d;
+  border-color: #f9a825;
+  color: #1a1a1a;
+}
+
+/* Floating bar shown above the graph when there is an active lasso selection. */
+.lasso-action-bar {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  box-shadow: var(--shadow-sm);
+  font-size: 0.9em;
+}
+
+.lasso-action-bar-count {
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.lasso-action-bar-button {
+  padding: 4px 10px;
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.9em;
+}
+
+.lasso-action-bar-button:hover {
+  background-color: #f3f3f3;
+}
+
 .graph-display-area {
   display: flex;
   flex-direction: column;
@@ -255,18 +330,16 @@
 /* Tree Constructor */
 
 .tree-constructor-container {
-  display: flex;
-  min-height: 60vh;
-  overflow-x: auto;
-  /* Allow horizontal scrolling for wide trees on desktop */
-  overflow-y: auto;
+  display: block;
+  height: 70vh;
+  overflow: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
 }
 
 /* Tree SVG Base Styles */
 .tree-svg {
-  max-width: 100%;
-  height: auto;
-  font-size: 12px;
+  font-size: 13px;
   font-family: sans-serif;
   user-select: none;
 }

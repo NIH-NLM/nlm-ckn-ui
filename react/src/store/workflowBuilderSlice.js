@@ -248,6 +248,27 @@ export const executePhase = createAsyncThunk(
         phase.settings.returnCollections || [],
       );
 
+      // Post-combine edge scan: discover edges between nodes from different
+      // source phases. Runs after filterResultByCollections so only surviving
+      // nodes are scanned (fewer nodes = faster query).
+      if (phase.settings.includeInterNodeEdges !== false && combinedResult.nodes?.length >= 2) {
+        const allNodeIds = combinedResult.nodes.map((n) => n._id || n.id).filter(Boolean);
+        const existingLinkIds = new Set(combinedResult.links.map((l) => l._id).filter(Boolean));
+        const interEdges = await fetchEdgesBetween(
+          allNodeIds,
+          phase.settings.graphType,
+          phase.settings.edgeFilters || {},
+        );
+        const nodeIdSet = new Set(allNodeIds);
+        for (const edge of interEdges) {
+          if (!edge?._id || existingLinkIds.has(edge._id)) continue;
+          if (nodeIdSet.has(edge._from) && nodeIdSet.has(edge._to)) {
+            combinedResult.links.push(edge);
+            existingLinkIds.add(edge._id);
+          }
+        }
+      }
+
       return {
         phaseId: phase.id,
         result: combinedResult,
@@ -394,7 +415,11 @@ export const executePhase = createAsyncThunk(
     if (phase.settings.includeInterNodeEdges !== false && mergedResult.nodes?.length >= 2) {
       const allNodeIds = mergedResult.nodes.map((n) => n._id || n.id).filter(Boolean);
       const existingLinkIds = new Set(mergedResult.links.map((l) => l._id).filter(Boolean));
-      const interEdges = await fetchEdgesBetween(allNodeIds, phase.settings.graphType);
+      const interEdges = await fetchEdgesBetween(
+        allNodeIds,
+        phase.settings.graphType,
+        phase.settings.edgeFilters || {},
+      );
       const nodeIdSet = new Set(allNodeIds);
       for (const edge of interEdges) {
         if (!edge?._id || existingLinkIds.has(edge._id)) continue;
@@ -573,6 +598,25 @@ const workflowBuilderSlice = createSlice({
      */
     setWorkflowDescription: (state, action) => {
       state.workflowDescription = action.payload;
+    },
+
+    /**
+     * Add a final combine phase that unions all existing phases and discovers
+     * cross-phase edges. Requires at least 2 existing phases.
+     */
+    addFinalStage: (state) => {
+      if (state.phases.length < 2) return;
+      const newPhase = createEmptyPhase(state.phases.length);
+      newPhase.originSource = "multiplePhases";
+      newPhase.previousPhaseIds = state.phases.map((p) => p.id);
+      newPhase.phaseCombineOperation = "Union";
+      newPhase.settings.includeInterNodeEdges = true;
+      // Inherit graphType from the last phase
+      const lastPhase = state.phases[state.phases.length - 1];
+      if (lastPhase?.settings?.graphType) {
+        newPhase.settings.graphType = lastPhase.settings.graphType;
+      }
+      state.phases.push(newPhase);
     },
 
     /**
@@ -790,6 +834,7 @@ export const {
   loadWorkflow,
   setWorkflowName,
   setWorkflowDescription,
+  addFinalStage,
   addPhase,
   removePhase,
   updatePhase,

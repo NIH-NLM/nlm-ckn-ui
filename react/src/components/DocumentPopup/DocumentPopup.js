@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from "react";
+import "./DocumentPopup.css";
 
 /**
  * A DocumentPopup component for context menus.

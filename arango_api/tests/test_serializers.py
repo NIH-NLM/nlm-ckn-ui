@@ -7,6 +7,7 @@ They test input validation and error handling.
 Run these tests quickly with:
     python manage.py test arango_api.tests.test_serializers
 """
+
 from django.test import SimpleTestCase
 
 from arango_api.serializers import (
@@ -70,12 +71,14 @@ class GraphTraversalSerializerTestCase(SimpleTestCase):
     """Tests for graph traversal request validation."""
 
     def test_valid_request_accepted(self):
-        serializer = GraphTraversalSerializer(data={
-            "node_ids": ["CL/0000061"],
-            "depth": 2,
-            "edge_direction": "OUTBOUND",
-            "allowed_collections": ["CL"],
-        })
+        serializer = GraphTraversalSerializer(
+            data={
+                "node_ids": ["CL/0000061"],
+                "depth": 2,
+                "edge_direction": "OUTBOUND",
+                "allowed_collections": ["CL"],
+            }
+        )
         self.assertTrue(serializer.is_valid())
 
     def test_required_fields_enforced(self):
@@ -87,7 +90,11 @@ class GraphTraversalSerializerTestCase(SimpleTestCase):
 
     def test_depth_bounds_enforced(self):
         """Depth must be within valid range."""
-        base = {"node_ids": ["CL/0000061"], "edge_direction": "OUTBOUND", "allowed_collections": ["CL"]}
+        base = {
+            "node_ids": ["CL/0000061"],
+            "edge_direction": "OUTBOUND",
+            "allowed_collections": ["CL"],
+        }
 
         serializer = GraphTraversalSerializer(data={**base, "depth": 0})
         self.assertFalse(serializer.is_valid())
@@ -96,12 +103,14 @@ class GraphTraversalSerializerTestCase(SimpleTestCase):
         self.assertFalse(serializer.is_valid())
 
     def test_invalid_edge_direction_rejected(self):
-        serializer = GraphTraversalSerializer(data={
-            "node_ids": ["CL/0000061"],
-            "depth": 1,
-            "edge_direction": "INVALID",
-            "allowed_collections": ["CL"],
-        })
+        serializer = GraphTraversalSerializer(
+            data={
+                "node_ids": ["CL/0000061"],
+                "depth": 1,
+                "edge_direction": "INVALID",
+                "allowed_collections": ["CL"],
+            }
+        )
         self.assertFalse(serializer.is_valid())
 
 
@@ -109,16 +118,18 @@ class AdvancedGraphTraversalSerializerTestCase(SimpleTestCase):
     """Tests for advanced graph traversal request validation."""
 
     def test_valid_request_accepted(self):
-        serializer = AdvancedGraphTraversalSerializer(data={
-            "node_ids": ["CL/0000061"],
-            "advanced_settings": {
-                "CL/0000061": {
-                    "depth": 1,
-                    "edgeDirection": "OUTBOUND",
-                    "allowedCollections": ["CL"],
-                }
-            },
-        })
+        serializer = AdvancedGraphTraversalSerializer(
+            data={
+                "node_ids": ["CL/0000061"],
+                "advanced_settings": {
+                    "CL/0000061": {
+                        "depth": 1,
+                        "edgeDirection": "OUTBOUND",
+                        "allowedCollections": ["CL"],
+                    }
+                },
+            }
+        )
         self.assertTrue(serializer.is_valid())
 
     def test_required_fields_enforced(self):
@@ -131,7 +142,9 @@ class ShortestPathsSerializerTestCase(SimpleTestCase):
     """Tests for shortest paths request validation."""
 
     def test_valid_request_accepted(self):
-        serializer = ShortestPathsSerializer(data={"node_ids": ["CL/0000061", "CL/0000062"]})
+        serializer = ShortestPathsSerializer(
+            data={"node_ids": ["CL/0000061", "CL/0000062"]}
+        )
         self.assertTrue(serializer.is_valid())
 
     def test_single_node_rejected(self):
@@ -144,10 +157,12 @@ class SearchRequestSerializerTestCase(SimpleTestCase):
     """Tests for search request validation."""
 
     def test_valid_request_accepted(self):
-        serializer = SearchRequestSerializer(data={
-            "search_term": "cell",
-            "search_fields": ["label"],
-        })
+        serializer = SearchRequestSerializer(
+            data={
+                "search_term": "cell",
+                "search_fields": ["label"],
+            }
+        )
         self.assertTrue(serializer.is_valid())
 
     def test_required_fields_enforced(self):

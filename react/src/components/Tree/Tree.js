@@ -48,6 +48,15 @@ const Tree = () => {
   }, []);
 
   /**
+   * Lazy-load children for a node in the tree.
+   */
+  const fetchTreeChildren = useCallback(async (parentId) => {
+    const data = await fetchHierarchyData(parentId, graphTypeForTree);
+    if (!Array.isArray(data)) throw new Error(`Expected array for ${parentId}`);
+    return data;
+  }, []);
+
+  /**
    * Fetches the hierarchical tree data from the backend API.
    */
   const fetchTreeData = useCallback(async () => {
@@ -65,8 +74,8 @@ const Tree = () => {
         throw new Error("Invalid data format: Expected a single root object.");
       }
 
-      // Set the data to the specific subtree required by the application.
-      setTreeData(data.children[0]);
+      // Root is Homo sapiens directly (no wrapper node).
+      setTreeData(data);
     } catch (fetchError) {
       console.error("Failed to fetch or process tree data:", fetchError);
       setError(fetchError.message);
@@ -105,7 +114,12 @@ const Tree = () => {
   return (
     <div className="tree-container">
       {/* Render d3 tree */}
-      <TreeConstructor data={treeData} onNodeEnter={handleNodeEnter} onNodeExit={handleNodeExit} />
+      <TreeConstructor
+        data={treeData}
+        onNodeEnter={handleNodeEnter}
+        onNodeExit={handleNodeExit}
+        fetchChildren={fetchTreeChildren}
+      />
       {Array.from(mountPoints.entries()).map(([nodeId, element]) =>
         ReactDOM.createPortal(<AddToGraphButton nodeId={nodeId} />, element),
       )}

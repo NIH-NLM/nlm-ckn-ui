@@ -1,6 +1,7 @@
 """
 Base service module with shared database utilities.
 """
+
 import logging
 
 from arango_api.db import (

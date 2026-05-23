@@ -1,8 +1,11 @@
 // Graph slice actions and thunks
 export {
+  addToLassoSelection,
   clearGraphData,
+  clearLassoSelection,
   clearNodeToCenter,
   collapseNode,
+  collapseNodes,
   default as graphReducer,
   expandNode,
   fetchAndProcessGraph,
@@ -15,10 +18,12 @@ export {
   setEdgeFilters,
   setGraphData,
   setInitialCollapseList,
+  setLassoSelection,
   syncSettingsToLastApplied,
   uncollapseNode,
   updateEdgeFilter,
   updateNodePosition,
+  updateNodePositions,
   updateNumericEdgeFilter,
   updateSetting,
 } from "./graphSlice";
@@ -37,6 +42,7 @@ export { default as savedGraphsReducer, deleteGraph, saveGraph } from "./savedGr
 export { persistor, store } from "./store";
 // Workflow builder slice actions
 export {
+  addFinalStage,
   addPhase,
   addPhaseOriginNode,
   default as workflowBuilderReducer,

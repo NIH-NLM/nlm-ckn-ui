@@ -10,8 +10,9 @@ import { getColorForCollection, getLabel, truncateString } from "../../utils";
  * @param {object} data - The hierarchical data object for the tree.
  * @param {function} onNodeEnter - Callback invoked when a new node's DOM element is created.
  * @param {function} onNodeExit - Callback invoked when a node's DOM element is about to be removed.
+ * @param {function} fetchChildren - Async callback(parentId) that returns an array of child data objects.
  */
-const TreeConstructor = ({ data, onNodeEnter, onNodeExit }) => {
+const TreeConstructor = ({ data, onNodeEnter, onNodeExit, fetchChildren }) => {
   // A ref to the container element where the D3 SVG will be mounted.
   const svgRef = useRef(null);
 
@@ -33,35 +34,32 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit }) => {
     const maxLabelLength = 24;
 
     const root = d3.hierarchy(data);
-    const dx = 24; // Reasonable vertical spacing for 12-14px text
-    const dy = 180; // Standard horizontal spacing
+    const dx = 28; // Vertical spacing between nodes
+    const dy = 200; // Horizontal spacing between depth levels
 
     const tree = d3.tree().nodeSize([dx, dy]);
-    tree(root); // Lay out the tree to calculate its extent
+    tree(root);
 
-    // --- Calculate dynamic width based on tree content ---
-    let yMax = 0;
-    root.each((d) => {
-      if (d.y > yMax) {
-        yMax = d.y;
-      }
-    });
-    // Add extra padding for the rightmost labels and buttons
-    const rightPadding = 200;
-    const width = yMax + marginLeft + marginRight + rightPadding;
+    // Fixed width: enough for the deepest possible chain
+    const maxDepthLevels = 7;
+    const rightPadding = 220;
+    const width = maxDepthLevels * dy + marginLeft + marginRight + rightPadding;
 
     const diagonal = d3
       .linkHorizontal()
       .x((d) => d.y)
       .y((d) => d.x);
 
+    // No viewBox — use actual pixel dimensions so the container scrolls.
+    // min-width/min-height prevent the SVG from being squished by flex/grid parents.
     const svg = d3
       .select(svgRef.current)
       .append("svg")
       .attr("width", width)
       .attr("height", dx)
-      .attr("viewBox", [-marginLeft, -marginTop, width, dx])
-      .attr("class", "tree-svg");
+      .attr("class", "tree-svg")
+      .style("min-width", `${width}px`)
+      .style("flex-shrink", "0");
 
     const g = svg.append("g");
 
@@ -92,19 +90,21 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit }) => {
         if (node.x > right.x) right = node;
       });
 
-      const height = right.x - left.x + marginTop + marginBottom;
+      const containerHeight = svgRef.current?.clientHeight || 500;
+      const contentHeight = right.x - left.x + marginTop + marginBottom;
+      const height = Math.max(contentHeight, containerHeight);
+      // Center content vertically when it's smaller than the container
+      const verticalPad =
+        contentHeight < containerHeight ? (containerHeight - contentHeight) / 2 : 0;
+      const offsetY = -left.x + marginTop + verticalPad;
+
       const transition = svg
         .transition()
         .duration(duration)
         .attr("height", height)
-        .attr("viewBox", [-marginLeft, left.x - marginTop, width, height])
-        .on("end", () => {
-          if (svgRef.current && !svgRef.current.dataset.scrolled) {
-            const container = svgRef.current;
-            container.scrollTop = (container.scrollHeight - container.clientHeight) / 2;
-            container.dataset.scrolled = "true";
-          }
-        });
+        .style("min-height", `${height}px`);
+
+      g.transition().duration(duration).attr("transform", `translate(${marginLeft}, ${offsetY})`);
 
       // --- Node Selection ---
       const node = gNode.selectAll("g.node-group").data(nodes, (d) => d.id);
@@ -117,14 +117,62 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit }) => {
         .attr("transform", (_d) => `translate(${source.y0},${source.x0})`)
         .attr("fill-opacity", 0)
         .attr("stroke-opacity", 0)
-        .on("click", (event, d) => {
-          // React handles adding to graph
-          if (event.target.closest(".add-to-graph-button")) {
+        .on("click", async (event, d) => {
+          if (event.target.closest(".add-to-graph-button")) return;
+
+          // If already expanded, collapse
+          if (d.children) {
+            d._children = d.children;
+            d.children = null;
+            update(event, d);
             return;
           }
-          // Toggle children
-          d.children = d.children ? null : d._children;
-          update(event, d);
+
+          // If collapsed with cached children, expand
+          if (d._children) {
+            d.children = d._children;
+            update(event, d);
+            return;
+          }
+
+          // Lazy load: has children on server but none loaded yet
+          if (d.data._hasChildren && fetchChildren && !d._loading) {
+            d._loading = true;
+            try {
+              const childrenData = await fetchChildren(d.data._id);
+              if (!Array.isArray(childrenData) || childrenData.length === 0) return;
+
+              // Attach fetched data and build hierarchy nodes
+              d.data.children = childrenData;
+              for (const childData of childrenData) {
+                const childNode = d3.hierarchy(childData);
+                childNode.parent = d;
+                childNode.depth = d.depth + 1;
+                const allNodes = childNode.descendants();
+                for (const n of allNodes) {
+                  n.id = root._nextId++;
+                  n.depth = n.parent ? n.parent.depth + 1 : d.depth + 1;
+                  n.x0 = d.x0;
+                  n.y0 = d.y0;
+                }
+                // Collapse loaded grandchildren by default
+                for (const n of allNodes) {
+                  if (n !== childNode && n.children) {
+                    n._children = n.children;
+                    n.children = null;
+                  }
+                }
+                if (!d.children) d.children = [];
+                d.children.push(childNode);
+              }
+              d._children = d.children;
+              update(event, d);
+            } catch (err) {
+              console.error(`Failed to fetch children for ${d.data._id}:`, err);
+            } finally {
+              d._loading = false;
+            }
+          }
         });
 
       // Append circle
@@ -223,20 +271,24 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit }) => {
     }
 
     // --- Initial Tree Setup ---
-    root.x0 = dy / 2;
+    // Position root at the vertical center of the container
+    const containerHeight = svgRef.current?.clientHeight || 500;
+    root.x0 = containerHeight / 2;
     root.y0 = 0;
-    root.descendants().forEach((d, i) => {
-      d.id = i;
+    let _idCounter = 0;
+    root.descendants().forEach((d) => {
+      d.id = _idCounter++;
       d._children = d.children;
       // Collapse all nodes by default on initial render.
       if (d.children) {
         d.children = null;
       }
     });
+    root._nextId = _idCounter;
 
     // Start the initial render.
     update(null, root);
-  }, [data, onNodeEnter, onNodeExit]);
+  }, [data, onNodeEnter, onNodeExit, fetchChildren]);
 
   // Return container.
   return <div ref={svgRef} className="tree-constructor-container" />;

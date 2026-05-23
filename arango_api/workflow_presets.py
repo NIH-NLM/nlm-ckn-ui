@@ -18,11 +18,27 @@ PRESET_CATEGORIES = [
     # Graph result examples
     {"id": "Use Cases", "label": "Use Cases", "section": "graph-results"},
     # List result examples
-    {"id": "Ontology Exploration", "label": "Ontology Exploration", "section": "list-results"},
-    {"id": "Cell Type Discovery", "label": "Cell Type Discovery", "section": "list-results"},
-    {"id": "Marker Gene Analysis", "label": "Marker Gene Analysis", "section": "list-results"},
+    {
+        "id": "Ontology Exploration",
+        "label": "Ontology Exploration",
+        "section": "list-results",
+    },
+    {
+        "id": "Cell Type Discovery",
+        "label": "Cell Type Discovery",
+        "section": "list-results",
+    },
+    {
+        "id": "Marker Gene Analysis",
+        "label": "Marker Gene Analysis",
+        "section": "list-results",
+    },
     {"id": "Disease Analysis", "label": "Disease Analysis", "section": "list-results"},
-    {"id": "Example: Pulmonary Hypertension", "label": "Example: Pulmonary Hypertension", "section": "list-results"},
+    {
+        "id": "Example: Pulmonary Hypertension",
+        "label": "Example: Pulmonary Hypertension",
+        "section": "list-results",
+    },
 ]
 
 # ---------------------------------------------------------------------------
@@ -71,10 +87,13 @@ _PH_TARGETS_PHASE_SETTINGS = {
 }
 
 _PH_CELL_TYPES_PHASE_SETTINGS = {
-    "depth": 1,
+    "depth": 3,
     "edgeDirection": "ANY",
-    "allowedCollections": ["CL"],
-    "edgeFilters": {"Label": [], "Source": []},
+    "allowedCollections": ["GS", "CS", "CL"],
+    "edgeFilters": {
+        "Label": ["PRODUCES", "EXPRESSES", "COMPOSED_PRIMARILY_OF"],
+        "Source": [],
+    },
     "setOperation": "Union",
     "graphType": "phenotypes",
     "includeInterNodeEdges": True,
@@ -110,16 +129,18 @@ def _build_ph_phases(id_prefix, count):
     for i in range(count):
         template = _PH_PHASE_TEMPLATES[i]
         phase_id = f"{id_prefix}-phase-{i + 1}"
-        phases.append({
-            "id": phase_id,
-            "name": template["name"],
-            "originSource": template.get("originSource", "previousPhase"),
-            "originNodeIds": list(template.get("originNodeIds", [])),
-            "previousPhaseId": phases[-1]["id"] if phases else None,
-            "originFilter": "all",
-            "settings": {**template["settings"]},
-            "perNodeSettings": {},
-        })
+        phases.append(
+            {
+                "id": phase_id,
+                "name": template["name"],
+                "originSource": template.get("originSource", "previousPhase"),
+                "originNodeIds": list(template.get("originNodeIds", [])),
+                "previousPhaseId": phases[-1]["id"] if phases else None,
+                "originFilter": "all",
+                "settings": {**template["settings"]},
+                "perNodeSettings": {},
+            }
+        )
     return phases
 
 
@@ -160,7 +181,6 @@ WORKFLOW_PRESETS = [
             },
         ],
     },
-
     {
         "id": "epithelial-cells-lung-uc2",
         "name": "Epithelial cells in the lung (UC2)",
@@ -198,7 +218,7 @@ WORKFLOW_PRESETS = [
             "combinations and associated marker genes."
         ),
         "category": "Use Cases",
-        "layoutMode": "hierarchical",
+        "layoutMode": "force",
         "phases": [
             {
                 "id": "preset-uc3-phase-1",
@@ -237,7 +257,7 @@ WORKFLOW_PRESETS = [
                     "allowedCollections": ["BMC", "GS", "CS"],
                     "edgeFilters": {
                         "Label": [
-                            "DERIVES_FROM",
+                            "EXPRESSES",
                             "PART_OF",
                             "HAS_CHARACTERIZING_MARKER_SET",
                             "COMPOSED_PRIMARILY_OF",
@@ -254,7 +274,6 @@ WORKFLOW_PRESETS = [
             },
         ],
     },
-
     {
         "id": "lung-spatial-panel-uc4",
         "name": "Lung spatial transcriptomics panel (UC4)",
@@ -305,12 +324,11 @@ WORKFLOW_PRESETS = [
                     "allowedCollections": ["CS", "BMC", "GS", "CL"],
                     "edgeFilters": {
                         "Label": [
-                            "SOURCE",
+                            "MEMBER_OF",
                             "PART_OF",
                             "HAS_CHARACTERIZING_MARKER_SET",
                             "COMPOSED_PRIMARILY_OF",
-                            "HAS_CHARACTERIZING_SET",
-                            "IS_CHARACTERIZING_SET_FOR",
+                            "EXPRESSES",
                         ],
                         "Source": [],
                     },
@@ -336,7 +354,6 @@ WORKFLOW_PRESETS = [
             },
         ],
     },
-
     {
         "id": "dataset-comparison-uc5",
         "name": "Compare datasets: HLCA vs CellRef (UC5)",
@@ -370,7 +387,6 @@ WORKFLOW_PRESETS = [
             },
         ],
     },
-
     {
         "id": "cystic-fibrosis-uc6",
         "name": "Cystic fibrosis pathogenesis (UC6)",
@@ -415,17 +431,22 @@ WORKFLOW_PRESETS = [
                 "previousPhaseId": "preset-uc6-phase-1",
                 "originFilter": "all",
                 "settings": {
-                    "depth": 2,
+                    "depth": 3,
                     "edgeDirection": "ANY",
                     "allowedCollections": [
-                        "CL", "UBERON", "NCBITaxon", "PR",
+                        "CL",
+                        "UBERON",
+                        "NCBITaxon",
+                        "PR",
+                        "CS",
                     ],
                     "edgeFilters": {
                         "Label": [
-                            "SELECTIVELY_EXPRESSES",
                             "PART_OF",
                             "PRESENT_IN_TAXON",
                             "PRODUCES",
+                            "EXPRESSES",
+                            "COMPOSED_PRIMARILY_OF",
                         ],
                         "Source": [],
                     },
@@ -482,18 +503,24 @@ WORKFLOW_PRESETS = [
                 "previousPhaseId": "preset-uc7-phase-1",
                 "originFilter": "all",
                 "settings": {
-                    "depth": 2,
+                    "depth": 3,
                     "edgeDirection": "ANY",
                     "allowedCollections": [
-                        "CL", "UBERON", "NCBITaxon", "PR", "CHEMBL",
+                        "CL",
+                        "UBERON",
+                        "NCBITaxon",
+                        "PR",
+                        "CHEMBL",
+                        "CS",
                     ],
                     "edgeFilters": {
                         "Label": [
-                            "SELECTIVELY_EXPRESSES",
                             "PART_OF",
                             "PRESENT_IN_TAXON",
                             "PRODUCES",
                             "MOLECULARLY_INTERACTS_WITH",
+                            "EXPRESSES",
+                            "COMPOSED_PRIMARILY_OF",
                         ],
                         "Source": [],
                     },
@@ -506,7 +533,6 @@ WORKFLOW_PRESETS = [
             },
         ],
     },
-
     {
         "id": "parkinsons-disease-uc8",
         "name": "Parkinson's disease exploration (UC8)",
@@ -551,21 +577,27 @@ WORKFLOW_PRESETS = [
                 "previousPhaseId": "preset-uc8-phase-1",
                 "originFilter": "all",
                 "settings": {
-                    "depth": 2,
+                    "depth": 3,
                     "edgeDirection": "ANY",
                     "allowedCollections": [
-                        "CL", "UBERON", "NCBITaxon", "PR",
-                        "CHEMBL", "MONDO",
+                        "CL",
+                        "UBERON",
+                        "NCBITaxon",
+                        "PR",
+                        "CHEMBL",
+                        "MONDO",
+                        "CS",
                     ],
                     "edgeFilters": {
                         "Label": [
-                            "SELECTIVELY_EXPRESSES",
                             "PART_OF",
                             "PRESENT_IN_TAXON",
                             "PRODUCES",
                             "MOLECULARLY_INTERACTS_WITH",
                             "IS_GENETIC_BASIS_FOR_CONDITION",
                             "IS_SUBSTANCE_THAT_TREATS",
+                            "EXPRESSES",
+                            "COMPOSED_PRIMARILY_OF",
                         ],
                         "Source": [],
                     },
@@ -578,7 +610,6 @@ WORKFLOW_PRESETS = [
             },
         ],
     },
-
     {
         "id": "pah-kcnk3-uc9",
         "name": "Pulmonary arterial hypertension / KCNK3 (UC9)",
@@ -623,21 +654,28 @@ WORKFLOW_PRESETS = [
                 "previousPhaseId": "preset-uc9-phase-1",
                 "originFilter": "all",
                 "settings": {
-                    "depth": 2,
+                    "depth": 3,
                     "edgeDirection": "ANY",
                     "allowedCollections": [
-                        "CL", "UBERON", "NCBITaxon", "PR",
-                        "CHEMBL", "BMC", "MONDO",
+                        "CL",
+                        "UBERON",
+                        "NCBITaxon",
+                        "PR",
+                        "CHEMBL",
+                        "BMC",
+                        "MONDO",
+                        "CS",
                     ],
                     "edgeFilters": {
                         "Label": [
-                            "SELECTIVELY_EXPRESSES",
                             "PART_OF",
                             "PRESENT_IN_TAXON",
                             "PRODUCES",
                             "MOLECULARLY_INTERACTS_WITH",
                             "HAS_QUALITY",
                             "IS_GENETIC_BASIS_FOR_CONDITION",
+                            "EXPRESSES",
+                            "COMPOSED_PRIMARILY_OF",
                         ],
                         "Source": [],
                     },
@@ -650,7 +688,6 @@ WORKFLOW_PRESETS = [
             },
         ],
     },
-
     # -------------------------------------------------------------------------
     # Ontology Exploration
     # -------------------------------------------------------------------------
@@ -684,7 +721,6 @@ WORKFLOW_PRESETS = [
             },
         ],
     },
-
     # -------------------------------------------------------------------------
     # Cell Type Discovery
     # -------------------------------------------------------------------------
@@ -750,7 +786,6 @@ WORKFLOW_PRESETS = [
             },
         ],
     },
-
     # -------------------------------------------------------------------------
     # Marker Gene Analysis
     # -------------------------------------------------------------------------
@@ -771,10 +806,18 @@ WORKFLOW_PRESETS = [
                 "previousPhaseId": None,
                 "originFilter": "all",
                 "settings": {
-                    "depth": 2,
+                    "depth": 4,
                     "edgeDirection": "ANY",
-                    "allowedCollections": ["CL", "BMC", "GS"],
-                    "edgeFilters": {"Label": [], "Source": []},
+                    "allowedCollections": ["CL", "CS", "BMC", "GS"],
+                    "edgeFilters": {
+                        "Label": [
+                            "PART_OF",
+                            "COMPOSED_PRIMARILY_OF",
+                            "HAS_CHARACTERIZING_MARKER_SET",
+                            "EXPRESSES",
+                        ],
+                        "Source": [],
+                    },
                     "setOperation": "Union",
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
@@ -822,10 +865,18 @@ WORKFLOW_PRESETS = [
                 "previousPhaseId": "preset-dendritic-phase-1",
                 "originFilter": "all",
                 "settings": {
-                    "depth": 2,
+                    "depth": 3,
                     "edgeDirection": "ANY",
-                    "allowedCollections": ["BMC", "GS", "UBERON"],
-                    "edgeFilters": {"Label": [], "Source": []},
+                    "allowedCollections": ["BMC", "GS", "UBERON", "CS"],
+                    "edgeFilters": {
+                        "Label": [
+                            "COMPOSED_PRIMARILY_OF",
+                            "HAS_CHARACTERIZING_MARKER_SET",
+                            "EXPRESSES",
+                            "PART_OF",
+                        ],
+                        "Source": [],
+                    },
                     "setOperation": "Union",
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
@@ -835,7 +886,6 @@ WORKFLOW_PRESETS = [
             },
         ],
     },
-
     # -------------------------------------------------------------------------
     # Disease Analysis
     # -------------------------------------------------------------------------
@@ -909,7 +959,10 @@ WORKFLOW_PRESETS = [
                     "depth": 9,
                     "edgeDirection": "INBOUND",
                     "allowedCollections": ["MONDO", "GS"],
-                    "edgeFilters": {"Label": ["SUB_CLASS_OF", "IS_GENETIC_BASIS_FOR_CONDITION"], "Source": []},
+                    "edgeFilters": {
+                        "Label": ["SUB_CLASS_OF", "IS_GENETIC_BASIS_FOR_CONDITION"],
+                        "Source": [],
+                    },
                     "setOperation": "Union",
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
@@ -924,10 +977,18 @@ WORKFLOW_PRESETS = [
                 "previousPhaseId": "preset-pathogenesis-phase-1",
                 "originFilter": "all",
                 "settings": {
-                    "depth": 1,
+                    "depth": 2,
                     "edgeDirection": "ANY",
-                    "allowedCollections": ["BMC", "CL", "GS", "PR"],
-                    "edgeFilters": {"Label": [], "Source": []},
+                    "allowedCollections": ["BMC", "CL", "GS", "PR", "CS"],
+                    "edgeFilters": {
+                        "Label": [
+                            "EXPRESSES",
+                            "COMPOSED_PRIMARILY_OF",
+                            "HAS_CHARACTERIZING_MARKER_SET",
+                            "PRODUCES",
+                        ],
+                        "Source": [],
+                    },
                     "setOperation": "Union",
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
@@ -962,7 +1023,10 @@ WORKFLOW_PRESETS = [
                     "depth": 1,
                     "edgeDirection": "INBOUND",
                     "allowedCollections": ["GS"],
-                    "edgeFilters": {"Label": ["IS_GENETIC_BASIS_FOR_CONDITION"], "Source": []},
+                    "edgeFilters": {
+                        "Label": ["IS_GENETIC_BASIS_FOR_CONDITION"],
+                        "Source": [],
+                    },
                     "setOperation": "Union",
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
@@ -1025,7 +1089,6 @@ WORKFLOW_PRESETS = [
             },
         ],
     },
-
     # -------------------------------------------------------------------------
     # Example: Pulmonary Hypertension
     #

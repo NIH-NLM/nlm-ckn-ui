@@ -1,7 +1,13 @@
 import * as d3 from "d3";
 import { getColorForCollection } from "../../utils";
-import { findLeafNodes, processGraphData, processGraphLinks } from "./graphDataProcessing";
+import {
+  filterRemovedLink,
+  findLeafNodes,
+  processGraphData,
+  processGraphLinks,
+} from "./graphDataProcessing";
 import { renderGraph, toggleFocusNodeRendering } from "./graphRendering";
+import { attachLasso } from "./lassoSelection";
 import {
   applyLayoutMode,
   DEFAULT_GRAPH_OPTIONS,
@@ -28,31 +34,121 @@ function ForceGraphConstructor(
 
   const mergedOptions = { ...DEFAULT_GRAPH_OPTIONS, ...options };
 
-  // Setup default drag behavior.
-  mergedOptions.drag =
-    options.drag ||
-    d3
-      .drag()
-      .on("start", (event, _d) => {
-        if (!event.active) simulation.alphaTarget(0.1).restart();
-        event.subject.fx = event.subject.x;
-        event.subject.fy = event.subject.y;
-        mergedOptions.interactionCallback();
-      })
-      .on("drag", (event, _d) => {
+  // Per-drag state for group-drag mode (when the dragged node is part of the
+  // current lasso selection): captures the starting position of the subject
+  // and snapshots of every selected node so each frame can apply a uniform
+  // delta. Lives in module scope so the handler closure can read/clear it.
+  let groupDragSnapshot = null;
+
+  const isGroupDragActive = (subjectId) =>
+    currentSelectedNodeIds.size > 1 && currentSelectedNodeIds.has(subjectId);
+
+  // Setup drag behavior. The constructor owns the handler outright — overrides
+  // were removed because any external drag would bypass the activeDrags
+  // bookkeeping that resize/settle suppression depends on, silently disabling
+  // those guards.
+  mergedOptions.drag = d3
+    .drag()
+    .on("start", (event, _d) => {
+      activeDrags += 1;
+      mergedOptions.interactionCallback();
+
+      if (isGroupDragActive(event.subject.id)) {
+        // Snapshot every selected node's current position so the drag handler
+        // can apply (event.x - subject.startX, event.y - subject.startY) as
+        // a uniform delta. Skip the alphaTarget reheat — pinning many nodes
+        // simultaneously makes the simulation jitter visibly.
+        const nodesById = new Map(simulation.nodes().map((n) => [n.id, n]));
+        const snapshot = new Map();
+        for (const id of currentSelectedNodeIds) {
+          const node = nodesById.get(id);
+          if (!node) continue;
+          snapshot.set(id, { node, startX: node.x, startY: node.y });
+          node.fx = node.x;
+          node.fy = node.y;
+        }
+        groupDragSnapshot = {
+          subjectId: event.subject.id,
+          subjectStartX: event.subject.x,
+          subjectStartY: event.subject.y,
+          nodes: snapshot,
+        };
+        return;
+      }
+
+      // Single-node fallback path — unchanged from the pre-lasso behavior.
+      if (!event.active) simulation.alphaTarget(0.1).restart();
+      event.subject.fx = event.subject.x;
+      event.subject.fy = event.subject.y;
+    })
+    .on("drag", (event, _d) => {
+      if (groupDragSnapshot && groupDragSnapshot.subjectId === event.subject.id) {
+        const dx = event.x - groupDragSnapshot.subjectStartX;
+        const dy = event.y - groupDragSnapshot.subjectStartY;
+        for (const { node, startX, startY } of groupDragSnapshot.nodes.values()) {
+          node.fx = startX + dx;
+          node.fy = startY + dy;
+          // ticked() paints from node.x/y, not fx/fy — copy through so the
+          // group visibly tracks the pointer when the simulation is settled
+          // (we deliberately skipped the alphaTarget reheat).
+          node.x = node.fx;
+          node.y = node.fy;
+        }
+        ticked();
+        return;
+      }
+
+      // Single-node fallback path — unchanged.
+      event.subject.fx = event.x;
+      event.subject.fy = event.y;
+    })
+    .on("end", (event, _d) => {
+      try {
+        if (groupDragSnapshot && groupDragSnapshot.subjectId === event.subject.id) {
+          const positions = [];
+          for (const [id, { node }] of groupDragSnapshot.nodes.entries()) {
+            // Mirror fx/fy into x/y for any final-frame correction before the
+            // last paint — the drag handler already does this, but be defensive
+            // in case "end" fires without a preceding "drag" (zero-distance
+            // click on a selected node).
+            node.x = node.fx;
+            node.y = node.fy;
+            positions.push({ nodeId: id, x: node.fx, y: node.fy });
+          }
+          mergedOptions.onMultiNodeDragEnd?.(positions);
+          groupDragSnapshot = null;
+          // Repaint at final positions. simulation.alpha(...) without restart()
+          // won't run a tick once the simulation has cooled, so call ticked()
+          // directly — this matches the explicit-render pattern used after the
+          // initial settle in updateGraph.
+          ticked();
+          return;
+        }
+
+        if (!event.active) simulation.alphaTarget(0);
+        // Pin the node at the dropped position so it stays put while the
+        // simulation continues to settle the rest of the graph. The post-rebuild
+        // unpin loop in updateGraph (and restoreGraph) is the existing release
+        // path — rebuilding the graph clears all pins.
         event.subject.fx = event.x;
         event.subject.fy = event.y;
-      })
-      .on("end", (event, _d) => {
-        if (!event.active) simulation.alphaTarget(0);
-        event.subject.fx = null;
-        event.subject.fy = null;
+        // Emit the same coords we just pinned (event.x/y), not
+        // event.subject.x/y — the latter is the simulation's last-tick
+        // position and can lag by a frame, so subscribers (e.g., Redux
+        // updateNodePosition) would otherwise receive stale coordinates.
         mergedOptions.onNodeDragEnd({
           nodeId: event.subject.id,
-          x: event.subject.x,
-          y: event.subject.y,
+          x: event.x,
+          y: event.y,
         });
-      });
+      } finally {
+        // Decrement after the dispatch so any synchronous subscriber observes
+        // isDragging() as still true during its own work. Use finally so a
+        // throwing subscriber can't strand activeDrags > 0 — that would leave
+        // isDragging() stuck true and silently suppress all future reheats.
+        activeDrags -= 1;
+      }
+    });
 
   // Setup color scale for node groups if provided.
   if (mergedOptions.nodeGroup && mergedOptions.nodeGroups.length > 0) {
@@ -73,6 +169,12 @@ function ForceGraphConstructor(
   // useEffect, and avoids a visible force-mode warmup before non-force modes.
   let currentLayoutMode = mergedOptions.layoutMode || "force";
 
+  // Counter mirrors d3's event.active: 0 when no drag in flight, > 0 while at
+  // least one is active. External code (resize, settle-end callbacks) checks
+  // isDragging() to skip full reheats that would override the drag's gentle
+  // alphaTarget(0.1) warmup.
+  let activeDrags = 0;
+
   // Create main simulation.
   const simulation = d3
     .forceSimulation()
@@ -80,6 +182,18 @@ function ForceGraphConstructor(
     .force("charge", forceNode)
     .force("center", forceCenter)
     .on("tick", ticked);
+
+  // Apply the user's current label visibility whenever the sim cools naturally
+  // (e.g., after a drag-induced reheat). updateGraph's waitForAlpha callback
+  // already does this for full rebuilds; this catches the cases that don't
+  // route through there. Namespaced to coexist with other "end" handlers.
+  simulation.on("end.labelRestore", () => {
+    // Skip during live-simulation mode — toggleSimulation(true) explicitly
+    // hides labels for the duration; the natural cooldown after alpha decay
+    // would otherwise unhide them mid-session before the user toggles off.
+    if (isLiveSimulationRunning) return;
+    updateLabelVisibilityOnZoom(d3.zoomTransform(svg.node()).k);
+  });
 
   // Select and configure SVG element.
   const svg = d3
@@ -105,6 +219,19 @@ function ForceGraphConstructor(
 
   // Centralized function to manage label visibility based on zoom and user settings.
   function updateLabelVisibilityOnZoom(k) {
+    // Invariant: while the sim is not settled, all labels are hidden.
+    // Repositioning visible labels every tick destroys framerate on dense
+    // graphs. Callers (zoom, toggleLabels, font-size changes, layout-phase
+    // onComplete) don't need to know whether the sim is hot — this guard
+    // collapses every hot-sim caller to a force-hide. Restoration happens
+    // via the on("end") handler when the sim cools naturally, or via the
+    // explicit post-settle calls after runSimulation(false) drains alpha.
+    if (simulation.alpha() > simulation.alphaMin()) {
+      nodeContainer.selectAll("text").style("display", "none");
+      linkContainer.selectAll("text").style("display", "none");
+      return;
+    }
+
     // Calculate the zoom threshold needed to meet the minimum visible font size.
     const nodeLabelThreshold = mergedOptions.minVisibleFontSize / mergedOptions.nodeFontSize;
     const linkLabelThreshold = mergedOptions.minVisibleFontSize / mergedOptions.linkFontSize;
@@ -137,16 +264,31 @@ function ForceGraphConstructor(
     );
   }
 
+  // Lasso-mode flag — flipped via the public setLassoMode method. Used by
+  // the zoom filter (to suppress pan/zoom while drawing) and by the lasso
+  // attachment itself (to gate pointerdown).
+  let lassoEnabled = false;
+
+  // The current set of lasso-selected node IDs. Used by renderGraph to apply
+  // the .selected class on the parent <g> and by the drag handler to detect
+  // group-drag mode. Updated via the public setSelectedNodeIds method.
+  let currentSelectedNodeIds = new Set();
+  const applySelectionHighlight = () => {
+    nodeContainer.selectAll("g.node").classed("selected", (d) => currentSelectedNodeIds.has(d.id));
+  };
+
   // Setup zoom and pan behavior.
   const zoomHandler = d3
     .zoom()
+    .filter((event) => {
+      // Suppress all pan/zoom gestures while the lasso tool is active.
+      if (lassoEnabled) return false;
+      // Otherwise preserve d3's default filter: ignore non-primary buttons
+      // and ignore ctrl-modified events that aren't wheel events.
+      return (!event.ctrlKey || event.type === "wheel") && !event.button;
+    })
     .on("zoom", (event) => {
       g.attr("transform", event.transform);
-      // Skip label re-evaluation while the simulation is hot — the
-      // post-settle callback will apply final visibility. The guard lives
-      // here (not inside updateLabelVisibilityOnZoom) so that post-simulation
-      // callers can apply visibility regardless of the current alpha value.
-      if (simulation.alpha() > 0.001) return;
       updateLabelVisibilityOnZoom(event.transform.k);
     })
     .on("start", mergedOptions.interactionCallback);
@@ -157,6 +299,21 @@ function ForceGraphConstructor(
     zoomHandler.transform,
     d3.zoomIdentity.translate(0, 0).scale(mergedOptions.initialScale),
   );
+
+  // Attach the lasso pointer behavior. The polygon is drawn inside `g` so it
+  // moves with the current zoom transform, and `getNodes` reads the live
+  // simulation array so it always reflects the rendered graph.
+  // We capture the returned `detach` so a future teardown method can remove
+  // the pointer listeners and any in-flight `.lasso-path` element.
+  const _detachLasso = attachLasso({
+    svg,
+    g,
+    getNodes: () => simulation.nodes(),
+    onSelectionComplete: (ids, modifiers) => {
+      mergedOptions.onLassoSelection?.(ids, modifiers);
+    },
+    isEnabled: () => lassoEnabled,
+  });
 
   // Define arrow markers for link directions.
   const defs = g.append("defs");
@@ -239,10 +396,12 @@ function ForceGraphConstructor(
       .scale(currentTransform.k);
 
     svg.call(zoomHandler.transform, newTransform);
-    // Only restart simulation in force mode when no phase transition is active.
-    // In clustered/radial modes, the layout is already settled or transitioning —
-    // restarting would disrupt it. Just update the viewBox and zoom.
-    if (currentLayoutMode === "force" && !isPhaseTransitionActive()) {
+    // Only restart simulation in force mode when no phase transition is active
+    // and no drag is in flight. In clustered/radial modes the layout is already
+    // settled or transitioning — restarting would disrupt it. During a drag, a
+    // full alpha(1) reheat would clobber the drag handler's gentle
+    // alphaTarget(0.1) warmup and visibly jolt the graph.
+    if (currentLayoutMode === "force" && !isPhaseTransitionActive() && activeDrags === 0) {
       simulation.alpha(1).restart();
     }
   }
@@ -416,7 +575,7 @@ function ForceGraphConstructor(
     if (typeof currentLabelStates[labelClass] !== "undefined") {
       currentLabelStates[labelClass] = show;
     }
-    // Immediately apply the new visibility rule based on the current zoom.
+    // updateLabelVisibilityOnZoom enforces the alpha-settled invariant.
     updateLabelVisibilityOnZoom(d3.zoomTransform(svg.node()).k);
   }
 
@@ -459,6 +618,11 @@ function ForceGraphConstructor(
   // Rebuilds graph from a saved state object.
   // Fixes node positions initially to prevent simulation drift on restore.
   function restoreGraph({ nodes, links, labelStates }) {
+    // Invalidate any in-flight waitForAlpha promises from prior updateGraph
+    // calls — without this, a callback resolving after restoreGraph would
+    // call onSimulationEnd with stale `processedNodes` and dispatch
+    // setGraphData, overwriting the just-restored Redux state.
+    simulationGeneration.value++;
     resetGraph(false);
     // Sync internal label state with restored state.
     currentLabelStates = { ...labelStates };
@@ -508,6 +672,7 @@ function ForceGraphConstructor(
         originNodeIds: mergedOptions.originNodeIds,
         useFocusNodes: mergedOptions.useFocusNodes,
         collectionMaps: mergedOptions.collectionMaps,
+        selectedNodeIds: currentSelectedNodeIds,
       },
     );
     updateLegend(processedNodes);
@@ -554,6 +719,7 @@ function ForceGraphConstructor(
     collapseNodes = [],
     collapseMode = "standard",
     removeNode = false,
+    removeLink = null,
     centerNodeId = null,
     resetData = false,
     save = true,
@@ -608,6 +774,9 @@ function ForceGraphConstructor(
       }
     }
 
+    // Remove a single link by _id without touching its endpoint nodes.
+    processedLinks = filterRemovedLink(processedLinks, removeLink);
+
     // Update simulation with current data.
     simulation.nodes(processedNodes);
     forceLink.links(processedLinks);
@@ -633,6 +802,7 @@ function ForceGraphConstructor(
         originNodeIds: mergedOptions.originNodeIds,
         useFocusNodes: mergedOptions.useFocusNodes,
         collectionMaps: mergedOptions.collectionMaps,
+        selectedNodeIds: currentSelectedNodeIds,
       },
     );
     updateLegend(processedNodes);
@@ -735,6 +905,23 @@ function ForceGraphConstructor(
     toggleFocusNodes,
     centerOnNode,
     resize,
+    isDragging: () => activeDrags > 0,
+    // Toggles lasso-selection mode. While enabled, pan/zoom is suppressed
+    // and pointer drags inside the SVG draw a freeform selection polygon.
+    setLassoMode: (enabled) => {
+      lassoEnabled = !!enabled;
+      svg.style("cursor", lassoEnabled ? "crosshair" : null);
+    },
+    // Updates the set of lasso-selected node IDs and applies the visual
+    // highlight to the rendered nodes. Cheap — does not trigger a full
+    // renderGraph.
+    setSelectedNodeIds: (ids) => {
+      currentSelectedNodeIds = new Set(ids || []);
+      applySelectionHighlight();
+    },
+    // Reads the current selection. Returns a copy so callers can't mutate
+    // the internal Set used by the drag handler and applySelectionHighlight.
+    getSelectedNodeIds: () => new Set(currentSelectedNodeIds),
     // Returns the current node/link state suitable for saving.
     getCurrentGraph: () => {
       const finalNodes = processedNodes.map(({ x, y, index, vx, vy, ...rest }) => ({

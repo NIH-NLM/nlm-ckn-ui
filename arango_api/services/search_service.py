@@ -1,6 +1,7 @@
 """
 Service for search operations.
 """
+
 import logging
 from itertools import chain
 
@@ -57,7 +58,7 @@ def search_by_term(search_term, search_fields, graph):
         n_gram_string += f'ANALYZER(doc.`{field}` LIKE CONCAT("%", CONCAT(@search_term, "%")), "n-gram") OR '
     n_gram_string = n_gram_string[0:-3]
 
-    # Build exact match check for sorting 
+    # Build exact match check for sorting
     exact_match_conditions = " OR ".join(
         f"LOWER(doc.`{field}`) == lower_search_term" for field in search_fields
     )

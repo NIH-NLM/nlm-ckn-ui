@@ -5,6 +5,7 @@ import "./styles/index.css";
 
 import Footer from "./components/Footer/Footer";
 import Header from "./components/Header/Header";
+import { ToastProvider } from "./components/Toast";
 import { ActiveNavProvider, FtuPartsProvider, GraphProvider } from "./contexts";
 import AboutPage from "./pages/AboutPage/AboutPage";
 import AskQuestionPage from "./pages/AskQuestionPage/AskQuestionPage";
@@ -21,32 +22,33 @@ import WorkflowBuilderPage from "./pages/WorkflowBuilderPage/WorkflowBuilderPage
 function App() {
   return (
     <Router>
-      <ActiveNavProvider>
-        <GraphProvider>
-          <FtuPartsProvider>
-            <div className="site-container background-color-white">
-              <Header />
-              <div className="app">
-                <Routes>
-                  <Route path="/collections/:coll/:id" element={<DocumentPage />} />
-                  <Route path="/collections/:coll" element={<CollectionsPage />} />
-                  <Route path="/collections" element={<CollectionsPage />} />
-                  <Route path="/graph" element={<GraphPage />} />
-                  <Route path="/workflow-builder" element={<WorkflowBuilderPage />} />
-                  <Route path="/ftu" element={<FTUExplorerPage />} />
-                  <Route path="/about" element={<AboutPage />} />
-                  <Route path="/ask" element={<AskQuestionPage />} />
-                  <Route path="/tree" element={<TreePage />} />
-                  <Route path="/sunburst" element={<SunburstPage />} />
-                  <Route path="/" element={<SearchPage />} />
-                  <Route path="*" element={<NotFoundPage />} />
-                </Routes>
+      <ToastProvider>
+        <ActiveNavProvider>
+          <GraphProvider>
+            <FtuPartsProvider>
+              <div className="site-container background-color-white">
+                <Header />
+                <div className="app">
+                  <Routes>
+                    <Route path="/collections/:coll/:id" element={<DocumentPage />} />
+                    <Route path="/collections/:coll" element={<CollectionsPage />} />
+                    <Route path="/collections" element={<CollectionsPage />} />
+                    <Route path="/graph" element={<GraphPage />} />
+                    <Route path="/workflow-builder" element={<WorkflowBuilderPage />} />
+                    <Route path="/ftu" element={<FTUExplorerPage />} />
+                    <Route path="/about" element={<AboutPage />} />
+                    <Route path="/tree" element={<TreePage />} />
+                    <Route path="/sunburst" element={<SunburstPage />} />
+                    <Route path="/" element={<SearchPage />} />
+                    <Route path="*" element={<NotFoundPage />} />
+                  </Routes>
+                </div>
+                <Footer />
               </div>
-              <Footer />
-            </div>
-          </FtuPartsProvider>
-        </GraphProvider>
-      </ActiveNavProvider>
+            </FtuPartsProvider>
+          </GraphProvider>
+        </ActiveNavProvider>
+      </ToastProvider>
     </Router>
   );
 }

@@ -131,7 +131,7 @@ jobs:
         continue-on-error: true
 
       - name: Check for changes and push
-        if: steps.check-autofix.outputs.skip != 'true' && github.event_name == 'pull_request_target'
+        if: steps.check-autofix.outputs.skip != 'true' && github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name == github.repository
         run: |
           cd ..
           git config user.name "github-actions[bot]"

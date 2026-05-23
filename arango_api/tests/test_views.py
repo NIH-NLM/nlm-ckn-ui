@@ -14,6 +14,7 @@ Test Configuration:
     To start a test ArangoDB instance:
         docker run -d --name arangodb-test -p 8530:8529 -e ARANGO_ROOT_PASSWORD=test arangodb
 """
+
 from django.test import TestCase, tag
 from django.urls import reverse
 
@@ -77,7 +78,12 @@ class CollectionViewsTestCase(ArangoDBViewTestCase):
         response = self.client.get(
             reverse(
                 "get_related_edges",
-                kwargs={"edge_coll": "CL-CL", "dr": "_from", "item_coll": "CL", "pk": "0000061"},
+                kwargs={
+                    "edge_coll": "CL-CL",
+                    "dr": "_from",
+                    "item_coll": "CL",
+                    "pk": "0000061",
+                },
             )
         )
         self.assertEqual(response.status_code, 200)
@@ -164,6 +170,73 @@ class GraphViewsTestCase(ArangoDBViewTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("NCBITaxon/9606", response.json())
 
+    def test_neighbor_collections_valid_request(self):
+        response = self.client.post(
+            reverse("get_neighbor_collections"),
+            data={"node_id": "CL/0000061", "edge_direction": "OUTBOUND"},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("collections", data)
+        self.assertIsInstance(data["collections"], list)
+        self.assertIn("CL", data["collections"])
+        self.assertIn("GO", data["collections"])
+        self.assertIn("UBERON", data["collections"])
+
+    def test_neighbor_collections_missing_node_id(self):
+        response = self.client.post(
+            reverse("get_neighbor_collections"),
+            data={"edge_direction": "ANY"},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+
+class EdgesBetweenViewTestCase(ArangoDBViewTestCase):
+    """Tests for the /graph/edges-between/ endpoint."""
+
+    NODES = ["CL/0000061", "CL/0000151", "GO/0008150", "UBERON/0000061"]
+
+    def test_baseline_no_filters(self):
+        response = self.client.post(
+            reverse("get_edges_between"),
+            data={"node_ids": self.NODES, "graph": "ontologies"},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        # Three edges between these nodes: CL-CL, CL-GO, CL-UBERON
+        self.assertEqual(len(response.json()), 3)
+
+    def test_categorical_filter(self):
+        response = self.client.post(
+            reverse("get_edges_between"),
+            data={
+                "node_ids": self.NODES,
+                "graph": "ontologies",
+                "edge_filters": {"label": ["subClassOf"]},
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        edges = response.json()
+        self.assertEqual(len(edges), 1)
+        self.assertEqual(edges[0]["label"], "subClassOf")
+
+    def test_numeric_filter(self):
+        # No edges have a `score` attribute, so the range filter excludes all.
+        response = self.client.post(
+            reverse("get_edges_between"),
+            data={
+                "node_ids": self.NODES,
+                "graph": "ontologies",
+                "edge_filters": {"score": {"min": 0.5, "max": 1.0}},
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), [])
+
 
 class SearchViewsTestCase(ArangoDBViewTestCase):
     """Tests for search API endpoints."""
@@ -223,8 +296,7 @@ class SunburstViewsTestCase(ArangoDBViewTestCase):
         )
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertEqual(data["_id"], "root_phenotypes_full")
-        self.assertEqual(data["children"][0]["_id"], "NCBITaxon/9606")
+        self.assertEqual(data["_id"], "NCBITaxon/9606")
 
 
 class DocumentViewsTestCase(ArangoDBViewTestCase):
@@ -257,4 +329,7 @@ class DocumentViewsTestCase(ArangoDBViewTestCase):
         data = response.json()
         self.assertIn("label", data)
         self.assertEqual(data["label"]["type"], "categorical")
-        self.assertEqual(sorted(data["label"]["values"]), sorted(["subClassOf", "participates_in", "part_of"]))
+        self.assertEqual(
+            sorted(data["label"]["values"]),
+            sorted(["subClassOf", "participates_in", "part_of"]),
+        )

@@ -26,15 +26,6 @@ export function sunburstRoot(
   return doc("ROOT", label, { value, children });
 }
 
-export function treeApiWrapper(root: TestDoc): TestDoc {
-  // Tree component uses data.children[0] as root; wrap to mimic API
-  return {
-    _id: "WRAP/0",
-    label: "Wrapper",
-    children: [root],
-  };
-}
-
 export function simpleChildren(labels: string[]): TestDoc[] {
   return labels.map((l, i) => doc(`CHILD${i + 1}`, l, { value: 1 }));
 }
