@@ -1,0 +1,194 @@
+[
+  {
+    "id": "cq001",
+    "difficulty": "simple",
+    "use_case": "Disease genetics",
+    "question": "What genes are associated with asthma?",
+    "expected_targets": ["GS"],
+    "notes": "Common one-hop disease-to-gene association query."
+  },
+  {
+    "id": "cq002",
+    "difficulty": "simple",
+    "use_case": "Disease genetics",
+    "question": "What genes are associated with Alzheimer's disease?",
+    "expected_targets": ["GS"],
+    "notes": "Tests synonym expansion for Alzheimer wording."
+  },
+  {
+    "id": "cq003",
+    "difficulty": "simple",
+    "use_case": "Cell context",
+    "question": "What cell types are associated with glaucoma?",
+    "expected_targets": ["CL"],
+    "notes": "Disease-to-gene-to-cell-type style question."
+  },
+  {
+    "id": "cq004",
+    "difficulty": "simple",
+    "use_case": "Drug repurposing",
+    "question": "What drugs are connected to COPD?",
+    "expected_targets": ["CHEMBL"],
+    "notes": "Disease-to-drug or disease-to-gene-to-drug traversal."
+  },
+  {
+    "id": "cq005",
+    "difficulty": "simple",
+    "use_case": "Clinical trial evidence",
+    "question": "What clinical trials are available for Alzheimer's disease?",
+    "expected_targets": ["NCT"],
+    "notes": "Disease-to-drug-to-trial traversal."
+  },
+  {
+    "id": "cq006",
+    "difficulty": "medium",
+    "use_case": "Mechanism of action",
+    "question": "What proteins are connected to COPD through drugs or genes?",
+    "expected_targets": ["PR"],
+    "notes": "Multi-hop mechanism query."
+  },
+  {
+    "id": "cq007",
+    "difficulty": "medium",
+    "use_case": "Disease neighborhood exploration",
+    "question": "Show me diseases connected to the drug revefenacin.",
+    "expected_targets": ["MONDO"],
+    "notes": "Drug-to-disease via direct and two-hop paths."
+  },
+  {
+    "id": "cq008",
+    "difficulty": "medium",
+    "use_case": "Trial interpretation",
+    "question": "What diseases are connected to clinical trial NCT03095456?",
+    "expected_targets": ["MONDO"],
+    "notes": "Trial-to-drug-to-disease path."
+  },
+  {
+    "id": "cq009",
+    "difficulty": "medium",
+    "use_case": "Trial mechanism",
+    "question": "What genes and proteins are connected to clinical trial NCT03095456?",
+    "expected_targets": ["GS", "PR"],
+    "notes": "Trial-to-drug-to-gene/protein path."
+  },
+  {
+    "id": "cq010",
+    "difficulty": "medium",
+    "use_case": "Cell marker interpretation",
+    "question": "What genes are expressed by retinal cell types?",
+    "expected_targets": ["GS"],
+    "notes": "Anatomy/cell-type/cell-set to gene traversal."
+  },
+  {
+    "id": "cq011",
+    "difficulty": "medium",
+    "use_case": "Dataset discovery",
+    "question": "What datasets are connected to retina cell types?",
+    "expected_targets": ["CSD"],
+    "notes": "Anatomy or cell type to dataset traversal."
+  },
+  {
+    "id": "cq012",
+    "difficulty": "medium",
+    "use_case": "Evidence discovery",
+    "question": "What publications support datasets related to retina?",
+    "expected_targets": ["PUB"],
+    "notes": "Retina-to-dataset-to-publication traversal."
+  },
+  {
+    "id": "cq013",
+    "difficulty": "medium",
+    "use_case": "Biological process context",
+    "question": "What biological processes are connected to asthma-associated genes?",
+    "expected_targets": ["GO"],
+    "notes": "Disease-to-gene-to-process traversal."
+  },
+  {
+    "id": "cq014",
+    "difficulty": "medium",
+    "use_case": "Anatomical context",
+    "question": "What anatomical structures are connected to retinal cell sets?",
+    "expected_targets": ["UBERON"],
+    "notes": "Cell-set to anatomy traversal."
+  },
+  {
+    "id": "cq015",
+    "difficulty": "complex",
+    "use_case": "Path explanation",
+    "question": "How are COPD and revefenacin connected in the knowledge graph?",
+    "expected_targets": ["MONDO", "CHEMBL"],
+    "notes": "Should return explanatory connecting paths."
+  },
+  {
+    "id": "cq016",
+    "difficulty": "complex",
+    "use_case": "Drug repurposing with evidence",
+    "question": "Find drugs connected to emphysema and show the genes or proteins that explain the connection.",
+    "expected_targets": ["CHEMBL", "GS", "PR"],
+    "notes": "Requires intermediate path nodes in the returned graph."
+  },
+  {
+    "id": "cq017",
+    "difficulty": "complex",
+    "use_case": "Cell-disease mechanism",
+    "question": "Which cell types connect asthma to genes and biological processes?",
+    "expected_targets": ["CL", "GS", "GO"],
+    "notes": "Disease-to-gene-to-cell/process multi-hop traversal using a disease with process annotations in the loaded graph."
+  },
+  {
+    "id": "cq018",
+    "difficulty": "complex",
+    "use_case": "Evidence chain",
+    "question": "Show the path from retina cell sets to datasets and publications.",
+    "expected_targets": ["CS", "CSD", "PUB"],
+    "notes": "Data provenance and publication evidence."
+  },
+  {
+    "id": "cq019",
+    "difficulty": "complex",
+    "use_case": "Biomarker discovery",
+    "question": "What biomarker combinations or gene sets are connected to retinal cell sets?",
+    "expected_targets": ["BMC", "BGS"],
+    "notes": "Cell-set to biomarker/gene-set traversal. Gene sets are represented by BGS nodes in the loaded graph."
+  },
+  {
+    "id": "cq020",
+    "difficulty": "complex",
+    "use_case": "Cross-domain hypothesis generation",
+    "question": "Starting from asthma, show connected genes, proteins, drugs, clinical trials, and related diseases.",
+    "expected_targets": ["GS", "PR", "CHEMBL", "NCT", "MONDO"],
+    "notes": "Broad neighborhood query with several requested target classes."
+  },
+  {
+    "id": "cq021",
+    "difficulty": "complex",
+    "use_case": "Explainability",
+    "question": "Why is COPD connected to clinical trial NCT03095456?",
+    "expected_targets": ["MONDO", "CHEMBL", "NCT"],
+    "notes": "Should return path context rather than only endpoints."
+  },
+  {
+    "id": "cq022",
+    "difficulty": "complex",
+    "use_case": "Focused graph expansion",
+    "question": "Expand clinical trial NCT03095456 to diseases, drugs, genes, and proteins within two hops.",
+    "expected_targets": ["MONDO", "CHEMBL", "GS", "PR"],
+    "notes": "Typed multi-target expansion from an identifier."
+  },
+  {
+    "id": "cq023",
+    "difficulty": "complex",
+    "use_case": "Any-to-any schema traversal",
+    "question": "Find paths from asthma to clinical trials within three hops.",
+    "expected_targets": ["NCT"],
+    "notes": "Disease-to-trial bounded path finding."
+  },
+  {
+    "id": "cq024",
+    "difficulty": "complex",
+    "use_case": "Any-to-any schema traversal",
+    "question": "Find paths from retina to genes, datasets, and publications.",
+    "expected_targets": ["GS", "CSD", "PUB"],
+    "notes": "Anatomy-to-cell/dataset/publication/gene traversal."
+  }
+]
