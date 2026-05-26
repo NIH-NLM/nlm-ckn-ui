@@ -1,5 +1,7 @@
 import { useDispatch, useSelector } from "react-redux";
+import { Link } from "react-router-dom";
 import { toggleNodesSliceItem } from "../../store/nodesSlice";
+import { useToast } from "../Toast";
 
 /**
  * A  button to add or remove a node from the graph list.
@@ -9,6 +11,7 @@ import { toggleNodesSliceItem } from "../../store/nodesSlice";
  */
 const AddToGraphButton = ({ nodeId, text }) => {
   const dispatch = useDispatch();
+  const { showToast } = useToast();
   // Select the list of node IDs from slice.
   const nodesSliceNodeIds = useSelector((state) => state.nodesSlice.originNodeIds);
   // Check if the specific node for this button is already in the list.
@@ -18,6 +21,13 @@ const AddToGraphButton = ({ nodeId, text }) => {
     // Stop the click from propagating to a parent link or element.
     e.preventDefault();
     e.stopPropagation();
+    if (!isAdded) {
+      showToast(
+        <>
+          Added to Graph. <Link to="/graph">View Graph</Link>
+        </>,
+      );
+    }
     dispatch(toggleNodesSliceItem(nodeId));
   };
 

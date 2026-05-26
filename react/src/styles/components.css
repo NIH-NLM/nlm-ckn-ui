@@ -983,6 +983,11 @@ input:checked + .slider:before {
   opacity: 0.85;
 }
 
+.toast-content a:focus-visible {
+  outline: 2px solid var(--color-white, #ffffff);
+  outline-offset: 2px;
+}
+
 .toast-dismiss {
   background: none;
   border: none;
@@ -996,6 +1001,12 @@ input:checked + .slider:before {
 }
 
 .toast-dismiss:hover {
+  opacity: 1;
+}
+
+.toast-dismiss:focus-visible {
+  outline: 2px solid var(--color-white, #ffffff);
+  outline-offset: 2px;
   opacity: 1;
 }
 
