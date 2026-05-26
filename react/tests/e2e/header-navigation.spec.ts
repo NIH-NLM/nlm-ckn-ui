@@ -66,7 +66,7 @@ test("Header navigation links work correctly", async ({ page }) => {
   await expect(page.locator('.navbar a[href="#/collections"] h4')).toHaveClass(/active-nav/);
 
   // Navigate to Graph
-  await page.getByRole("link", { name: "Graph" }).click();
+  await page.getByRole("link", { name: "Graph", exact: true }).click();
   await expect(page).toHaveURL(/#\/graph$/);
   await expect(page.locator('.navbar a[href="#/graph"] h4')).toHaveClass(/active-nav/);
 

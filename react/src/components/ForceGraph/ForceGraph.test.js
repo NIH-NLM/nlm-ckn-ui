@@ -1,9 +1,11 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { Provider } from "react-redux";
+import { MemoryRouter } from "react-router-dom";
 import graphReducer, { setAvailableCollections } from "../../store/graphSlice";
 import nodesReducer from "../../store/nodesSlice";
 import savedGraphsReducer from "../../store/savedGraphsSlice";
+import { ToastProvider } from "../Toast";
 import ForceGraph from "./ForceGraph";
 
 // Mock ResizeObserver for jsdom
@@ -92,7 +94,11 @@ const openNodePopup = async (store, nodeId = "CL/0000001") => {
   await act(async () => {
     render(
       <Provider store={store}>
-        <ForceGraph />
+        <MemoryRouter>
+          <ToastProvider>
+            <ForceGraph />
+          </ToastProvider>
+        </MemoryRouter>
       </Provider>,
     );
   });
