@@ -9,13 +9,13 @@ Parameters:
 
   GitHubOrg:
     Type: String
-    Description: GitHub organization name
-    Default: NIH-NLM
+    Description: GitHub organization or user name that owns the fork where CI runs
+    Default: Springbok-LLC
 
   GitHubRepo:
     Type: String
     Description: GitHub repository name
-    Default: cell-kn-mvp-ui
+    Default: nlm-ckn-ui
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -144,7 +144,11 @@ Resources:
             Action: sts:AssumeRoleWithWebIdentity
             Condition:
               StringLike:
-                'token.actions.githubusercontent.com:sub': !Sub 'repo:${GitHubOrg}/${GitHubRepo}:*'
+                # Allow both the fork (where CI runs) and the NIH-NLM upstream.
+                # GitHubOrg/GitHubRepo should point to the fork (Springbok-LLC/nlm-ckn-ui).
+                'token.actions.githubusercontent.com:sub':
+                  - !Sub 'repo:${GitHubOrg}/${GitHubRepo}:*'
+                  - 'repo:NIH-NLM/nlm-ckn-ui:*'
               StringEquals:
                 'token.actions.githubusercontent.com:aud': sts.amazonaws.com
       Policies:

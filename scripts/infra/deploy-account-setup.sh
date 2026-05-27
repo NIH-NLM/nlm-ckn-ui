@@ -27,8 +27,8 @@ NC='\033[0m' # No Color
 
 # Configuration
 PROJECT_NAME="cell-kn"
-GITHUB_ORG="NIH-NLM"
-GITHUB_REPO="cell-kn-mvp-ui"
+GITHUB_ORG="Springbok-LLC"
+GITHUB_REPO="nlm-ckn-ui"
 AWS_REGION=${AWS_REGION:-us-east-1}
 
 # Change to project root (script lives in scripts/infra/)
