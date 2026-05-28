@@ -62,7 +62,7 @@ test("Expanding a node creates undo history and undo restores the previous graph
   }).toPass({ timeout: 5000 });
 
   // Open the History panel and verify the Undo button is enabled
-  await page.getByRole("button", { name: "< Show Options" }).click();
+  await page.getByRole("button", { name: "Settings" }).click();
   await page.getByRole("button", { name: "History" }).click();
 
   const undoButton = page.locator("#tab-panel-history button", { hasText: "Undo" });
@@ -87,7 +87,7 @@ test("Undo after settings change restores the previous graph", async ({ page }) 
   await generateGraphAndWait(page, 2);
 
   // Open options and change depth from 2 to 3
-  await page.getByRole("button", { name: "< Show Options" }).click();
+  await page.getByRole("button", { name: "Settings" }).click();
   await page.locator("#depth-select").selectOption("3");
 
   // "Apply Changes" banner should appear — click it to regenerate
