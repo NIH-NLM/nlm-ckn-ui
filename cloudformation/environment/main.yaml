@@ -10,9 +10,10 @@ Parameters:
   Environment:
     Type: String
     Default: dev
-    Description: Environment name (dev, sandbox, prod)
+    Description: Environment name (dev, stage, sandbox, prod)
     AllowedValues:
       - dev
+      - stage
       - sandbox
       - prod
 
@@ -98,8 +99,11 @@ Metadata:
         default: Private Subnet IDs
 
 Conditions:
-  # True only for the dev account where we have full IAM/SG permissions
-  IsDev: !Equals [!Ref Environment, 'dev']
+  # True for environments where we own the full stack (dev, Staging).
+  # In sandbox/prod, security groups and IAM roles are pre-created by NIH.
+  IsSelfManaged: !Or
+    - !Equals [!Ref Environment, 'dev']
+    - !Equals [!Ref Environment, 'stage']
 
 Resources:
   # ============================================================================
@@ -115,9 +119,9 @@ Resources:
       Parameters:
         ProjectName: !Ref ProjectName
         Environment: !Ref Environment
-        # IAM role ARN: created in dev, read from SSM prereqs in sandbox/prod
+        # IAM role ARN: created in dev/Staging, read from SSM prereqs in sandbox/prod
         LambdaExecutionRoleArn: !If
-          - IsDev
+          - IsSelfManaged
           - ''
           - !Sub '{{resolve:ssm:/${ProjectName}/${Environment}/prereqs/iam-random-secret-fn-arn}}'
       Tags:
@@ -138,7 +142,7 @@ Resources:
   # ============================================================================
   SecurityGroupsStack:
     Type: AWS::CloudFormation::Stack
-    Condition: IsDev
+    Condition: IsSelfManaged
     Properties:
       TemplateURL: !Sub 'https://${TemplatesBucketName}.s3.${AWS::Region}.amazonaws.com/environment/security-groups.yaml'
       Parameters:
@@ -212,7 +216,7 @@ Resources:
         # In dev the SG comes from the nested stack output; in sandbox/prod it is
         # read from SSM (fails fast if the prereq has not been created).
         AlbSecurityGroupId: !If
-          - IsDev
+          - IsSelfManaged
           - !GetAtt SecurityGroupsStack.Outputs.AlbSecurityGroupId
           - !Sub '{{resolve:ssm:/${ProjectName}/${Environment}/prereqs/sg-alb}}'
         # Used to create the ACM certificate for ALB HTTPS listeners
