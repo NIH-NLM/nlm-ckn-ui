@@ -73,8 +73,8 @@ PARAMETERS_FILE="cloudformation/parameters/${ENVIRONMENT}.json"
 cd "$(dirname "$0")/../.."
 
 # Validate environment
-if [[ ! "$ENVIRONMENT" =~ ^(dev|sandbox|prod)$ ]]; then
-  echo -e "${RED}Error: Environment must be dev, sandbox, or prod${NC}"
+if [[ ! "$ENVIRONMENT" =~ ^(dev|stage|sandbox|prod)$ ]]; then
+  echo -e "${RED}Error: Environment must be dev, stage, sandbox, or prod${NC}"
   exit 1
 fi
 
@@ -393,8 +393,7 @@ print(json.dumps(params))
   deploy_stack \
     "$INFRA_STACK" \
     "cloudformation/environment/main.yaml" \
-    "$INFRA_PARAMS_FILE" || true
-  INFRA_RESULT=$?
+    "$INFRA_PARAMS_FILE" && INFRA_RESULT=$? || INFRA_RESULT=$?
 
   if [ "$INFRA_RESULT" = "1" ]; then
     echo -e "${RED}Infra stack deployment failed or was aborted.${NC}"
@@ -416,7 +415,7 @@ if [ "$DEPLOY_MODE" != "--infra-only" ]; then
 
   # Resolve security group IDs for this environment
   echo -e "${GREEN}==> Resolving security group IDs for ${ENVIRONMENT}...${NC}"
-  if [ "$ENVIRONMENT" = "dev" ]; then
+  if [ "$ENVIRONMENT" = "dev" ] || [ "$ENVIRONMENT" = "stage" ]; then
     # SecurityGroupsStack is a nested stack inside the infra stack.
     # Its exports (at account level) use the pattern: ${ProjectName}-${Environment}-<type>-sg-id
     SG_ARANGODB=$(aws cloudformation list-exports \
@@ -453,8 +452,9 @@ if [ "$DEPLOY_MODE" != "--infra-only" ]; then
   echo "  sg-backend:  $SG_BACKEND"
   echo ""
 
-  # IAM role ARNs for backend (empty in dev, from SSM in sandbox/prod)
-  if [ "$ENVIRONMENT" = "dev" ]; then
+  # IAM role ARNs for backend (empty in dev/Staging — created by CloudFormation;
+  # read from SSM prereqs in sandbox/prod where NIH pre-creates them)
+  if [ "$ENVIRONMENT" = "dev" ] || [ "$ENVIRONMENT" = "stage" ]; then
     BACKEND_EXEC_ARN=""
     BACKEND_TASK_ARN=""
     ARANGO_INSTANCE_PROFILE_ARN=""
@@ -469,6 +469,13 @@ if [ "$DEPLOY_MODE" != "--infra-only" ]; then
       --name "/${PROJECT_NAME}/${ENVIRONMENT}/prereqs/iam-arangodb-instance-profile-arn" \
       --query 'Parameter.Value' --output text --region $AWS_REGION)
   fi
+
+  # ArangoDB subnet ID — read from infra stack exports so the EC2 instance lands
+  # in the correct private subnet. Staging has a dedicated VPC; dev uses the default VPC.
+  ARANGO_SUBNET=$(aws cloudformation list-exports \
+    --region $AWS_REGION \
+    --query "Exports[?Name=='${PROJECT_NAME}-${ENVIRONMENT}-private-subnet-ids'].Value" \
+    --output text | cut -d',' -f1)
 
   # Read ArangoDbUser from parameters file
   ARANGO_USER=$(python3 -c "
@@ -507,7 +514,8 @@ print(match[0] if match else 'root')
     Environment "$ENVIRONMENT" \
     ArangoDbSecurityGroupId "$SG_ARANGODB" \
     ArangoDbUser "$ARANGO_USER" \
-    InstanceProfileArn "$ARANGO_INSTANCE_PROFILE_ARN")
+    InstanceProfileArn "$ARANGO_INSTANCE_PROFILE_ARN" \
+    ArangoDbSubnetId "$ARANGO_SUBNET")
 
   deploy_stack \
     "${PROJECT_NAME}-${ENVIRONMENT}-arangodb" \

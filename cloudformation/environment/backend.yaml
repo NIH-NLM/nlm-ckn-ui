@@ -10,9 +10,10 @@ Parameters:
   Environment:
     Type: String
     Default: dev
-    Description: Environment name (dev, sandbox, prod)
+    Description: Environment name (dev, stage, sandbox, prod)
     AllowedValues:
       - dev
+      - stage
       - sandbox
       - prod
 
@@ -61,8 +62,12 @@ Metadata:
 
 Conditions:
   IsProd: !Equals [!Ref Environment, 'prod']
-  # IAM roles are created only in dev; sandbox/prod use pre-existing roles
+  # IsDev: controls behavior specific to local dev (e.g. ALLOWED_HOSTS wildcard, public IP)
   IsDev: !Equals [!Ref Environment, 'dev']
+  # IsSelfManaged: dev + Staging both own their full stack; sandbox/prod use NIH-pre-created roles
+  IsSelfManaged: !Or
+    - !Equals [!Ref Environment, 'dev']
+    - !Equals [!Ref Environment, 'stage']
 
 Resources:
   # ============================================================================
@@ -77,7 +82,7 @@ Resources:
       Name: !Sub '/${ProjectName}/${Environment}/django/allowed-hosts'
       Type: String
       Value: !If
-        - IsDev
+        - IsSelfManaged
         - 'localhost,*'
         - !Sub
           - 'localhost,${FullDomain}'
@@ -89,7 +94,7 @@ Resources:
                 - '${Environment}.${Domain}'
                 - Domain: !ImportValue
                     Fn::Sub: '${ProjectName}-${Environment}-domain-name'
-      Description: Django ALLOWED_HOSTS (auto-calculated)
+      Description: Django ALLOWED_HOSTS (auto-calculated; dev/stage use wildcard for ALB health checks)
       Tags:
         Project: !Ref ProjectName
         Environment: !Ref Environment
@@ -119,12 +124,12 @@ Resources:
         ManagedBy: CloudFormation
 
   # ============================================================================
-  # IAM Roles for ECS Tasks (dev only)
+  # IAM Roles for ECS Tasks (dev and Staging)
   # In sandbox/prod these roles are pre-created and passed in as parameters.
   # ============================================================================
   TaskExecutionRole:
     Type: AWS::IAM::Role
-    Condition: IsDev
+    Condition: IsSelfManaged
     Properties:
       RoleName: !Sub '${ProjectName}-${Environment}-backend-exec'
       AssumeRolePolicyDocument:
@@ -166,7 +171,7 @@ Resources:
 
   TaskRole:
     Type: AWS::IAM::Role
-    Condition: IsDev
+    Condition: IsSelfManaged
     Properties:
       RoleName: !Sub '${ProjectName}-${Environment}-backend-task'
       AssumeRolePolicyDocument:
@@ -212,9 +217,9 @@ Resources:
         - FARGATE
       Cpu: '256'
       Memory: '512'
-      # In dev use the roles created above; in sandbox/prod use the pre-existing ARNs
-      ExecutionRoleArn: !If [IsDev, !GetAtt TaskExecutionRole.Arn, !Ref TaskExecutionRoleArn]
-      TaskRoleArn: !If [IsDev, !GetAtt TaskRole.Arn, !Ref TaskRoleArn]
+      # In dev/Staging use the roles created above; in sandbox/prod use the pre-existing ARNs
+      ExecutionRoleArn: !If [IsSelfManaged, !GetAtt TaskExecutionRole.Arn, !Ref TaskExecutionRoleArn]
+      TaskRoleArn: !If [IsSelfManaged, !GetAtt TaskRole.Arn, !Ref TaskRoleArn]
       ContainerDefinitions:
         - Name: backend
           # Placeholder image used only on first stack deployment.

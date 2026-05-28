@@ -206,7 +206,7 @@ Resources:
                 Action:
                   - iam:CreateServiceLinkedRole
                 Resource: '*'
-              # EC2 for security groups
+              # EC2 for security groups, VPC, and subnet management
               - Effect: Allow
                 Action:
                   - ec2:CreateSecurityGroup
@@ -219,6 +219,33 @@ Resources:
                   - ec2:DescribeSubnets
                   - ec2:CreateTags
                   - ec2:DeleteTags
+                  # VPC and subnet lifecycle (for Staging network stack)
+                  - ec2:CreateVpc
+                  - ec2:DeleteVpc
+                  - ec2:ModifyVpcAttribute
+                  - ec2:DescribeVpcAttribute
+                  - ec2:CreateSubnet
+                  - ec2:DeleteSubnet
+                  - ec2:ModifySubnetAttribute
+                  - ec2:CreateInternetGateway
+                  - ec2:DeleteInternetGateway
+                  - ec2:AttachInternetGateway
+                  - ec2:DetachInternetGateway
+                  - ec2:DescribeInternetGateways
+                  - ec2:CreateRouteTable
+                  - ec2:DeleteRouteTable
+                  - ec2:CreateRoute
+                  - ec2:DeleteRoute
+                  - ec2:AssociateRouteTable
+                  - ec2:DisassociateRouteTable
+                  - ec2:DescribeRouteTables
+                  - ec2:AllocateAddress
+                  - ec2:ReleaseAddress
+                  - ec2:DescribeAddresses
+                  - ec2:CreateNatGateway
+                  - ec2:DeleteNatGateway
+                  - ec2:DescribeNatGateways
+                  - ec2:DescribeAvailabilityZones
                 Resource: '*'
               # ELB for ALB
               - Effect: Allow
@@ -255,6 +282,17 @@ Resources:
                   - ssm:RemoveTagsFromResource
                 Resource:
                   - !Sub 'arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:parameter/${ProjectName}/*'
+              # SSM Run Command (used by deploy-dataset.sh to trigger ArangoDB restore on EC2)
+              - Effect: Allow
+                Action:
+                  - ssm:SendCommand
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:instance/*'
+                  - !Sub 'arn:${AWS::Partition}:ssm:*::document/AWS-RunShellScript'
+              - Effect: Allow
+                Action:
+                  - ssm:GetCommandInvocation
+                Resource: '*'
               # CloudWatch Logs
               - Effect: Allow
                 Action:
