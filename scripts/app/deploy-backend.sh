@@ -74,8 +74,8 @@ AWS_REGION=${AWS_REGION:-us-east-1}
 STACK_NAME="${PROJECT_NAME}-${ENVIRONMENT}"
 
 # Validate environment
-if [[ ! "$ENVIRONMENT" =~ ^(dev|sandbox|prod)$ ]]; then
-  echo -e "${RED}Error: Environment must be dev, sandbox, or prod${NC}"
+if [[ ! "$ENVIRONMENT" =~ ^(dev|stage|sandbox|prod)$ ]]; then
+  echo -e "${RED}Error: Environment must be dev, stage, sandbox, or prod${NC}"
   exit 1
 fi
 

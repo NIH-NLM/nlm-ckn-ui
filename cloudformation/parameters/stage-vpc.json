@@ -1,0 +1,30 @@
+[
+  {
+    "ParameterKey": "ProjectName",
+    "ParameterValue": "cell-kn"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "stage"
+  },
+  {
+    "ParameterKey": "VpcCidr",
+    "ParameterValue": "10.10.0.0/16"
+  },
+  {
+    "ParameterKey": "PublicSubnet1Cidr",
+    "ParameterValue": "10.10.0.0/24"
+  },
+  {
+    "ParameterKey": "PublicSubnet2Cidr",
+    "ParameterValue": "10.10.1.0/24"
+  },
+  {
+    "ParameterKey": "PrivateSubnet1Cidr",
+    "ParameterValue": "10.10.10.0/24"
+  },
+  {
+    "ParameterKey": "PrivateSubnet2Cidr",
+    "ParameterValue": "10.10.11.0/24"
+  }
+]

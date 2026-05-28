@@ -10,9 +10,10 @@ Parameters:
   Environment:
     Type: String
     Default: dev
-    Description: Environment name (dev, sandbox, prod)
+    Description: Environment name (dev, stage, sandbox, prod)
     AllowedValues:
       - dev
+      - stage
       - sandbox
       - prod
 
@@ -51,14 +52,23 @@ Parameters:
     MaxValue: 500
     Description: EBS volume size (GB) for ArangoDB data
 
-  # IAM instance profile ARN - empty in dev (created by this template).
+  # IAM instance profile ARN - empty in dev/stage (created by this template).
   # In sandbox/prod this must be a pre-created ARN passed in from deploy script.
   InstanceProfileArn:
     Type: String
     Default: ''
     Description: >
       Pre-existing IAM instance profile ARN (sandbox/prod only).
-      Leave empty in dev - the profile will be created by this template.
+      Leave empty in dev/stage˙ - the profile will be created by this template.
+
+  # Subnet for the ArangoDB EC2 instance.
+  # In dev, defaults to the existing dev subnet. In stage, the deploy script
+  # passes the first private subnet from the infra stack exports.
+  ArangoDbSubnetId:
+    Type: AWS::EC2::Subnet::Id
+    Description: >
+      Subnet ID for the ArangoDB EC2 instance.
+      Must be supplied by deploy-environment.sh (resolved from infra stack exports).
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -72,6 +82,7 @@ Metadata:
           default: Network Configuration
         Parameters:
           - ArangoDbSecurityGroupId
+          - ArangoDbSubnetId
       - Label:
           default: ArangoDB Configuration
         Parameters:
@@ -82,12 +93,15 @@ Metadata:
           - InstanceType
           - EbsVolumeSize
       - Label:
-          default: Pre-existing IAM (sandbox/prod only - leave empty in dev)
+          default: Pre-existing IAM (sandbox/prod only - leave empty in dev/stage)
         Parameters:
           - InstanceProfileArn
 
 Conditions:
-  IsDev: !Equals [!Ref Environment, 'dev']
+  # dev + stage own their full stack; sandbox/prod use NIH-pre-created IAM
+  IsSelfManaged: !Or
+    - !Equals [!Ref Environment, 'dev']
+    - !Equals [!Ref Environment, 'stage']
 
 Resources:
   # ============================================================================
@@ -132,12 +146,12 @@ Resources:
       RetentionInDays: 7
 
   # ============================================================================
-  # IAM Role + Instance Profile (dev only)
+  # IAM Role + Instance Profile (dev and stage)
   # In sandbox/prod these are pre-created and passed in as InstanceProfileArn.
   # ============================================================================
   InstanceRole:
     Type: AWS::IAM::Role
-    Condition: IsDev
+    Condition: IsSelfManaged
     Properties:
       RoleName: !Sub '${ProjectName}-${Environment}-arangodb-ec2'
       AssumeRolePolicyDocument:
@@ -233,7 +247,7 @@ Resources:
 
   InstanceProfile:
     Type: AWS::IAM::InstanceProfile
-    Condition: IsDev
+    Condition: IsSelfManaged
     Properties:
       InstanceProfileName: !Sub '${ProjectName}-${Environment}-arangodb-ec2'
       Roles:
@@ -266,9 +280,10 @@ Resources:
   # UserData performs:
   #   1. Install Docker + CloudWatch agent
   #   2. Format + mount EBS data volume (skipped if already formatted)
-  #   3. S3 restore (same logic as the former init container)
-  #   4. Run ArangoDB via Docker
+  #   3. Run ArangoDB via Docker
+  #   4. Restore dataset via arangorestore (if SSM dataset-version is set)
   #   5. Register with Cloud Map service discovery
+  #   6. Register with ALB target group
   # ============================================================================
   ArangoDbInstance:
     Type: AWS::EC2::Instance
@@ -285,11 +300,11 @@ Resources:
       # If switching back to t3/x86, change to: al2023-ami-kernel-default-x86_64
       ImageId: !Sub '{{resolve:ssm:/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64}}'
       InstanceType: !Ref InstanceType
-      SubnetId: subnet-0031722a
+      SubnetId: !Ref ArangoDbSubnetId
       SecurityGroupIds:
         - !Ref ArangoDbSecurityGroupId
       IamInstanceProfile: !If
-        - IsDev
+        - IsSelfManaged
         - !Ref InstanceProfile
         - !Ref InstanceProfileArn
       BlockDeviceMappings:
@@ -380,60 +395,9 @@ Resources:
           # Set ownership to ArangoDB uid/gid (1000:1000 in official Docker image)
           chown -R 1000:1000 "$DATA_DIR" "$APPS_DIR"
 
-          # ── 3. S3 restore (same logic as former init container) ──────────────
-          echo "==> S3 Restore check"
-
-          ARANGODB_S3_BUCKET=$(aws ssm get-parameter \
-            --name "/$PROJECT_NAME/shared/arangodb-bucket-name" \
-            --query 'Parameter.Value' \
-            --output text \
-            --region "$REGION")
-          echo "Dataset bucket: $ARANGODB_S3_BUCKET"
-
-          CURRENT_VERSION=$(aws ssm get-parameter \
-            --name "/$PROJECT_NAME/$ENVIRONMENT/arango/dataset-version" \
-            --query 'Parameter.Value' \
-            --output text \
-            --region "$REGION")
-          echo "Current dataset version: $CURRENT_VERSION"
-
-          LAST_RESTORED=$(cat "$DATA_DIR/.dataset-version" 2>/dev/null || echo "none")
-          echo "Last restored version: $LAST_RESTORED"
-
-          if [ "$CURRENT_VERSION" = "$LAST_RESTORED" ]; then
-            echo "Already on version $CURRENT_VERSION, skipping restore"
-          elif [ "$CURRENT_VERSION" = "none" ] || [ -z "$CURRENT_VERSION" ]; then
-            echo "No dataset version specified, skipping restore"
-          else
-            echo "Version changed, restoring dataset..."
-            echo "Clearing old data..."
-            rm -rf "$DATA_DIR"/*
-            rm -rf "$APPS_DIR"/*
-
-            echo "Downloading s3://$ARANGODB_S3_BUCKET/$CURRENT_VERSION"
-            aws s3 cp "s3://$ARANGODB_S3_BUCKET/$CURRENT_VERSION" /tmp/restore.tar.gz
-
-            echo "Extracting backup..."
-            # Auto-detect tar structure: some archives use var/lib/arangodb3/...
-            # (created with -C /), others use arangodb/... (created with -C /var/lib).
-            # Strip the top-level prefix and always extract into DATA_DIR.
-            FIRST_ENTRY=$(tar -tzf /tmp/restore.tar.gz | head -1 || true)
-            echo "Detected tar prefix: $FIRST_ENTRY"
-            if echo "$FIRST_ENTRY" | grep -q "^var/lib/arangodb3"; then
-              tar -xzf /tmp/restore.tar.gz -C /
-            else
-              tar -xzf /tmp/restore.tar.gz -C "$DATA_DIR" --strip-components=1
-            fi
-            rm -f /tmp/restore.tar.gz
-
-            # Restore ownership after extraction
-            chown -R 1000:1000 "$DATA_DIR" "$APPS_DIR"
-
-            echo "$CURRENT_VERSION" > "$DATA_DIR/.dataset-version"
-            echo "Restore completed successfully"
-          fi
-
-          # ── 4. Run ArangoDB via Docker ───────────────────────────────────────
+          # ── 3. Run ArangoDB via Docker ───────────────────────────────────────
+          # ArangoDB must be running before arangorestore can connect to it,
+          # so we start the container here (before the restore step).
           systemctl enable docker
           systemctl start docker
 
@@ -486,6 +450,77 @@ Resources:
               --resource ArangoDbInstance \
               --region "${AWS::Region}"
             exit 1
+          fi
+
+          # ── 4. Restore dataset via arangorestore ─────────────────────────────
+          # On first boot (or after instance replacement) we restore the dataset
+          # version recorded in SSM. No blue-green swap is needed here because
+          # ArangoDB just initialised with an empty database.
+          echo "==> Dataset restore check"
+
+          ARANGODB_S3_BUCKET=$(aws ssm get-parameter \
+            --name "/$PROJECT_NAME/shared/arangodb-bucket-name" \
+            --query 'Parameter.Value' \
+            --output text \
+            --region "$REGION")
+
+          CURRENT_VERSION=$(aws ssm get-parameter \
+            --name "/$PROJECT_NAME/$ENVIRONMENT/arango/dataset-version" \
+            --query 'Parameter.Value' \
+            --output text \
+            --region "$REGION")
+
+          echo "Dataset bucket:  $ARANGODB_S3_BUCKET"
+          echo "Dataset version: $CURRENT_VERSION"
+
+          if [ "$CURRENT_VERSION" = "none" ] || [ -z "$CURRENT_VERSION" ]; then
+            echo "No dataset version configured, skipping restore"
+          else
+            echo "==> Downloading s3://$ARANGODB_S3_BUCKET/$CURRENT_VERSION"
+            aws s3 cp "s3://$ARANGODB_S3_BUCKET/$CURRENT_VERSION" /tmp/restore.tar.gz
+
+            DUMP_EXTRACT_DIR=/tmp/arango-dump
+            rm -rf "$DUMP_EXTRACT_DIR"
+            mkdir -p "$DUMP_EXTRACT_DIR"
+            tar -xzf /tmp/restore.tar.gz -C "$DUMP_EXTRACT_DIR"
+            rm -f /tmp/restore.tar.gz
+
+            # Strip a single wrapper directory if present so arangorestore
+            # receives the correct --input-directory in both archive layouts.
+            TOP_LEVEL=$(ls -1 "$DUMP_EXTRACT_DIR" | head -1)
+            if [ -n "$TOP_LEVEL" ] && [ -d "$DUMP_EXTRACT_DIR/$TOP_LEVEL" ] && \
+               [ "$(ls -1 "$DUMP_EXTRACT_DIR" | wc -l)" = "1" ]; then
+              DUMP_DIR="$DUMP_EXTRACT_DIR/$TOP_LEVEL"
+            else
+              DUMP_DIR="$DUMP_EXTRACT_DIR"
+            fi
+            echo "==> Dump root: $DUMP_DIR"
+
+            # Detect multi-database dump (no MANIFEST.json at top level)
+            if [ -f "$DUMP_DIR/MANIFEST.json" ]; then
+              RESTORE_FLAGS=""
+            else
+              RESTORE_FLAGS="--all-databases true"
+            fi
+
+            echo "==> Running arangorestore..."
+            # shellcheck disable=SC2086  # word-split on RESTORE_FLAGS is intentional
+            docker run --rm \
+              --network host \
+              -v "$DUMP_DIR:/dump" \
+              arangodb:3.12 \
+              arangorestore \
+              --server.endpoint tcp://127.0.0.1:8529 \
+              --server.password "$ARANGO_PASSWORD" \
+              --create-database true \
+              --overwrite true \
+              --include-system-collections false \
+              --input-directory /dump \
+              $RESTORE_FLAGS
+
+            echo "$CURRENT_VERSION" > "$DATA_DIR/.dataset-version"
+            rm -rf "$DUMP_EXTRACT_DIR"
+            echo "==> Dataset restore complete"
           fi
 
           # ── 5. Register with Cloud Map ────────────────────────────────────────

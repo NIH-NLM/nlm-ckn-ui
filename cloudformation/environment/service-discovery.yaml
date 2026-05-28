@@ -10,10 +10,11 @@ Parameters:
   Environment:
     Type: String
     Default: dev
-    Description: Environment name (dev, staging, prod)
+    Description: Environment name (dev, stage, sandbox, prod)
     AllowedValues:
       - dev
-      - staging
+      - stage
+      - sandbox
       - prod
 
   VpcId:
