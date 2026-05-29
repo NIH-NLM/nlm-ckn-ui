@@ -1,0 +1,43 @@
+name: Deploy Staging
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+  id-token: write  # Required for GitHub OIDC
+
+jobs:
+  deploy-stage:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    environment: stage
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/cell-kn-github-actions
+          aws-region: us-east-1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Deploy backend (build, push, update ECS)
+        env:
+          IMAGE_TAG: ${{ github.ref_name }}
+        run: ./scripts/app/deploy-backend.sh stage
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+
+      - name: Deploy frontend (build, sync to S3, invalidate CloudFront)
+        run: ./scripts/app/deploy-frontend.sh stage

@@ -2,39 +2,39 @@
 # ==============================================================================
 # deploy-dataset.sh - Deploy ArangoDB Dataset Version
 # ==============================================================================
-# Deploys a new ArangoDB dataset version using SSM parameter-based versioning.
-# The EC2 instance startup script detects version changes and restores only
-# when the version differs from the currently deployed dataset.
+# Deploys the ETL dataset version declared in ETL_VERSION at the repo root.
+# Reads the version tag, constructs the S3 key, updates the SSM parameter,
+# and triggers a blue-green arangorestore on the EC2 instance via SSM Run Command.
 #
 # USAGE:
-#   ./scripts/deploy-dataset.sh <environment> <s3-key>
+#   ./scripts/app/deploy-dataset.sh <environment>
 #
 # ARGUMENTS:
 #   environment   Environment name: dev, sandbox, or prod
-#   s3-key        S3 object key for the dataset tar.gz file
-#                 Example: datasets/2024-02-11-v1.2.3.tar.gz
 #
 # WHAT IT DOES:
-#   1. Reads stack outputs from CloudFormation and bucket name from SSM
-#   2. Validates dataset exists in S3
-#   3. Updates SSM parameter with new dataset version
-#   4. Reboots the ArangoDB EC2 instance via SSM
-#   5. On reboot, the UserData script detects the version change and restores
+#   1. Reads ETL_VERSION from the repository root
+#   2. Constructs S3 key:  runs/<version>/06-golden-dump.tar.gz
+#   3. Reads stack outputs from CloudFormation and bucket name from SSM
+#   4. Validates the dataset file exists in S3
+#   5. Updates the SSM dataset-version parameter
+#   6. Dispatches a blue-green arangorestore via SSM Run Command and waits
 #
 # PREREQUISITES:
+#   - ETL_VERSION file present at the repository root
 #   - AWS CLI configured with appropriate credentials
 #   - CloudFormation environment stack deployed
-#   - Dataset tar.gz file uploaded to S3
+#   - Dataset tar.gz uploaded to S3 at runs/<version>/06-golden-dump.tar.gz
+#
+# ENVIRONMENT VARIABLES (optional):
+#   EXPECTED_DBS   Space-separated list of ArangoDB databases verified after
+#                  restore (default: "Cell-KN-Ontologies Cell-KN-Phenotypes
+#                  Cell-KN-Schema"). Override when the schema changes without
+#                  modifying the script.
 #
 # EXAMPLES:
-#   # Upload dataset to S3
-#   aws s3 cp my-data.tar.gz s3://cell-kn-arangodb-data-<account-id>/datasets/2024-02-11-v1.2.3.tar.gz
-#
-#   # Deploy the dataset
-#   ./scripts/deploy-dataset.sh dev datasets/2024-02-11-v1.2.3.tar.gz
-#
-#   # Rollback to previous version
-#   ./scripts/deploy-dataset.sh dev datasets/2024-02-10-v1.2.2.tar.gz
+#   ./scripts/app/deploy-dataset.sh dev
+#   EXPECTED_DBS="DB1 DB2 DB3" ./scripts/app/deploy-dataset.sh dev
 # ==============================================================================
 set -e
 
@@ -44,14 +44,34 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-if [ $# -ne 2 ]; then
-  echo "Usage: $0 <environment> <s3-key>"
-  echo "Example: $0 dev datasets/2024-02-11-v1.2.3.tar.gz"
+if [ $# -ne 1 ]; then
+  echo "Usage: $0 <environment>"
+  echo "Example: $0 dev"
   exit 1
 fi
 
 ENVIRONMENT=$1
-DATASET_S3_KEY=$2
+
+# Resolve ETL_VERSION relative to this script's location so the script works
+# regardless of the caller's working directory.
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ETL_VERSION_FILE="$SCRIPT_DIR/../../ETL_VERSION"
+
+if [ ! -f "$ETL_VERSION_FILE" ]; then
+  echo -e "${RED}Error: ETL_VERSION file not found at $ETL_VERSION_FILE${NC}"
+  exit 1
+fi
+
+ETL_VERSION=$(tr -d '[:space:]' < "$ETL_VERSION_FILE")
+
+if [ -z "$ETL_VERSION" ]; then
+  echo -e "${RED}Error: ETL_VERSION file is empty${NC}"
+  exit 1
+fi
+
+DATASET_S3_KEY="runs/${ETL_VERSION}/06-golden-dump.tar.gz"
+echo "ETL version : $ETL_VERSION"
+echo "S3 key      : $DATASET_S3_KEY"
 PROJECT_NAME="cell-kn"
 AWS_REGION=${AWS_REGION:-us-east-1}
 STACK_NAME="${PROJECT_NAME}-${ENVIRONMENT}-arangodb"
@@ -110,7 +130,7 @@ if ! aws s3 ls "s3://${S3_BUCKET}/${DATASET_S3_KEY}" > /dev/null 2>&1; then
   echo -e "${RED}ERROR: Dataset not found: s3://${S3_BUCKET}/${DATASET_S3_KEY}${NC}"
   echo ""
   echo "Available datasets:"
-  aws s3 ls "s3://${S3_BUCKET}/datasets/" --recursive
+  aws s3 ls "s3://${S3_BUCKET}/runs/" --recursive
   exit 1
 fi
 
@@ -143,15 +163,24 @@ trap 'rm -f "$RESTORE_SCRIPT_TMP"' EXIT
 
 cat > "$RESTORE_SCRIPT_TMP" << 'RESTORE_SCRIPT_EOF'
 #!/bin/bash
-set -euxo pipefail
+set -euo pipefail
 
 PROJECT_NAME="__PROJECT_NAME__"
 ENVIRONMENT="__ENVIRONMENT__"
 REGION="__AWS_REGION__"
 DATA_DIR=/var/lib/arangodb3
 APPS_DIR=/var/lib/arangodb3-apps
+# Stage green data INSIDE the EBS mount so the swap uses intra-filesystem
+# renames (instant) rather than cross-device copies. /var/lib/arangodb3 is
+# the EBS mount point and cannot itself be mv'd ("Device or resource busy").
+GREEN_DATA=/var/lib/arangodb3/_green
+GREEN_APPS=/var/lib/arangodb3-apps-green
+# Space-separated list of ArangoDB databases that must exist after restore.
+# Override with the EXPECTED_DBS env var when the schema changes rather than
+# editing this default (e.g. export EXPECTED_DBS="DB1 DB2" before running).
+EXPECTED_DBS="${EXPECTED_DBS:-Cell-KN-Ontologies Cell-KN-Phenotypes Cell-KN-Schema}"
 
-echo "==> Starting ArangoDB dataset restore $(date)"
+echo "==> Starting ArangoDB blue-green dataset restore $(date)"
 
 BUCKET=$(aws ssm get-parameter \
   --name "/$PROJECT_NAME/shared/arangodb-bucket-name" \
@@ -179,73 +208,186 @@ if [ "$VERSION" = "none" ] || [ -z "$VERSION" ]; then
   exit 0
 fi
 
-# ── Stop ArangoDB ────────────────────────────────────────────────────────────
-docker stop arangodb || true
-
-# ── Clear and restore ────────────────────────────────────────────────────────
-rm -rf "$DATA_DIR"/* "$APPS_DIR"/*
-
+# ── Download and extract the arangodump archive ──────────────────────────────
+# Blue keeps serving traffic throughout this section.
 echo "==> Downloading s3://$BUCKET/$VERSION"
 aws s3 cp "s3://$BUCKET/$VERSION" /tmp/restore.tar.gz
 
-# Auto-detect tar structure: some archives use var/lib/arangodb3/...
-# (created with -C /), others use arangodb/... (created with -C /var/lib).
-FIRST_ENTRY=$(tar -tzf /tmp/restore.tar.gz | head -1 || true)
-echo "==> Detected tar prefix: $FIRST_ENTRY"
-if echo "$FIRST_ENTRY" | grep -q "^var/lib/arangodb3"; then
-  tar -xzf /tmp/restore.tar.gz -C /
-else
-  tar -xzf /tmp/restore.tar.gz -C "$DATA_DIR" --strip-components=1
-fi
+DUMP_EXTRACT_DIR=/tmp/arango-dump
+rm -rf "$DUMP_EXTRACT_DIR"
+mkdir -p "$DUMP_EXTRACT_DIR"
+tar -xzf /tmp/restore.tar.gz -C "$DUMP_EXTRACT_DIR"
 rm -f /tmp/restore.tar.gz
 
-chown -R 1000:1000 "$DATA_DIR" "$APPS_DIR"
-echo "$VERSION" > "$DATA_DIR/.dataset-version"
-echo "==> Extraction complete"
+# Locate the dump root. Multi-database dumps (arangodump --all-databases) place
+# per-database directories under a top-level folder; single-database dumps put
+# MANIFEST.json directly in the archive root. Strip a single wrapper directory
+# if present so arangorestore receives the correct --input-directory in both cases.
+TOP_LEVEL=$(ls -1 "$DUMP_EXTRACT_DIR" | head -1)
+if [ -n "$TOP_LEVEL" ] && [ -d "$DUMP_EXTRACT_DIR/$TOP_LEVEL" ] && \
+   [ "$(ls -1 "$DUMP_EXTRACT_DIR" | wc -l)" = "1" ]; then
+  DUMP_DIR="$DUMP_EXTRACT_DIR/$TOP_LEVEL"
+else
+  DUMP_DIR="$DUMP_EXTRACT_DIR"
+fi
+echo "==> Dump root: $DUMP_DIR"
 
-# ── Reset root password ──────────────────────────────────────────────────────
-# ARANGO_ROOT_PASSWORD is only honoured on a fresh empty data directory.
-# A restored backup has its own credentials baked in, so we must reset
-# the password explicitly using a temporary no-auth container.
-echo "==> Resetting root password to match Secrets Manager..."
-docker run -d --name arango-reset \
-  -e ARANGO_NO_AUTH=1 \
-  -p 8529:8529 \
-  -v "$DATA_DIR:/var/lib/arangodb3" \
-  -v "$APPS_DIR:/var/lib/arangodb3-apps" \
+# Detect multi-database dump (no MANIFEST.json at top level; subdirs have their own)
+if [ -f "$DUMP_DIR/MANIFEST.json" ]; then
+  RESTORE_EXTRA_ARGS=""
+  echo "==> Single-database dump detected"
+else
+  RESTORE_EXTRA_ARGS="--all-databases true"
+  echo "==> Multi-database dump detected"
+fi
+
+# ── Start green instance on port 8530 ────────────────────────────────────────
+# Blue continues to serve on 8529 while green initialises and is restored.
+echo "==> Starting arango-green on port 8530..."
+docker rm -f arango-green 2>/dev/null || true
+rm -rf "$GREEN_DATA" "$GREEN_APPS"
+mkdir -p "$GREEN_DATA" "$GREEN_APPS"
+chown -R 1000:1000 "$GREEN_DATA" "$GREEN_APPS"
+
+docker run -d --name arango-green \
+  -p 8530:8529 \
+  -e ARANGO_ROOT_PASSWORD="$ARANGO_PASSWORD" \
+  -e ARANGODB_OVERRIDE_DETECTED_TOTAL_MEMORY=3g \
+  -v "$GREEN_DATA:/var/lib/arangodb3" \
+  -v "$GREEN_APPS:/var/lib/arangodb3-apps" \
   arangodb:3.12
 
-ARANGO_READY=0
+GREEN_READY=0
 for i in $(seq 1 60); do
-  if curl -sf http://localhost:8529/_admin/server/availability > /dev/null 2>&1; then
-    echo "==> Ready for password reset (attempt $i)"
-    ARANGO_READY=1
+  if curl -sf http://localhost:8530/_admin/server/availability > /dev/null 2>&1; then
+    echo "==> arango-green ready (attempt $i)"
+    GREEN_READY=1
     break
   fi
   sleep 5
 done
-if [ "$ARANGO_READY" = "0" ]; then
-  echo "ERROR: arango-reset container did not become ready after 5 minutes"
-  docker logs arango-reset --tail 20 || true
-  docker stop arango-reset && docker rm arango-reset || true
+if [ "$GREEN_READY" = "0" ]; then
+  echo "ERROR: arango-green did not become ready — blue unchanged"
+  docker logs arango-green --tail 20 || true
+  docker rm -f arango-green || true
+  rm -rf "$GREEN_DATA" "$GREEN_APPS"
   exit 1
 fi
 
-PATCH_RESPONSE=$(curl -s -X PATCH http://localhost:8529/_api/user/root \
-  -H "Content-Type: application/json" \
-  -d "{\"passwd\": \"$ARANGO_PASSWORD\"}")
-echo "==> Password reset response: $PATCH_RESPONSE"
-if echo "$PATCH_RESPONSE" | grep -q '"error":true'; then
-  echo "ERROR: Password reset failed: $PATCH_RESPONSE"
+# ── Run arangorestore into green ──────────────────────────────────────────────
+# --include-system-collections false (the default) intentionally excludes _users
+# so the root password set by ARANGO_ROOT_PASSWORD on fresh init is preserved.
+echo "==> Running arangorestore into arango-green..."
+# shellcheck disable=SC2086
+docker run --rm \
+  --network host \
+  -v "$DUMP_DIR:/dump" \
+  arangodb:3.12 \
+  arangorestore \
+  --server.endpoint tcp://127.0.0.1:8530 \
+  --server.password "$ARANGO_PASSWORD" \
+  --create-database true \
+  --overwrite true \
+  --include-system-collections false \
+  --input-directory /dump \
+  $RESTORE_EXTRA_ARGS
+
+# ── Health check green post-restore ──────────────────────────────────────────
+# Verify API connectivity AND that the expected databases are present.
+# A successful arangorestore does not guarantee data made it in; checking for
+# known database names catches a partial or mismatched dump early.
+echo "==> Health checking arango-green post-restore..."
+DB_LIST=$(curl -sf -u "root:$ARANGO_PASSWORD" \
+  "http://localhost:8530/_api/database" 2>/dev/null || true)
+
+if [ -z "$DB_LIST" ]; then
+  echo "ERROR: arango-green failed post-restore health check (no API response) — blue unchanged"
+  docker rm -f arango-green || true
+  rm -rf "$GREEN_DATA" "$GREEN_APPS"
   exit 1
 fi
-echo "==> Password reset successful"
 
-docker stop arango-reset && docker rm arango-reset
+MISSING_DBS=()
+# Iterate over EXPECTED_DBS (configurable — see variable definition above).
+# shellcheck disable=SC2086  # intentional word-split on space-separated list
+for EXPECTED_DB in $EXPECTED_DBS; do
+  if ! echo "$DB_LIST" | grep -q "\"$EXPECTED_DB\""; then
+    MISSING_DBS+=("$EXPECTED_DB")
+  fi
+done
 
-# ── Start ArangoDB normally ──────────────────────────────────────────────────
+if [ "${#MISSING_DBS[@]}" -gt 0 ]; then
+  echo "ERROR: arango-green is missing expected databases after restore — blue unchanged"
+  echo "  Missing: ${MISSING_DBS[*]}"
+  echo "  API response: $DB_LIST"
+  docker rm -f arango-green || true
+  rm -rf "$GREEN_DATA" "$GREEN_APPS"
+  exit 1
+fi
+
+echo "==> arango-green healthy (all expected databases present)"
+
+# ── Swap: blue → green (downtime window starts here) ─────────────────────────
+# /var/lib/arangodb3 is the EBS mount point and cannot be mv'd directly.
+# Instead we rename entries *within* the mount (same filesystem → instant)
+# to back up blue, promote green, then docker-start the original container
+# which reuses its existing mount path now pointing at the new data.
+echo "==> Swapping to green data..."
+docker stop arango-green && docker rm arango-green
+docker stop arangodb || true
+
+# Back up blue within the EBS (fast intra-filesystem rename)
+rm -rf "$DATA_DIR/_blue_backup"
+mkdir -p "$DATA_DIR/_blue_backup"
+find "$DATA_DIR" -mindepth 1 -maxdepth 1 \
+  ! -name '_blue_backup' ! -name '_green' \
+  -exec mv {} "$DATA_DIR/_blue_backup/" \;
+
+# Promote green into the EBS root (fast intra-filesystem rename)
+find "$GREEN_DATA" -mindepth 1 -maxdepth 1 -exec mv {} "$DATA_DIR/" \;
+rmdir "$GREEN_DATA"
+
+# Swap apps dir (on root FS, small — plain mv is fine)
+rm -rf "${APPS_DIR}-blue-old"
+mv "$APPS_DIR" "${APPS_DIR}-blue-old"
+mv "$GREEN_APPS" "$APPS_DIR"
+
+# docker start reuses the original container (UserData config: log driver, env
+# vars, restart policy) but now sees the new green data at the same mount path.
 docker start arangodb
-echo "==> Restore completed successfully $(date)"
+
+SWAP_READY=0
+for i in $(seq 1 60); do
+  if curl -sf http://localhost:8529/_admin/server/availability > /dev/null 2>&1; then
+    echo "==> arangodb ready on green data (attempt $i)"
+    SWAP_READY=1
+    break
+  fi
+  sleep 5
+done
+
+if [ "$SWAP_READY" = "0" ]; then
+  echo "ERROR: arangodb failed to start on green data — rolling back to blue"
+  docker stop arangodb || true
+  # Remove failed green data from EBS root
+  find "$DATA_DIR" -mindepth 1 -maxdepth 1 ! -name '_blue_backup' -exec rm -rf {} \;
+  # Restore blue backup to EBS root
+  find "$DATA_DIR/_blue_backup" -mindepth 1 -maxdepth 1 -exec mv {} "$DATA_DIR/" \;
+  rmdir "$DATA_DIR/_blue_backup"
+  # Restore apps
+  rm -rf "$APPS_DIR"
+  mv "${APPS_DIR}-blue-old" "$APPS_DIR"
+  docker start arangodb
+  echo "==> Rollback complete — still on version $LAST_RESTORED"
+  exit 1
+fi
+
+echo "$VERSION" > "$DATA_DIR/.dataset-version"
+
+# ── Clean up ──────────────────────────────────────────────────────────────────
+rm -rf "$DATA_DIR/_blue_backup" "${APPS_DIR}-blue-old" "$DUMP_EXTRACT_DIR"
+
+echo "==> Blue-green swap complete $(date)"
 RESTORE_SCRIPT_EOF
 
 # Substitute environment-specific values into the restore script
@@ -256,6 +398,11 @@ sed \
   -e "s|__AWS_REGION__|${AWS_REGION}|g" \
   "$RESTORE_SCRIPT_TMP" > "${RESTORE_SCRIPT_TMP}.new"
 mv "${RESTORE_SCRIPT_TMP}.new" "$RESTORE_SCRIPT_TMP"
+
+# The blue-green restore (S3 download + arangorestore) can take 30–60 min on
+# large datasets. Allow 90 minutes on the SSM side; the caller (GitHub Actions)
+# uses a matching job-level timeout.
+SSM_TIMEOUT_SECONDS=5400   # 90 min
 
 # Send the restore script via SSM Run Command.
 # Python handles JSON encoding so quotes in the script are escaped correctly.
@@ -269,6 +416,7 @@ result = subprocess.run(
      '--document-name', 'AWS-RunShellScript',
      '--parameters', json.dumps({'commands': [script]}),
      '--comment', 'ArangoDB dataset restore',
+     '--timeout-seconds', '$SSM_TIMEOUT_SECONDS',
      '--region', '$AWS_REGION',
      '--query', 'Command.CommandId',
      '--output', 'text'],
@@ -280,26 +428,95 @@ print(result.stdout.strip())
 ")
 
 echo ""
-echo -e "${GREEN}==> Restore command dispatched!${NC}"
-echo "  Command ID: $COMMAND_ID"
+echo -e "${GREEN}==> Restore command dispatched — waiting for completion...${NC}"
+echo "  Command ID:  $COMMAND_ID"
+echo "  Instance ID: $INSTANCE_ID"
 echo ""
-echo "Monitor restore progress:"
-echo "  aws ssm get-command-invocation \\"
-echo "    --command-id $COMMAND_ID \\"
-echo "    --instance-id $INSTANCE_ID \\"
-echo "    --region $AWS_REGION \\"
-echo "    --query '{Status:Status,Output:StandardOutputContent,Error:StandardErrorContent}'"
+
+# Fetch and pretty-print SSM command output.
+# Decodes \n escape sequences, strips \r carriage-return progress lines
+# (e.g. S3 download progress), and separates stdout from stderr.
+print_ssm_output() {
+  python3 - "$1" "$2" "$3" <<'PYEOF'
+import sys, json, subprocess
+
+command_id, instance_id, region = sys.argv[1], sys.argv[2], sys.argv[3]
+r = subprocess.run(
+    ['aws', 'ssm', 'get-command-invocation',
+     '--command-id', command_id, '--instance-id', instance_id,
+     '--region', region, '--output', 'json'],
+    capture_output=True, text=True)
+if r.returncode != 0:
+    print(r.stderr, file=sys.stderr)
+    sys.exit(1)
+data = json.loads(r.stdout)
+
+def clean(text):
+    """Drop carriage-return overwrite lines (progress bars) and blank lines."""
+    return '\n'.join(
+        l for l in text.split('\n')
+        if '\r' not in l and l.strip()
+    ).strip()
+
+out = clean(data.get('StandardOutputContent', ''))
+err = clean(data.get('StandardErrorContent', ''))
+
+if out:
+    print(out)
+if err:
+    print()
+    print('--- stderr ---')
+    print(err)
+PYEOF
+}
+
+# Poll until the SSM command reaches a terminal state or we exceed SSM_TIMEOUT_SECONDS.
+POLL_INTERVAL=30
+ELAPSED=0
+
+echo "Waiting for restore to complete..."
 echo ""
-echo "Check current version after restore:"
-echo "  aws ssm get-parameter --name $SSM_PARAMETER --query 'Parameter.Value' --output text --region $AWS_REGION"
+while [ "$ELAPSED" -lt "$SSM_TIMEOUT_SECONDS" ]; do
+  STATUS=$(aws ssm get-command-invocation \
+    --command-id "$COMMAND_ID" \
+    --instance-id "$INSTANCE_ID" \
+    --region "$AWS_REGION" \
+    --query 'Status' \
+    --output text 2>/dev/null || echo "Unknown")
+
+  # Print a dot for in-progress states; only print status on changes or terminal
+  case "$STATUS" in
+    InProgress|Pending|Delayed)
+      printf "  [%ds] %s\n" "$ELAPSED" "$STATUS"
+      ;;
+    Success)
+      echo ""
+      echo -e "${GREEN}==> Restore succeeded!${NC}"
+      echo ""
+      print_ssm_output "$COMMAND_ID" "$INSTANCE_ID" "$AWS_REGION"
+      echo ""
+      echo -e "Active dataset version: ${GREEN}$(aws ssm get-parameter \
+        --name "$SSM_PARAMETER" \
+        --query 'Parameter.Value' \
+        --output text \
+        --region "$AWS_REGION")${NC}"
+      exit 0
+      ;;
+    Failed|Cancelled|TimedOut|DeliveryTimedOut|ExecutionTimedOut)
+      echo ""
+      echo -e "${RED}==> Restore failed (status: $STATUS)${NC}"
+      echo ""
+      print_ssm_output "$COMMAND_ID" "$INSTANCE_ID" "$AWS_REGION"
+      exit 1
+      ;;
+  esac
+
+  sleep "$POLL_INTERVAL"
+  ELAPSED=$((ELAPSED + POLL_INTERVAL))
+done
+
 echo ""
-echo "Connect via Session Manager (use 8530 to avoid conflicts with local dev):"
-echo "  aws ssm start-session --target $INSTANCE_ID --region $AWS_REGION --document-name AWS-StartPortForwardingSession --parameters '{\"portNumber\":[\"8529\"],\"localPortNumber\":[\"8530\"]}'"
-echo ""
-echo "Once connected, verify with curl:"
-echo "  ARANGO_PASS=\$(aws secretsmanager get-secret-value --secret-id /${PROJECT_NAME}/${ENVIRONMENT}/secrets/arangodb-password --query 'SecretString' --output text --region $AWS_REGION)"
-echo "  curl -u \"root:\$ARANGO_PASS\" http://localhost:8530/_api/database"
-echo "  curl -u \"root:\$ARANGO_PASS\" http://localhost:8530/_api/version"
-echo ""
-echo "ArangoDB Web UI: http://localhost:8530"
-echo "Password: aws secretsmanager get-secret-value --secret-id /${PROJECT_NAME}/${ENVIRONMENT}/secrets/arangodb-password --query 'SecretString' --output text --region $AWS_REGION"
+echo -e "${RED}==> Timed out after ${SSM_TIMEOUT_SECONDS}s — SSM command may still be running${NC}"
+echo "Check manually:"
+echo "  aws ssm get-command-invocation --command-id $COMMAND_ID --instance-id $INSTANCE_ID --region $AWS_REGION"
+exit 1

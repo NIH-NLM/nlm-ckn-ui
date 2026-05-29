@@ -413,14 +413,17 @@ export function applyLayoutMode(
       }
     }
 
-    // BFS to build spanning tree
+    // BFS to build spanning tree. Sort neighbors so sibling order is stable
+    // across re-renders of the same graph (otherwise vertical sibling order
+    // can flicker as adjacency iteration order changes).
     const visited = new Set([root]);
     const treeChildren = {};
     const queue = [root];
     while (queue.length > 0) {
       const current = queue.shift();
       treeChildren[current] = [];
-      for (const neighbor of adj[current] || []) {
+      const neighbors = [...(adj[current] || [])].sort();
+      for (const neighbor of neighbors) {
         if (!visited.has(neighbor)) {
           visited.add(neighbor);
           treeChildren[current].push(neighbor);
@@ -445,13 +448,23 @@ export function applyLayoutMode(
       };
     }
     const hierarchyRoot = d3.hierarchy(buildHierarchy(root));
-    const treeLayout = d3.tree().size([width * 0.8, height * 0.8]);
+    // nodeSize gives fixed per-node spacing (predictable label gaps regardless
+    // of tree shape). dx = vertical sibling gap, sized to clear the label
+    // zone (~36px above + ~36px below each node center for radius + font).
+    // dy = horizontal depth gap, large enough to fit ~15-char truncated labels.
+    // separation bumps the cousin gap so unrelated branches don't crowd.
+    const treeLayout = d3
+      .tree()
+      .nodeSize([50, 180])
+      .separation((a, b) => (a.parent === b.parent ? 1 : 1.5));
     treeLayout(hierarchyRoot);
 
-    // Map tree positions to nodes
+    // Map tree positions to nodes — swap x/y to render left-to-right (horizontal).
+    // With nodeSize the root is at d.y=0 and d.x is centered around 0, so anchor
+    // the root near the left edge and let the tree spread vertically from the center.
     const posMap = {};
     hierarchyRoot.each((d) => {
-      posMap[d.data.id] = { x: d.x - width * 0.4, y: d.y - height * 0.4 };
+      posMap[d.data.id] = { x: d.y - width * 0.4, y: d.x };
     });
 
     // Set fixed positions

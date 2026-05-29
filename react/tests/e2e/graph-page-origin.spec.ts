@@ -127,7 +127,7 @@ test("Graph page shows two selected nodes and builds graph with both origins", a
   }
 
   // Open Graph
-  await page.getByRole("link", { name: "Graph" }).click();
+  await page.getByRole("link", { name: "Graph", exact: true }).click();
   await expect(page).toHaveURL(/#\/graph$/);
   // Selected items visible
   const selectedTable = page.locator(".selected-items-container");
