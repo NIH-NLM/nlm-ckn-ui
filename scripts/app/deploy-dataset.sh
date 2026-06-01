@@ -287,8 +287,10 @@ docker run --rm \
   --server.endpoint tcp://127.0.0.1:8530 \
   --server.password "$ARANGO_PASSWORD" \
   --create-database true \
+  --create-collection true \
   --overwrite true \
   --include-system-collections false \
+  --views true \
   --input-directory /dump \
   $RESTORE_EXTRA_ARGS
 
