@@ -44,13 +44,23 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-if [ $# -ne 1 ]; then
-  echo "Usage: $0 <environment>"
+FORCE=false
+POSITIONAL=()
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --force) FORCE=true; shift ;;
+    *) POSITIONAL+=("$1"); shift ;;
+  esac
+done
+
+if [ ${#POSITIONAL[@]} -ne 1 ]; then
+  echo "Usage: $0 [--force] <environment>"
   echo "Example: $0 dev"
+  echo "         $0 --force dev   # re-run even if version unchanged"
   exit 1
 fi
 
-ENVIRONMENT=$1
+ENVIRONMENT=${POSITIONAL[0]}
 
 # Resolve ETL_VERSION relative to this script's location so the script works
 # regardless of the caller's working directory.
@@ -167,6 +177,7 @@ set -euo pipefail
 
 PROJECT_NAME="__PROJECT_NAME__"
 ENVIRONMENT="__ENVIRONMENT__"
+FORCE="__FORCE__"
 REGION="__AWS_REGION__"
 DATA_DIR=/var/lib/arangodb3
 APPS_DIR=/var/lib/arangodb3-apps
@@ -198,9 +209,11 @@ LAST_RESTORED=$(cat "$DATA_DIR/.dataset-version" 2>/dev/null || echo "none")
 echo "Target version : $VERSION"
 echo "Last restored  : $LAST_RESTORED"
 
-if [ "$VERSION" = "$LAST_RESTORED" ]; then
+if [ "$VERSION" = "$LAST_RESTORED" ] && [ "$FORCE" != "true" ]; then
   echo "Already on version $VERSION — nothing to do"
   exit 0
+elif [ "$VERSION" = "$LAST_RESTORED" ] && [ "$FORCE" = "true" ]; then
+  echo "Already on version $VERSION — forcing re-restore (--force)"
 fi
 
 if [ "$VERSION" = "none" ] || [ -z "$VERSION" ]; then
@@ -275,44 +288,52 @@ if [ "$GREEN_READY" = "0" ]; then
 fi
 
 # ── Run arangorestore into green ──────────────────────────────────────────────
-# --include-system-collections false (the default) intentionally excludes _users
-# so the root password set by ARANGO_ROOT_PASSWORD on fresh init is preserved.
-echo "==> Running arangorestore into arango-green..."
-# shellcheck disable=SC2086
-docker run --rm \
-  --network host \
-  -v "$DUMP_DIR:/dump" \
-  arangodb:3.12 \
-  arangorestore \
-  --server.endpoint tcp://127.0.0.1:8530 \
-  --server.password "$ARANGO_PASSWORD" \
+# INFO progress lines are suppressed from live output to avoid filling SSM's
+# 24 KB stdout buffer before the actual error message appears.  The full log
+# is written to /tmp for post-mortem inspection.
+_run_restore() {
+  local log="$1"; shift
+  set +e
+  # shellcheck disable=SC2086
+  docker run --rm \
+    --network host \
+    -v "$DUMP_DIR:/dump" \
+    arangodb:3.12 \
+    arangorestore \
+    --server.endpoint tcp://127.0.0.1:8530 \
+    --server.password "$ARANGO_PASSWORD" \
+    "$@" \
+    2>&1 | tee "$log" | grep --line-buffered -v " INFO "
+  local rc=${PIPESTATUS[0]}
+  set -e
+  if [ "$rc" -ne 0 ]; then
+    echo "ERROR: arangorestore failed (exit $rc) — errors from $log:"
+    grep -v " INFO " "$log" | tail -40
+    exit 1
+  fi
+}
+
+echo "==> Running arangorestore into arango-green (data collections)..."
+_run_restore /tmp/arangorestore-pass1.log \
   --create-database true \
   --create-collection true \
   --overwrite true \
   --include-system-collections false \
-  --views true \
   --input-directory /dump \
   $RESTORE_EXTRA_ARGS
 
-# ── Create custom analyzers on green ─────────────────────────────────────────
-# arangorestore skips _analyzers (--include-system-collections false), so the
-# two custom analyzers referenced by the indexed arangosearch view must be
-# created explicitly.  The view itself is restored from the dump via --views
-# true above.  Definitions mirror ArangoDbUtilities.create_analyzers().
-echo "==> Creating analyzers on arango-green..."
-for _DB in "Cell-KN-Ontologies" "Cell-KN-Phenotypes"; do
-  curl -sf -u "root:$ARANGO_PASSWORD" \
-    -X POST "http://localhost:8530/_db/${_DB}/_api/analyzer" \
-    -H "Content-Type: application/json" \
-    -d '{"name":"n-gram","type":"ngram","properties":{"min":3,"max":4,"preserveOriginal":true,"streamType":"utf8","startMarker":"","endMarker":""},"features":["frequency","position","norm"]}' \
-    > /dev/null
-  curl -sf -u "root:$ARANGO_PASSWORD" \
-    -X POST "http://localhost:8530/_db/${_DB}/_api/analyzer" \
-    -H "Content-Type: application/json" \
-    -d '{"name":"text_en_no_stem","type":"text","properties":{"locale":"en","case":"lower","accent":false,"stemming":false,"edgeNgram":{"min":3,"max":12,"preserveOriginal":true}},"features":["frequency","position","norm"]}' \
-    > /dev/null
-  echo "  Analyzers created in ${_DB}"
-done
+# ── Restore _graphs and _analyzers from dump ──────────────────────────────────
+# A second targeted pass restores named graph definitions (_graphs) and custom
+# analyzers (_analyzers) without touching _users or other system collections
+# that would conflict with the container's initialised state.
+echo "==> Restoring _graphs and _analyzers from dump..."
+_run_restore /tmp/arangorestore-pass2.log \
+  --overwrite true \
+  --include-system-collections true \
+  --collection _graphs \
+  --collection _analyzers \
+  --input-directory /dump \
+  $RESTORE_EXTRA_ARGS
 
 # ── Health check green post-restore ──────────────────────────────────────────
 # Verify API connectivity AND that the expected databases are present.
@@ -418,6 +439,7 @@ sed \
   -e "s|__PROJECT_NAME__|${PROJECT_NAME}|g" \
   -e "s|__ENVIRONMENT__|${ENVIRONMENT}|g" \
   -e "s|__AWS_REGION__|${AWS_REGION}|g" \
+  -e "s|__FORCE__|${FORCE}|g" \
   "$RESTORE_SCRIPT_TMP" > "${RESTORE_SCRIPT_TMP}.new"
 mv "${RESTORE_SCRIPT_TMP}.new" "$RESTORE_SCRIPT_TMP"
 
