@@ -294,6 +294,26 @@ docker run --rm \
   --input-directory /dump \
   $RESTORE_EXTRA_ARGS
 
+# ── Create custom analyzers on green ─────────────────────────────────────────
+# arangorestore skips _analyzers (--include-system-collections false), so the
+# two custom analyzers referenced by the indexed arangosearch view must be
+# created explicitly.  The view itself is restored from the dump via --views
+# true above.  Definitions mirror ArangoDbUtilities.create_analyzers().
+echo "==> Creating analyzers on arango-green..."
+for _DB in "Cell-KN-Ontologies" "Cell-KN-Phenotypes"; do
+  curl -sf -u "root:$ARANGO_PASSWORD" \
+    -X POST "http://localhost:8530/_db/${_DB}/_api/analyzer" \
+    -H "Content-Type: application/json" \
+    -d '{"name":"n-gram","type":"ngram","properties":{"min":3,"max":4,"preserveOriginal":true,"streamType":"utf8","startMarker":"","endMarker":""},"features":["frequency","position","norm"]}' \
+    > /dev/null
+  curl -sf -u "root:$ARANGO_PASSWORD" \
+    -X POST "http://localhost:8530/_db/${_DB}/_api/analyzer" \
+    -H "Content-Type: application/json" \
+    -d '{"name":"text_en_no_stem","type":"text","properties":{"locale":"en","case":"lower","accent":false,"stemming":false,"edgeNgram":{"min":3,"max":12,"preserveOriginal":true}},"features":["frequency","position","norm"]}' \
+    > /dev/null
+  echo "  Analyzers created in ${_DB}"
+done
+
 # ── Health check green post-restore ──────────────────────────────────────────
 # Verify API connectivity AND that the expected databases are present.
 # A successful arangorestore does not guarantee data made it in; checking for
