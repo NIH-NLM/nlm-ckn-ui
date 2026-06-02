@@ -41,3 +41,6 @@ jobs:
 
       - name: Deploy frontend (build, sync to S3, invalidate CloudFront)
         run: ./scripts/app/deploy-frontend.sh stage
+
+      - name: Deploy dataset
+        run: ./scripts/app/deploy-dataset.sh stage
