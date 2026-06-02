@@ -140,7 +140,7 @@ if ! aws s3 ls "s3://${S3_BUCKET}/${DATASET_S3_KEY}" > /dev/null 2>&1; then
   echo -e "${RED}ERROR: Dataset not found: s3://${S3_BUCKET}/${DATASET_S3_KEY}${NC}"
   echo ""
   echo "Available datasets:"
-  aws s3 ls "s3://${S3_BUCKET}/runs/" --recursive
+  aws s3 ls "s3://${S3_BUCKET}/runs/" --recursive | grep "06-golden-dump.tar.gz"
   exit 1
 fi
 
@@ -322,18 +322,79 @@ _run_restore /tmp/arangorestore-pass1.log \
   --input-directory /dump \
   $RESTORE_EXTRA_ARGS
 
-# ── Restore _graphs and _analyzers from dump ──────────────────────────────────
-# A second targeted pass restores named graph definitions (_graphs) and custom
-# analyzers (_analyzers) without touching _users or other system collections
-# that would conflict with the container's initialised state.
-echo "==> Restoring _graphs and _analyzers from dump..."
-_run_restore /tmp/arangorestore-pass2.log \
-  --overwrite true \
-  --include-system-collections true \
-  --collection _graphs \
-  --collection _analyzers \
-  --input-directory /dump \
-  $RESTORE_EXTRA_ARGS
+# ── Import named graphs and custom analyzers from sidecar JSON files ──────────
+# These files are produced by ETL pipeline versions that export sidecar JSON
+# alongside the arangodump output.  Older dumps won't have them, so each check
+# is guarded — the step is a complete no-op for backward-compatible dumps.
+echo "==> Importing named graphs and custom analyzers from sidecar files (if present)..."
+_import_graphs_and_analyzers() {
+  local DB="$1"
+  local AUTH
+  AUTH="$(printf 'root:%s' "$ARANGO_PASSWORD" | base64 | tr -d '\n')"
+  local BASE_URL="http://localhost:8530"
+
+  # ── Analyzers ───────────────────────────────────────────────────────────────
+  local ANALYZER_FILE="$DUMP_DIR/$DB/ckn-analyzers.ndjson"
+  if [ -f "$ANALYZER_FILE" ]; then
+    echo "  [$DB] Importing analyzers from $ANALYZER_FILE"
+    # Use jq to iterate; each element is a single analyzer object.
+    local COUNT
+    COUNT=$(jq 'length' "$ANALYZER_FILE")
+    for i in $(seq 0 $((COUNT - 1))); do
+      # Strip the "DB::" prefix from the analyzer name — ArangoDB re-adds it.
+      local OBJ NAME STRIPPED
+      OBJ=$(jq -c ".[$i]" "$ANALYZER_FILE")
+      NAME=$(jq -r '.name' <<<"$OBJ")
+      STRIPPED="${NAME##*::}"
+      BODY=$(jq -c --arg n "$STRIPPED" '.name = $n' <<<"$OBJ")
+      HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+        -X POST \
+        -H "Authorization: Basic $AUTH" \
+        -H "Content-Type: application/json" \
+        -d "$BODY" \
+        "$BASE_URL/_db/$DB/_api/analyzer")
+      if [ "$HTTP_CODE" = "201" ] || [ "$HTTP_CODE" = "200" ]; then
+        echo "    [analyzer] $STRIPPED created ($HTTP_CODE)"
+      elif [ "$HTTP_CODE" = "409" ]; then
+        echo "    [analyzer] $STRIPPED already exists — skipped"
+      else
+        echo "    [analyzer] WARNING: $STRIPPED returned HTTP $HTTP_CODE"
+      fi
+    done
+  fi
+
+  # ── Named graphs ────────────────────────────────────────────────────────────
+  local GRAPH_FILE="$DUMP_DIR/$DB/ckn-graphs.ndjson"
+  if [ -f "$GRAPH_FILE" ]; then
+    echo "  [$DB] Importing named graphs from $GRAPH_FILE"
+    local COUNT
+    COUNT=$(jq 'length' "$GRAPH_FILE")
+    for i in $(seq 0 $((COUNT - 1))); do
+      local OBJ GNAME
+      OBJ=$(jq -c ".[$i]" "$GRAPH_FILE")
+      GNAME=$(jq -r '.name' <<<"$OBJ")
+      HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+        -X POST \
+        -H "Authorization: Basic $AUTH" \
+        -H "Content-Type: application/json" \
+        -d "$OBJ" \
+        "$BASE_URL/_db/$DB/_api/gharial")
+      if [ "$HTTP_CODE" = "201" ] || [ "$HTTP_CODE" = "202" ]; then
+        echo "    [graph] $GNAME created ($HTTP_CODE)"
+      elif [ "$HTTP_CODE" = "409" ]; then
+        echo "    [graph] $GNAME already exists — skipped"
+      else
+        echo "    [graph] WARNING: $GNAME returned HTTP $HTTP_CODE"
+      fi
+    done
+  fi
+}
+
+# shellcheck disable=SC2086  # intentional word-split on space-separated list
+for _DB in $EXPECTED_DBS; do
+  _import_graphs_and_analyzers "$_DB"
+done
+unset _DB
 
 # ── Health check green post-restore ──────────────────────────────────────────
 # Verify API connectivity AND that the expected databases are present.
