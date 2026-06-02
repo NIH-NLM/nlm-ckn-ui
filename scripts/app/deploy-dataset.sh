@@ -44,13 +44,23 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-if [ $# -ne 1 ]; then
-  echo "Usage: $0 <environment>"
+FORCE=false
+POSITIONAL=()
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --force) FORCE=true; shift ;;
+    *) POSITIONAL+=("$1"); shift ;;
+  esac
+done
+
+if [ ${#POSITIONAL[@]} -ne 1 ]; then
+  echo "Usage: $0 [--force] <environment>"
   echo "Example: $0 dev"
+  echo "         $0 --force dev   # re-run even if version unchanged"
   exit 1
 fi
 
-ENVIRONMENT=$1
+ENVIRONMENT=${POSITIONAL[0]}
 
 # Resolve ETL_VERSION relative to this script's location so the script works
 # regardless of the caller's working directory.
@@ -77,8 +87,8 @@ AWS_REGION=${AWS_REGION:-us-east-1}
 STACK_NAME="${PROJECT_NAME}-${ENVIRONMENT}-arangodb"
 
 # Validate environment
-if [[ ! "$ENVIRONMENT" =~ ^(dev|sandbox|prod)$ ]]; then
-  echo -e "${RED}Error: Environment must be dev, sandbox, or prod${NC}"
+if [[ ! "$ENVIRONMENT" =~ ^(dev|sandbox|prod|stage)$ ]]; then
+  echo -e "${RED}Error: Environment must be dev, sandbox, prod, or stage${NC}"
   exit 1
 fi
 
@@ -130,7 +140,7 @@ if ! aws s3 ls "s3://${S3_BUCKET}/${DATASET_S3_KEY}" > /dev/null 2>&1; then
   echo -e "${RED}ERROR: Dataset not found: s3://${S3_BUCKET}/${DATASET_S3_KEY}${NC}"
   echo ""
   echo "Available datasets:"
-  aws s3 ls "s3://${S3_BUCKET}/runs/" --recursive
+  aws s3 ls "s3://${S3_BUCKET}/runs/" --recursive | grep "06-golden-dump.tar.gz"
   exit 1
 fi
 
@@ -167,6 +177,7 @@ set -euo pipefail
 
 PROJECT_NAME="__PROJECT_NAME__"
 ENVIRONMENT="__ENVIRONMENT__"
+FORCE="__FORCE__"
 REGION="__AWS_REGION__"
 DATA_DIR=/var/lib/arangodb3
 APPS_DIR=/var/lib/arangodb3-apps
@@ -198,9 +209,11 @@ LAST_RESTORED=$(cat "$DATA_DIR/.dataset-version" 2>/dev/null || echo "none")
 echo "Target version : $VERSION"
 echo "Last restored  : $LAST_RESTORED"
 
-if [ "$VERSION" = "$LAST_RESTORED" ]; then
+if [ "$VERSION" = "$LAST_RESTORED" ] && [ "$FORCE" != "true" ]; then
   echo "Already on version $VERSION — nothing to do"
   exit 0
+elif [ "$VERSION" = "$LAST_RESTORED" ] && [ "$FORCE" = "true" ]; then
+  echo "Already on version $VERSION — forcing re-restore (--force)"
 fi
 
 if [ "$VERSION" = "none" ] || [ -z "$VERSION" ]; then
@@ -275,22 +288,112 @@ if [ "$GREEN_READY" = "0" ]; then
 fi
 
 # ── Run arangorestore into green ──────────────────────────────────────────────
-# --include-system-collections false (the default) intentionally excludes _users
-# so the root password set by ARANGO_ROOT_PASSWORD on fresh init is preserved.
-echo "==> Running arangorestore into arango-green..."
-# shellcheck disable=SC2086
-docker run --rm \
-  --network host \
-  -v "$DUMP_DIR:/dump" \
-  arangodb:3.12 \
-  arangorestore \
-  --server.endpoint tcp://127.0.0.1:8530 \
-  --server.password "$ARANGO_PASSWORD" \
+# INFO progress lines are suppressed from live output to avoid filling SSM's
+# 24 KB stdout buffer before the actual error message appears.  The full log
+# is written to /tmp for post-mortem inspection.
+_run_restore() {
+  local log="$1"; shift
+  set +e
+  # shellcheck disable=SC2086
+  docker run --rm \
+    --network host \
+    -v "$DUMP_DIR:/dump" \
+    arangodb:3.12 \
+    arangorestore \
+    --server.endpoint tcp://127.0.0.1:8530 \
+    --server.password "$ARANGO_PASSWORD" \
+    "$@" \
+    2>&1 | tee "$log" | grep --line-buffered -v " INFO "
+  local rc=${PIPESTATUS[0]}
+  set -e
+  if [ "$rc" -ne 0 ]; then
+    echo "ERROR: arangorestore failed (exit $rc) — errors from $log:"
+    grep -v " INFO " "$log" | tail -40
+    exit 1
+  fi
+}
+
+echo "==> Running arangorestore into arango-green (data collections)..."
+_run_restore /tmp/arangorestore-pass1.log \
   --create-database true \
+  --create-collection true \
   --overwrite true \
   --include-system-collections false \
   --input-directory /dump \
   $RESTORE_EXTRA_ARGS
+
+# ── Import named graphs and custom analyzers from sidecar JSON files ──────────
+# These files are produced by ETL pipeline versions that export sidecar JSON
+# alongside the arangodump output.  Older dumps won't have them, so each check
+# is guarded — the step is a complete no-op for backward-compatible dumps.
+echo "==> Importing named graphs and custom analyzers from sidecar files (if present)..."
+_import_graphs_and_analyzers() {
+  local DB="$1"
+  local AUTH
+  AUTH="$(printf 'root:%s' "$ARANGO_PASSWORD" | base64 | tr -d '\n')"
+  local BASE_URL="http://localhost:8530"
+
+  # ── Analyzers ───────────────────────────────────────────────────────────────
+  local ANALYZER_FILE="$DUMP_DIR/$DB/ckn-analyzers.ndjson"
+  if [ -f "$ANALYZER_FILE" ]; then
+    echo "  [$DB] Importing analyzers from $ANALYZER_FILE"
+    # File is NDJSON — read one JSON object per line.
+    while IFS= read -r OBJ; do
+      [ -z "$OBJ" ] && continue
+      # Strip the "DB::" prefix from the analyzer name — ArangoDB re-adds it.
+      local NAME STRIPPED
+      NAME=$(jq -r '.name' <<<"$OBJ")
+      STRIPPED="${NAME##*::}"
+      BODY=$(jq -c --arg n "$STRIPPED" '.name = $n' <<<"$OBJ")
+      HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+        -X POST \
+        -H "Authorization: Basic $AUTH" \
+        -H "Content-Type: application/json" \
+        -d "$BODY" \
+        "$BASE_URL/_db/$DB/_api/analyzer")
+      if [ "$HTTP_CODE" = "201" ] || [ "$HTTP_CODE" = "200" ]; then
+        echo "    [analyzer] $STRIPPED created ($HTTP_CODE)"
+      elif [ "$HTTP_CODE" = "409" ]; then
+        echo "    [analyzer] $STRIPPED already exists — skipped"
+      else
+        echo "    [analyzer] ERROR: $STRIPPED returned HTTP $HTTP_CODE"
+        exit 1
+      fi
+    done < "$ANALYZER_FILE"
+  fi
+
+  # ── Named graphs ────────────────────────────────────────────────────────────
+  local GRAPH_FILE="$DUMP_DIR/$DB/ckn-graphs.ndjson"
+  if [ -f "$GRAPH_FILE" ]; then
+    echo "  [$DB] Importing named graphs from $GRAPH_FILE"
+    # File is NDJSON — read one JSON object per line.
+    while IFS= read -r OBJ; do
+      [ -z "$OBJ" ] && continue
+      local GNAME
+      GNAME=$(jq -r '.name' <<<"$OBJ")
+      HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+        -X POST \
+        -H "Authorization: Basic $AUTH" \
+        -H "Content-Type: application/json" \
+        -d "$OBJ" \
+        "$BASE_URL/_db/$DB/_api/gharial")
+      if [ "$HTTP_CODE" = "201" ] || [ "$HTTP_CODE" = "202" ]; then
+        echo "    [graph] $GNAME created ($HTTP_CODE)"
+      elif [ "$HTTP_CODE" = "409" ]; then
+        echo "    [graph] $GNAME already exists — skipped"
+      else
+        echo "    [graph] ERROR: $GNAME returned HTTP $HTTP_CODE"
+        exit 1
+      fi
+    done < "$GRAPH_FILE"
+  fi
+}
+
+# shellcheck disable=SC2086  # intentional word-split on space-separated list
+for _DB in $EXPECTED_DBS; do
+  _import_graphs_and_analyzers "$_DB"
+done
+unset _DB
 
 # ── Health check green post-restore ──────────────────────────────────────────
 # Verify API connectivity AND that the expected databases are present.
@@ -396,6 +499,7 @@ sed \
   -e "s|__PROJECT_NAME__|${PROJECT_NAME}|g" \
   -e "s|__ENVIRONMENT__|${ENVIRONMENT}|g" \
   -e "s|__AWS_REGION__|${AWS_REGION}|g" \
+  -e "s|__FORCE__|${FORCE}|g" \
   "$RESTORE_SCRIPT_TMP" > "${RESTORE_SCRIPT_TMP}.new"
 mv "${RESTORE_SCRIPT_TMP}.new" "$RESTORE_SCRIPT_TMP"
 
