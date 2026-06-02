@@ -14,6 +14,8 @@ Test Configuration:
         docker run -d --name arangodb-test -p 8530:8529 -e ARANGO_ROOT_PASSWORD=test arangodb
 """
 
+from unittest import mock
+
 from django.test import TestCase, tag
 
 from arango_api.services import (
@@ -358,6 +360,62 @@ class SearchServiceTestCase(ArangoDBTestCase):
     def test_run_aql_query(self):
         result = search_service.run_aql_query("RETURN 1 + 1")
         self.assertEqual(result, 2)
+
+
+class SearchByTermQueryTestCase(TestCase):
+    """Unit tests for search_by_term query construction (no DB required)."""
+
+    def _run(self, search_fields):
+        """Invoke search_by_term with the DB layer mocked out.
+
+        Returns the (query, bind_vars) passed to aql.execute.
+        """
+        cursor = mock.Mock()
+        cursor.next.return_value = []
+        db_connection = mock.Mock()
+        db_connection.aql.execute.return_value = cursor
+
+        with mock.patch.object(
+            search_service, "get_db_and_graph", return_value=(db_connection, None)
+        ):
+            search_service.search_by_term("cell", search_fields, "ontologies")
+
+        _, kwargs = db_connection.aql.execute.call_args
+        return db_connection.aql.execute.call_args[0][0], kwargs["bind_vars"]
+
+    def test_query_applies_limit_as_bind_var(self):
+        query, bind_vars = self._run(["label"])
+        # LIMIT must come after the SORT and use a bind var, not an interpolated
+        # number, so the relevance ranking is preserved while capping output.
+        self.assertIn("LIMIT @limit", query)
+        self.assertEqual(bind_vars["limit"], search_service.SEARCH_RESULT_LIMIT)
+        sort_idx = query.index("SORT is_exact_match DESC")
+        self.assertLess(sort_idx, query.index("LIMIT @limit"))
+
+    def test_query_projects_minimal_fields(self):
+        query, bind_vars = self._run(["label", "definition"])
+        # The full document is no longer returned; only _id plus a projected
+        # field set is serialized back to the dropdown.
+        self.assertNotIn("RETURN doc\n", query)
+        self.assertIn("KEEP(doc, @projection_fields)", query)
+        self.assertIn('"_id": doc._id', query)
+
+        projection = bind_vars["projection_fields"]
+        # Searched fields and getLabel() label fields are present.
+        self.assertIn("label", projection)
+        self.assertIn("definition", projection)
+        self.assertIn("gene_symbol", projection)
+        # _id is merged explicitly, so it need not appear in the KEEP list.
+        for field in search_service.LABEL_FIELDS:
+            self.assertIn(field, projection)
+
+    def test_ranking_clauses_unchanged(self):
+        query, _ = self._run(["label"])
+        # Exact-match boost, BM25, Levenshtein and n-gram branches still present.
+        self.assertIn("is_exact_match", query)
+        self.assertIn("BM25(doc)", query)
+        self.assertIn("LEVENSHTEIN_MATCH", query)
+        self.assertIn('"n-gram"', query)
 
 
 class SunburstServiceTestCase(ArangoDBTestCase):

@@ -71,6 +71,23 @@ describe("SearchResultsTable", () => {
     expect(screen.getByText("No results found.")).toBeInTheDocument();
   });
 
+  test("renders projected results that only contain _id and label fields", () => {
+    // The backend now returns a trimmed projection (no full document), so the
+    // table must work off just _id plus the label field getLabel() reads.
+    const projectedResults = [
+      { _id: "CL/0", label: "Apple" },
+      { _id: "GO/2", label: "Carrot" },
+    ];
+
+    renderWithProviders(<SearchResultsTable searchResults={projectedResults} />);
+
+    // Label comes through, and the collection tag is derived from _id alone.
+    expect(screen.getByText("Apple")).toBeInTheDocument();
+    expect(screen.getByText("Carrot")).toBeInTheDocument();
+    expect(screen.getAllByText("Cell Types").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Gene Ontology").length).toBeGreaterThan(0);
+  });
+
   test("renders collection tags with correct display names", () => {
     renderWithProviders(<SearchResultsTable searchResults={sampleResults} />);
 

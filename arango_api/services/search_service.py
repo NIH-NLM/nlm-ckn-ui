@@ -11,6 +11,35 @@ from arango_api.services.collection_service import get_collections
 
 logger = logging.getLogger(__name__)
 
+# Maximum number of search results returned by the dropdown query. The frontend
+# renders results in pages of 20 and lazy-loads more on scroll, so an unbounded
+# result set (thousands of fuzzy/n-gram matches for short terms like "K" or
+# "cell") is wasted work and payload. Capping here keeps the query fast.
+SEARCH_RESULT_LIMIT = 50
+
+# Label fields read by the frontend's getLabel() (utils/collections.js
+# individual_labels -> field_to_use). The search dropdown only needs _id, the
+# fields actually searched, and whichever of these label fields a matched doc
+# has, so the query projects this set instead of serializing full documents.
+LABEL_FIELDS = [
+    "Citation",
+    "Label",
+    "Link_to_publication",
+    "_key",
+    "author_cell_term",
+    "cellxgene_collection",
+    "cellxgene_dataset",
+    "dataset_identifier",
+    "definition",
+    "exact_synonym",
+    "gene_id",
+    "gene_symbol",
+    "label",
+    "markers",
+    "publication_doi",
+    "uniprot_id",
+]
+
 
 def search_by_term(search_term, search_fields, graph):
     """
@@ -63,14 +92,15 @@ def search_by_term(search_term, search_fields, graph):
         f"LOWER(doc.`{field}`) == lower_search_term" for field in search_fields
     )
 
-    query_end = f"""
+    query_end = """
                     LET is_exact_match = ({exact_match_conditions})
                     SORT is_exact_match DESC, BM25(doc) DESC
-                    RETURN doc
+                    LIMIT @limit
+                    RETURN MERGE({{"_id": doc._id}}, KEEP(doc, @projection_fields))
             )
 
             RETURN sortedDocs
-            """
+            """.format(exact_match_conditions=exact_match_conditions)
     query = (
         query_beginning
         + levenshtein_string_0
@@ -79,7 +109,16 @@ def search_by_term(search_term, search_fields, graph):
         + query_end
     )
 
-    bind_vars = {"search_term": search_term}
+    # Project only the fields the dropdown needs: _id (always), the searched
+    # fields, and any label fields getLabel() may read. _id is merged in
+    # explicitly because KEEP does not retain system attributes.
+    projection_fields = sorted(set(search_fields) | set(LABEL_FIELDS))
+
+    bind_vars = {
+        "search_term": search_term,
+        "limit": SEARCH_RESULT_LIMIT,
+        "projection_fields": projection_fields,
+    }
 
     try:
         cursor = db_connection.aql.execute(query, bind_vars=bind_vars)
