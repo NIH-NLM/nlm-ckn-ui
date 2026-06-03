@@ -6,21 +6,26 @@
 # port-forwarding tunnel: instance:8529 → localhost:8530
 #
 # USAGE:
-#   ./scripts/arango-tunnel.sh [environment]
+#   ./scripts/arango-tunnel.sh [environment] [--show-password]
 #
 # ARGUMENTS:
-#   environment   Environment name: dev, sandbox, or prod (default: dev)
+#   environment      Environment name: dev, stage, sandbox, or prod (default: dev)
+#   --show-password  Print the real ArangoDB root password instead of a mask.
+#                    Can also be enabled with SHOW_PASSWORD=1. Off by default
+#                    to avoid leaking the credential to the terminal/logs.
 #
 # PREREQUISITES:
-#   - AWS CLI configured with springbok profile
-#   - AWS Session Manager plugin installed
+#   - AWS CLI configured with credentials for the target account. Uses your
+#     default profile; export AWS_PROFILE=<name> to select a different one.
+#   - AWS Session Manager plugin installed (required to open the SSM tunnel)
 #     https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html
 #   - CloudFormation arangodb stack deployed for the environment
 #
 # EXAMPLES:
 #   ./scripts/arango-tunnel.sh
 #   ./scripts/arango-tunnel.sh dev
-#   ./scripts/arango-tunnel.sh prod
+#   ./scripts/arango-tunnel.sh stage
+#   ./scripts/arango-tunnel.sh dev --show-password
 # ==============================================================================
 set -e
 
@@ -31,7 +36,16 @@ YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
-ENVIRONMENT=${1:-dev}
+# Parse arguments: environment (positional) and --show-password flag (any order)
+ENVIRONMENT="dev"
+SHOW_PASSWORD="${SHOW_PASSWORD:-}"
+for arg in "$@"; do
+  case "$arg" in
+    --show-password) SHOW_PASSWORD=1 ;;
+    *) ENVIRONMENT="$arg" ;;
+  esac
+done
+
 PROJECT_NAME="cell-kn"
 AWS_REGION="us-east-1"
 STACK_NAME="${PROJECT_NAME}-${ENVIRONMENT}-arangodb"
@@ -39,8 +53,8 @@ LOCAL_PORT="8530"
 REMOTE_PORT="8529"
 
 # Validate environment
-if [[ ! "$ENVIRONMENT" =~ ^(dev|sandbox|prod)$ ]]; then
-  echo -e "${RED}Error: Environment must be dev, sandbox, or prod${NC}"
+if [[ ! "$ENVIRONMENT" =~ ^(dev|stage|sandbox|prod)$ ]]; then
+  echo -e "${RED}Error: Environment must be dev, stage, sandbox, or prod${NC}"
   exit 1
 fi
 
@@ -71,8 +85,7 @@ ARANGO_PASSWORD=$(aws secretsmanager get-secret-value \
   --secret-id "$SECRET_ID" \
   --query 'SecretString' \
   --output text \
-  --region "$AWS_REGION" \
-  --profile "$AWS_PROFILE" 2>/dev/null) || {
+  --region "$AWS_REGION" 2>/dev/null) || {
   echo -e "${RED}Error: Could not fetch secret '${SECRET_ID}'.${NC}"
   exit 1
 }
@@ -82,10 +95,15 @@ echo -e "${GREEN}==> Tunnel info${NC}"
 echo "  Instance:   $INSTANCE_ID"
 echo "  Forwarding: localhost:${LOCAL_PORT} → instance:${REMOTE_PORT}"
 echo ""
-echo -e "${CYAN}  ArangoDB password: ${ARANGO_PASSWORD}${NC}"
+if [ -n "$SHOW_PASSWORD" ]; then
+  DISPLAY_PASSWORD="$ARANGO_PASSWORD"
+else
+  DISPLAY_PASSWORD="**** (re-run with --show-password or SHOW_PASSWORD=1 to reveal)"
+fi
+echo -e "${CYAN}  ArangoDB password: ${DISPLAY_PASSWORD}${NC}"
 echo ""
 echo "  Web UI:  http://localhost:${LOCAL_PORT}"
-echo "  API:     curl -u \"root:\$ARANGO_PASS\" http://localhost:${LOCAL_PORT}/_api/version"
+echo "  API:     curl -u \"root:<password>\" http://localhost:${LOCAL_PORT}/_api/version"
 echo ""
 echo -e "${YELLOW}Starting SSM port-forwarding session... (Ctrl+C to stop)${NC}"
 echo ""
@@ -93,6 +111,5 @@ echo ""
 aws ssm start-session \
   --target "$INSTANCE_ID" \
   --region "$AWS_REGION" \
-  --profile "$AWS_PROFILE" \
   --document-name AWS-StartPortForwardingSession \
   --parameters "{\"portNumber\":[\"${REMOTE_PORT}\"],\"localPortNumber\":[\"${LOCAL_PORT}\"]}"

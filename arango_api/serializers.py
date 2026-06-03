@@ -19,7 +19,9 @@ from rest_framework import serializers
 # AQL identifier pattern: search_fields are interpolated directly into AQL
 # attribute accessors (doc.`<field>`), so each must be a plain identifier.
 # Rejecting anything else (backticks, dots, whitespace) prevents AQL injection.
-_VALID_FIELD_NAME = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
+# Leading underscores are allowed because the frontend searches system/edge
+# attributes such as _from, _to and _key.
+_VALID_FIELD_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 GRAPH_CHOICES = ["ontologies", "phenotypes"]
 

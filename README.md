@@ -154,6 +154,23 @@ graph TD
 
 > **Why EC2 for ArangoDB?** ArangoDB requires a local, POSIX-compliant filesystem for its RocksDB storage engine. AWS EFS (NFS-based) is not supported and causes data corruption. EC2 with an EBS volume is the only managed AWS option that satisfies this requirement.
 
+### Connecting to the Deployed ArangoDB
+
+The ArangoDB EC2 instance has no public IP and no SSH access. To reach it from your machine, use the SSM port-forwarding helper, which opens a tunnel from `localhost:8530` to the instance's ArangoDB port:
+
+```bash
+./scripts/arango-tunnel.sh [environment]   # default: dev (dev|stage|sandbox|prod)
+```
+
+The script looks up the instance from CloudFormation, fetches the root password from Secrets Manager (masked by default — pass `--show-password` or set `SHOW_PASSWORD=1` to reveal it), and keeps the tunnel open (Ctrl+C to stop). While it's running:
+
+```bash
+open http://localhost:8530   # Web UI
+arangosh --server.endpoint tcp://localhost:8530 --server.username root --server.password <password>
+```
+
+Requires the [AWS Session Manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html) (needed to open the SSM tunnel) and AWS credentials for the target account. Uses your default profile; set `AWS_PROFILE=<name>` to select a different one. See [`scripts/README.md`](scripts/README.md) for more.
+
 ## Production Deployment
 
 1. **Generate a new SECRET_KEY:**
