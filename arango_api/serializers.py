@@ -12,7 +12,14 @@ Usage in views:
 See: https://www.django-rest-framework.org/api-guide/serializers/
 """
 
+import re
+
 from rest_framework import serializers
+
+# AQL identifier pattern: search_fields are interpolated directly into AQL
+# attribute accessors (doc.`<field>`), so each must be a plain identifier.
+# Rejecting anything else (backticks, dots, whitespace) prevents AQL injection.
+_VALID_FIELD_NAME = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
 
 GRAPH_CHOICES = ["ontologies", "phenotypes"]
 
@@ -146,6 +153,22 @@ class SearchRequestSerializer(serializers.Serializer):
         min_length=1,
         help_text="List of fields to search within",
     )
+
+    def validate_search_fields(self, value):
+        """Reject field names that are not plain AQL identifiers.
+
+        search_fields are interpolated into AQL attribute accessors
+        (doc.`<field>`) by search_service.search_by_term, so any value
+        containing backticks or other non-identifier characters could be used
+        for AQL injection. Allow only letters, digits and underscores.
+        """
+        invalid = [field for field in value if not _VALID_FIELD_NAME.match(field)]
+        if invalid:
+            raise serializers.ValidationError(
+                f"Invalid field name(s): {invalid}. Field names must contain only "
+                "letters, digits and underscores."
+            )
+        return value
 
 
 class AQLQuerySerializer(serializers.Serializer):

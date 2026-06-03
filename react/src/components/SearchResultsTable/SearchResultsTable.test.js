@@ -71,6 +71,20 @@ describe("SearchResultsTable", () => {
     expect(screen.getByText("No results found.")).toBeInTheDocument();
   });
 
+  test("falls back to _id and renders tags when a projected result has no label", () => {
+    // The backend projection may return a doc that matched on a non-label field,
+    // so the label is absent. The table must still render: getLabel() falls back
+    // to _id, and the collection tag is derived purely from _id.
+    const projectedResults = [{ _id: "CL/0" }];
+
+    renderWithProviders(<SearchResultsTable searchResults={projectedResults} />);
+
+    // getLabel(item) -> item.label || item._id, so "CL/0" is shown as the label.
+    expect(screen.getByText("CL/0")).toBeInTheDocument();
+    // Collection tag still resolves from the _id prefix alone.
+    expect(screen.getAllByText("Cell Types").length).toBeGreaterThan(0);
+  });
+
   test("renders collection tags with correct display names", () => {
     renderWithProviders(<SearchResultsTable searchResults={sampleResults} />);
 

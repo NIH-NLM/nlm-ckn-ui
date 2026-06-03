@@ -171,6 +171,29 @@ class SearchRequestSerializerTestCase(SimpleTestCase):
         self.assertIn("search_term", serializer.errors)
         self.assertIn("search_fields", serializer.errors)
 
+    def test_injection_field_names_rejected(self):
+        # search_fields are interpolated into AQL (doc.`<field>`), so values
+        # containing backticks or other non-identifier characters must be
+        # rejected to prevent AQL injection.
+        for bad_field in ["label`", "a` OR true OR `b", "doc.label", "with space"]:
+            serializer = SearchRequestSerializer(
+                data={"search_term": "cell", "search_fields": [bad_field]}
+            )
+            self.assertFalse(
+                serializer.is_valid(), f"expected {bad_field!r} to be rejected"
+            )
+            self.assertIn("search_fields", serializer.errors)
+
+    def test_identifier_field_names_accepted(self):
+        # Real field names (letters, digits, underscores) remain valid.
+        serializer = SearchRequestSerializer(
+            data={
+                "search_term": "cell",
+                "search_fields": ["label", "gene_symbol", "number_of_amino_acids"],
+            }
+        )
+        self.assertTrue(serializer.is_valid())
+
 
 class SunburstRequestSerializerTestCase(SimpleTestCase):
     """Tests for sunburst request validation."""
