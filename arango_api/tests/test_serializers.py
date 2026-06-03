@@ -8,6 +8,9 @@ Run these tests quickly with:
     python manage.py test arango_api.tests.test_serializers
 """
 
+import json
+
+from django.conf import settings
 from django.test import SimpleTestCase
 
 from arango_api.serializers import (
@@ -189,10 +192,58 @@ class SearchRequestSerializerTestCase(SimpleTestCase):
         serializer = SearchRequestSerializer(
             data={
                 "search_term": "cell",
-                "search_fields": ["label", "gene_symbol", "number_of_amino_acids"],
+                # Includes _from/_to: the frontend searches edge/system
+                # attributes, so leading underscores must be accepted.
+                "search_fields": [
+                    "label",
+                    "gene_symbol",
+                    "number_of_amino_acids",
+                    "_from",
+                    "_to",
+                ],
             }
         )
-        self.assertTrue(serializer.is_valid())
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+
+    def test_real_frontend_search_fields_accepted(self):
+        # Regression guard for "search returns no results": the frontend sends
+        # search_fields from getAllSearchableFields() (every collection's
+        # individual_fields[].field_to_display), which includes edge attributes
+        # like _from/_to. If the field-name validator rejects any of them, the
+        # whole request 400s and the user sees zero results.
+        #
+        # Drive the validator with the REAL field set and the search terms the
+        # team reported ("K" broad match, "KCNK3" gene-symbol match).
+        maps_path = (
+            settings.BASE_DIR
+            / "react"
+            / "src"
+            / "assets"
+            / "nlm-ckn-collection-maps.json"
+        )
+        with open(maps_path) as fh:
+            collection_maps = dict(json.load(fh)["maps"])
+
+        # Mirror frontend getAllSearchableFields(): union of field_to_display.
+        search_fields = sorted(
+            {
+                field["field_to_display"]
+                for config in collection_maps.values()
+                for field in config.get("individual_fields", [])
+            }
+        )
+        self.assertIn("_from", search_fields)  # the field that caused the regression
+
+        # Reported search terms; add more here to expand coverage.
+        search_terms = ["K", "KCNK3"]
+        for term in search_terms:
+            serializer = SearchRequestSerializer(
+                data={"search_term": term, "search_fields": search_fields}
+            )
+            self.assertTrue(
+                serializer.is_valid(),
+                f"term {term!r} rejected: {serializer.errors}",
+            )
 
 
 class SunburstRequestSerializerTestCase(SimpleTestCase):

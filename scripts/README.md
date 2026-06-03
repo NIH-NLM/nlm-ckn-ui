@@ -6,6 +6,7 @@ Automated deployment scripts for NLM-CKN CloudFormation infrastructure and appli
 scripts/
   infra/    # CloudFormation stack deployments (provision/change infrastructure)
   app/      # Application deployments (ship code to existing infrastructure)
+  arango-tunnel.sh
   backup-arangodb.sh
 ```
 
@@ -74,6 +75,29 @@ Deploys both backend and frontend in sequence.
 Builds and pushes the backend Docker image without updating the ECS service. Useful before the first environment deploy.
 
 ## Operations Scripts (`scripts/`)
+
+### `arango-tunnel.sh` - Connect to ArangoDB via SSM
+```bash
+./scripts/arango-tunnel.sh [environment]        # default: dev (dev|stage|sandbox|prod)
+./scripts/arango-tunnel.sh stage
+./scripts/arango-tunnel.sh dev --show-password  # reveal the root password
+```
+
+Opens an AWS SSM port-forwarding tunnel to the ArangoDB EC2 instance
+(`localhost:8530 → instance:8529`) — no SSH key or public IP needed. It looks up
+the instance from the `cell-kn-<env>-arangodb` CloudFormation stack, fetches the
+root password from Secrets Manager (masked unless `--show-password` /
+`SHOW_PASSWORD=1` is set), then keeps the tunnel open (Ctrl+C to stop).
+
+Once running:
+```bash
+open http://localhost:8530   # Web UI
+arangosh --server.endpoint tcp://localhost:8530 --server.username root --server.password <password>
+```
+
+Requires the AWS Session Manager plugin (needed to open the SSM tunnel) and AWS
+credentials for the target account. Uses your default profile; set
+`AWS_PROFILE=<name>` to select a different one.
 
 ### `backup-arangodb.sh` - Create Backup
 ```bash
