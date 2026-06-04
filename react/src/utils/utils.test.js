@@ -1,5 +1,6 @@
 import {
   capitalCase,
+  filterBrowsableCollections,
   getLabel,
   getTitle,
   getUrl,
@@ -219,6 +220,24 @@ describe("Utils Module", () => {
       const input = ["nodes_x", "nodes_c", "nodes_b", "nodes_a"];
       const expected = ["nodes_a", "nodes_b", "nodes_c", "nodes_x"];
       expect(parseCollections(input, collectionMaps)).toEqual(expected);
+    });
+  });
+
+  // --- filterBrowsableCollections ---
+  describe("filterBrowsableCollections", () => {
+    it("should remove the Life cycle stage (HsapDv) collection", () => {
+      const input = ["CL", "HsapDv", "GO"];
+      expect(filterBrowsableCollections(input)).toEqual(["CL", "GO"]);
+    });
+
+    it("should leave the list unchanged when no non-browsable collections are present", () => {
+      const input = ["CL", "GO", "UBERON"];
+      expect(filterBrowsableCollections(input)).toEqual(["CL", "GO", "UBERON"]);
+    });
+
+    it("should preserve order of the remaining collections", () => {
+      const input = ["GO", "HsapDv", "CL"];
+      expect(filterBrowsableCollections(input)).toEqual(["GO", "CL"]);
     });
   });
 

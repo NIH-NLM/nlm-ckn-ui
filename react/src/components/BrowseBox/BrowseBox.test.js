@@ -12,6 +12,7 @@ jest.mock("../../services", () => ({
 
 jest.mock("../../utils", () => ({
   parseCollections: jest.fn(),
+  filterBrowsableCollections: jest.fn(),
   getLabel: jest.fn((item) => item.label || item._id),
 }));
 
@@ -34,6 +35,9 @@ describe("BrowseBox", () => {
     Services.fetchCollections.mockResolvedValue(mockFetchedData);
     Services.fetchCollectionDocuments.mockResolvedValue([]);
     Utils.parseCollections.mockImplementation((data) => data);
+    Utils.filterBrowsableCollections.mockImplementation((collections) =>
+      collections.filter((collection) => collection !== "HsapDv"),
+    );
   });
 
   it("should render collections", async () => {
@@ -45,6 +49,19 @@ describe("BrowseBox", () => {
       expect(screen.getAllByText(/Collection 2/)[0]).toBeInTheDocument();
       expect(screen.getAllByText(/Collection 3/)[0]).toBeInTheDocument();
     });
+  });
+
+  it("should not render non-browsable collections like Life cycle stage (HsapDv)", async () => {
+    Services.fetchCollections.mockResolvedValue(["Collection 1", "HsapDv", "Collection 2"]);
+
+    renderAtPath("/collections");
+
+    await waitFor(() => {
+      expect(screen.getAllByText(/Collection 1/)[0]).toBeInTheDocument();
+    });
+    // HsapDv is rendered via its display name "Life cycle stage"
+    expect(screen.queryByText(/Life cycle stage/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/HsapDv/)).not.toBeInTheDocument();
   });
 
   it("should highlight the active collection based on URL param", async () => {
