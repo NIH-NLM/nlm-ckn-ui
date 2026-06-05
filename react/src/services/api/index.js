@@ -25,5 +25,7 @@ export {
 export { fetchHierarchyData } from "./hierarchy";
 // Search operations
 export { searchDocuments } from "./search";
+// Version operations
+export { fetchVersionInfo } from "./versions";
 // Workflow operations
 export { fetchWorkflowPresets } from "./workflows";

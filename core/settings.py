@@ -31,6 +31,10 @@ DEBUG = env("DEBUG")
 
 ALLOWED_HOSTS = env("ALLOWED_HOSTS")
 
+# UI version string, injected at deploy time (the backend image tag). Defaults to
+# "dev" for local/unbuilt runs. Surfaced to users via the version API endpoint.
+UI_VERSION = env("UI_VERSION", default="dev")
+
 
 # Application definition
 

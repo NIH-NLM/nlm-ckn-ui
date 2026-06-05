@@ -159,7 +159,7 @@ else
   # Explicitly target linux/amd64 — ECS Fargate runs on x86_64.
   # Required when building on ARM64 hosts (Apple M-series).
   echo -e "\n${GREEN}Building Docker image (linux/amd64)...${NC}"
-  docker build --platform linux/amd64 -t "$FULL_IMAGE_URI" .
+  docker build --platform linux/amd64 --build-arg UI_VERSION="$IMAGE_TAG" -t "$FULL_IMAGE_URI" .
 
   # Push to ECR
   echo -e "\n${GREEN}Pushing image to ECR...${NC}"

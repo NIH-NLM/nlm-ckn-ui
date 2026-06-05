@@ -15,7 +15,10 @@ Test Configuration:
         docker run -d --name arangodb-test -p 8530:8529 -e ARANGO_ROOT_PASSWORD=test arangodb
 """
 
-from django.test import TestCase, tag
+import tempfile
+from pathlib import Path
+
+from django.test import SimpleTestCase, TestCase, override_settings, tag
 from django.urls import reverse
 
 from arango_api.tests.seed_test_db import seed_test_databases
@@ -333,3 +336,35 @@ class DocumentViewsTestCase(ArangoDBViewTestCase):
             sorted(data["label"]["values"]),
             sorted(["subClassOf", "participates_in", "part_of"]),
         )
+
+
+class VersionViewTestCase(SimpleTestCase):
+    """Tests for the version endpoint. Reads a file and a setting; no ArangoDB."""
+
+    def test_returns_both_version_keys(self):
+        response = self.client.get(reverse("get_version"))
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("ui_version", data)
+        self.assertIn("etl_version", data)
+
+    def test_etl_version_reflects_stripped_file_contents(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "ETL_VERSION").write_text("v9.9.9-test\n")
+            with override_settings(BASE_DIR=Path(tmp)):
+                response = self.client.get(reverse("get_version"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["etl_version"], "v9.9.9-test")
+
+    def test_missing_etl_version_file_returns_unknown(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with override_settings(BASE_DIR=Path(tmp)):
+                response = self.client.get(reverse("get_version"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["etl_version"], "unknown")
+
+    def test_ui_version_reflects_setting(self):
+        with override_settings(UI_VERSION="v9.9.9"):
+            response = self.client.get(reverse("get_version"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["ui_version"], "v9.9.9")
