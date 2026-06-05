@@ -4,7 +4,7 @@ import { DEFAULT_GRAPH_TYPE } from "constants/index";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { fetchCollectionDocuments, fetchCollections } from "services";
-import { getLabel, parseCollections } from "utils";
+import { filterBrowsableCollections, getLabel, parseCollections } from "utils";
 
 const collectionMaps = new Map(collMaps.maps);
 const ITEMS_PER_LOAD = 50;
@@ -24,7 +24,7 @@ const BrowseBox = () => {
   useEffect(() => {
     setCollections([]);
     fetchCollections(graphType).then((data) => {
-      setCollections(parseCollections(data, collectionMaps));
+      setCollections(filterBrowsableCollections(parseCollections(data, collectionMaps)));
     });
   }, []);
 
