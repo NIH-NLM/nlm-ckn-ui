@@ -11,6 +11,21 @@ import { capitalCase } from "./strings";
 export const collectionConfigMap = new Map(collMaps.maps);
 
 /**
+ * Collections that exist in the database but should not appear in the
+ * browsable collections list. "Life cycle stage" (HsapDv) is sparsely
+ * populated and not meant for browsing.
+ */
+export const NON_BROWSABLE_COLLECTIONS = new Set(["HsapDv"]);
+
+/**
+ * Remove collections that should not be browsable from a list of collection keys.
+ * @param {Array<string>} collections - Array of collection names.
+ * @returns {Array<string>} Filtered array excluding non-browsable collections.
+ */
+export const filterBrowsableCollections = (collections) =>
+  collections.filter((collection) => !NON_BROWSABLE_COLLECTIONS.has(collection));
+
+/**
  * Sort and parse collections with optional display name mapping.
  * @param {Array<string>} collections - Array of collection names.
  * @param {Map|null} collectionMaps - Optional map of collection configurations.

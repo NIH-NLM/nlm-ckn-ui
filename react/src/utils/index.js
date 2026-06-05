@@ -3,6 +3,7 @@
 // Collection and label utilities
 export {
   collectionConfigMap,
+  filterBrowsableCollections,
   getAllSearchableFields,
   getCollectionDisplayName,
   getCollectionFields,
@@ -14,6 +15,7 @@ export {
   getNodeLabel,
   getTitle,
   getUrl,
+  NON_BROWSABLE_COLLECTIONS,
   parseCollections,
 } from "./collections";
 // Color utilities
