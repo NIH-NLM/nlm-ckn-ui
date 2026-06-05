@@ -363,6 +363,14 @@ class VersionViewTestCase(SimpleTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["etl_version"], "unknown")
 
+    def test_blank_etl_version_file_returns_unknown(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "ETL_VERSION").write_text("   \n")
+            with override_settings(BASE_DIR=Path(tmp)):
+                response = self.client.get(reverse("get_version"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["etl_version"], "unknown")
+
     def test_ui_version_reflects_setting(self):
         with override_settings(UI_VERSION="v9.9.9"):
             response = self.client.get(reverse("get_version"))

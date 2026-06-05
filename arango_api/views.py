@@ -378,7 +378,9 @@ class VersionView(APIView):
 
     def get(self, request):
         try:
-            etl_version = (settings.BASE_DIR / "ETL_VERSION").read_text().strip()
+            etl_version = (
+                settings.BASE_DIR / "ETL_VERSION"
+            ).read_text().strip() or "unknown"
         except OSError:
             etl_version = "unknown"
 
