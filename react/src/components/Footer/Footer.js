@@ -1,8 +1,21 @@
 import { faGithub } from "@fortawesome/free-brands-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useEffect, useState } from "react";
+import { fetchVersionInfo } from "services";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
+  const [versions, setVersions] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchVersionInfo().then((data) => {
+      if (!cancelled) setVersions(data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <footer className="site-footer">
@@ -35,6 +48,14 @@ const Footer = () => {
             NCBI
           </a>
         </div>
+
+        {versions && (versions.ui_version || versions.etl_version) && (
+          <div className="footer-section footer-versions">
+            {versions.ui_version && <span>UI {versions.ui_version}</span>}
+            {versions.ui_version && versions.etl_version && <span> · </span>}
+            {versions.etl_version && <span>ETL {versions.etl_version}</span>}
+          </div>
+        )}
 
         <div className="footer-section footer-copyright">
           <p>© {currentYear} National Library of Medicine (NLM).</p>

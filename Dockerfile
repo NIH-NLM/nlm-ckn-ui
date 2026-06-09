@@ -12,6 +12,10 @@ FROM python:3.13.3-slim
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
+# UI version (image tag), injected at build time and surfaced via the version API.
+ARG UI_VERSION=dev
+ENV UI_VERSION=${UI_VERSION}
+
 WORKDIR /app
 
 # Copy installed Python packages from builder
