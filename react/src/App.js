@@ -8,6 +8,7 @@ import Header from "./components/Header/Header";
 import { ToastProvider } from "./components/Toast";
 import { ActiveNavProvider, FtuPartsProvider, GraphProvider } from "./contexts";
 import AboutPage from "./pages/AboutPage/AboutPage";
+import AskQuestionPage from "./pages/AskQuestionPage/AskQuestionPage";
 import CollectionsPage from "./pages/CollectionsPage/CollectionsPage";
 import DocumentPage from "./pages/DocumentPage/DocumentPage";
 import FTUExplorerPage from "./pages/FTUExplorerPage/FTUExplorerPage";

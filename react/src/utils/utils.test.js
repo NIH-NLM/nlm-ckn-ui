@@ -40,6 +40,19 @@ jest.mock(
         },
       ],
       [
+        "CS",
+        {
+          display_name: "Cell Set",
+          individual_labels: [{ field_to_use: "author_cell_term" }, { field_to_use: "_key" }],
+          individual_urls: [
+            {
+              individual_url: "https://nlm-ckn.org/#/collections/<FIELD_TO_USE>",
+              field_to_use: "_id",
+            },
+          ],
+        },
+      ],
+      [
         "edges",
         {
           display_name: "Relationships",
@@ -284,6 +297,11 @@ describe("Utils Module", () => {
     it("should return null if config has no url", () => {
       const item = { _id: "nodes_b/1", title: "Test Title" }; // nodes_b has no URL config in mock
       expect(getUrl(item)).toBeNull();
+    });
+
+    it("should convert internal collection URLs into local hash routes", () => {
+      const item = { _id: "CS/HAC38-q1zsjgb5xi1t", author_cell_term: "retinal cell set" };
+      expect(getUrl(item)).toBe("/#/collections/CS/HAC38-q1zsjgb5xi1t");
     });
   });
 

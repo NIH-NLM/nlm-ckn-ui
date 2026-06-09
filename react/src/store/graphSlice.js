@@ -360,15 +360,38 @@ const graphSlice = createSlice({
       const graphDataFromFile = action.payload; // Expects { nodes: [], links: [] }
 
       // Use the nodes from the file as the new graphData.
-      state.graphData = graphDataFromFile;
+      state.graphData = {
+        nodes: graphDataFromFile.nodes || [],
+        links: (graphDataFromFile.links || []).map((link) => {
+          const relationshipLabel =
+            link.Label ||
+            link.label ||
+            link.relationshipLabel ||
+            link.relationship_label ||
+            link.edgeLabel ||
+            link.predicate ||
+            link.Predicate ||
+            link.name ||
+            "";
+          return {
+            ...link,
+            Label: link.Label || relationshipLabel,
+            label: link.label || relationshipLabel,
+            name: link.name || relationshipLabel,
+            relationshipLabel: link.relationshipLabel || relationshipLabel,
+          };
+        }),
+      };
 
       // Since the file doesn't specify origin nodes, assume no origin nodes
-      state.originNodeIds = [];
-      state.lastAppliedOriginNodeIds = [];
+      state.originNodeIds = graphDataFromFile.originNodeIds || [];
+      state.lastAppliedOriginNodeIds = graphDataFromFile.originNodeIds || [];
 
-      // Reset settings to a default state.
-      state.settings = initialState.settings;
-      state.lastAppliedSettings = initialState.settings;
+      // Reset settings to defaults, unless the export included graph settings.
+      state.settings = graphDataFromFile.settings
+        ? { ...initialState.settings, ...graphDataFromFile.settings }
+        : initialState.settings;
+      state.lastAppliedSettings = state.settings;
 
       // Set the state to signal a successful load.
       state.status = GRAPH_STATUS.SUCCEEDED;

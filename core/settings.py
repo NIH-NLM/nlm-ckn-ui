@@ -180,6 +180,13 @@ else:
     GRAPH_NAME_ONTOLOGIES = env("GRAPH_NAME_ONTOLOGIES")
     GRAPH_NAME_PHENOTYPES = env("GRAPH_NAME_PHENOTYPES")
 
+# Optional OpenAI settings for natural-language question-to-AQL generation.
+OPENAI_API_KEY = env("OPENAI_API_KEY", default="")
+OPENAI_AQL_MODEL = env("OPENAI_AQL_MODEL", default="gpt-4.1-mini")
+
+# Optional UMLS settings for medical term normalization before local graph lookup.
+UMLS_API_KEY = env("UMLS_API_KEY", default="")
+
 # Logging configuration
 LOGGING = {
     "version": 1,

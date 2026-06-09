@@ -181,6 +181,57 @@
   .sunburst-visualization-container {
     min-height: 70vh;
   }
+
+  .ask-page {
+    grid-template-columns: 1fr;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    padding: var(--spacing-md);
+  }
+
+  .ask-chat-panel,
+  .ask-results-panel {
+    height: 70dvh;
+    min-height: 420px;
+  }
+
+  .ask-page-header,
+  .ask-results-header,
+  .ask-input-row {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ask-input-row {
+    display: flex;
+  }
+
+  .ask-mode-toggle {
+    align-self: stretch;
+  }
+
+  .ask-mode-toggle button {
+    flex: 1;
+    white-space: normal;
+  }
+
+  .ask-graph-expanded-shell {
+    left: var(--spacing-sm);
+    right: var(--spacing-sm);
+    top: var(--spacing-sm);
+    bottom: var(--spacing-sm);
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    resize: none;
+  }
+
+  .ask-graph-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
 }
 
 /* Tablet range: 640px - 1023px */
@@ -199,6 +250,10 @@
   /* Graph panel can be sidebar or stacked depending on orientation */
   .graph-options-side-panel {
     flex-basis: 250px;
+  }
+
+  .ask-page {
+    grid-template-columns: 1fr;
   }
 }
 

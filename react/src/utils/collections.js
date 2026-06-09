@@ -10,6 +10,25 @@ import { capitalCase } from "./strings";
  */
 export const collectionConfigMap = new Map(collMaps.maps);
 
+const COLLECTION_ROUTE_TOKEN = "#/collections/<FIELD_TO_USE>";
+
+const encodeCollectionPath = (value) => {
+  const rawValue = String(value || "").trim();
+  if (!rawValue) return null;
+
+  const [collection, ...keyParts] = rawValue.split("/");
+  if (!collection) return null;
+
+  const encodedCollection = encodeURIComponent(collection);
+  const key = keyParts.join("/");
+
+  if (!key) {
+    return `/#/collections/${encodedCollection}`;
+  }
+
+  return `/#/collections/${encodedCollection}/${encodeURIComponent(key)}`;
+};
+
 /**
  * Collections that exist in the database but should not appear in the
  * browsable collections list. "Life cycle stage" (HsapDv) is sparsely
@@ -121,6 +140,10 @@ export const getUrl = (item) => {
 
             if (config.make_lower_case) {
               replacement = replacement.toLowerCase();
+            }
+
+            if (config.individual_url.includes(COLLECTION_ROUTE_TOKEN)) {
+              return encodeCollectionPath(replacement);
             }
 
             const url = config.individual_url.replace("<FIELD_TO_USE>", replacement);

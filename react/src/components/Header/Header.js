@@ -41,6 +41,9 @@ const Header = () => {
         <Link to="/about">
           <h4 className={activeNav.startsWith("/about") ? "active-nav" : ""}>About</h4>
         </Link>
+        <Link to="/ask">
+          <h4 className={activeNav.startsWith("/ask") ? "active-nav" : ""}>Ask a Question</h4>
+        </Link>
       </div>
     </div>
   );

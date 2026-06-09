@@ -1,0 +1,633 @@
+[
+  {
+    "id": "cq001",
+    "difficulty": "simple",
+    "use_case": "Disease genetics",
+    "question": "What genes are associated with asthma?",
+    "expected_targets": [
+      "GS"
+    ],
+    "notes": "Common one-hop disease-to-gene association query.",
+    "ok": true,
+    "row_count": 38,
+    "node_count": 19,
+    "link_count": 19,
+    "found_targets": [
+      "GS"
+    ],
+    "missing_targets": [],
+    "used_openai": true,
+    "queried_graphs": [
+      "ontologies",
+      "phenotypes"
+    ],
+    "answer": "Here are genes connected to disease terms matching 'asthma'.",
+    "elapsed_seconds": 3.82
+  },
+  {
+    "id": "cq002",
+    "difficulty": "simple",
+    "use_case": "Disease genetics",
+    "question": "What genes are associated with Alzheimer's disease?",
+    "expected_targets": [
+      "GS"
+    ],
+    "notes": "Tests synonym expansion for Alzheimer wording.",
+    "ok": true,
+    "row_count": 22,
+    "node_count": 11,
+    "link_count": 11,
+    "found_targets": [
+      "GS"
+    ],
+    "missing_targets": [],
+    "used_openai": true,
+    "queried_graphs": [
+      "ontologies",
+      "phenotypes"
+    ],
+    "answer": "Here are genes connected to disease terms matching 'alzheimer'.",
+    "elapsed_seconds": 3.08
+  },
+  {
+    "id": "cq003",
+    "difficulty": "simple",
+    "use_case": "Cell context",
+    "question": "What cell types are associated with glaucoma?",
+    "expected_targets": [
+      "CL"
+    ],
+    "notes": "Disease-to-gene-to-cell-type style question.",
+    "ok": true,
+    "row_count": 96,
+    "node_count": 45,
+    "link_count": 53,
+    "found_targets": [
+      "CL"
+    ],
+    "missing_targets": [],
+    "used_openai": true,
+    "queried_graphs": [
+      "ontologies",
+      "phenotypes"
+    ],
+    "answer": "Here are cell types connected to disease terms matching 'glaucoma' through associated genes.",
+    "elapsed_seconds": 3.92
+  },
+  {
+    "id": "cq004",
+    "difficulty": "simple",
+    "use_case": "Drug repurposing",
+    "question": "What drugs are connected to COPD?",
+    "expected_targets": [
+      "CHEMBL"
+    ],
+    "notes": "Disease-to-drug or disease-to-gene-to-drug traversal.",
+    "ok": true,
+    "row_count": 50,
+    "node_count": 24,
+    "link_count": 25,
+    "found_targets": [
+      "CHEMBL"
+    ],
+    "missing_targets": [],
+    "used_openai": true,
+    "queried_graphs": [
+      "ontologies",
+      "phenotypes"
+    ],
+    "answer": "Here are drugs and drug products reachable from terms matching 'COPD' in the knowledge graph.",
+    "elapsed_seconds": 5.4
+  },
+  {
+    "id": "cq005",
+    "difficulty": "simple",
+    "use_case": "Clinical trial evidence",
+    "question": "What clinical trials are available for Alzheimer's disease?",
+    "expected_targets": [
+      "NCT"
+    ],
+    "notes": "Disease-to-drug-to-trial traversal.",
+    "ok": true,
+    "row_count": 25,
+    "node_count": 31,
+    "link_count": 31,
+    "found_targets": [
+      "NCT"
+    ],
+    "missing_targets": [],
+    "used_openai": true,
+    "queried_graphs": [
+      "ontologies"
+    ],
+    "answer": "Here are clinical trials reachable from terms matching 'alzheimer' in the knowledge graph.",
+    "elapsed_seconds": 4.11
+  },
+  {
+    "id": "cq006",
+    "difficulty": "medium",
+    "use_case": "Mechanism of action",
+    "question": "What proteins are connected to COPD through drugs or genes?",
+    "expected_targets": [
+      "PR"
+    ],
+    "notes": "Multi-hop mechanism query.",
+    "ok": true,
+    "row_count": 50,
+    "node_count": 36,
+    "link_count": 41,
+    "found_targets": [
+      "PR"
+    ],
+    "missing_targets": [],
+    "used_openai": true,
+    "queried_graphs": [
+      "ontologies",
+      "phenotypes"
+    ],
+    "answer": "Here are proteins reachable from terms matching 'COPD' in the knowledge graph.",
+    "elapsed_seconds": 9.11
+  },
+  {
+    "id": "cq007",
+    "difficulty": "medium",
+    "use_case": "Disease neighborhood exploration",
+    "question": "Show me diseases connected to the drug revefenacin.",
+    "expected_targets": [
+      "MONDO"
+    ],
+    "notes": "Drug-to-disease via direct and two-hop paths.",
+    "ok": true,
+    "row_count": 50,
+    "node_count": 16,
+    "link_count": 19,
+    "found_targets": [
+      "MONDO"
+    ],
+    "missing_targets": [],
+    "used_openai": true,
+    "queried_graphs": [
+      "ontologies",
+      "phenotypes"
+    ],
+    "answer": "Here are diseases and conditions reachable from terms matching 'revefenacin' in the knowledge graph.",
+    "elapsed_seconds": 2.88
+  },
+  {
+    "id": "cq008",
+    "difficulty": "medium",
+    "use_case": "Trial interpretation",
+    "question": "What diseases are connected to clinical trial NCT03095456?",
+    "expected_targets": [
+      "MONDO"
+    ],
+    "notes": "Trial-to-drug-to-disease path.",
+    "ok": true,
+    "row_count": 25,
+    "node_count": 14,
+    "link_count": 21,
+    "found_targets": [
+      "MONDO"
+    ],
+    "missing_targets": [],
+    "used_openai": true,
+    "queried_graphs": [
+      "ontologies"
+    ],
+    "answer": "Here are diseases and conditions reachable from terms matching 'NCT03095456' in the knowledge graph.",
+    "elapsed_seconds": 1.05
+  },
+  {
+    "id": "cq009",
+    "difficulty": "medium",
+    "use_case": "Trial mechanism",
+    "question": "What genes and proteins are connected to clinical trial NCT03095456?",
+    "expected_targets": [
+      "GS",
+      "PR"
+    ],
+    "notes": "Trial-to-drug-to-gene/protein path.",
+    "ok": true,
+    "row_count": 25,
+    "node_count": 15,
+    "link_count": 19,
+    "found_targets": [
+      "GS",
+      "PR"
+    ],
+    "missing_targets": [],
+    "used_openai": true,
+    "queried_graphs": [
+      "ontologies"
+    ],
+    "answer": "Here are genes and gene symbols, proteins reachable from terms matching 'NCT03095456' in the knowledge graph.",
+    "elapsed_seconds": 1.03
+  },
+  {
+    "id": "cq010",
+    "difficulty": "medium",
+    "use_case": "Cell marker interpretation",
+    "question": "What genes are expressed by retinal cell types?",
+    "expected_targets": [
+      "GS"
+    ],
+    "notes": "Anatomy/cell-type/cell-set to gene traversal.",
+    "ok": true,
+    "row_count": 100,
+    "node_count": 97,
+    "link_count": 95,
+    "found_targets": [
+      "GS"
+    ],
+    "missing_targets": [],
+    "used_openai": true,
+    "queried_graphs": [
+      "ontologies",
+      "phenotypes"
+    ],
+    "answer": "Here are genes and gene symbols reachable from anatomical terms matching 'retina'.",
+    "elapsed_seconds": 2.29
+  },
+  {
+    "id": "cq011",
+    "difficulty": "medium",
+    "use_case": "Dataset discovery",
+    "question": "What datasets are connected to retina cell types?",
+    "expected_targets": [
+      "CSD"
+    ],
+    "notes": "Anatomy or cell type to dataset traversal.",
+    "ok": true,
+    "row_count": 53,
+    "node_count": 51,
+    "link_count": 93,
+    "found_targets": [
+      "CSD"
+    ],
+    "missing_targets": [],
+    "used_openai": true,
+    "queried_graphs": [
+      "ontologies",
+      "phenotypes"
+    ],
+    "answer": "Here are single-cell datasets and cellxgene datasets reachable from anatomical terms matching 'retina'.",
+    "elapsed_seconds": 2.36
+  },
+  {
+    "id": "cq012",
+    "difficulty": "medium",
+    "use_case": "Evidence discovery",
+    "question": "What publications support datasets related to retina?",
+    "expected_targets": [
+      "PUB"
+    ],
+    "notes": "Retina-to-dataset-to-publication traversal.",
+    "ok": true,
+    "row_count": 56,
+    "node_count": 51,
+    "link_count": 92,
+    "found_targets": [
+      "PUB"
+    ],
+    "missing_targets": [],
+    "used_openai": true,
+    "queried_graphs": [
+      "ontologies",
+      "phenotypes"
+    ],
+    "answer": "Here are publications, single-cell datasets and cellxgene datasets reachable from anatomical terms matching 'retina'.",
+    "elapsed_seconds": 2.28
+  },
+  {
+    "id": "cq013",
+    "difficulty": "medium",
+    "use_case": "Biological process context",
+    "question": "What biological processes are connected to asthma-associated genes?",
+    "expected_targets": [
+      "GO"
+    ],
+    "notes": "Disease-to-gene-to-process traversal.",
+    "ok": true,
+    "row_count": 16,
+    "node_count": 19,
+    "link_count": 19,
+    "found_targets": [
+      "GO"
+    ],
+    "missing_targets": [],
+    "used_openai": true,
+    "queried_graphs": [
+      "ontologies",
+      "phenotypes"
+    ],
+    "answer": "Here are biological processes connected to disease terms matching 'asthma' through genes and proteins.",
+    "elapsed_seconds": 4.35
+  },
+  {
+    "id": "cq014",
+    "difficulty": "medium",
+    "use_case": "Anatomical context",
+    "question": "What anatomical structures are connected to retinal cell sets?",
+    "expected_targets": [
+      "UBERON"
+    ],
+    "notes": "Cell-set to anatomy traversal.",
+    "ok": true,
+    "row_count": 35,
+    "node_count": 36,
+    "link_count": 35,
+    "found_targets": [
+      "UBERON"
+    ],
+    "missing_targets": [],
+    "used_openai": true,
+    "queried_graphs": [
+      "phenotypes"
+    ],
+    "answer": "Here are anatomical structures, organs, and tissues reachable from anatomical terms matching 'retina'.",
+    "elapsed_seconds": 3.38
+  },
+  {
+    "id": "cq015",
+    "difficulty": "complex",
+    "use_case": "Path explanation",
+    "question": "How are COPD and revefenacin connected in the knowledge graph?",
+    "expected_targets": [
+      "MONDO",
+      "CHEMBL"
+    ],
+    "notes": "Should return explanatory connecting paths.",
+    "ok": true,
+    "row_count": 50,
+    "node_count": 20,
+    "link_count": 52,
+    "found_targets": [
+      "CHEMBL",
+      "MONDO"
+    ],
+    "missing_targets": [],
+    "used_openai": true,
+    "queried_graphs": [
+      "ontologies"
+    ],
+    "answer": "Here are paths connecting 'COPD' and 'revefenacin' in the knowledge graph.",
+    "elapsed_seconds": 23.28
+  },
+  {
+    "id": "cq016",
+    "difficulty": "complex",
+    "use_case": "Drug repurposing with evidence",
+    "question": "Find drugs connected to emphysema and show the genes or proteins that explain the connection.",
+    "expected_targets": [
+      "CHEMBL",
+      "GS",
+      "PR"
+    ],
+    "notes": "Requires intermediate path nodes in the returned graph.",
+    "ok": true,
+    "row_count": 100,
+    "node_count": 70,
+    "link_count": 98,
+    "found_targets": [
+      "CHEMBL",
+      "GS",
+      "PR"
+    ],
+    "missing_targets": [],
+    "used_openai": true,
+    "queried_graphs": [
+      "ontologies",
+      "phenotypes"
+    ],
+    "answer": "Here are drugs connected to disease terms matching 'emphysema' with genes/proteins explaining the connection.",
+    "elapsed_seconds": 3.91
+  },
+  {
+    "id": "cq017",
+    "difficulty": "complex",
+    "use_case": "Cell-disease mechanism",
+    "question": "Which cell types connect asthma to genes and biological processes?",
+    "expected_targets": [
+      "CL",
+      "GS",
+      "GO"
+    ],
+    "notes": "Disease-to-gene-to-cell/process multi-hop traversal using a disease with process annotations in the loaded graph.",
+    "ok": true,
+    "row_count": 66,
+    "node_count": 49,
+    "link_count": 54,
+    "found_targets": [
+      "CL",
+      "GO",
+      "GS"
+    ],
+    "missing_targets": [],
+    "used_openai": true,
+    "queried_graphs": [
+      "ontologies",
+      "phenotypes"
+    ],
+    "answer": "Here are biological processes connected to disease terms matching 'asthma' through genes and proteins.",
+    "elapsed_seconds": 4.36
+  },
+  {
+    "id": "cq018",
+    "difficulty": "complex",
+    "use_case": "Evidence chain",
+    "question": "Show the path from retina cell sets to datasets and publications.",
+    "expected_targets": [
+      "CS",
+      "CSD",
+      "PUB"
+    ],
+    "notes": "Data provenance and publication evidence.",
+    "ok": true,
+    "row_count": 56,
+    "node_count": 51,
+    "link_count": 92,
+    "found_targets": [
+      "CS",
+      "CSD",
+      "PUB"
+    ],
+    "missing_targets": [],
+    "used_openai": true,
+    "queried_graphs": [
+      "ontologies",
+      "phenotypes"
+    ],
+    "answer": "Here are single-cell datasets and cellxgene datasets, publications reachable from anatomical terms matching 'retina'.",
+    "elapsed_seconds": 2.13
+  },
+  {
+    "id": "cq019",
+    "difficulty": "complex",
+    "use_case": "Biomarker discovery",
+    "question": "What biomarker combinations or gene sets are connected to retinal cell sets?",
+    "expected_targets": [
+      "BMC",
+      "BGS"
+    ],
+    "notes": "Cell-set to biomarker/gene-set traversal. Gene sets are represented by BGS nodes in the loaded graph.",
+    "ok": true,
+    "row_count": 50,
+    "node_count": 86,
+    "link_count": 85,
+    "found_targets": [
+      "BGS",
+      "BMC"
+    ],
+    "missing_targets": [],
+    "used_openai": true,
+    "queried_graphs": [
+      "phenotypes"
+    ],
+    "answer": "Here are biomarker combinations and marker sets, binary gene sets reachable from anatomical terms matching 'retina'.",
+    "elapsed_seconds": 3.18
+  },
+  {
+    "id": "cq020",
+    "difficulty": "complex",
+    "use_case": "Cross-domain hypothesis generation",
+    "question": "Starting from asthma, show connected genes, proteins, drugs, clinical trials, and related diseases.",
+    "expected_targets": [
+      "GS",
+      "PR",
+      "CHEMBL",
+      "NCT",
+      "MONDO"
+    ],
+    "notes": "Broad neighborhood query with several requested target classes.",
+    "ok": true,
+    "row_count": 75,
+    "node_count": 76,
+    "link_count": 76,
+    "found_targets": [
+      "CHEMBL",
+      "GS",
+      "MONDO",
+      "NCT",
+      "PR"
+    ],
+    "missing_targets": [],
+    "used_openai": true,
+    "queried_graphs": [
+      "ontologies",
+      "phenotypes"
+    ],
+    "answer": "Here are genes, proteins, drugs, clinical trials, and related diseases connected to disease terms matching 'asthma'.",
+    "elapsed_seconds": 8.52
+  },
+  {
+    "id": "cq021",
+    "difficulty": "complex",
+    "use_case": "Explainability",
+    "question": "Why is COPD connected to clinical trial NCT03095456?",
+    "expected_targets": [
+      "MONDO",
+      "CHEMBL",
+      "NCT"
+    ],
+    "notes": "Should return path context rather than only endpoints.",
+    "ok": true,
+    "row_count": 50,
+    "node_count": 17,
+    "link_count": 42,
+    "found_targets": [
+      "CHEMBL",
+      "MONDO",
+      "NCT"
+    ],
+    "missing_targets": [],
+    "used_openai": true,
+    "queried_graphs": [
+      "ontologies"
+    ],
+    "answer": "Here are paths connecting 'COPD' and 'clinical trial NCT03095456' in the knowledge graph.",
+    "elapsed_seconds": 27.35
+  },
+  {
+    "id": "cq022",
+    "difficulty": "complex",
+    "use_case": "Focused graph expansion",
+    "question": "Expand clinical trial NCT03095456 to diseases, drugs, genes, and proteins within two hops.",
+    "expected_targets": [
+      "MONDO",
+      "CHEMBL",
+      "GS",
+      "PR"
+    ],
+    "notes": "Typed multi-target expansion from an identifier.",
+    "ok": true,
+    "row_count": 14,
+    "node_count": 10,
+    "link_count": 14,
+    "found_targets": [
+      "CHEMBL",
+      "GS",
+      "MONDO",
+      "PR"
+    ],
+    "missing_targets": [],
+    "used_openai": true,
+    "queried_graphs": [
+      "ontologies"
+    ],
+    "answer": "Here are diseases and conditions, drugs and drug products, genes and gene symbols, proteins reachable from terms matching 'NCT03095456' in the knowledge graph.",
+    "elapsed_seconds": 1.07
+  },
+  {
+    "id": "cq023",
+    "difficulty": "complex",
+    "use_case": "Any-to-any schema traversal",
+    "question": "Find paths from asthma to clinical trials within three hops.",
+    "expected_targets": [
+      "NCT"
+    ],
+    "notes": "Disease-to-trial bounded path finding.",
+    "ok": true,
+    "row_count": 25,
+    "node_count": 31,
+    "link_count": 29,
+    "found_targets": [
+      "NCT"
+    ],
+    "missing_targets": [],
+    "used_openai": true,
+    "queried_graphs": [
+      "ontologies"
+    ],
+    "answer": "Here are clinical trials reachable from terms matching 'asthma' in the knowledge graph.",
+    "elapsed_seconds": 5.75
+  },
+  {
+    "id": "cq024",
+    "difficulty": "complex",
+    "use_case": "Any-to-any schema traversal",
+    "question": "Find paths from retina to genes, datasets, and publications.",
+    "expected_targets": [
+      "GS",
+      "CSD",
+      "PUB"
+    ],
+    "notes": "Anatomy-to-cell/dataset/publication/gene traversal.",
+    "ok": true,
+    "row_count": 100,
+    "node_count": 95,
+    "link_count": 93,
+    "found_targets": [
+      "CSD",
+      "GS",
+      "PUB"
+    ],
+    "missing_targets": [],
+    "used_openai": true,
+    "queried_graphs": [
+      "ontologies",
+      "phenotypes"
+    ],
+    "answer": "Here are genes and gene symbols, single-cell datasets and cellxgene datasets, publications reachable from anatomical terms matching 'retina'.",
+    "elapsed_seconds": 2.38
+  }
+]

@@ -4,7 +4,13 @@
  */
 
 // AQL query operations
-export { executeAqlQuery, fetchPredefinedQueries } from "./aql";
+export {
+  askQuestion,
+  executeAqlQuery,
+  fetchNodeQuestionSuggestions,
+  fetchPredefinedQueries,
+  summarizeQuestionResult,
+} from "./aql";
 // Collection operations
 export { fetchCollectionDocuments, fetchCollections } from "./collections";
 // Document/node operations
