@@ -33,3 +33,6 @@ export const AQL_ENDPOINT = `${API_BASE}/aql/`;
 
 // Workflow presets endpoint
 export const WORKFLOW_PRESETS_ENDPOINT = `${API_BASE}/workflow_presets/`;
+
+// Version endpoint
+export const VERSION_ENDPOINT = `${API_BASE}/version/`;

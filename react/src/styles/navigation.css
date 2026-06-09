@@ -112,6 +112,13 @@
   margin-right: 0;
 }
 
+.footer-versions {
+  color: var(--color-light);
+  font-size: 0.85em;
+  opacity: 0.8;
+  white-space: nowrap;
+}
+
 .footer-copyright {
   text-align: right;
 }

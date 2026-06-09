@@ -22,6 +22,7 @@ from arango_api.views import (
     DocumentsView,
     WorkflowExecuteView,
     WorkflowPresetsView,
+    VersionView,
 )
 
 urlpatterns = [
@@ -73,4 +74,6 @@ urlpatterns = [
     # Workflow endpoints
     path("workflow/execute/", WorkflowExecuteView.as_view(), name="workflow_execute"),
     path("workflow_presets/", WorkflowPresetsView.as_view(), name="workflow_presets"),
+    # Version endpoint
+    path("version/", VersionView.as_view(), name="get_version"),
 ]
