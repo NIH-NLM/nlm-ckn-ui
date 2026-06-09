@@ -1,0 +1,18 @@
+[
+  {
+    "ParameterKey": "CertificateArn",
+    "ParameterValue": "arn:aws:acm:us-east-1:952291113202:certificate/64062cb5-af4b-4501-accb-d1008304b3a5"
+  },
+  {
+    "ParameterKey": "CellKnHostedZoneId",
+    "ParameterValue": "Z0441030102JW92C98Q3U"
+  },
+  {
+    "ParameterKey": "NlmCknHostedZoneId",
+    "ParameterValue": "Z05089951YM1345O1XAHB"
+  },
+  {
+    "ParameterKey": "RedirectTarget",
+    "ParameterValue": "stage.nlm-ckn.org"
+  }
+]
