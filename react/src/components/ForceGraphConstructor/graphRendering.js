@@ -69,7 +69,12 @@ export function renderGraph(_simulation, nodes, links, d3, containers, options) 
   nodeSelection.exit().remove();
 
   // Create group for each new node.
-  const nodeEnter = nodeSelection.enter().append("g").attr("class", "node").call(options.drag);
+  const nodeEnter = nodeSelection
+    .enter()
+    .append("g")
+    .attr("class", "node")
+    .style("cursor", "pointer")
+    .call(options.drag);
 
   // Apply lasso-selection class to the merged enter+update selection so the
   // highlight refreshes whenever renderGraph is called with a new selection.
