@@ -26,6 +26,17 @@ Parameters:
     Description: VPC CIDR block for internal traffic rules
     Default: 10.0.0.0/16
 
+  CloudFrontPrefixListId:
+    Type: String
+    Default: pl-3b927c52
+    Description: >-
+      AWS-managed prefix list for CloudFront origin-facing IP ranges
+      (com.amazonaws.global.cloudfront.origin-facing). In non-dev environments
+      the ALB backend/Arango ports are reachable only from CloudFront, which is
+      the sole legitimate origin path (requests are further gated by the
+      cloudfront-secret header at the listener). Region-specific; this is the
+      us-east-1 value.
+
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -66,18 +77,22 @@ Resources:
           ToPort: 443
           CidrIp: 0.0.0.0/0
           Description: HTTPS from internet
-        # Backend port (public in dev only, VPC-only in Staging/prod)
+        # Backend port: public in dev; CloudFront origin-facing only in stage/prod.
+        # (VpcCidr was wrong here — CloudFront reaches the ALB from public IPs, so
+        # a VPC-only rule black-holes every API request from the distribution.)
         - IpProtocol: tcp
           FromPort: 8000
           ToPort: 8000
-          CidrIp: !If [IsDev, '0.0.0.0/0', !Ref VpcCidr]
-          Description: !If [IsDev, 'Backend API port (dev - public)', 'Backend API port (VPC only)']
-        # ArangoDB port (public in dev only, VPC-only in Staging/prod)
+          CidrIp: !If [IsDev, '0.0.0.0/0', !Ref 'AWS::NoValue']
+          SourcePrefixListId: !If [IsDev, !Ref 'AWS::NoValue', !Ref CloudFrontPrefixListId]
+          Description: !If [IsDev, 'Backend API port (dev - public)', 'Backend API port (CloudFront origin-facing only)']
+        # ArangoDB port: public in dev; CloudFront origin-facing only in stage/prod.
         - IpProtocol: tcp
           FromPort: 8529
           ToPort: 8529
-          CidrIp: !If [IsDev, '0.0.0.0/0', !Ref VpcCidr]
-          Description: !If [IsDev, 'ArangoDB web UI (dev - public)', 'ArangoDB web UI (VPC only)']
+          CidrIp: !If [IsDev, '0.0.0.0/0', !Ref 'AWS::NoValue']
+          SourcePrefixListId: !If [IsDev, !Ref 'AWS::NoValue', !Ref CloudFrontPrefixListId]
+          Description: !If [IsDev, 'ArangoDB web UI (dev - public)', 'ArangoDB web UI (CloudFront origin-facing only)']
       SecurityGroupEgress:
         - IpProtocol: -1
           CidrIp: 0.0.0.0/0
