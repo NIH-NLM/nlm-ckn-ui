@@ -337,9 +337,9 @@ _import_graphs_and_analyzers() {
   local ANALYZER_FILE="$DUMP_DIR/$DB/ckn-analyzers.ndjson"
   if [ -f "$ANALYZER_FILE" ]; then
     echo "  [$DB] Importing analyzers from $ANALYZER_FILE"
-    # Normalize to one compact JSON object per line. jq parses a stream of JSON
-    # values regardless of line breaks, so this handles both true NDJSON and
-    # pretty-printed dumps.
+    # Normalize to one compact JSON object per line. The `if type=="array"`
+    # guard handles dumps that wrap the objects in a single top-level JSON
+    # array, as well as true NDJSON / a stream of pretty-printed objects.
     while IFS= read -r OBJ; do
       [ -z "$OBJ" ] && continue
       # Strip the "DB::" prefix from the analyzer name — ArangoDB re-adds it.
@@ -361,14 +361,15 @@ _import_graphs_and_analyzers() {
         echo "    [analyzer] ERROR: $STRIPPED returned HTTP $HTTP_CODE"
         exit 1
       fi
-    done < <(jq -c '.' "$ANALYZER_FILE")
+    done < <(jq -c 'if type=="array" then .[] else . end' "$ANALYZER_FILE")
   fi
 
   # ── Named graphs ────────────────────────────────────────────────────────────
   local GRAPH_FILE="$DUMP_DIR/$DB/ckn-graphs.ndjson"
   if [ -f "$GRAPH_FILE" ]; then
     echo "  [$DB] Importing named graphs from $GRAPH_FILE"
-    # Normalize to one compact JSON object per line (see analyzer import above).
+    # Normalize to one compact JSON object per line, unwrapping a top-level
+    # array if present (see analyzer import above).
     while IFS= read -r OBJ; do
       [ -z "$OBJ" ] && continue
       local GNAME
@@ -387,7 +388,7 @@ _import_graphs_and_analyzers() {
         echo "    [graph] ERROR: $GNAME returned HTTP $HTTP_CODE"
         exit 1
       fi
-    done < <(jq -c '.' "$GRAPH_FILE")
+    done < <(jq -c 'if type=="array" then .[] else . end' "$GRAPH_FILE")
   fi
 }
 

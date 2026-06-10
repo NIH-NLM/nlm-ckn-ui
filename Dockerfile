@@ -24,8 +24,15 @@ COPY --from=builder /install /usr/local
 # Copy backend source (filtered by .dockerignore)
 COPY . .
 
-RUN python manage.py collectstatic --noinput || true
+# Build-only SECRET_KEY so Django settings import and `collectstatic` can run.
+# Scoped to this RUN (not a persistent ENV) so the image ships no default secret
+# -- the runtime must still supply a real SECRET_KEY. ARANGO_TEST_MODE=true lets
+# settings load without real Arango config (collectstatic touches no database).
+# No "|| true": a genuine collectstatic failure now fails the build.
+ARG BUILD_SECRET_KEY=build-only-not-a-real-secret
+RUN SECRET_KEY="$BUILD_SECRET_KEY" ARANGO_TEST_MODE=true \
+    python manage.py collectstatic --noinput
 
 EXPOSE 8000
 
-CMD ["gunicorn", "core.wsgi:application", "--bind", "0.0.0.0:8000"]
+CMD ["gunicorn", "core.wsgi:application", "--config", "gunicorn.conf.py"]
