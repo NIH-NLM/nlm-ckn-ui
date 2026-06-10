@@ -547,12 +547,17 @@ a.document-popup-button {
 .no-documents-message {
   text-align: center;
   color: var(--color-gray);
-  font-style: italic;
   padding: 30px 15px;
   flex-grow: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: var(--spacing-sm, 0.5rem);
+}
+
+.no-documents-message {
+  font-style: italic;
 }
 
 .list-document h4 {

@@ -184,9 +184,18 @@ const BrowseBox = () => {
               )}
             </>
           ) : (
-            <p className="select-collection-prompt">
-              Please select a collection from the list to view its contents.
-            </p>
+            <div className="select-collection-prompt">
+              <p>Select a collection from the list to explore its members.</p>
+              <p>
+                Collections contain the ontology terms, cell types, genes, diseases, and other
+                biological entities that make up the knowledge graph. Select any collection to
+                browse its members and add them to the <Link to="/graph">Graph Builder</Link>.
+              </p>
+              <p>
+                For background on the data sources and how the knowledge graph is constructed, visit
+                the <Link to="/about">About page</Link>.
+              </p>
+            </div>
           )}
         </div>
       </div>

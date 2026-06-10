@@ -80,6 +80,24 @@ describe("BrowseBox", () => {
     });
   });
 
+  it("should render the right-panel empty state with guidance when no collection is selected", async () => {
+    renderAtPath("/collections");
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Select a collection from the list to explore its members/i),
+      ).toBeInTheDocument();
+
+      const aboutLink = screen.getByRole("link", { name: /About page/i });
+      expect(aboutLink).toBeInTheDocument();
+      expect(aboutLink).toHaveAttribute("href", "/about");
+
+      const graphLink = screen.getByRole("link", { name: /Graph Builder/i });
+      expect(graphLink).toBeInTheDocument();
+      expect(graphLink).toHaveAttribute("href", "/graph");
+    });
+  });
+
   it("should render links to each collection with correct href", async () => {
     renderAtPath("/collections/Collection 2");
 
