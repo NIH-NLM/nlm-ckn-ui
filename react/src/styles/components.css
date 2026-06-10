@@ -1067,4 +1067,104 @@ input:checked + .slider:before {
 .breadcrumbs-separator {
   color: var(--color-gray-light);
   font-size: 0.75em;
+/* ===============================================   Skeleton Loading Components
+   ====================================================== */
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-sm, 4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
+/* SkeletonLine */
+.skeleton-line {
+  display: block;
+  width: 100%;
+  height: 1em;
+  margin-bottom: var(--spacing-xs, 0.25rem);
+}
+
+/* SkeletonCard */
+.skeleton-card {
+  padding: var(--spacing-medium, 1.25rem);
+  border: 1px solid var(--color-border, #aeb0b5);
+  border-radius: var(--radius-lg, 8px);
+  background-color: var(--color-white, #fff);
+}
+
+.skeleton-card-title {
+  height: 1.25em;
+  width: 60%;
+  margin-bottom: var(--spacing-sm, 0.5rem);
+}
+
+.skeleton-card-body {
+  height: 0.9em;
+  width: 100%;
+  margin-bottom: var(--spacing-xs, 0.25rem);
+}
+
+.skeleton-card-body--short {
+  width: 75%;
+}
+
+.skeleton-card-footer {
+  height: 0.8em;
+  width: 40%;
+  margin-top: var(--spacing-sm, 0.5rem);
+}
+
+/* SkeletonTable */
+.skeleton-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.skeleton-table th,
+.skeleton-table td {
+  padding: var(--spacing-xs, 0.25rem) var(--spacing-sm, 0.5rem);
+  border: 1px solid var(--color-border, #aeb0b5);
+}
+
+.skeleton-table-header {
+  height: 1em;
+  width: 80%;
+}
+
+.skeleton-table-cell {
+  height: 0.9em;
+  width: 90%;
+}
+
+/* ===============================================   Visually Hidden Utility (accessibility)
+   Hides content visually while keeping it accessible
+   to screen readers and assistive technologies.
+   ====================================================== */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
