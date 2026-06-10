@@ -138,13 +138,24 @@ function SunburstConstructor(
   });
 
   // --- SVG ---
+  const uid = Math.random().toString(36).slice(2, 8);
+  const titleId = `sunburst-title-${uid}`;
+  const descId = `sunburst-desc-${uid}`;
   const svg = d3
     .create("svg")
     .attr("viewBox", [-width / 2, -width / 2, width, width])
+    .attr("role", "img")
+    .attr("aria-labelledby", `${titleId} ${descId}`)
     .style("font", "12px sans-serif")
     .style("max-height", "80vh")
     .style("display", "block")
     .style("margin", "auto");
+
+  svg.append("title").attr("id", titleId).text("Sunburst chart");
+  svg
+    .append("desc")
+    .attr("id", descId)
+    .text("Hierarchical sunburst visualization of cell type and gene set relationships");
 
   const g = svg.append("g");
 

@@ -984,8 +984,20 @@ const ForceGraph = ({
               </button>
             </div>
           )}
-          <svg ref={svgRef} role="img" aria-label="Graph visualization">
-            <title>Graph visualization</title>
+          <svg
+            ref={svgRef}
+            role="img"
+            aria-label={
+              graphData?.nodes?.length
+                ? `Force-directed graph with ${graphData.nodes.length} node${graphData.nodes.length === 1 ? "" : "s"}`
+                : "Force-directed graph visualization"
+            }
+          >
+            <title>
+              {graphData?.nodes?.length
+                ? `Force-directed graph with ${graphData.nodes.length} node${graphData.nodes.length === 1 ? "" : "s"}`
+                : "Force-directed graph visualization"}
+            </title>
           </svg>
           {(status === "processing" || status === "succeeded") &&
             !hasNodesInRawData(rawData) &&
