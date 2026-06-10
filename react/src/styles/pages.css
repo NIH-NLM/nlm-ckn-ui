@@ -740,3 +740,39 @@ a.document-popup-button {
     width: auto;
   }
 }
+
+/* Graph Builder empty state */
+
+.graph-empty-state {
+  padding: var(--spacing-lg);
+  max-width: 560px;
+  margin: 0 auto;
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.graph-empty-state p {
+  margin-bottom: var(--spacing-sm);
+}
+
+.graph-empty-state-links {
+  list-style: none;
+  padding: 0;
+  margin: var(--spacing-sm) 0 var(--spacing-md);
+  text-align: left;
+  display: inline-block;
+}
+
+.graph-empty-state-links li {
+  padding: var(--spacing-xs) 0;
+}
+
+.graph-empty-state-links a {
+  font-weight: 600;
+}
+
+.graph-empty-state-hint {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin-top: var(--spacing-md);
+}

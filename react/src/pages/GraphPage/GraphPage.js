@@ -5,7 +5,7 @@ import SelectedItemsTable from "components/SelectedItemsTable";
 import { GraphContext } from "contexts";
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { fetchNodeDetailsByIds } from "services";
 import {
   clearNodesSlice,
@@ -267,7 +267,28 @@ const GraphPage = () => {
           />
         ) : (
           !isLoading && (
-            <p>No nodes have been added to the graph yet. Add nodes from the rest of the site.</p>
+            <div className="graph-empty-state">
+              <p>
+                Graph Builder lets you assemble nodes from across the knowledge network and
+                visualize their relationships in a force-directed graph.
+              </p>
+              <p>Add nodes to get started:</p>
+              <ul className="graph-empty-state-links">
+                <li>
+                  <Link to="/">Search</Link> — find specific genes, cell types, or diseases by name
+                </li>
+                <li>
+                  <Link to="/sunburst">Browse</Link> — explore the collection hierarchy visually
+                </li>
+                <li>
+                  <Link to="/tree">Explore</Link> — navigate ontology trees to select terms
+                </li>
+              </ul>
+              <p className="graph-empty-state-hint">
+                Already have a saved graph? Use the <strong>Load Saved Graph</strong> or{" "}
+                <strong>Load from File</strong> buttons above.
+              </p>
+            </div>
           )
         )}
       </div>
