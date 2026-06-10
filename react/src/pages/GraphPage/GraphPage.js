@@ -5,17 +5,26 @@ import SelectedItemsTable from "components/SelectedItemsTable";
 import { GraphContext } from "contexts";
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useSearchParams } from "react-router-dom";
 import { fetchNodeDetailsByIds } from "services";
-import { clearNodesSlice, initializeGraph, loadGraphFromJson, removeNodeFromSlice } from "store";
+import {
+  clearNodesSlice,
+  initializeGraph,
+  loadGraphFromJson,
+  removeNodeFromSlice,
+  setNodesSlice,
+  updateSetting,
+} from "store";
 
 const GraphPage = () => {
   const dispatch = useDispatch();
   const graphDisplayAreaRef = useRef(null);
   const fileInputRef = useRef(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // State and Context
   const nodeIds = useSelector((state) => state.nodesSlice.originNodeIds);
-  const { lastAppliedOriginNodeIds } = useSelector((state) => state.graph.present);
+  const { lastAppliedOriginNodeIds, settings } = useSelector((state) => state.graph.present);
 
   const [selectedItemObjects, setSelectedItemObjects] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -31,12 +40,52 @@ const GraphPage = () => {
 
   // Init graph on component load.
   // Ref prevents StrictMode from dispatching initializeGraph twice.
+  // When URL params are present, URL wins over redux-persist rehydrated state.
   const hasInitializedRef = useRef(false);
   useEffect(() => {
     if (!hasInitializedRef.current) {
-      dispatch(initializeGraph({ nodeIds: [] }));
       hasInitializedRef.current = true;
+
+      const urlNodes = searchParams.get("nodes");
+      const urlDepth = searchParams.get("depth");
+      const urlDir = searchParams.get("dir");
+
+      if (urlNodes) {
+        // Parse URL params -- all values are strings.
+        const parsedIds = urlNodes
+          .split(",")
+          .map((id) => id.trim())
+          .filter(Boolean);
+
+        if (parsedIds.length > 0) {
+          // URL wins over persisted redux-persist state.
+          dispatch(setNodesSlice(parsedIds));
+
+          if (urlDepth !== null) {
+            const depthNum = Number.parseInt(urlDepth, 10);
+            if (!Number.isNaN(depthNum) && depthNum >= 1 && depthNum <= 6) {
+              dispatch(updateSetting({ setting: "depth", value: depthNum }));
+            }
+          }
+
+          const allowedDirs = ["ANY", "INBOUND", "OUTBOUND"];
+          if (urlDir !== null && allowedDirs.includes(urlDir)) {
+            dispatch(updateSetting({ setting: "edgeDirection", value: urlDir }));
+          }
+
+          // Settings dispatches above are synchronous reducers — the store is
+          // already updated by the time initializeGraph runs. The graph fetch
+          // effect reads settings from the current state, so ordering is safe.
+          dispatch(initializeGraph({ nodeIds: parsedIds }));
+          setShowGraph(true);
+          return;
+        }
+      }
+
+      // No URL params -- fall through to default empty init.
+      dispatch(initializeGraph({ nodeIds: [] }));
     }
+    // biome-ignore lint/correctness/useExhaustiveDependencies: searchParams read once at mount only; re-running on param changes would loop
   }, [dispatch]);
 
   // Effect to synchronize local objects with global node IDs.
@@ -110,6 +159,12 @@ const GraphPage = () => {
       // This dispatches the action to trigger a new graph build.
       dispatch(initializeGraph({ nodeIds: nodeIds }));
       setShowGraph(true);
+      // Encode graph configuration into URL for sharing/bookmarking.
+      setSearchParams({
+        nodes: nodeIds.join(","),
+        depth: String(settings.depth),
+        dir: settings.edgeDirection,
+      });
     } else {
       setShowGraph(false);
     }
@@ -182,7 +237,10 @@ const GraphPage = () => {
         {nodeIds.length > 0 && (
           <button
             type="button"
-            onClick={() => dispatch(clearNodesSlice())}
+            onClick={() => {
+              dispatch(clearNodesSlice());
+              setSearchParams({});
+            }}
             className="secondary-action-button"
           >
             Clear All Nodes
