@@ -1,4 +1,5 @@
 import collectionDefaults from "assets/collection-defaults.json";
+import Breadcrumbs from "components/Breadcrumbs";
 import DocumentCard from "components/DocumentCard";
 import ForceGraph from "components/ForceGraph/ForceGraph";
 import FTUIllustration from "components/FTUIllustration";
@@ -77,8 +78,13 @@ const DocumentPage = () => {
   if (isLoading) {
     return (
       <div className="content-page-layout">
-        {" "}
-        <div className="loading-message">Loading document details...</div>{" "}
+        <Breadcrumbs
+          crumbs={[
+            { label: "Collections", path: "/collections" },
+            { label: id, path: "" },
+          ]}
+        />
+        <div className="loading-message">Loading document details...</div>
       </div>
     );
   }
@@ -86,6 +92,12 @@ const DocumentPage = () => {
   if (!document) {
     return (
       <div className="content-page-layout">
+        <Breadcrumbs
+          crumbs={[
+            { label: "Collections", path: "/collections" },
+            { label: id, path: "" },
+          ]}
+        />
         <div className="error-message">
           Document not found or failed to load. Please check the URL or try again.
         </div>
@@ -97,6 +109,12 @@ const DocumentPage = () => {
   return (
     <div className="content-page-layout document-details-page-layout">
       <div className="content-box document-details-content-box">
+        <Breadcrumbs
+          crumbs={[
+            { label: "Collections", path: "/collections" },
+            { label: getTitle(document), path: "" },
+          ]}
+        />
         <div className="document-item-header">
           <button
             type="button"

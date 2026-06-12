@@ -1067,6 +1067,8 @@ input:checked + .slider:before {
 .breadcrumbs-separator {
   color: var(--color-gray-light);
   font-size: 0.75em;
+}
+
 /* ===============================================   Skeleton Loading Components
    ====================================================== */
 

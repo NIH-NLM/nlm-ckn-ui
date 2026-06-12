@@ -1,3 +1,4 @@
+import Breadcrumbs from "components/Breadcrumbs";
 import ErrorBoundary from "components/ErrorBoundary";
 import ForceGraph from "components/ForceGraph/ForceGraph";
 import LoadGraphModal from "components/LoadGraphModal";
@@ -217,6 +218,12 @@ const GraphPage = () => {
         onChange={handleFileSelected}
         style={{ display: "none" }}
         accept=".json"
+      />
+      <Breadcrumbs
+        crumbs={[
+          { label: "Home", path: "/" },
+          { label: "Graph Builder", path: "" },
+        ]}
       />
       <div className="graph-page-header">
         <h1>Graph Builder</h1>
