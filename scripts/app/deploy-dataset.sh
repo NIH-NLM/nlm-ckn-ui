@@ -28,9 +28,8 @@
 #
 # ENVIRONMENT VARIABLES (optional):
 #   EXPECTED_DBS   Space-separated list of ArangoDB databases verified after
-#                  restore (default: "Cell-KN-Ontologies Cell-KN-Phenotypes
-#                  Cell-KN-Schema"). Override when the schema changes without
-#                  modifying the script.
+#                  restore (default: "Cell-KN-Ontologies Cell-KN-Phenotypes").
+#                  Override when the schema changes without modifying the script.
 #
 # EXAMPLES:
 #   ./scripts/app/deploy-dataset.sh dev
@@ -189,7 +188,7 @@ GREEN_APPS=/var/lib/arangodb3-apps-green
 # Space-separated list of ArangoDB databases that must exist after restore.
 # Override with the EXPECTED_DBS env var when the schema changes rather than
 # editing this default (e.g. export EXPECTED_DBS="DB1 DB2" before running).
-EXPECTED_DBS="${EXPECTED_DBS:-Cell-KN-Ontologies Cell-KN-Phenotypes Cell-KN-Schema}"
+EXPECTED_DBS="${EXPECTED_DBS:-Cell-KN-Ontologies Cell-KN-Phenotypes}"
 
 echo "==> Starting ArangoDB blue-green dataset restore $(date)"
 
