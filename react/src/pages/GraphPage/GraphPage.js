@@ -3,6 +3,7 @@ import ErrorBoundary from "components/ErrorBoundary";
 import ForceGraph from "components/ForceGraph/ForceGraph";
 import LoadGraphModal from "components/LoadGraphModal";
 import SelectedItemsTable from "components/SelectedItemsTable";
+import { SkeletonTable, SkeletonWrapper } from "components/Skeleton";
 import { GraphContext } from "contexts";
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -263,7 +264,11 @@ const GraphPage = () => {
       )}
 
       <div className="node-list-section">
-        {isLoading && <p>Loading selected items...</p>}
+        {isLoading && (
+          <SkeletonWrapper label="Loading selected items...">
+            <SkeletonTable rows={3} columns={3} />
+          </SkeletonWrapper>
+        )}
 
         {!isLoading && selectedItemObjects.length > 0 ? (
           <SelectedItemsTable
