@@ -41,7 +41,7 @@ BUCKET="cell-kn-arangodb-data-952291113202"
 # Pinnable for reproducibility: golden dumps are produced against a specific
 # ArangoDB; override with ARANGO_IMAGE if a future major version breaks restore.
 IMAGE="${ARANGO_IMAGE:-arangodb:latest}"
-PW=$(grep -E '^ARANGO_DB_PASSWORD=' .env | cut -d= -f2-)
+PW=$(grep -m1 -E '^ARANGO_DB_PASSWORD=' .env | cut -d= -f2-)
 [ -n "$PW" ] || { echo "ERROR: ARANGO_DB_PASSWORD not found in .env"; exit 1; }
 
 echo "==> Version: $VERSION   Port: $PORT   Container: $CONTAINER"
@@ -73,10 +73,13 @@ done
 curl -sf "http://localhost:$PORT/_admin/server/availability" >/dev/null 2>&1 || {
   echo "ERROR: ArangoDB did not become available on :$PORT within 80s"; exit 1; }
 
-# 3. Restore all databases (Cell-KN-Ontologies, Cell-KN-Phenotypes, _system)
+# 3. Restore all databases (Cell-KN-Ontologies, Cell-KN-Phenotypes, _system).
+#    Reach the host-published port via host.docker.internal so this works on
+#    Docker Desktop (Mac/Windows) as well as Linux; --add-host maps the name to
+#    the host gateway on Linux, where it is not predefined.
 echo "==> arangorestore"
-docker run --rm --network host -v "$DUMP_DIR:/dump" "$IMAGE" \
-  arangorestore --server.endpoint "tcp://127.0.0.1:$PORT" --server.password "$PW" \
+docker run --rm --add-host=host.docker.internal:host-gateway -v "$DUMP_DIR:/dump" "$IMAGE" \
+  arangorestore --server.endpoint "tcp://host.docker.internal:$PORT" --server.password "$PW" \
   --create-database true --create-collection true --overwrite true \
   --include-system-collections false --all-databases true --input-directory /dump
 
@@ -98,9 +101,12 @@ for DB in Cell-KN-Ontologies Cell-KN-Phenotypes; do
         -H "Authorization: Basic $AUTH" -H "Content-Type: application/json" \
         -d "$OBJ" "http://localhost:$PORT/_db/$DB/_api/$API")
       # 409 = already exists (idempotent re-run); treat 2xx and 409 as success.
-      [[ "$STATUS" =~ ^20[0-9]$ || "$STATUS" == "409" ]] ||
-        echo "    WARNING: $DB $API import returned HTTP $STATUS"
-    done
+      # Named graphs/analyzers are REQUIRED for traversals, so fail hard.
+      if ! [[ "$STATUS" =~ ^20[0-9]$ || "$STATUS" == "409" ]]; then
+        echo "ERROR: $DB $API import returned HTTP $STATUS (required for traversals)"
+        exit 1
+      fi
+    done || exit 1
   done
 done
 
