@@ -13,6 +13,8 @@ import FilterableDropdown from "components/FilterableDropdown";
 import RangeSliderFilter from "components/RangeSliderFilter/RangeSliderFilter";
 import {
   COLLAPSE_OPTIONS,
+  COLLECTION_ORIGIN_LIMIT_STEP,
+  DEFAULT_COLLECTION_ORIGIN_LIMIT,
   DEPTH_OPTIONS,
   DIRECTION_OPTIONS,
   ORIGIN_FILTER_OPTIONS,
@@ -21,6 +23,7 @@ import {
 } from "constants/index";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
+import { fetchCollectionCount } from "services";
 import {
   getCollectionColor,
   getCollectionColorByKey,
@@ -58,6 +61,19 @@ const SettingsSelect = ({ id, label, value, options, onChange }) => (
     </select>
   </div>
 );
+
+/**
+ * Build the "use N origins" options for a collection of `count` nodes:
+ * 500, 1000, ... in step increments, then an explicit "All (count)".
+ */
+const buildOriginLimitOptions = (count) => {
+  const opts = [];
+  for (let n = COLLECTION_ORIGIN_LIMIT_STEP; n < count; n += COLLECTION_ORIGIN_LIMIT_STEP) {
+    opts.push({ value: n, label: n.toLocaleString() });
+  }
+  opts.push({ value: count, label: `All (${count.toLocaleString()})` });
+  return opts;
+};
 
 /**
  * PhaseEditor displays and manages settings for a single workflow phase.
@@ -121,10 +137,42 @@ const PhaseEditor = ({
     [onUpdate],
   );
 
-  // Handle collection selection for "collection" origin source
+  // Collection-origin node count, for the "how many origins" selector.
+  const [collectionCount, setCollectionCount] = useState(null);
+  const originCollection = phase.originSource === "collection" ? phase.originCollection : null;
+  const originGraphType = phase.settings?.graphType;
+  useEffect(() => {
+    if (!originCollection) {
+      setCollectionCount(null);
+      return;
+    }
+    let active = true;
+    setCollectionCount(null);
+    fetchCollectionCount(originCollection, originGraphType)
+      .then((count) => {
+        if (active) setCollectionCount(count);
+      })
+      .catch(() => {
+        if (active) setCollectionCount(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [originCollection, originGraphType]);
+
+  // Handle change of the collection-origin "use N nodes" selector
+  const handleOriginLimitChange = useCallback(
+    (e) => {
+      onUpdate({ originLimit: Number(e.target.value) });
+    },
+    [onUpdate],
+  );
+
+  // Handle collection selection for "collection" origin source. Clears any
+  // originLimit since it may not be valid for the newly selected collection.
   const handleCollectionSelect = useCallback(
     (e) => {
-      onUpdate({ originCollection: e.target.value || null });
+      onUpdate({ originCollection: e.target.value || null, originLimit: null });
     },
     [onUpdate],
   );
@@ -171,6 +219,30 @@ const PhaseEditor = ({
       onUpdateSettings("edgeFilters", { ...phase.settings.edgeFilters, [field]: newValues });
     },
     [phase.settings.edgeFilters, onUpdateSettings],
+  );
+
+  // Toggle an edge label in the anti-edge (exclude-closing-edges) set.
+  const handleExcludeClosingEdgeToggle = useCallback(
+    (value) => {
+      // Mutual exclusivity: the service rejects a phase that sets both
+      // closing-edge filters, so enabling the anti-edge clears any
+      // require-closing filter a loaded preset may already carry.
+      if ((phase.settings.requireClosingEdges?.Label || []).length > 0) {
+        onUpdateSettings("requireClosingEdges", {
+          ...phase.settings.requireClosingEdges,
+          Label: [],
+        });
+      }
+      const current = phase.settings.excludeClosingEdges?.Label || [];
+      const next = current.includes(value)
+        ? current.filter((v) => v !== value)
+        : [...current, value];
+      onUpdateSettings("excludeClosingEdges", {
+        ...phase.settings.excludeClosingEdges,
+        Label: next,
+      });
+    },
+    [phase.settings.excludeClosingEdges, phase.settings.requireClosingEdges, onUpdateSettings],
   );
 
   // Handle numeric edge filter range change
@@ -347,6 +419,31 @@ const PhaseEditor = ({
                 ))}
               </select>
             </label>
+            {phase.originCollection && collectionCount != null && (
+              <div className="collection-origin-limit">
+                <span className="collection-count-info">
+                  {collectionCount.toLocaleString()} nodes in this collection
+                </span>
+                {collectionCount > COLLECTION_ORIGIN_LIMIT_STEP && (
+                  <label>
+                    Use as origins:
+                    <select
+                      value={Math.min(
+                        phase.originLimit || DEFAULT_COLLECTION_ORIGIN_LIMIT,
+                        collectionCount,
+                      )}
+                      onChange={handleOriginLimitChange}
+                    >
+                      {buildOriginLimitOptions(collectionCount).map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -632,6 +729,19 @@ const PhaseEditor = ({
                     />
                   ),
                 )}
+              </div>
+            )}
+
+            {/* Exclude paths that close back to the origin via the chosen edge label(s) */}
+            {(edgeFilterOptions?.Label?.values || []).length > 0 && (
+              <div className="setting-item full-width">
+                <span className="setting-label">Exclude paths closing back to origin</span>
+                <FilterableDropdown
+                  label="closing edge labels"
+                  options={edgeFilterOptions.Label.values || []}
+                  selectedOptions={phase.settings.excludeClosingEdges?.Label || []}
+                  onOptionToggle={handleExcludeClosingEdgeToggle}
+                />
               </div>
             )}
           </>

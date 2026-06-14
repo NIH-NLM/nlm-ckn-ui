@@ -147,6 +147,17 @@ def _execute_phase(phase, all_phases, phase_results, phase_origin_ids, graph):
             "edgeFilters": node_overrides.get(
                 "edgeFilters", settings.get("edgeFilters", {})
             ),
+            # Path-aware closing-edge filters — forward them so preset
+            # execution via /workflow/execute matches the frontend's
+            # per-phase /graph/ path. Absent => unchanged behavior.
+            # excludeClosingEdges = anti-edge (broken dipper); its positive
+            # complement requireClosingEdges = closed motif (clean dipper).
+            "excludeClosingEdges": node_overrides.get(
+                "excludeClosingEdges", settings.get("excludeClosingEdges")
+            ),
+            "requireClosingEdges": node_overrides.get(
+                "requireClosingEdges", settings.get("requireClosingEdges")
+            ),
         }
 
     # --- Execute query ---
@@ -184,6 +195,9 @@ def _execute_phase(phase, all_phases, phase_results, phase_origin_ids, graph):
 
         if set_operation == "Intersection with Origins":
             merged_result = _add_origin_nodes(merged_result, raw_data, origin_node_ids)
+
+    # Strip dangling-edge nulls before any code that assumes well-formed nodes.
+    merged_result = _drop_null_nodes(merged_result)
 
     # --- Find inter-node edges on the final merged node set ---
     if include_inter_node_edges:
@@ -299,14 +313,23 @@ def _resolve_origin_node_ids(phase, all_phases, phase_results, phase_origin_ids,
         node_ids = [doc["_id"] for doc in docs if doc.get("_id")]
         if not node_ids:
             raise ValueError(f'No nodes found in collection "{collection_name}".')
-        if len(node_ids) > MAX_COLLECTION_ORIGIN_NODES:
-            logger.warning(
-                "Collection '%s' has %d nodes, truncating to %d",
+        # Per-phase origin cap. The Workflow Builder's collection-origin
+        # selector sets `originLimit` (how many of the collection's nodes to
+        # use as origins). Absent => the safe default. Deterministic head
+        # slice so results are stable across runs.
+        limit = phase.get("originLimit") or MAX_COLLECTION_ORIGIN_NODES
+        # Guard against a malformed preset: a non-positive limit would slice
+        # from the end (node_ids[:negative]) instead of taking the first N.
+        if limit <= 0:
+            limit = MAX_COLLECTION_ORIGIN_NODES
+        if len(node_ids) > limit:
+            logger.info(
+                "Collection '%s' has %d nodes, using first %d (originLimit)",
                 collection_name,
                 len(node_ids),
-                MAX_COLLECTION_ORIGIN_NODES,
+                limit,
             )
-            node_ids = node_ids[:MAX_COLLECTION_ORIGIN_NODES]
+            node_ids = node_ids[:limit]
         return node_ids
 
     if origin_source == "previousPhase":
@@ -356,6 +379,24 @@ def _filter_nodes_for_next_phase(nodes, filter_type, origin_node_ids=None):
 
     # "all" and any other value
     return [n["_id"] for n in nodes if n.get("_id")]
+
+
+def _drop_null_nodes(result):
+    """Remove null / id-less vertices and edges from a phase result.
+
+    ArangoDB traversals return ``None`` for dangling edges (an edge whose
+    endpoint vertex no longer exists). Downstream code assumes every node is a
+    dict with an ``_id``, so we strip nulls and id-less entries defensively.
+    """
+    if not isinstance(result, dict):
+        return result
+    result["nodes"] = [
+        n for n in result.get("nodes", []) if isinstance(n, dict) and n.get("_id")
+    ]
+    result["links"] = [
+        e for e in result.get("links", []) if isinstance(e, dict) and e.get("_id")
+    ]
+    return result
 
 
 def _find_post_merge_inter_node_edges(merged_result, graph, edge_filters=None):

@@ -397,6 +397,44 @@ def seed_phenotypes_db(client):
     )
     print("    Inserted 1 edge into GS-MONDO")
 
+    # --- Broken Big Dipper (anti-edge) fixture --------------------------------
+    # Three disease->gene->protein->drug dippers in one edge collection:
+    #   d1: broken   (drug does NOT treat d1)             -> gene g1 KEPT
+    #   d2: complete (drug treats d2)                     -> gene g2 EXCLUDED
+    #   d3: cross    (drug treats d4, a DIFFERENT disease) -> gene g3 KEPT
+    # Edges use capitalized "Label" to match production semantics.
+    for key in ("nac_d1", "nac_d2", "nac_d3", "nac_d4"):
+        db.collection("MONDO").insert({"_key": key, "label": key}, overwrite=True)
+    for key in ("nac_g1", "nac_g2", "nac_g3"):
+        db.collection("GS").insert({"_key": key, "label": key}, overwrite=True)
+    for key in ("nac_p1", "nac_p2", "nac_p3"):
+        db.collection("PR").insert({"_key": key, "label": key}, overwrite=True)
+    for key in ("nac_dr1", "nac_dr2", "nac_dr3"):
+        db.collection("CHEMBL").insert({"_key": key, "label": key}, overwrite=True)
+
+    create_collection(db, "NAC_EDGES", edge=True)
+    nac_edges = [
+        # broken dipper (no treats edge to d1)
+        ("nac_b1", "GS/nac_g1", "MONDO/nac_d1", "IS_GENETIC_BASIS_FOR_CONDITION"),
+        ("nac_b2", "GS/nac_g1", "PR/nac_p1", "PRODUCES"),
+        ("nac_b3", "CHEMBL/nac_dr1", "PR/nac_p1", "MOLECULARLY_INTERACTS_WITH"),
+        # complete dipper (drug treats d2)
+        ("nac_c1", "GS/nac_g2", "MONDO/nac_d2", "IS_GENETIC_BASIS_FOR_CONDITION"),
+        ("nac_c2", "GS/nac_g2", "PR/nac_p2", "PRODUCES"),
+        ("nac_c3", "CHEMBL/nac_dr2", "PR/nac_p2", "MOLECULARLY_INTERACTS_WITH"),
+        ("nac_c4", "CHEMBL/nac_dr2", "MONDO/nac_d2", "IS_SUBSTANCE_THAT_TREATS"),
+        # cross-disease (drug treats d4, NOT d3)
+        ("nac_x1", "GS/nac_g3", "MONDO/nac_d3", "IS_GENETIC_BASIS_FOR_CONDITION"),
+        ("nac_x2", "GS/nac_g3", "PR/nac_p3", "PRODUCES"),
+        ("nac_x3", "CHEMBL/nac_dr3", "PR/nac_p3", "MOLECULARLY_INTERACTS_WITH"),
+        ("nac_x4", "CHEMBL/nac_dr3", "MONDO/nac_d4", "IS_SUBSTANCE_THAT_TREATS"),
+    ]
+    for key, frm, to, label in nac_edges:
+        db.collection("NAC_EDGES").insert(
+            {"_key": key, "_from": frm, "_to": to, "Label": label}, overwrite=True
+        )
+    print(f"    Inserted {len(nac_edges)} edges into NAC_EDGES")
+
     # Create the phenotypes graph with all edge definitions
     edge_definitions = [
         {
@@ -433,6 +471,11 @@ def seed_phenotypes_db(client):
             "edge_collection": "CHEMBL-PR",
             "from_vertex_collections": ["CHEMBL"],
             "to_vertex_collections": ["PR"],
+        },
+        {
+            "edge_collection": "NAC_EDGES",
+            "from_vertex_collections": ["GS", "CHEMBL"],
+            "to_vertex_collections": ["MONDO", "PR"],
         },
     ]
     create_graph(db, GRAPH_NAME_PHENOTYPES, edge_definitions)

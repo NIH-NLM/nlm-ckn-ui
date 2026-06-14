@@ -26,7 +26,10 @@ from arango_api.services import (
     sunburst_service,
     workflow_service,
 )
-from arango_api.services.workflow_service import _find_post_merge_inter_node_edges
+from arango_api.services.workflow_service import (
+    _drop_null_nodes,
+    _find_post_merge_inter_node_edges,
+)
 from arango_api.tests.seed_test_db import seed_test_databases
 
 
@@ -55,6 +58,14 @@ class CollectionServiceTestCase(ArangoDBTestCase):
     def test_get_all_by_collection(self):
         result = list(collection_service.get_all_by_collection("CL", "ontologies"))
         self.assertEqual(len(result), 6)
+
+    def test_get_collection_count(self):
+        self.assertEqual(collection_service.get_collection_count("CL", "ontologies"), 6)
+
+    def test_get_collection_count_nonexistent(self):
+        self.assertEqual(
+            collection_service.get_collection_count("DoesNotExist", "ontologies"), 0
+        )
 
     def test_get_by_id(self):
         result = collection_service.get_by_id("CL", "CL/0002145")
@@ -272,6 +283,130 @@ class GraphServiceTestCase(ArangoDBTestCase):
             )
 
 
+class AntiEdgeTraversalTestCase(ArangoDBTestCase):
+    """Path-aware anti-edge (NAC) filter on disease->gene->protein->drug paths."""
+
+    def _genes_from_diseases(self, exclude):
+        results = graph_service.traverse_graph(
+            node_ids=["MONDO/nac_d1", "MONDO/nac_d2", "MONDO/nac_d3"],
+            depth=3,
+            edge_direction="ANY",
+            allowed_collections=["GS", "PR", "CHEMBL"],
+            graph="phenotypes",
+            edge_filters={
+                "Label": [
+                    "IS_GENETIC_BASIS_FOR_CONDITION",
+                    "PRODUCES",
+                    "MOLECULARLY_INTERACTS_WITH",
+                ]
+            },
+            include_inter_node_edges=False,
+            exclude_closing_edges=exclude,
+        )
+        gene_ids = set()
+        for data in results.values():
+            for node in data["nodes"]:
+                if node["_id"].startswith("GS/"):
+                    gene_ids.add(node["_id"])
+        return gene_ids
+
+    def test_anti_edge_excludes_only_fully_closed_genes(self):
+        genes = self._genes_from_diseases(
+            exclude={"Label": ["IS_SUBSTANCE_THAT_TREATS"]}
+        )
+        self.assertIn("GS/nac_g1", genes)
+        self.assertIn("GS/nac_g3", genes)
+        self.assertNotIn("GS/nac_g2", genes)
+
+    def test_without_anti_edge_all_genes_present(self):
+        genes = self._genes_from_diseases(exclude=None)
+        self.assertIn("GS/nac_g1", genes)
+        self.assertIn("GS/nac_g2", genes)
+        self.assertIn("GS/nac_g3", genes)
+
+    def test_advanced_settings_passes_exclude_closing_edges(self):
+        node_ids = ["MONDO/nac_d1", "MONDO/nac_d2", "MONDO/nac_d3"]
+        common = {
+            "depth": 3,
+            "edgeDirection": "ANY",
+            "allowedCollections": ["GS", "PR", "CHEMBL"],
+            "edgeFilters": {
+                "Label": [
+                    "IS_GENETIC_BASIS_FOR_CONDITION",
+                    "PRODUCES",
+                    "MOLECULARLY_INTERACTS_WITH",
+                ]
+            },
+            "excludeClosingEdges": {"Label": ["IS_SUBSTANCE_THAT_TREATS"]},
+        }
+        results = graph_service.traverse_graph_advanced(
+            node_ids=node_ids,
+            advanced_settings={nid: dict(common) for nid in node_ids},
+            graph="phenotypes",
+            include_inter_node_edges=False,
+        )
+        genes = set()
+        for data in results.values():
+            for node in data["nodes"]:
+                if node["_id"].startswith("GS/"):
+                    genes.add(node["_id"])
+        self.assertIn("GS/nac_g1", genes)
+        self.assertIn("GS/nac_g3", genes)
+        self.assertNotIn("GS/nac_g2", genes)
+
+    def _genes_from_diseases_require(self, require):
+        results = graph_service.traverse_graph(
+            node_ids=["MONDO/nac_d1", "MONDO/nac_d2", "MONDO/nac_d3"],
+            depth=3,
+            edge_direction="ANY",
+            allowed_collections=["GS", "PR", "CHEMBL"],
+            graph="phenotypes",
+            edge_filters={
+                "Label": [
+                    "IS_GENETIC_BASIS_FOR_CONDITION",
+                    "PRODUCES",
+                    "MOLECULARLY_INTERACTS_WITH",
+                ]
+            },
+            include_inter_node_edges=False,
+            require_closing_edges=require,
+        )
+        gene_ids = set()
+        for data in results.values():
+            for node in data["nodes"]:
+                if node["_id"].startswith("GS/"):
+                    gene_ids.add(node["_id"])
+        return gene_ids
+
+    def test_require_closing_keeps_only_fully_closed_genes(self):
+        # Positive complement of the anti-edge (the complete / clean dipper):
+        # keep only genes whose drug treats the SAME origin disease. g2 closes
+        # (dr2 treats d2); g1 has no treat edge; g3's drug treats a DIFFERENT
+        # disease (d4, not its own d3), so its loop never closes.
+        genes = self._genes_from_diseases_require(
+            require={"Label": ["IS_SUBSTANCE_THAT_TREATS"]}
+        )
+        self.assertIn("GS/nac_g2", genes)
+        self.assertNotIn("GS/nac_g1", genes)
+        self.assertNotIn("GS/nac_g3", genes)
+
+    def test_both_closing_filters_raises(self):
+        # The two path-closing filters cannot compose, so supplying both is a
+        # configuration error that fails loudly rather than dropping one.
+        with self.assertRaises(ValueError):
+            graph_service.traverse_graph(
+                node_ids=["MONDO/nac_d1"],
+                depth=3,
+                edge_direction="ANY",
+                allowed_collections=["GS", "PR", "CHEMBL"],
+                graph="phenotypes",
+                edge_filters={"Label": ["IS_GENETIC_BASIS_FOR_CONDITION"]},
+                include_inter_node_edges=False,
+                exclude_closing_edges={"Label": ["IS_SUBSTANCE_THAT_TREATS"]},
+                require_closing_edges={"Label": ["IS_SUBSTANCE_THAT_TREATS"]},
+            )
+
+
 class WorkflowServiceTestCase(ArangoDBTestCase):
     """Tests for workflow_service functions, focused on edge_filters propagation."""
 
@@ -348,6 +483,28 @@ class WorkflowServiceTestCase(ArangoDBTestCase):
         # included by the combine post-merge scan, but the filter excludes it.
         for link in combine_links:
             self.assertEqual(link["label"], "subClassOf")
+
+
+class DropNullNodesTestCase(TestCase):
+    """Unit tests for _drop_null_nodes (no DB required).
+
+    Dangling edges in the graph cause ArangoDB traversals to return ``None``
+    vertices, which previously crashed downstream phase processing.
+    """
+
+    def test_removes_none_and_idless_entries(self):
+        result = {
+            "nodes": [None, {"_id": "CL/1"}, {"no_id": True}, {"_id": "CS/2"}],
+            "links": [None, {"_id": "CL-CL/1", "_from": "CL/1", "_to": "CL/1"}],
+        }
+        cleaned = _drop_null_nodes(result)
+        self.assertEqual(cleaned["nodes"], [{"_id": "CL/1"}, {"_id": "CS/2"}])
+        self.assertEqual(
+            cleaned["links"], [{"_id": "CL-CL/1", "_from": "CL/1", "_to": "CL/1"}]
+        )
+
+    def test_non_dict_passthrough(self):
+        self.assertIsNone(_drop_null_nodes(None))
 
 
 class SearchServiceTestCase(ArangoDBTestCase):

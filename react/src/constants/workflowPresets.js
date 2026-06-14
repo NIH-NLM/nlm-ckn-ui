@@ -14,6 +14,8 @@ export const QUERY_DEFAULTS = {
   edgeDirection: "ANY",
   allowedCollections: [],
   edgeFilters: { Label: [], Source: [] },
+  excludeClosingEdges: { Label: [] },
+  requireClosingEdges: { Label: [] },
   setOperation: "Union",
   graphType: "ontologies",
   returnCollections: [],
@@ -51,7 +53,14 @@ export const createEmptyPhase = (index) => ({
   // Set operation for combining multiple phase results
   phaseCombineOperation: "Intersection",
   originFilter: "all",
-  settings: { ...DEFAULT_PHASE_SETTINGS },
+  // Spread is shallow, so give each phase its OWN nested objects — otherwise
+  // every phase would share one Label array and toggling one bleeds into all.
+  settings: {
+    ...DEFAULT_PHASE_SETTINGS,
+    edgeFilters: { Label: [], Source: [] },
+    excludeClosingEdges: { Label: [] },
+    requireClosingEdges: { Label: [] },
+  },
   // Per-node settings overrides (nodeId -> settings object)
   perNodeSettings: {},
   // Whether to show advanced per-node settings UI

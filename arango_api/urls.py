@@ -7,6 +7,7 @@ from django.urls import path
 from arango_api.views import (
     CollectionListView,
     CollectionDetailView,
+    CollectionCountView,
     ObjectDetailView,
     RelatedEdgesView,
     GraphTraversalView,
@@ -32,6 +33,12 @@ urlpatterns = [
         "collection/<str:coll>/",
         CollectionDetailView.as_view(),
         name="list_by_collection",
+    ),
+    # Must precede the <pk> route so "count" isn't read as a document id.
+    path(
+        "collection/<str:coll>/count/",
+        CollectionCountView.as_view(),
+        name="collection_count",
     ),
     path(
         "collection/<str:coll>/<str:pk>/", ObjectDetailView.as_view(), name="get_object"

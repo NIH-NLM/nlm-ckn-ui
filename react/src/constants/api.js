@@ -8,6 +8,8 @@ export const API_BASE = "/arango_api";
 // Collection endpoints
 export const COLLECTIONS_ENDPOINT = `${API_BASE}/collections/`;
 export const COLLECTION_ENDPOINT = (collection) => `${API_BASE}/collection/${collection}/`;
+export const COLLECTION_COUNT_ENDPOINT = (collection) =>
+  `${API_BASE}/collection/${collection}/count/`;
 export const COLLECTION_DOCUMENT_ENDPOINT = (collection, id) =>
   `${API_BASE}/collection/${collection}/${id}/`;
 

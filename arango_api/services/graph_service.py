@@ -91,6 +91,8 @@ def traverse_graph(
     graph,
     edge_filters,
     include_inter_node_edges=True,
+    exclude_closing_edges=None,
+    require_closing_edges=None,
 ):
     """
     Constructs and executes a graph traversal AQL query.
@@ -103,7 +105,19 @@ def traverse_graph(
         graph (str): The graph type ("ontologies" or "phenotypes").
         edge_filters (dict): A dictionary for filtering edges.
         include_inter_node_edges (bool): If True, includes edges between nodes
-            in the result set.
+            in the result set. Ignored when exclude_closing_edges is active
+            (the path-aware branch returns complete path links directly).
+        exclude_closing_edges (dict): Optional path-aware anti-edge (NAC) filter,
+            shape {"Label": [...]}. When set, only full-depth paths are kept whose
+            endpoint has NO edge of the given label(s) back to that path's own
+            origin (start node). Used to find "open" motifs, e.g. drug paths that
+            do not close back to the disease via IS_SUBSTANCE_THAT_TREATS.
+        require_closing_edges (dict): Positive complement of
+            exclude_closing_edges, same shape {"Label": [...]}. When set, only
+            full-depth paths are kept whose endpoint DOES have an edge of the
+            given label(s) back to that path's own origin. Used to find "closed"
+            motifs, e.g. complete drug-repurposing dippers where the drug treats
+            the disease. Supplying both raises ValueError (they cannot compose).
 
     Returns:
         dict: A dictionary with start node IDs as keys, each containing
@@ -133,6 +147,73 @@ def traverse_graph(
     if positive_conditions:
         filter_string = f"FILTER {' AND '.join(positive_conditions)}"
         prune_string = f"PRUNE {' OR '.join(negative_conditions)}"
+
+    # The two path-closing filters cannot compose in one pass, so reject the
+    # combination loudly rather than silently dropping one. require_mode keeps
+    # paths that DO close; the default keeps paths that do NOT close.
+    exclude_labels = (exclude_closing_edges or {}).get("Label") or []
+    require_labels = (require_closing_edges or {}).get("Label") or []
+    if exclude_labels and require_labels:
+        raise ValueError(
+            "Cannot set both exclude_closing_edges and require_closing_edges "
+            "on one phase."
+        )
+    require_mode = bool(require_labels)
+    closing_labels = require_labels if require_mode else exclude_labels
+    if closing_labels:
+        # Path-aware closing-edge query. Unlike the default path, this must
+        # traverse complete fixed-depth paths (@depth..@depth) so the closing-edge
+        # check can test the true endpoint — so it deliberately avoids PRUNE
+        # (which would stop traversal early, and is also unsafe at depth 0 where
+        # the edge is null). The correlated sub-query finds closing edges that
+        # link the endpoint back to its own origin; the path survives when that
+        # set is empty (exclude / anti-edge) or non-empty (require / dipper).
+        # Build a dedicated bind-var set; the edge-filter clause helper may have
+        # registered bind vars that this query does not reference, and ArangoDB
+        # rejects declared-but-unused bind parameters.
+        anti_bind_vars = {
+            "node_ids": node_ids,
+            "depth": depth,
+            "graph": graph_name,
+            "allowed_collections": allowed_collections,
+            "closing_labels": closing_labels,
+        }
+        positive_labels = (edge_filters or {}).get("Label") or []
+        path_label_filter = ""
+        if positive_labels:
+            anti_bind_vars["positive_labels"] = positive_labels
+            path_label_filter = (
+                "FILTER LENGTH(p.edges[* FILTER CURRENT.Label "
+                "NOT IN @positive_labels]) == 0"
+            )
+        aql_query = f"""
+         FOR start_node_id IN @node_ids
+             LET start_node_doc = DOCUMENT(start_node_id)
+             LET surviving = (
+                 FOR v, e, p IN @depth..@depth {edge_direction} start_node_id GRAPH @graph
+                     OPTIONS {{ vertexCollections: @allowed_collections }}
+                     {path_label_filter}
+                     LET closing = (
+                         FOR cv, ce IN 1..1 ANY v._id GRAPH @graph
+                             FILTER ce.Label IN @closing_labels
+                             FILTER cv._id == start_node_id
+                             LIMIT 1
+                             RETURN 1
+                     )
+                     FILTER LENGTH(closing) {'> 0' if require_mode else '== 0'}
+                     RETURN p
+             )
+             LET all_nodes = UNION_DISTINCT(
+                 FLATTEN(surviving[*].vertices), [start_node_doc]
+             )
+             LET all_links = UNIQUE(FLATTEN(surviving[*].edges))
+             RETURN {{
+                 "start_node_id": start_node_id,
+                 "data": {{ "nodes": all_nodes, "links": all_links }}
+             }}
+         """
+        cursor = db.aql.execute(aql_query, bind_vars=anti_bind_vars)
+        return {item["start_node_id"]: item["data"] for item in cursor}
 
     aql_query = f"""
      FOR start_node_id IN @node_ids
@@ -239,6 +320,8 @@ def traverse_graph_advanced(
             graph=graph,
             edge_filters=edge_filters,
             include_inter_node_edges=include_inter_node_edges,
+            exclude_closing_edges=settings.get("excludeClosingEdges"),
+            require_closing_edges=settings.get("requireClosingEdges"),
         )
 
         if result_for_node:

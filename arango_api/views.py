@@ -67,6 +67,19 @@ class CollectionDetailView(APIView):
         return Response(list(objects))
 
 
+class CollectionCountView(APIView):
+    """Return the document count for a collection."""
+
+    def post(self, request, coll):
+        serializer = GraphRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        count = collection_service.get_collection_count(
+            coll, serializer.validated_data.get("graph", "ontologies")
+        )
+        return Response({"count": count})
+
+
 class ObjectDetailView(APIView):
     """Get a single object by collection and ID."""
 

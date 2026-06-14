@@ -13,7 +13,13 @@
  */
 
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { createEmptyPhase, DEFAULT_GRAPH_TYPE, GRAPH_STATUS, UI_DEFAULTS } from "../constants";
+import {
+  createEmptyPhase,
+  DEFAULT_COLLECTION_ORIGIN_LIMIT,
+  DEFAULT_GRAPH_TYPE,
+  GRAPH_STATUS,
+  UI_DEFAULTS,
+} from "../constants";
 import {
   fetchCollectionDocuments,
   fetchConnectingPaths,
@@ -187,6 +193,19 @@ export const executePhase = createAsyncThunk(
       if (collectionOriginNodeIds.length === 0) {
         throw new Error(`No nodes found in collection "${phase.originCollection}".`);
       }
+      // Cap how many of the collection's nodes are used as origins. The
+      // collection-origin selector sets `originLimit`; absent or invalid
+      // (negative / non-numeric, e.g. from a malformed loaded preset) => the
+      // default. Must match the backend cap so the builder's /graph/ path and
+      // the /workflow/execute path agree.
+      const parsedLimit = Number(phase.originLimit);
+      const originLimit =
+        Number.isFinite(parsedLimit) && parsedLimit > 0
+          ? Math.floor(parsedLimit)
+          : DEFAULT_COLLECTION_ORIGIN_LIMIT;
+      if (collectionOriginNodeIds.length > originLimit) {
+        collectionOriginNodeIds = collectionOriginNodeIds.slice(0, originLimit);
+      }
       // Falls through to normal execution below using collectionOriginNodeIds
     }
 
@@ -337,6 +356,10 @@ export const executePhase = createAsyncThunk(
         includeInterNodeEdges: phase.settings.includeInterNodeEdges ?? true,
         edgeFilters: nodeOverrides.edgeFilters ??
           phase.settings.edgeFilters ?? { Label: [], Source: [] },
+        excludeClosingEdges: nodeOverrides.excludeClosingEdges ??
+          phase.settings.excludeClosingEdges ?? { Label: [] },
+        requireClosingEdges: nodeOverrides.requireClosingEdges ??
+          phase.settings.requireClosingEdges ?? { Label: [] },
         lastAppliedOriginNodeIds: [],
         lastAppliedPerNodeSettings: null,
       };

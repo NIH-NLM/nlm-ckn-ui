@@ -51,6 +51,28 @@ def get_all_by_collection(coll, graph):
     return collection.all()
 
 
+def get_collection_count(coll, graph):
+    """
+    Return the number of documents in a collection.
+
+    Cheap server-side count (no document transfer), used by the Workflow
+    Builder's collection-origin selector to show how many nodes a collection
+    has before the user chooses how many to use as origins.
+
+    Args:
+        coll (str): The collection name.
+        graph (str): The graph type ("ontologies" or "phenotypes").
+
+    Returns:
+        int: The document count, or 0 if the collection does not exist.
+    """
+    db, _ = get_db_and_graph(graph)
+    if not db.has_collection(coll):
+        logger.warning("Collection '%s' not found", coll)
+        return 0
+    return db.collection(coll).count()
+
+
 def get_by_id(coll, doc_id):
     """
     Get a single document by its ID.

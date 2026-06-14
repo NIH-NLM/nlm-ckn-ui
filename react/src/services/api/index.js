@@ -6,7 +6,11 @@
 // AQL query operations
 export { executeAqlQuery, fetchPredefinedQueries } from "./aql";
 // Collection operations
-export { fetchCollectionDocuments, fetchCollections } from "./collections";
+export {
+  fetchCollectionCount,
+  fetchCollectionDocuments,
+  fetchCollections,
+} from "./collections";
 // Document/node operations
 export { fetchDocument, fetchNodeDetailsByIds, fetchNodesDetails } from "./documents";
 // Fetch utilities

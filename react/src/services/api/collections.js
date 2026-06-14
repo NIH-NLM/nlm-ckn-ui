@@ -2,7 +2,11 @@
  * API functions for collection operations.
  */
 
-import { COLLECTION_ENDPOINT, COLLECTIONS_ENDPOINT } from "constants/index";
+import {
+  COLLECTION_COUNT_ENDPOINT,
+  COLLECTION_ENDPOINT,
+  COLLECTIONS_ENDPOINT,
+} from "constants/index";
 import { postJson } from "./fetchWrapper";
 
 /**
@@ -22,4 +26,15 @@ export const fetchCollections = async (graphType) => {
  */
 export const fetchCollectionDocuments = async (collection, graphType) => {
   return postJson(COLLECTION_ENDPOINT(collection), { graph: graphType });
+};
+
+/**
+ * Fetch the document count for a collection (cheap server-side count).
+ * @param {string} collection - Collection name.
+ * @param {string} graphType - The graph type/database.
+ * @returns {Promise<number>} The number of documents in the collection.
+ */
+export const fetchCollectionCount = async (collection, graphType) => {
+  const res = await postJson(COLLECTION_COUNT_ENDPOINT(collection), { graph: graphType });
+  return res?.count ?? 0;
 };

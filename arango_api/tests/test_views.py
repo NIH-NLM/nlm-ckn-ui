@@ -58,6 +58,15 @@ class CollectionViewsTestCase(ArangoDBViewTestCase):
         data = response.json()
         self.assertEqual(len(data), 2)
 
+    def test_collection_count(self):
+        response = self.client.post(
+            reverse("collection_count", kwargs={"coll": "publication_ind"}),
+            data={},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"count": 2})
+
     def test_get_object(self):
         response = self.client.get(
             reverse(
@@ -157,6 +166,41 @@ class GraphViewsTestCase(ArangoDBViewTestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn("CL/0000061", response.json())
+
+    def test_graph_traversal_honors_exclude_closing_edges(self):
+        node_ids = ["MONDO/nac_d1", "MONDO/nac_d2", "MONDO/nac_d3"]
+        settings = {
+            "depth": 3,
+            "edgeDirection": "ANY",
+            "allowedCollections": ["GS", "PR", "CHEMBL"],
+            "edgeFilters": {
+                "Label": [
+                    "IS_GENETIC_BASIS_FOR_CONDITION",
+                    "PRODUCES",
+                    "MOLECULARLY_INTERACTS_WITH",
+                ]
+            },
+            "excludeClosingEdges": {"Label": ["IS_SUBSTANCE_THAT_TREATS"]},
+        }
+        response = self.client.post(
+            reverse("get_graph"),
+            data={
+                "node_ids": node_ids,
+                "advanced_settings": {nid: settings for nid in node_ids},
+                "graph": "phenotypes",
+                "include_inter_node_edges": False,
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        gene_ids = set()
+        for data in body.values():
+            for node in data.get("nodes", []):
+                if node["_id"].startswith("GS/"):
+                    gene_ids.add(node["_id"])
+        self.assertIn("GS/nac_g1", gene_ids)
+        self.assertNotIn("GS/nac_g2", gene_ids)
 
     def test_phenotypes_graph(self):
         response = self.client.post(
