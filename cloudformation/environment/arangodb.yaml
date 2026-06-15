@@ -95,8 +95,14 @@ Metadata:
 
 Mappings:
   # ArangoDB EC2 instance size per environment. ArangoDB is memory-bound: the
-  # working set plus ArangoSearch views should fit in the RocksDB block cache,
-  # otherwise queries constantly read from EBS (observed on stage at t4g.medium).
+  # working set plus ArangoSearch views should fit in cache, otherwise queries
+  # constantly read from EBS (observed on stage at t4g.medium, and as a
+  # multi-second cold window after every restart — 2026-06-15 postmortem).
+  #
+  # Cache sizes are NOT pinned here; the UserData derives them from the host's
+  # actual RAM (see the "cache budget" block in UserData) so they scale with the
+  # instance type automatically (4 / 8 / 16 GiB across t4g.medium / m7g.large /
+  # m7g.xlarge).
   EnvironmentSizing:
     dev:
       InstanceType: t4g.medium
@@ -561,19 +567,48 @@ Resources:
           INSTANCE_ID=$(curl -s -H "X-aws-ec2-metadata-token: $IMDS_TOKEN" \
             http://169.254.169.254/latest/meta-data/instance-id)
 
+          # ── Cache budget (derived from this host's actual RAM) ───────────────
+          # ArangoDB was running starved: column cache DISABLED
+          # (arangodb_search_columns_cache_size = 0), ~512 MiB RocksDB block cache
+          # and ~256 MiB in-RAM cache — so most of the working set lived on EBS
+          # and every restart paid a 2–4.5 s cold-cache window (2026-06-15
+          # postmortem, Springbok-LLC/upptime#2). We size the caches from real RAM
+          # so they scale with the instance type (t4g.medium 4 / m7g.large 8 /
+          # m7g.xlarge 16 GiB) without per-env constants.
+          #
+          # MEM_TOTAL_MIB = physical RAM. We hand ArangoDB ~75% of it via
+          # ARANGODB_OVERRIDE_DETECTED_TOTAL_MEMORY (leaving ~25%, min 2 GiB, for
+          # the OS + Docker + ArangoSearch query/working memory), then pin the two
+          # big caches explicitly (an explicit value overrides ArangoDB's
+          # memory-derived default):
+          #   --rocksdb.block-cache-size      ≈ 25% of host RAM
+          #   --arangosearch.columns-cache-limit ≈ 12.5% of host RAM (0 = off was the bug)
+          # The in-RAM hash/edge cache (--cache.size) is left at its default,
+          # which ArangoDB derives from the override (~(override-2GiB)*0.25).
+          MEM_TOTAL_MIB=$(free -m | awk '/^Mem:/{print $2}')
+          OS_RESERVE_MIB=$(( MEM_TOTAL_MIB / 4 ))
+          [ "$OS_RESERVE_MIB" -lt 2048 ] && OS_RESERVE_MIB=2048
+          ARANGO_MEM_MIB=$(( MEM_TOTAL_MIB - OS_RESERVE_MIB ))
+          BLOCK_CACHE_BYTES=$(( MEM_TOTAL_MIB / 4 * 1024 * 1024 ))
+          COLUMNS_CACHE_BYTES=$(( MEM_TOTAL_MIB / 8 * 1024 * 1024 ))
+          echo "==> Cache budget: host=${!MEM_TOTAL_MIB}MiB arango_override=${!ARANGO_MEM_MIB}MiB" \
+               "block_cache=${!BLOCK_CACHE_BYTES}B columns_cache=${!COLUMNS_CACHE_BYTES}B"
+
           docker run -d \
             --name arangodb \
             --restart unless-stopped \
             -p 8529:8529 \
             -e ARANGO_ROOT_PASSWORD="$ARANGO_PASSWORD" \
-            -e ARANGODB_OVERRIDE_DETECTED_TOTAL_MEMORY=3g \
+            -e ARANGODB_OVERRIDE_DETECTED_TOTAL_MEMORY="${!ARANGO_MEM_MIB}MiB" \
             -v "$DATA_DIR:/var/lib/arangodb3" \
             -v "$APPS_DIR:/var/lib/arangodb3-apps" \
             --log-driver awslogs \
             --log-opt awslogs-region="$REGION" \
             --log-opt awslogs-group="$LOG_GROUP" \
             --log-opt awslogs-stream="arangodb/$INSTANCE_ID" \
-            arangodb:3.12
+            arangodb:3.12 \
+            --rocksdb.block-cache-size "$BLOCK_CACHE_BYTES" \
+            --arangosearch.columns-cache-limit "$COLUMNS_CACHE_BYTES"
 
           # ArangoDB first-boot initialisation (password setup, key generation) can
           # take several minutes. Poll for up to 10 minutes before giving up.
