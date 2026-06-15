@@ -486,6 +486,23 @@ if [ "$DEPLOY_MODE" != "--infra-only" ]; then
 
   echo "  arango-subnet: $ARANGO_SUBNET"
 
+  # Availability Zone of the ArangoDB subnet. The standalone data volume
+  # (AWS::EC2::Volume in arangodb.yaml) requires an explicit AZ that matches the
+  # instance's subnet — CloudFormation cannot derive it from a Subnet::Id param,
+  # so we resolve it here and pass it as the AvailabilityZone parameter.
+  ARANGO_AZ=$(aws ec2 describe-subnets \
+    --subnet-ids "$ARANGO_SUBNET" \
+    --region $AWS_REGION \
+    --query 'Subnets[0].AvailabilityZone' \
+    --output text)
+
+  if [ -z "$ARANGO_AZ" ] || [ "$ARANGO_AZ" = "None" ]; then
+    echo -e "${RED}Error: Could not resolve the Availability Zone for subnet ${ARANGO_SUBNET}.${NC}"
+    exit 1
+  fi
+
+  echo "  arango-az:     $ARANGO_AZ"
+
   # Read ArangoDbUser from parameters file
   ARANGO_USER=$(python3 -c "
 import json
@@ -502,11 +519,11 @@ print(match[0] if match else 'root')
     ProjectName "$PROJECT_NAME" \
     Environment "$ENVIRONMENT")
 
+  FRONTEND_RESULT=0
   deploy_stack \
     "${PROJECT_NAME}-${ENVIRONMENT}-frontend" \
     "cloudformation/environment/frontend.yaml" \
-    "$FRONTEND_PARAMS_FILE" || true
-  FRONTEND_RESULT=$?
+    "$FRONTEND_PARAMS_FILE" || FRONTEND_RESULT=$?
 
   if [ "$FRONTEND_RESULT" = "1" ]; then
     echo -e "${RED}Frontend stack deployment failed or was aborted.${NC}"
@@ -524,13 +541,14 @@ print(match[0] if match else 'root')
     ArangoDbSecurityGroupId "$SG_ARANGODB" \
     ArangoDbUser "$ARANGO_USER" \
     InstanceProfileArn "$ARANGO_INSTANCE_PROFILE_ARN" \
-    ArangoDbSubnetId "$ARANGO_SUBNET")
+    ArangoDbSubnetId "$ARANGO_SUBNET" \
+    AvailabilityZone "$ARANGO_AZ")
 
+  ARANGO_RESULT=0
   deploy_stack \
     "${PROJECT_NAME}-${ENVIRONMENT}-arangodb" \
     "cloudformation/environment/arangodb.yaml" \
-    "$ARANGO_PARAMS_FILE" || true
-  ARANGO_RESULT=$?
+    "$ARANGO_PARAMS_FILE" || ARANGO_RESULT=$?
 
   if [ "$ARANGO_RESULT" = "1" ]; then
     echo -e "${RED}ArangoDB stack deployment failed or was aborted.${NC}"
@@ -571,11 +589,11 @@ print(match[0] if match else 'root')
     TaskExecutionRoleArn   "$BACKEND_EXEC_ARN" \
     TaskRoleArn            "$BACKEND_TASK_ARN")
 
+  BACKEND_RESULT=0
   deploy_stack \
     "${PROJECT_NAME}-${ENVIRONMENT}-backend" \
     "cloudformation/environment/backend.yaml" \
-    "$BACKEND_PARAMS_FILE" || true
-  BACKEND_RESULT=$?
+    "$BACKEND_PARAMS_FILE" || BACKEND_RESULT=$?
 
   if [ "$BACKEND_RESULT" = "1" ]; then
     echo -e "${RED}Backend stack deployment failed or was aborted.${NC}"

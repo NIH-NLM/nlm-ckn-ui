@@ -432,6 +432,14 @@ fi
 
 echo "==> arango-green healthy (all expected databases present)"
 
+# Stamp the version marker *inside* green before the swap so it is promoted into
+# the EBS root by the same intra-filesystem rename as the data (line below). That
+# makes "data present" and "marker matches" crash-consistent: there is no window
+# where the new dataset is live but the marker still reads the old version, which
+# would otherwise trigger a needless re-download + arangorestore --overwrite on
+# the next boot (clobbering any in-place writes since this restore).
+echo "$VERSION" > "$GREEN_DATA/.dataset-version"
+
 # ── Swap: blue → green (downtime window starts here) ─────────────────────────
 # /var/lib/arangodb3 is the EBS mount point and cannot be mv'd directly.
 # Instead we rename entries *within* the mount (same filesystem → instant)
@@ -487,7 +495,8 @@ if [ "$SWAP_READY" = "0" ]; then
   exit 1
 fi
 
-echo "$VERSION" > "$DATA_DIR/.dataset-version"
+# Note: the version marker was already written into green before the swap and
+# promoted with the data, so it is in place at "$DATA_DIR/.dataset-version" here.
 
 # ── Clean up ──────────────────────────────────────────────────────────────────
 rm -rf "$DATA_DIR/_blue_backup" "${APPS_DIR}-blue-old" "$DUMP_EXTRACT_DIR"
@@ -606,6 +615,11 @@ while [ "$ELAPSED" -lt "$SSM_TIMEOUT_SECONDS" ]; do
         --query 'Parameter.Value' \
         --output text \
         --region "$AWS_REGION")${NC}"
+      # Smoke test the deployment (advisory — never fails the deploy).
+      echo ""
+      echo -e "${GREEN}==> Running smoke test...${NC}"
+      "$SCRIPT_DIR/../ops/smoke-test.sh" "$ENVIRONMENT" || \
+        echo -e "${YELLOW}==> Smoke test reported failures (non-blocking).${NC}"
       exit 0
       ;;
     Failed|Cancelled|TimedOut|DeliveryTimedOut|ExecutionTimedOut)
