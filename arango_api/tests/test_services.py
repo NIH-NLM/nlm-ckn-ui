@@ -623,3 +623,107 @@ class SunburstServiceTestCase(ArangoDBTestCase):
     def test_get_phenotypes_sunburst(self):
         result = sunburst_service.get_phenotypes_sunburst()
         self.assertEqual(result["_id"], "NCBITaxon/9606")
+
+    def test_phenotypes_drilldown_uberon_aggregates_cl(self):
+        # Drilldown into a seeded organ runs the heavy _aggregate_cl_for_organ
+        # path: depth-5 INBOUND UBERON subtree -> CL, each CL with its GS chain.
+        # Seed: CL/0000066 part_of UBERON/0002048, CL/0000066 -> GS/test_gs_1.
+        result = sunburst_service.get_phenotypes_sunburst(parent_id="UBERON/0002048")
+        self.assertIsInstance(result, list)
+        cl_ids = [node["_id"] for node in result]
+        self.assertIn("CL/0000066", cl_ids)
+        cl_node = next(node for node in result if node["_id"] == "CL/0000066")
+        # The CL carries its GS children inline and is flagged expandable.
+        self.assertTrue(cl_node["_hasChildren"])
+        gs_ids = [child["_id"] for child in cl_node["children"]]
+        self.assertIn("GS/test_gs_1", gs_ids)
+
+    def test_phenotypes_drilldown_cl_returns_gs_with_leaves(self):
+        # CL -> GS, each GS carrying its MONDO/CHEMBL/BMC/PR children.
+        # Seed: CL/0000066 -> GS/test_gs_1 -> MONDO/0000001.
+        result = sunburst_service.get_phenotypes_sunburst(parent_id="CL/0000066")
+        self.assertIsInstance(result, list)
+        gs_ids = [node["_id"] for node in result]
+        self.assertIn("GS/test_gs_1", gs_ids)
+        gs_node = next(node for node in result if node["_id"] == "GS/test_gs_1")
+        self.assertTrue(gs_node["_hasChildren"])
+        leaf_ids = [child["_id"] for child in gs_node["children"]]
+        self.assertIn("MONDO/0000001", leaf_ids)
+
+    def test_phenotypes_drilldown_gs_returns_leaves(self):
+        # GS -> MONDO/CHEMBL/BMC/PR leaf nodes. Seed: GS/test_gs_1 -> MONDO/0000001.
+        result = sunburst_service.get_phenotypes_sunburst(parent_id="GS/test_gs_1")
+        self.assertIsInstance(result, list)
+        leaf_ids = [node["_id"] for node in result]
+        self.assertIn("MONDO/0000001", leaf_ids)
+
+
+class UberonClCountQueryTestCase(TestCase):
+    """Unit tests for _get_uberon_cl_counts query construction (no DB required).
+
+    Regression guard for the rewrite that traverses only PHENOTYPES_TOP_ORGANS
+    instead of scanning the entire UBERON collection. The whole-collection scan
+    pinned the ArangoDB host's CPU and tripped gunicorn's worker timeout, while
+    only the top-organ counts are ever read by callers.
+    """
+
+    def setUp(self):
+        # The counts are memoized in a module-level dict for the life of the
+        # process; clear it so each test starts cold and does not pollute others.
+        sunburst_service._UBERON_CL_COUNT_CACHE.clear()
+        self.addCleanup(sunburst_service._UBERON_CL_COUNT_CACHE.clear)
+
+    def _mock_db(self, rows):
+        """A db whose aql.execute yields `rows` (iterated like a cursor)."""
+        db = mock.Mock()
+        db.aql.execute.return_value = iter(rows)
+        return db
+
+    def test_query_traverses_only_top_organs(self):
+        rows = [[organ, 3] for organ in sunburst_service.PHENOTYPES_TOP_ORGANS]
+        db = self._mock_db(rows)
+
+        result = sunburst_service._get_uberon_cl_counts(db, "KN-Phenotypes-v2.0")
+
+        query, kwargs = db.aql.execute.call_args[0][0], db.aql.execute.call_args[1]
+        # Must iterate the bound organ list, NOT scan the whole UBERON collection.
+        self.assertIn("FOR organ IN @organs", query)
+        self.assertNotIn("FOR u IN UBERON", query)
+        self.assertEqual(
+            kwargs["bind_vars"]["organs"], sunburst_service.PHENOTYPES_TOP_ORGANS
+        )
+        self.assertEqual(kwargs["bind_vars"]["g"], "KN-Phenotypes-v2.0")
+        # The returned mapping still keys organ_id -> distinct CL count, exactly
+        # what counts.get(organ_id) consumers depend on.
+        self.assertEqual(
+            result,
+            {organ: 3 for organ in sunburst_service.PHENOTYPES_TOP_ORGANS},
+        )
+
+    def test_result_is_memoized_per_graph(self):
+        rows = [[sunburst_service.PHENOTYPES_TOP_ORGANS[0], 1]]
+        db = self._mock_db(rows)
+        # Re-arm the cursor for each potential execute call.
+        db.aql.execute.side_effect = lambda *a, **k: iter(list(rows))
+
+        first = sunburst_service._get_uberon_cl_counts(db, "KN-Phenotypes-v2.0")
+        second = sunburst_service._get_uberon_cl_counts(db, "KN-Phenotypes-v2.0")
+
+        self.assertEqual(first, second)
+        # Second call is served from the memo; the DB is hit only once.
+        self.assertEqual(db.aql.execute.call_count, 1)
+
+    def test_empty_result_is_not_cached(self):
+        db = self._mock_db([])
+        db.aql.execute.side_effect = lambda *a, **k: iter([])
+
+        result = sunburst_service._get_uberon_cl_counts(db, "KN-Phenotypes-v2.0")
+
+        self.assertEqual(result, {})
+        # An empty result (e.g. DB mid-restore) must not poison the cache, so a
+        # later call retries rather than serving an empty map forever.
+        self.assertNotIn(
+            "KN-Phenotypes-v2.0", sunburst_service._UBERON_CL_COUNT_CACHE
+        )
+        sunburst_service._get_uberon_cl_counts(db, "KN-Phenotypes-v2.0")
+        self.assertEqual(db.aql.execute.call_count, 2)

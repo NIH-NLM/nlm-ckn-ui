@@ -180,6 +180,19 @@ else:
     GRAPH_NAME_ONTOLOGIES = env("GRAPH_NAME_ONTOLOGIES")
     GRAPH_NAME_PHENOTYPES = env("GRAPH_NAME_PHENOTYPES")
 
+# ArangoDB client hardening (see arango_api/db.py and arango_api/circuit_breaker.py).
+# request_timeout bounds the connect+read time of every DB call so a slow query
+# or a wedged DB fails fast instead of pinning a gunicorn thread until the worker
+# timeout (default 30s) SIGKILLs it -- keep this comfortably under that timeout.
+ARANGO_REQUEST_TIMEOUT = env.float("ARANGO_REQUEST_TIMEOUT", default=20.0)
+# Low retry count so a down DB does not multiply each call by urllib3 connect
+# retries; the circuit breaker handles "stop trying", not blind retries.
+ARANGO_RETRY_ATTEMPTS = env.int("ARANGO_RETRY_ATTEMPTS", default=1)
+# Trip the breaker after this many consecutive failures, then fail fast for
+# reset_timeout seconds before letting a single trial request probe the DB.
+ARANGO_CB_FAILURE_THRESHOLD = env.int("ARANGO_CB_FAILURE_THRESHOLD", default=5)
+ARANGO_CB_RESET_TIMEOUT = env.float("ARANGO_CB_RESET_TIMEOUT", default=15.0)
+
 # Logging configuration
 LOGGING = {
     "version": 1,

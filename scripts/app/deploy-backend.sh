@@ -55,6 +55,9 @@
 # ==============================================================================
 set -e
 
+# Capture the script dir before any cd so we can find sibling scripts later.
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -253,3 +256,8 @@ BACKEND_URL=$(aws cloudformation describe-stacks \
 echo -e "\n${GREEN}Backend URL:  $BACKEND_URL${NC}"
 echo -e "${GREEN}Image Tag:    $IMAGE_TAG${NC}"
 echo -e "${GREEN}Full Image:   $FULL_IMAGE_URI${NC}"
+
+# Smoke test the deployment through the public edge (advisory — never fails the deploy).
+echo -e "\n${GREEN}Running smoke test...${NC}"
+"$SCRIPT_DIR/../ops/smoke-test.sh" "$ENVIRONMENT" || \
+  echo -e "${YELLOW}Smoke test reported failures (non-blocking).${NC}"

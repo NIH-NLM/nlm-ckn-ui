@@ -35,6 +35,9 @@
 # ==============================================================================
 set -e
 
+# Capture the script dir before any cd so we can find sibling scripts later.
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -123,3 +126,9 @@ echo -e "\n${GREEN}✓ Deployment complete!${NC}"
 echo -e "\n${GREEN}Frontend URL: $FrontendUrl${NC}"
 echo -e "${GREEN}ArangoDB URL: $FrontendUrl:8529${NC}"
 echo -e "\n${YELLOW}Note: CloudFront invalidation may take a few minutes to propagate.${NC}"
+
+# Smoke test the deployment (advisory — never fails the deploy).
+# CloudFront may still be propagating the invalidation, so give it extra room.
+echo -e "\n${GREEN}Running smoke test...${NC}"
+"$SCRIPT_DIR/../ops/smoke-test.sh" "$ENVIRONMENT" --timeout 20 || \
+  echo -e "${YELLOW}Smoke test reported failures (non-blocking).${NC}"

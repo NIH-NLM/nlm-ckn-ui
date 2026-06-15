@@ -48,9 +48,14 @@ UBERON_SUBTREE_DEPTH = 5
 
 
 def _get_uberon_cl_counts(db, graph_name):
-    """Return {uberon_id: distinct_cl_count} for every UBERON node that has
-    at least one CL descendant within UBERON_SUBTREE_DEPTH hops. Built on
-    first use and memoized per graph_name for the life of the process."""
+    """Return {uberon_id: distinct_cl_count} for the top organs that have at
+    least one CL descendant within UBERON_SUBTREE_DEPTH hops. Built on first
+    use and memoized per graph_name for the life of the process.
+
+    Only the PHENOTYPES_TOP_ORGANS counts are ever read (initial load and the
+    organ-children expansion), so we traverse from just those 8 roots rather
+    than scanning the whole UBERON collection — the latter ran a depth-5
+    traversal per UBERON node and was the heaviest read on the Arango host."""
     cached = _UBERON_CL_COUNT_CACHE.get(graph_name)
     if cached is not None:
         return cached
@@ -61,20 +66,23 @@ def _get_uberon_cl_counts(db, graph_name):
         logger.info("Building UBERON CL-count cache for %s", graph_name)
         start = time.monotonic()
         query = """
-            FOR u IN UBERON
+            FOR organ IN @organs
                 LET cls = (
-                    FOR v IN 1..@depth INBOUND u._id GRAPH @g
+                    FOR v IN 1..@depth INBOUND organ GRAPH @g
                         OPTIONS { bfs: true, uniqueVertices: "global" }
                         FILTER IS_SAME_COLLECTION("CL", v)
                         RETURN DISTINCT v._id
                 )
                 FILTER LENGTH(cls) > 0
-                RETURN [u._id, LENGTH(cls)]
+                RETURN [organ, LENGTH(cls)]
         """
         cursor = db.aql.execute(
             query,
-            bind_vars={"g": graph_name, "depth": UBERON_SUBTREE_DEPTH},
-            batch_size=5000,
+            bind_vars={
+                "g": graph_name,
+                "depth": UBERON_SUBTREE_DEPTH,
+                "organs": PHENOTYPES_TOP_ORGANS,
+            },
         )
         entries = {row[0]: row[1] for row in cursor}
         if not entries:
