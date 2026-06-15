@@ -1,0 +1,861 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  ArangoDB host monitoring + wedge detection (postmortem follow-up #2 for the
+  2026-06-15 stage outage; tracked in Springbok-LLC/upptime#2).
+
+  Deploys two Lambdas on EventBridge schedules:
+    A) MetricsScraper (in-VPC): scrapes ArangoDB /_admin/metrics/v2 on port 8529
+       via Cloud Map DNS and pushes leading-signal RocksDB cache series to
+       CloudWatch as custom metrics (namespace CellKN/ArangoDB). A sustained
+       drop in rocksdb_cache_hit_rate_recent is an early "cold/slow DB" warning.
+    B) WedgeDetector (no VPC): flags the userspace-wedge signature seen on
+       2026-06-15 — SSM PingStatus=ConnectionLost WHILE EC2 instance status is
+       ok/ok (the hypervisor can't see a userspace hang). Emits a metric +
+       SNS alert. Auto-remediation (reboot) is gated behind AutoRemediate and
+       defaults OFF — alert first.
+
+  This stack is deployed independently by the operator (see
+  scripts/ops/deploy-monitoring.sh). It is NOT wired into main.yaml and is
+  NOT deployed automatically.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: cell-kn
+    Description: Project name for resource naming
+
+  Environment:
+    Type: String
+    Default: stage
+    Description: Environment name (dev, stage, sandbox, prod)
+    AllowedValues:
+      - dev
+      - stage
+      - sandbox
+      - prod
+
+  # Private subnets for the in-VPC MetricsScraper. Resolved by the deploy script
+  # from the infra stack export ${ProjectName}-${Environment}-private-subnet-ids.
+  PrivateSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: >
+      Private subnet IDs for the in-VPC metrics-scraper Lambda. Must have an
+      egress path (NAT or VPC endpoints) to Secrets Manager + CloudWatch, the
+      same path the backend ECS tasks use.
+
+  # ArangoDB security group, so we can add an ingress rule allowing the
+  # monitoring SG to reach 8529. Passed as a parameter (not ImportValue) so the
+  # template works in sandbox/prod where the SG comes from SSM prereqs.
+  ArangoDbSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: >
+      ArangoDB EC2 security group ID. The deploy script resolves it from the
+      infra stack export (dev/stage) or SSM prereqs (sandbox/prod). A single
+      ingress rule on 8529 from the monitoring SG is added to it.
+
+  ArangoDbMonitorUser:
+    Type: String
+    Default: monitor
+    Description: >
+      Read-only ArangoDB user the scraper authenticates as. Create it once with
+      scripts/ops/create-monitor-user.sh (do NOT use root).
+
+  CacheHitRateAlarmThreshold:
+    Type: Number
+    Default: 0.7
+    MinValue: 0
+    MaxValue: 1
+    Description: >
+      Alarm if rocksdb_cache_hit_rate_recent stays below this fraction. A
+      sustained low recent hit rate means the working set no longer fits the
+      block cache (queries hitting EBS) — the early "cold/slow DB" signal.
+
+  # ArangoDB EC2 instance id, for the host CPU/memory alarms. The id changes on
+  # every instance replacement (e.g. a resize), so deploy-monitoring.sh resolves
+  # it from the cell-kn-<env>-arangodb stack output and passes it here — re-run
+  # the deploy after any arango stack change to re-point the alarms (same model
+  # as put-dashboard.sh). Leave empty to skip the host CPU/memory alarms.
+  ArangoDbInstanceId:
+    Type: String
+    Default: ''
+    Description: ArangoDB EC2 instance id for host CPU/memory alarms (resolved by deploy script).
+
+  CpuAlarmThreshold:
+    Type: Number
+    Default: 90
+    MinValue: 1
+    MaxValue: 100
+    Description: Alarm if ArangoDB host CPUUtilization (avg) stays at/above this percent.
+
+  MemoryAlarmThreshold:
+    Type: Number
+    Default: 90
+    MinValue: 1
+    MaxValue: 100
+    Description: Alarm if ArangoDB host mem_used_percent (avg, via CloudWatch agent) stays at/above this percent.
+
+  # ALB dimension value (the "app/<name>/<hash>" suffix of the LB ARN), for the
+  # ALB error/latency alarms. deploy-monitoring.sh resolves it from the
+  # cell-kn-<env>-alb load balancer. Stable across deploys (unlike the EC2 id).
+  # Leave empty to skip the ALB alarms (e.g. environments without an ALB).
+  AlbDimension:
+    Type: String
+    Default: ''
+    Description: ALB dimension (app/<name>/<hash>) for ALB error/latency alarms (resolved by deploy script).
+
+  Alb5xxAlarmThreshold:
+    Type: Number
+    Default: 10
+    MinValue: 1
+    Description: Alarm if ALB-generated 5XX responses (sum) reach this count in a 5-min period (captures the user-facing 504s).
+
+  AlbResponseTimeAlarmThreshold:
+    Type: Number
+    Default: 5
+    MinValue: 1
+    Description: Alarm if ALB target response time p90 (seconds) stays at/above this value.
+
+  ScheduleExpression:
+    Type: String
+    Default: 'rate(1 minute)'
+    Description: >
+      EventBridge schedule for both Lambdas. Note ArangoDB metrics resolution:
+      a 1-minute cadence gives the earliest leading signal. Use
+      'rate(1 minute)' or e.g. 'rate(5 minutes)' (plural for N>1).
+
+  AutoRemediate:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: >
+      When 'true', the WedgeDetector issues ec2 reboot-instances on a confirmed
+      wedge (ConnectionLost + ok/ok). Default 'false' — alert only. Leave OFF
+      until the alert path has been validated.
+
+  AlarmEmail:
+    Type: String
+    Default: ''
+    Description: >
+      Optional email address to subscribe to the SNS alert topic. Leave empty
+      to wire subscribers out-of-band.
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Project Configuration
+        Parameters:
+          - ProjectName
+          - Environment
+      - Label:
+          default: Network (in-VPC metrics scraper)
+        Parameters:
+          - PrivateSubnetIds
+          - ArangoDbSecurityGroupId
+      - Label:
+          default: ArangoDB Monitoring Auth
+        Parameters:
+          - ArangoDbMonitorUser
+      - Label:
+          default: Detection / Alarms
+        Parameters:
+          - CacheHitRateAlarmThreshold
+          - ArangoDbInstanceId
+          - CpuAlarmThreshold
+          - MemoryAlarmThreshold
+          - AlbDimension
+          - Alb5xxAlarmThreshold
+          - AlbResponseTimeAlarmThreshold
+          - ScheduleExpression
+          - AutoRemediate
+          - AlarmEmail
+
+Conditions:
+  HasAlarmEmail: !Not [!Equals [!Ref AlarmEmail, '']]
+  HasInstanceId: !Not [!Equals [!Ref ArangoDbInstanceId, '']]
+  HasAlb: !Not [!Equals [!Ref AlbDimension, '']]
+
+Resources:
+  # ============================================================================
+  # Monitoring credential (read-only ArangoDB user password)
+  #
+  # Generated by the shared RandomSecret Lambda from the secrets stack
+  # (cell-kn-<env>-random-secret), the same pattern that mints the root password.
+  # The ArangoDB *user* itself is created out-of-band with
+  # scripts/ops/create-monitor-user.sh using this value. We deliberately do NOT
+  # reuse the root credential for scraping.
+  # ============================================================================
+  MonitorPasswordSecretValue:
+    Type: Custom::RandomSecret
+    Properties:
+      ServiceToken: !Sub 'arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${ProjectName}-${Environment}-random-secret'
+      Length: '50'
+
+  MonitorPasswordSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub '/${ProjectName}/${Environment}/secrets/arangodb-monitor-password'
+      SecretString: !GetAtt MonitorPasswordSecretValue.Secret
+      Description: ArangoDB read-only monitoring user password (generated, do not modify manually)
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  # ============================================================================
+  # Monitoring security group + ingress to ArangoDB:8529
+  # ============================================================================
+  MonitoringSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub '${ProjectName}-${Environment}-monitoring-sg'
+      GroupDescription: Security group for the in-VPC monitoring (metrics scraper) Lambda
+      VpcId: !ImportValue
+        Fn::Sub: '${ProjectName}-${Environment}-vpc-id'
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: Allow all outbound (ArangoDB 8529, Secrets Manager, CloudWatch)
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-monitoring-sg'
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  # One ingress rule on the ArangoDB SG. NOTE: the non-dev ArangoDB SG is near
+  # the per-SG rule quota (see the stage-alb-cloudfront-sg memory) — this adds
+  # exactly one rule, scoped to the monitoring SG, not a CIDR.
+  ArangoIngressFromMonitoring:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref ArangoDbSecurityGroupId
+      IpProtocol: tcp
+      FromPort: 8529
+      ToPort: 8529
+      SourceSecurityGroupId: !Ref MonitoringSecurityGroup
+      Description: ArangoDB metrics scrape from monitoring Lambda
+
+  # ============================================================================
+  # General-purpose environment alert topic
+  #
+  # This is the shared alerting topic for the whole environment, not just the
+  # wedge detector. The wedge alarm, the cache-hit-rate alarm, and any future
+  # alarms (in this stack or others — backend, ALB, the orphaned arango health
+  # check, etc.) publish here. Other stacks attach to it by importing
+  # ${ProjectName}-${Environment}-monitoring-alert-topic-arn and listing it in
+  # their AlarmActions. The topic policy below explicitly authorises CloudWatch
+  # alarms and EventBridge rules in THIS account to publish, so cross-stack and
+  # service-driven reuse is safe (same-account alarm->SNS also works without it,
+  # but the explicit grant makes the contract clear and covers EventBridge).
+  # ============================================================================
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub '${ProjectName}-${Environment}-alerts'
+      DisplayName: !Sub 'Cell-KN ${Environment} alerts'
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  AlertTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref AlertTopic
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowCloudWatchAndEventBridgePublish
+            Effect: Allow
+            Principal:
+              Service:
+                - cloudwatch.amazonaws.com
+                - events.amazonaws.com
+            Action: sns:Publish
+            Resource: !Ref AlertTopic
+            Condition:
+              StringEquals:
+                'aws:SourceAccount': !Ref AWS::AccountId
+
+  AlertEmailSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: HasAlarmEmail
+    Properties:
+      TopicArn: !Ref AlertTopic
+      Protocol: email
+      Endpoint: !Ref AlarmEmail
+
+  # ============================================================================
+  # A) Metrics scraper — in-VPC
+  # ============================================================================
+  MetricsScraperRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${ProjectName}-${Environment}-monitoring-scraper'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        # In-VPC Lambdas need ENI management permissions.
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole'
+      Policies:
+        - PolicyName: ScraperPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: secretsmanager:GetSecretValue
+                Resource: !Ref MonitorPasswordSecret
+              - Effect: Allow
+                Action: cloudwatch:PutMetricData
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    'cloudwatch:namespace': 'CellKN/ArangoDB'
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  MetricsScraperFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub '${ProjectName}-${Environment}-arango-metrics-scraper'
+      Runtime: python3.11
+      Handler: index.handler
+      Timeout: 30
+      MemorySize: 128
+      Role: !GetAtt MetricsScraperRole.Arn
+      VpcConfig:
+        SubnetIds: !Ref PrivateSubnetIds
+        SecurityGroupIds:
+          - !Ref MonitoringSecurityGroup
+      Environment:
+        Variables:
+          ARANGO_ENDPOINT: !Sub 'http://arangodb.${ProjectName}-${Environment}.local:8529'
+          ARANGO_USER: !Ref ArangoDbMonitorUser
+          PASSWORD_SECRET_ARN: !Ref MonitorPasswordSecret
+          METRIC_NAMESPACE: 'CellKN/ArangoDB'
+          ENVIRONMENT: !Ref Environment
+      Code:
+        ZipFile: |
+          import json
+          import os
+          import urllib.request
+          import base64
+          import boto3
+
+          # Leading-signal series scraped from /_admin/metrics/v2 (Prometheus
+          # exposition format). Values are summed across any label sets.
+          TARGET_METRICS = [
+              "rocksdb_cache_hit_rate_recent",
+              "rocksdb_block_cache_usage",
+              "rocksdb_block_cache_capacity",
+              "arangodb_search_columns_cache_size",
+          ]
+
+          _sm = boto3.client("secretsmanager")
+          _cw = boto3.client("cloudwatch")
+          _password = None
+
+          def _get_password():
+              global _password
+              if _password is None:
+                  _password = _sm.get_secret_value(
+                      SecretId=os.environ["PASSWORD_SECRET_ARN"]
+                  )["SecretString"]
+              return _password
+
+          def _parse_prometheus(text, names):
+              """Sum each target series across label sets. Returns {name: float}."""
+              wanted = set(names)
+              out = {}
+              for line in text.splitlines():
+                  line = line.strip()
+                  if not line or line.startswith("#"):
+                      continue
+                  # name{labels} value   OR   name value
+                  key, _, value = line.rpartition(" ")
+                  if not value:
+                      continue
+                  metric = key.split("{", 1)[0].strip()
+                  if metric in wanted:
+                      try:
+                          out[metric] = out.get(metric, 0.0) + float(value)
+                      except ValueError:
+                          pass
+              return out
+
+          def handler(event, context):
+              endpoint = os.environ["ARANGO_ENDPOINT"].rstrip("/")
+              user = os.environ["ARANGO_USER"]
+              token = base64.b64encode(
+                  f"{user}:{_get_password()}".encode()
+              ).decode()
+
+              req = urllib.request.Request(
+                  f"{endpoint}/_admin/metrics/v2",
+                  headers={"Authorization": f"Basic {token}"},
+              )
+              with urllib.request.urlopen(req, timeout=15) as resp:
+                  body = resp.read().decode("utf-8", "replace")
+
+              values = _parse_prometheus(body, TARGET_METRICS)
+
+              # Derive cache fill ratio when both usage + capacity are present.
+              if (
+                  "rocksdb_block_cache_usage" in values
+                  and values.get("rocksdb_block_cache_capacity")
+              ):
+                  values["rocksdb_block_cache_fill_ratio"] = (
+                      values["rocksdb_block_cache_usage"]
+                      / values["rocksdb_block_cache_capacity"]
+                  )
+
+              env = os.environ["ENVIRONMENT"]
+              data = [
+                  {
+                      "MetricName": name,
+                      "Dimensions": [{"Name": "Environment", "Value": env}],
+                      "Value": float(val),
+                  }
+                  for name, val in values.items()
+              ]
+              if data:
+                  _cw.put_metric_data(
+                      Namespace=os.environ["METRIC_NAMESPACE"],
+                      MetricData=data,
+                  )
+              print(json.dumps({"scraped": values}))
+              return {"scraped": list(values.keys())}
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  MetricsScraperSchedule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub '${ProjectName}-${Environment}-arango-metrics-schedule'
+      Description: Periodic ArangoDB metrics scrape
+      ScheduleExpression: !Ref ScheduleExpression
+      State: ENABLED
+      Targets:
+        - Id: MetricsScraper
+          Arn: !GetAtt MetricsScraperFunction.Arn
+
+  MetricsScraperPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref MetricsScraperFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt MetricsScraperSchedule.Arn
+
+  # ============================================================================
+  # B) Wedge detector — NOT in VPC (reaches public AWS API endpoints directly)
+  # ============================================================================
+  WedgeDetectorRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${ProjectName}-${Environment}-monitoring-wedge'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      Policies:
+        - PolicyName: WedgeDetectorPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # These describe APIs have no resource-level filter.
+              - Effect: Allow
+                Action:
+                  - ssm:DescribeInstanceInformation
+                  - ec2:DescribeInstanceStatus
+                  - ec2:DescribeInstances
+                Resource: '*'
+              - Effect: Allow
+                Action: cloudwatch:PutMetricData
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    'cloudwatch:namespace': 'CellKN/Monitoring'
+              - Effect: Allow
+                Action: sns:Publish
+                Resource: !Ref AlertTopic
+              # Reboot is scoped to the arango instance by tag, and only used
+              # when AutoRemediate=true.
+              - Effect: Allow
+                Action: ec2:RebootInstances
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    'aws:ResourceTag/Project': !Ref ProjectName
+                    'aws:ResourceTag/Environment': !Ref Environment
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  WedgeDetectorFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub '${ProjectName}-${Environment}-arango-wedge-detector'
+      Runtime: python3.11
+      Handler: index.handler
+      Timeout: 30
+      MemorySize: 128
+      Role: !GetAtt WedgeDetectorRole.Arn
+      Environment:
+        Variables:
+          PROJECT_NAME: !Ref ProjectName
+          ENVIRONMENT: !Ref Environment
+          INSTANCE_NAME_TAG: !Sub '${ProjectName}-${Environment}-arangodb'
+          METRIC_NAMESPACE: 'CellKN/Monitoring'
+          SNS_TOPIC_ARN: !Ref AlertTopic
+          AUTO_REMEDIATE: !Ref AutoRemediate
+      Code:
+        ZipFile: |
+          import json
+          import os
+          import boto3
+
+          _ec2 = boto3.client("ec2")
+          _ssm = boto3.client("ssm")
+          _cw = boto3.client("cloudwatch")
+          _sns = boto3.client("sns")
+
+          def _resolve_instance_id():
+              # Resolve by Name tag so we survive instance replacement
+              # (the id changes on every CloudFormation replace / resize).
+              resp = _ec2.describe_instances(
+                  Filters=[
+                      {"Name": "tag:Name", "Values": [os.environ["INSTANCE_NAME_TAG"]]},
+                      {
+                          "Name": "instance-state-name",
+                          "Values": ["pending", "running", "stopping", "stopped"],
+                      },
+                  ]
+              )
+              for r in resp["Reservations"]:
+                  for i in r["Instances"]:
+                      return i["InstanceId"]
+              return None
+
+          def _put(metric, value, instance_id):
+              _cw.put_metric_data(
+                  Namespace=os.environ["METRIC_NAMESPACE"],
+                  MetricData=[
+                      {
+                          "MetricName": metric,
+                          "Dimensions": [
+                              {"Name": "Environment", "Value": os.environ["ENVIRONMENT"]},
+                              {"Name": "InstanceId", "Value": instance_id},
+                          ],
+                          "Value": float(value),
+                      }
+                  ],
+              )
+
+          def handler(event, context):
+              instance_id = _resolve_instance_id()
+              if not instance_id:
+                  print("No ArangoDB instance found; nothing to check.")
+                  return {"status": "no-instance"}
+
+              # SSM PingStatus — Online / ConnectionLost / Inactive
+              info = _ssm.describe_instance_information(
+                  Filters=[{"Key": "InstanceIds", "Values": [instance_id]}]
+              )["InstanceInformationList"]
+              ping = info[0]["PingStatus"] if info else "Inactive"
+              ssm_lost = 1 if ping == "ConnectionLost" else 0
+
+              # EC2 instance + system status checks (hypervisor view)
+              st = _ec2.describe_instance_status(
+                  InstanceIds=[instance_id], IncludeAllInstances=True
+              )["InstanceStatuses"]
+              if st:
+                  sys_ok = st[0]["SystemStatus"]["Status"] == "ok"
+                  inst_ok = st[0]["InstanceStatus"]["Status"] == "ok"
+              else:
+                  sys_ok = inst_ok = False
+              ec2_ok = 1 if (sys_ok and inst_ok) else 0
+
+              # The 2026-06-15 wedge signature: userspace dead (SSM lost) while
+              # the hypervisor still reports the box healthy (ok/ok).
+              wedge = 1 if (ssm_lost and ec2_ok) else 0
+
+              _put("SsmConnectionLost", ssm_lost, instance_id)
+              _put("Ec2StatusOk", ec2_ok, instance_id)
+              _put("WedgeSuspected", wedge, instance_id)
+
+              result = {
+                  "instance_id": instance_id,
+                  "ping_status": ping,
+                  "ec2_ok": bool(ec2_ok),
+                  "wedge_suspected": bool(wedge),
+              }
+              print(json.dumps(result))
+
+              if wedge:
+                  msg = (
+                      f"ArangoDB host WEDGE suspected ({os.environ['ENVIRONMENT']}).\n"
+                      f"Instance {instance_id}: SSM PingStatus=ConnectionLost while "
+                      f"EC2 status checks are ok/ok.\n"
+                      f"This is the 2026-06-15 outage signature — userspace hung, "
+                      f"hypervisor blind. Recovery: stop/start or replace the instance.\n"
+                  )
+                  remediated = False
+                  if os.environ.get("AUTO_REMEDIATE", "false").lower() == "true":
+                      _ec2.reboot_instances(InstanceIds=[instance_id])
+                      remediated = True
+                      msg += "AutoRemediate=true: issued ec2 reboot-instances.\n"
+                  else:
+                      msg += "AutoRemediate=false: alert only, no action taken.\n"
+                  _sns.publish(
+                      TopicArn=os.environ["SNS_TOPIC_ARN"],
+                      Subject=f"[{os.environ['ENVIRONMENT']}] ArangoDB host wedge suspected",
+                      Message=msg,
+                  )
+                  result["remediated"] = remediated
+
+              return result
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  WedgeDetectorSchedule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub '${ProjectName}-${Environment}-arango-wedge-schedule'
+      Description: Periodic ArangoDB SSM/EC2 wedge-signature check
+      ScheduleExpression: !Ref ScheduleExpression
+      State: ENABLED
+      Targets:
+        - Id: WedgeDetector
+          Arn: !GetAtt WedgeDetectorFunction.Arn
+
+  WedgeDetectorPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref WedgeDetectorFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt WedgeDetectorSchedule.Arn
+
+  # ============================================================================
+  # Alarms
+  # ============================================================================
+  # Confirmed wedge -> page. WedgeSuspected is 0/1 per run; alarm on the max so
+  # a single positive run trips it immediately.
+  WedgeAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${ProjectName}-${Environment}-arango-host-wedge'
+      AlarmDescription: >
+        ArangoDB host wedge signature detected (SSM ConnectionLost + EC2 ok/ok).
+        This preceded the user-facing 504s on 2026-06-15.
+      Namespace: 'CellKN/Monitoring'
+      MetricName: WedgeSuspected
+      Dimensions:
+        - Name: Environment
+          Value: !Ref Environment
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 2
+      DatapointsToAlarm: 2
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlertTopic
+      OKActions:
+        - !Ref AlertTopic
+
+  # Sustained cold cache -> early warning of a slow DB before users see 504s.
+  CacheHitRateAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${ProjectName}-${Environment}-arango-cache-hit-rate-low'
+      AlarmDescription: >
+        rocksdb_cache_hit_rate_recent sustained low — working set no longer fits
+        the block cache; queries are reading from EBS. Early "cold/slow DB" signal.
+      Namespace: 'CellKN/ArangoDB'
+      MetricName: rocksdb_cache_hit_rate_recent
+      Dimensions:
+        - Name: Environment
+          Value: !Ref Environment
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 3
+      DatapointsToAlarm: 3
+      Threshold: !Ref CacheHitRateAlarmThreshold
+      ComparisonOperator: LessThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlertTopic
+
+  # Conservative host-resource defaults, created only when an InstanceId is
+  # supplied. Both publish to the shared alert topic. Thresholds are deliberately
+  # high and require 3 consecutive 5-min datapoints (15 min) so they don't fire
+  # on transient spikes — sustained pressure only.
+  ArangoCpuAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasInstanceId
+    Properties:
+      AlarmName: !Sub '${ProjectName}-${Environment}-arango-host-cpu-high'
+      AlarmDescription: >
+        ArangoDB host CPUUtilization sustained high (15 min). Conservative
+        default — sustained CPU saturation on the DB host.
+      Namespace: 'AWS/EC2'
+      MetricName: CPUUtilization
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref ArangoDbInstanceId
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 3
+      DatapointsToAlarm: 3
+      Threshold: !Ref CpuAlarmThreshold
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlertTopic
+      OKActions:
+        - !Ref AlertTopic
+
+  ArangoMemoryAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasInstanceId
+    Properties:
+      AlarmName: !Sub '${ProjectName}-${Environment}-arango-host-memory-high'
+      AlarmDescription: >
+        ArangoDB host memory (CloudWatch agent mem_used_percent) sustained high
+        (15 min). ArangoDB is memory-bound; sustained pressure precedes the
+        block cache spilling to EBS.
+      Namespace: 'CWAgent'
+      MetricName: mem_used_percent
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref ArangoDbInstanceId
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 3
+      DatapointsToAlarm: 3
+      Threshold: !Ref MemoryAlarmThreshold
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlertTopic
+      OKActions:
+        - !Ref AlertTopic
+
+  # ALB-level user-facing symptoms — created only when an ALB dimension is
+  # supplied. These are what end users actually feel (the 504s in the
+  # 2026-06-15 outage); the arango host alarms above are the upstream cause.
+  AlbErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlb
+    Properties:
+      AlarmName: !Sub '${ProjectName}-${Environment}-alb-5xx-high'
+      AlarmDescription: >
+        ALB-generated 5XX responses elevated (includes the 502/503/504s users
+        saw on 2026-06-15). Sum over 5 min, two periods.
+      Namespace: 'AWS/ApplicationELB'
+      MetricName: HTTPCode_ELB_5XX_Count
+      Dimensions:
+        - Name: LoadBalancer
+          Value: !Ref AlbDimension
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      DatapointsToAlarm: 2
+      Threshold: !Ref Alb5xxAlarmThreshold
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlertTopic
+      OKActions:
+        - !Ref AlertTopic
+
+  AlbResponseTimeAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlb
+    Properties:
+      AlarmName: !Sub '${ProjectName}-${Environment}-alb-response-time-high'
+      AlarmDescription: >
+        ALB target response time p90 sustained high (15 min) — the slow-DB
+        symptom surfacing to clients before it tips into 504s.
+      Namespace: 'AWS/ApplicationELB'
+      MetricName: TargetResponseTime
+      Dimensions:
+        - Name: LoadBalancer
+          Value: !Ref AlbDimension
+      ExtendedStatistic: p90
+      Period: 300
+      EvaluationPeriods: 3
+      DatapointsToAlarm: 3
+      Threshold: !Ref AlbResponseTimeAlarmThreshold
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlertTopic
+      OKActions:
+        - !Ref AlertTopic
+
+Outputs:
+  AlertTopicArn:
+    Description: >
+      General-purpose environment alert topic. Import this in other stacks and
+      add it to their AlarmActions to route alarms here.
+    Value: !Ref AlertTopic
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-monitoring-alert-topic-arn'
+
+  MonitorPasswordSecretArn:
+    Description: ARN of the ArangoDB read-only monitoring user password secret
+    Value: !Ref MonitorPasswordSecret
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-arango-monitor-password-arn'
+
+  MetricsScraperFunctionName:
+    Description: Metrics scraper Lambda name
+    Value: !Ref MetricsScraperFunction
+
+  WedgeDetectorFunctionName:
+    Description: Wedge detector Lambda name
+    Value: !Ref WedgeDetectorFunction
