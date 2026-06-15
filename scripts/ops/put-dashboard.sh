@@ -44,11 +44,13 @@ echo "  LB=$LB  inst=$INST  vol=$VOL"
 # Build the dashboard body. Python keeps the JSON/quoting sane.
 BODY=$(LB="$LB" BACKEND_TG="$BACKEND_TG" ARANGO_TG="$ARANGO_TG" INST="$INST" VOL="$VOL" \
   REGION="$AWS_REGION" CLUSTER="$CLUSTER" SERVICE="$SERVICE" BACKEND_LOG="$BACKEND_LOG" \
+  ENV="$ENVIRONMENT" \
   python3 - <<'PY'
 import json, os
 R=os.environ["REGION"]; LB=os.environ["LB"]; BTG=os.environ["BACKEND_TG"]
 ATG=os.environ["ARANGO_TG"]; INST=os.environ["INST"]; VOL=os.environ["VOL"]
 CL=os.environ["CLUSTER"]; SVC=os.environ["SERVICE"]; LOG=os.environ["BACKEND_LOG"]
+ENV=os.environ["ENV"]
 AE="AWS/ApplicationELB"
 
 def w(x,y,wd,h,props):
@@ -97,6 +99,23 @@ widgets=[
       [AE,"UnHealthyHostCount","TargetGroup",ATG,"LoadBalancer",LB,{"stat":"Maximum","label":"unhealthy"}]]}),
   w(8,18,16,6,{"_t":"log","title":"Backend: gunicorn WORKER TIMEOUTs","view":"table",
       "query":"SOURCE '%s' | fields @timestamp, @message | filter @message like /WORKER TIMEOUT/ | sort @timestamp desc | limit 50" % LOG}),
+
+  # Row 5 -- ArangoDB RocksDB cache (leading signals)  |  host wedge detection
+  # Custom metrics pushed by the monitoring stack (cell-kn-<env>-monitoring):
+  #   CellKN/ArangoDB  scraped from /_admin/metrics/v2
+  #   CellKN/Monitoring  SSM/EC2 wedge-signature check
+  # A sustained drop in recent hit rate is the early "cold/slow DB" warning;
+  # WedgeSuspected=1 is the 2026-06-15 outage signature (SSM lost + EC2 ok/ok).
+  w(0,24,12,6,{"title":"ArangoDB RocksDB cache (leading signal)","view":"timeSeries","period":60,"metrics":[
+      ["CellKN/ArangoDB","rocksdb_cache_hit_rate_recent","Environment",ENV,{"stat":"Average","label":"recent hit rate"}],
+      ["CellKN/ArangoDB","rocksdb_block_cache_fill_ratio","Environment",ENV,{"stat":"Average","label":"block cache fill"}],
+      ["CellKN/ArangoDB","arangodb_search_columns_cache_size","Environment",ENV,{"stat":"Average","label":"search cols cache (bytes)","yAxis":"right"}]],
+      "yAxis":{"left":{"label":"ratio","min":0,"max":1},"right":{"label":"bytes","showUnits":False}}}),
+  w(12,24,12,6,{"title":"ArangoDB host wedge detection","view":"timeSeries","period":60,"metrics":[
+      ["CellKN/Monitoring","WedgeSuspected","Environment",ENV,{"stat":"Maximum","label":"wedge suspected"}],
+      ["CellKN/Monitoring","SsmConnectionLost","Environment",ENV,{"stat":"Maximum","label":"SSM ConnectionLost"}],
+      ["CellKN/Monitoring","Ec2StatusOk","Environment",ENV,{"stat":"Minimum","label":"EC2 ok/ok"}]],
+      "yAxis":{"left":{"min":0,"max":1}}}),
 ]
 print(json.dumps({"widgets":widgets}))
 PY

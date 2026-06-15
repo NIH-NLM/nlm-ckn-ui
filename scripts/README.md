@@ -106,6 +106,78 @@ credentials for the target account. Uses your default profile; set
 
 Creates backup of ArangoDB data and uploads it to S3.
 
+### ArangoDB monitoring + wedge detection (`scripts/ops/`)
+
+Follow-up #2 from the 2026-06-15 stage outage postmortem (tracked in
+[Springbok-LLC/upptime#2](https://github.com/Springbok-LLC/upptime/issues/2)).
+That outage's earliest signal was failed `deploy-stage` SSM steps **before**
+upptime caught the user-facing 504 — the host's userspace had wedged (SSM
+`ConnectionLost`, CloudWatch agent silent) while EC2 status checks stayed
+`ok/ok` and the running container kept serving. These tools add the two signals
+that were missing.
+
+```bash
+# 1. Deploy the monitoring stack (shows a changeset; operator executes it)
+AWS_PROFILE=springbok ./scripts/ops/deploy-monitoring.sh stage
+# optional: ALARM_EMAIL=you@example.com AUTO_REMEDIATE=false SCHEDULE_EXPRESSION='rate(1 minute)'
+
+# 2. Create the read-only ArangoDB monitoring user (over SSM; do NOT use root)
+AWS_PROFILE=springbok ./scripts/ops/create-monitor-user.sh stage
+
+# 3. Add the cache + wedge widgets to the correlation dashboard
+AWS_PROFILE=springbok ./scripts/ops/put-dashboard.sh stage
+```
+
+What the stack (`cell-kn-<env>-monitoring`,
+[monitoring.yaml](../cloudformation/environment/monitoring.yaml)) deploys:
+
+- **MetricsScraper** (in-VPC Lambda) — scrapes ArangoDB `/_admin/metrics/v2`
+  on `arangodb.cell-kn-<env>.local:8529` and pushes leading-signal RocksDB
+  series to CloudWatch `CellKN/ArangoDB`
+  (`rocksdb_cache_hit_rate_recent`, `rocksdb_block_cache_usage`/`_capacity`,
+  `arangodb_search_columns_cache_size`). A sustained drop in recent hit rate is
+  the early "cold/slow DB" warning. Authenticates as the read-only `monitor`
+  user (password in Secrets Manager at
+  `/cell-kn/<env>/secrets/arangodb-monitor-password`).
+- **WedgeDetector** (Lambda) — every minute flags the outage signature: SSM
+  `PingStatus = ConnectionLost` **while** EC2 status checks are `ok/ok`. Emits
+  `CellKN/Monitoring` metrics + an SNS alert. Auto-remediation
+  (`ec2 reboot-instances`) is gated behind `AutoRemediate` and **defaults off**.
+- **Alarms** — `…-arango-host-wedge` (page on the wedge signature) and
+  `…-arango-cache-hit-rate-low` (early cold-cache warning). Plus conservative
+  host-resource defaults `…-arango-host-cpu-high` and `…-arango-host-memory-high`
+  (avg ≥ 90% sustained 15 min; thresholds overridable via `CpuAlarmThreshold` /
+  `MemoryAlarmThreshold`). These need the arango `InstanceId`, which the deploy
+  script resolves automatically — but the id changes on instance replacement, so
+  **re-run `deploy-monitoring.sh` after any arango stack change** to re-point
+  them (same model as `put-dashboard.sh`). Also `…-alb-5xx-high` (ALB-generated
+  5XX/504 count — the user-facing symptom from the outage) and
+  `…-alb-response-time-high` (target response time p90 sustained); both
+  overridable via `Alb5xxAlarmThreshold` / `AlbResponseTimeAlarmThreshold`. The
+  ALB dimension is stable across deploys, so these don't need re-pointing — the
+  deploy script resolves it from the `cell-kn-<env>-alb` load balancer (skipped
+  if there's no ALB).
+- **Shared alert topic** (`cell-kn-<env>-alerts`) — the environment's
+  general-purpose reporting topic, not wedge-only. Both alarms above publish to
+  it, and other stacks can route their own alarms here by importing
+  `cell-kn-<env>-monitoring-alert-topic-arn` and adding it to their
+  `AlarmActions`. Its topic policy authorises CloudWatch and EventBridge in the
+  account to publish, e.g.:
+
+  ```yaml
+  SomeAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      # ...
+      AlarmActions:
+        - !ImportValue
+            Fn::Sub: '${ProjectName}-${Environment}-monitoring-alert-topic-arn'
+  ```
+
+Adding the ingress rule to the ArangoDB SG consumes one SG rule slot — note the
+near-quota state of the non-dev ArangoDB SG. The stack is **not** wired into
+`main.yaml`; deploy it explicitly per the steps above.
+
 ## Deployment Order
 
 ### Initial Setup
