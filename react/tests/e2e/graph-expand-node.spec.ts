@@ -4,6 +4,7 @@ import {
   getCollectedErrors,
   installErrorInstrumentation,
 } from "./utils/errorInstrumentation";
+import { openNodeContextMenu } from "./utils/graphInteractions";
 import { doc, edge, type TestDoc, type TestEdge } from "./utils/testSeeds";
 
 const COLL = "TEST_DOCUMENT_COLLECTION";
@@ -170,11 +171,7 @@ test("Expand button fetches and adds new nodes to graph", async ({ page }) => {
   // We need to click on the non-origin node to test expansion
   const childNode = page.locator("g.node").filter({ hasText: "Child One" }).first();
   await childNode.waitFor({ state: "visible" });
-  await childNode.click({ button: "right", force: true });
-
-  // Wait for popup to appear
-  const popup = page.locator(".document-popup");
-  await expect(popup).toBeVisible();
+  const popup = await openNodeContextMenu(page, childNode);
 
   // Click the Expand button
   const expandButton = popup.getByRole("button", { name: "Expand", exact: true });
@@ -299,10 +296,7 @@ test("Expand button closes popup after triggering expansion", async ({ page }) =
 
   // Right-click node to open popup (popup is triggered by contextmenu)
   const node = page.locator("g.node").first();
-  await node.click({ button: "right", force: true });
-
-  const popup = page.locator(".document-popup");
-  await expect(popup).toBeVisible();
+  const popup = await openNodeContextMenu(page, node);
 
   // Click expand
   await popup.getByRole("button", { name: "Expand", exact: true }).click();

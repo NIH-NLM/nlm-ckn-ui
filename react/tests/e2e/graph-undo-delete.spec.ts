@@ -4,6 +4,7 @@ import {
   getCollectedErrors,
   installErrorInstrumentation,
 } from "./utils/errorInstrumentation";
+import { openNodeContextMenu } from "./utils/graphInteractions";
 import { generateGraphAndWait, setupGraphMocks } from "./utils/graphMocks";
 import { doc, edgeWithSource } from "./utils/testSeeds";
 
@@ -45,9 +46,7 @@ test("Removing a node creates undo history and undo restores it", async ({ page 
   // Right-click CHILD1 and click "Remove"
   const childNode = page.locator("g.node").filter({ hasText: "Child One" }).first();
   await childNode.waitFor({ state: "visible" });
-  await childNode.click({ button: "right", force: true });
-  const popup = page.locator(".document-popup");
-  await expect(popup).toBeVisible();
+  const popup = await openNodeContextMenu(page, childNode);
   await popup.getByRole("button", { name: "Remove Node", exact: true }).click();
 
   // After removal: 2 nodes (ROOT, CHILD2)

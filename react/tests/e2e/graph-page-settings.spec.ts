@@ -4,6 +4,7 @@ import {
   getCollectedErrors,
   installErrorInstrumentation,
 } from "./utils/errorInstrumentation";
+import { openNodeContextMenu } from "./utils/graphInteractions";
 import { smallGraphWithEdges } from "./utils/testSeeds";
 
 const COLL = "TEST_DOCUMENT_COLLECTION";
@@ -349,12 +350,9 @@ test("Graph node click opens popup with actions", async ({ page }) => {
   const node = page.locator("g.node").first();
   await node.waitFor({ state: "visible" });
 
-  // Force right-click because the popup is triggered by contextmenu
-  await node.click({ button: "right", force: true });
-
-  // Check popup
-  const popup = page.locator(".document-popup");
-  await expect(popup).toBeVisible();
+  // Open the node's context menu. Retries the right-click until the popup
+  // opens — force-graph nodes drift until the simulation settles.
+  const popup = await openNodeContextMenu(page, node);
 
   // Check buttons
   await expect(popup.getByText(/Go To/)).toBeVisible();
