@@ -365,6 +365,10 @@ WORKFLOW_PRESETS = [
                     "setOperation": "Union",
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
+                    # Marker genes are the deliverable; the default "standard"
+                    # leaf collapse hides the single-cell-set ones, so disable
+                    # it to keep every marker gene visible.
+                    "collapseLeafNodes": "off",
                 },
                 "perNodeSettings": {},
             },
@@ -1442,6 +1446,10 @@ WORKFLOW_PRESETS = [
                     "returnCollections": ["GS", "CL"],
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
+                    # The explorer is a curated, complete dipper — leaf-node
+                    # collapse would hide the endpoints (cell types, and any
+                    # disease/drug without a closing edge), so disable it.
+                    "collapseLeafNodes": "off",
                 },
                 "perNodeSettings": {},
             },
@@ -1462,6 +1470,7 @@ WORKFLOW_PRESETS = [
                     "setOperation": "Connected Paths",
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
+                    "collapseLeafNodes": "off",
                 },
                 "perNodeSettings": {},
             },
@@ -1494,6 +1503,7 @@ WORKFLOW_PRESETS = [
                     "setOperation": "Union",
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
+                    "collapseLeafNodes": "off",
                 },
                 "perNodeSettings": {},
             },
@@ -1525,6 +1535,8 @@ WORKFLOW_PRESETS = [
                         "Label": ["IS_SUBSTANCE_THAT_TREATS"],
                         "Source": [],
                     },
+                    # Displayed phase — keep every endpoint visible.
+                    "collapseLeafNodes": "off",
                 },
                 "perNodeSettings": {},
             },
