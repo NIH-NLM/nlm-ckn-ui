@@ -14,9 +14,10 @@ The `nlm-ckn-ui` repository provides the user interface for querying, visualizin
 
 ## Requirements
 
-*   Node.js 22.15.x
-*   npm 11.x
+*   Node.js 20.x (the version CI builds and tests with; newer 22.x also works) and a matching npm
 *   Docker & Docker Compose
+*   AWS CLI, `jq`, and read access to the dataset S3 bucket — required to load the ArangoDB data for local development (see [Prepare ArangoDB Data](#1-prepare-arangodb-data))
+*   Python 3.13 — only needed to run the Django backend outside Docker or to generate a `SECRET_KEY`
 
 ## Setup & Installation
 
@@ -39,21 +40,37 @@ npm install
 
 ### 1. Prepare ArangoDB Data
 
-The application requires pre-built ArangoDB data. Extract the database archive into the `data/` directory:
+The application requires a pre-built ArangoDB dataset. The dataset is produced by
+the [`nlm-ckn-etl`](https://github.com/NIH-NLM/nlm-ckn-etl) pipeline as a logical
+`arangorestore` dump (`06-golden-dump.tar.gz`) and published to S3 at
+`runs/<version>/06-golden-dump.tar.gz`. The exact dataset version this app
+expects is pinned in the [`ETL_VERSION`](ETL_VERSION) file at the repo root.
+
+The `scripts/dev/load-dump-local.sh` helper downloads that dump and restores it
+into a local ArangoDB Docker container — including the named graphs and
+analyzers the workflow traversals depend on:
 
 ```bash
-# Extract the ArangoDB archive
-tar -xzf arangodb-v*.tar.gz -C data/
+# Restores the version pinned in ETL_VERSION into a container named
+# "arango-current" on port 8529 (the port the app points at via ARANGO_DB_HOST).
+./scripts/dev/load-dump-local.sh
 
-# Create the arangodb-apps directory (can be empty)
-mkdir -p data/arangodb-apps
+# Optionally pin a specific version and/or a side-by-side port:
+./scripts/dev/load-dump-local.sh v1.4.6-alpha.36         # explicit version on :8529
+./scripts/dev/load-dump-local.sh v1.4.6-alpha.36 8540    # side-by-side on :8540
 ```
 
-After extraction, you should have:
-- `data/arangodb/` - Contains the database files (databases, engine-rocksdb, etc.)
-- `data/arangodb-apps/` - Empty directory for ArangoDB apps
+> **Prerequisites:** AWS CLI with read access to the dataset bucket, Docker,
+> `jq`, and a populated `.env` (the script reads `ARANGO_DB_PASSWORD` from it —
+> see [Environment Configuration](#environment-configuration) below). List the
+> available dataset versions with:
+>
+> ```bash
+> aws s3 ls s3://cell-kn-arangodb-data-952291113202/runs/ --recursive | grep golden
+> ```
 
-> **Note:** The ArangoDB data archive is generated from the ETL process. See https://github.com/NIH-NLM/nlm-ckn-etl-results for more details on creating the data build. You will need to update your .env file with the exact password used during database creation.
+The loader starts and populates ArangoDB itself, so when you use it you do **not**
+also need the `arangodb` service from `docker-compose.yml`.
 
 ### 2. Build React Frontend
 
@@ -65,14 +82,22 @@ npm run build-react
 
 ### 3. Start the Application
 
-From the project root, start ArangoDB and the Django backend using Docker Compose:
+The loader from step 1 already runs ArangoDB on port 8529, so you only need to
+start the Django backend against it. Point `ARANGO_DB_HOST` at the loader's
+container (`http://127.0.0.1:8529`) in your `.env`, then run the backend on the
+host:
+
 ```bash
-docker compose up
+pip install -r requirements.txt
+python manage.py runserver 0.0.0.0:8000
 ```
 
-This starts both the ArangoDB database (port 8529) and the Django backend (port 8000), loading environment variables from `.env`.
-
 > Server available at `http://127.0.0.1:8000/`.
+
+Alternatively, `docker compose up` runs ArangoDB and the backend together in
+Docker, loading environment variables from `.env`. Note that its `arangodb`
+service bind-mounts data from `${DATA_PATH}/arangodb` and is independent of the
+loader script — use one approach or the other, not both bound to port 8529.
 
 ### Frontend Development
 
@@ -103,54 +128,49 @@ Then edit `.env` with your local settings. For local development, the defaults i
 | `ALLOWED_HOSTS` | Comma-separated allowed hosts | `localhost,127.0.0.1` |
 | `CORS_ALLOW_ALL_ORIGINS` | Allow all CORS origins | `True` for dev only |
 | `CORS_ALLOWED_ORIGINS` | Comma-separated allowed origins | `http://localhost:3000` |
-| `ARANGO_DB_HOST` | ArangoDB connection URL | `http://127.0.0.1:8529` |
+| `SECURE_SSL_REDIRECT` | Redirect all HTTP to HTTPS | `False` for dev, `True` for prod |
+| `SESSION_COOKIE_SECURE` | Send session cookie over HTTPS only | `False` for dev, `True` for prod |
+| `CSRF_COOKIE_SECURE` | Send CSRF cookie over HTTPS only | `False` for dev, `True` for prod |
+| `ARANGO_DB_HOST` | ArangoDB connection URL | `http://127.0.0.1:8529` with the loader; `http://arango_db:8529` inside Docker Compose |
 | `ARANGO_DB_USER` | ArangoDB username | `root` |
 | `ARANGO_DB_PASSWORD` | ArangoDB password | Your password |
-| `ARANGO_DB_NAME_ONTOLOGIES` | Ontologies database name | `NLM-CKN-Ontologies` |
-| `ARANGO_DB_NAME_PHENOTYPES` | Phenotypes database name | `NLM-CKN-Phenotypes` |
+| `ARANGO_DB_NAME_ONTOLOGIES` | Ontologies database name | `Cell-KN-Ontologies` |
+| `ARANGO_DB_NAME_PHENOTYPES` | Phenotypes database name | `Cell-KN-Phenotypes` |
 | `GRAPH_NAME_ONTOLOGIES` | Ontologies graph name | `KN-Ontologies-v2.0` |
 | `GRAPH_NAME_PHENOTYPES` | Phenotypes graph name | `KN-Phenotypes-v2.0` |
+| `DATA_PATH` | Host path bind-mounted by the Docker Compose `arangodb` service | `./data` |
 
 ## Live Environment
 
 The application is deployed to **https://dev.nlm-ckn.org/**.
 
-Deployments are triggered automatically by the CI/CD pipeline (`.github/workflows/ci.yml`) on every push to `main`:
+The CI/CD pipeline (`.github/workflows/ci.yml`) runs on pull requests
+(`pull_request_target`), on pushes to `main`, and on manual `workflow_dispatch`.
+A `detect-changes` job uses path filters so only the affected test jobs run.
 
-- **Frontend** — built with `npm run build-react` and deployed to S3 + CloudFront via `scripts/app/deploy-frontend.sh dev`. Triggered when `react/src/**`, `react/public/**`, or related config files change.
-- **Backend** — Docker image built and pushed to ECR, then deployed to ECS Fargate via `scripts/app/deploy-backend.sh dev`. Triggered when Django app files, `Dockerfile`, or `requirements.txt` change.
+**Tests** (run on PRs and pushes):
 
-Both deploy jobs run only after their respective test suites pass (lint, unit tests, E2E / integration tests). AWS credentials are obtained via GitHub OIDC — no long-lived secrets are stored. Deployments can also be triggered manually via `workflow_dispatch`.
+- **Frontend lint** — Biome. On PRs it auto-fixes and pushes a `[biome auto-fix]` commit back to the branch.
+- **Frontend unit tests** — Jest.
+- **Frontend E2E** — Playwright (Chromium).
+- **Backend unit tests** — Django tests that need no database.
+- **Backend integration tests** — Django tests against an ArangoDB service container started in the workflow.
+- **Backend Docker build** — verifies the image builds.
+
+PRs that change backend code from forks are gated by a maintainer permission check.
+
+**Deploys** (run on push to `main`, dev environment only, after the relevant tests pass):
+
+- **Frontend** — built with `npm run build-react` and deployed to S3 + CloudFront via `scripts/app/deploy-frontend.sh dev`. Runs when `react/src/**`, `react/public/**`, or related config files change.
+- **Backend** — Docker image built and pushed to ECR, then deployed to ECS Fargate via `scripts/app/deploy-backend.sh dev`. Runs when Django app files, `Dockerfile`, or `requirements.txt` change.
+
+AWS credentials are obtained via GitHub OIDC — no long-lived secrets are stored. Both deploys can also be triggered manually via `workflow_dispatch`. Dataset updates are deployed separately (not part of `ci.yml`) via `scripts/app/deploy-dataset.sh`, which ships the version pinned in `ETL_VERSION`.
 
 ## AWS Architecture
 
-```mermaid
-graph TD
-    User([Researcher / Browser])
+![NLM-CKN application architecture: a researcher's browser reaches CloudFront, which serves React static assets from S3 and routes /api/ and /arango_api/ requests through an Application Load Balancer to the Django backend on ECS Fargate. The backend pulls its image from ECR, reads secrets from Secrets Manager, and queries ArangoDB on EC2 (EBS-backed) via a second ALB. ArangoDB datasets are produced by the ETL release pipeline (GitHub Actions + AWS Batch) and stored in an S3 bucket. A separate UI CI/CD pipeline (GitHub Actions) builds and deploys the frontend and backend.](docs/images/NLM-CKN-UI.png)
 
-    subgraph AWS
-        CF[CloudFront CDN]
-        S3[S3 Bucket\nReact static assets]
-        ALB[Application Load Balancer]
-
-        subgraph ECS [ECS Fargate]
-            BE[Django Backend\ncontainer]
-        end
-
-        subgraph EC2 [EC2 Instance]
-            ADB[(ArangoDB\ngraph database)]
-        end
-
-        SM[Secrets Manager]
-    end
-
-    User -->|HTTPS| CF
-    CF --> S3
-    CF -->|/arango_api/ /api/| ALB
-    ALB --> BE
-    BE --> ADB
-    BE --> SM
-```
+The diagram shows both pipelines that feed the running system: the **UI CI/CD pipeline** (GitHub Actions → S3/CloudFront and ECR/ECS, described under [Live Environment](#live-environment)) and the **ETL release pipeline** (GitHub Actions → AWS Batch), which produces the ArangoDB golden-dump dataset stored in S3 and restored onto the ArangoDB EC2 instance.
 
 > **Why EC2 for ArangoDB?** ArangoDB requires a local, POSIX-compliant filesystem for its RocksDB storage engine. AWS EFS (NFS-based) is not supported and causes data corruption. EC2 with an EBS volume is the only managed AWS option that satisfies this requirement.
 
@@ -172,6 +192,12 @@ arangosh --server.endpoint tcp://localhost:8530 --server.username root --server.
 Requires the [AWS Session Manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html) (needed to open the SSM tunnel) and AWS credentials for the target account. Uses your default profile; set `AWS_PROFILE=<name>` to select a different one. See [`scripts/README.md`](scripts/README.md) for more.
 
 ## Production Deployment
+
+The repository includes [`.env.production`](.env.production) as a starting
+template with production-appropriate defaults (`DEBUG=False`, CORS locked down,
+HTTPS cookies/redirect enabled). The CI/CD pipeline above deploys the `dev`
+environment automatically; the steps below cover the settings that differ for a
+production deployment.
 
 1. **Generate a new SECRET_KEY:**
    ```bash
