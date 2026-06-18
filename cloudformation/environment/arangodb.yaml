@@ -233,6 +233,12 @@ Resources:
                   - servicediscovery:RegisterInstance
                   - servicediscovery:DeregisterInstance
                   - servicediscovery:GetOperation
+                  # ListInstances + ec2:DescribeInstances (granted in the
+                  # EbsDataVolumeAttach policy below) let the instance reconcile
+                  # the Cloud Map service on boot: deregister any prior
+                  # registration whose EC2 instance is no longer running, which
+                  # is how a replaced instance leaves stale dead A-records behind.
+                  - servicediscovery:ListInstances
                 Resource: '*'
               - Effect: Allow
                 Action:
@@ -248,6 +254,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - elasticloadbalancing:RegisterTargets
+                  - elasticloadbalancing:DeregisterTargets
                   - elasticloadbalancing:DescribeTargetGroups
                   - cloudformation:ListExports
                 Resource: '*'
@@ -263,6 +270,11 @@ Resources:
               - Effect: Allow
                 Action:
                   - ec2:DescribeVolumes
+                  # DescribeInstances backs the Cloud Map reconcile (step 7 in
+                  # UserData / the shutdown hook): it checks each registered
+                  # instance's state before deregistering dead ones. The API has
+                  # no resource-level filter, so it is account-wide like Describe.
+                  - ec2:DescribeInstances
                 Resource: '*'
               - Effect: Allow
                 Action:
@@ -736,6 +748,105 @@ Resources:
             --target-group-arn "$TG_ARN" \
             --targets "Id=$INSTANCE_ID,Port=8529" \
             --region "$REGION"
+
+          # ── 7. Reconcile Cloud Map: drop stale (dead) registrations ──────────
+          # When this instance replaced a prior one (e.g. an InstanceType resize),
+          # the OLD instance's Cloud Map registration is NOT removed — nothing runs
+          # on a terminated host to deregister it. The service then accumulates dead
+          # A-records and the Django backend (which resolves arangodb via Cloud Map
+          # DNS, not the ALB) round-robins onto dead IPs and hangs until timeout
+          # (3.5s, or 30s -> CloudFront 504). See the 2026-06-15 stage postmortem.
+          #
+          # We self-heal on every boot: list the service's registered instances and
+          # deregister any whose EC2 instance is not 'running' (terminated, stopped,
+          # or already gone). Our own freshly-registered id is always running, so it
+          # is preserved. This makes replacement self-correcting without an ASG
+          # lifecycle hook, which this single CloudFormation-managed instance has not.
+          echo "==> Reconciling Cloud Map service $SD_SERVICE_ID (removing dead registrations)"
+          REGISTERED_IDS=$(aws servicediscovery list-instances \
+            --service-id "$SD_SERVICE_ID" \
+            --query 'Instances[].Id' \
+            --output text \
+            --region "$REGION" 2>/dev/null || echo "")
+          for RID in $REGISTERED_IDS; do
+            if [ "$RID" = "$INSTANCE_ID" ]; then
+              continue
+            fi
+            # Registered Cloud Map instance ids are EC2 instance ids (we register
+            # with --instance-id "$INSTANCE_ID"). A missing/terminated instance
+            # yields an empty/"None"/error state, which we also treat as stale.
+            RID_STATE=$(aws ec2 describe-instances \
+              --instance-ids "$RID" \
+              --query 'Reservations[0].Instances[0].State.Name' \
+              --output text \
+              --region "$REGION" 2>/dev/null || echo "missing")
+            if [ "$RID_STATE" != "running" ]; then
+              echo "  deregistering stale Cloud Map instance $RID (ec2 state: $RID_STATE)"
+              aws servicediscovery deregister-instance \
+                --service-id "$SD_SERVICE_ID" \
+                --instance-id "$RID" \
+                --region "$REGION" || true
+            else
+              echo "  keeping $RID (ec2 state: running)"
+            fi
+          done
+
+          # ── 8. Install a shutdown hook to deregister this instance ────────────
+          # Belt-and-suspenders to the boot-time reconcile above: on a *graceful*
+          # stop/terminate (which CloudFormation issues when replacing the
+          # instance), systemd runs this oneshot's ExecStop, removing our own
+          # Cloud Map + ALB registration before we go away. The boot-time reconcile
+          # still covers the hard-kill case where ExecStop never runs.
+          # sed strips the YAML block-scalar indentation so the shebang lands at
+          # byte 0 (required for execve) — the heredoc body has no intentional
+          # leading whitespace, so this is safe.
+          sed 's/^          //' > /usr/local/bin/arango-deregister.sh << 'DEREG'
+          #!/bin/bash
+          set -uo pipefail
+          REGION="__REGION__"
+          SD_SERVICE_ID="__SD_SERVICE_ID__"
+          TG_ARN="__TG_ARN__"
+          TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" \
+            -H "X-aws-ec2-metadata-token-ttl-seconds: 60")
+          IID=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" \
+            http://169.254.169.254/latest/meta-data/instance-id)
+          [ -n "$IID" ] || exit 0
+          echo "arango-deregister: removing $IID from Cloud Map $SD_SERVICE_ID"
+          aws servicediscovery deregister-instance \
+            --service-id "$SD_SERVICE_ID" --instance-id "$IID" --region "$REGION" || true
+          if [ -n "$TG_ARN" ]; then
+            aws elbv2 deregister-targets \
+              --target-group-arn "$TG_ARN" \
+              --targets "Id=$IID,Port=8529" --region "$REGION" || true
+          fi
+          DEREG
+          sed -i \
+            -e "s|__REGION__|$REGION|g" \
+            -e "s|__SD_SERVICE_ID__|$SD_SERVICE_ID|g" \
+            -e "s|__TG_ARN__|$TG_ARN|g" \
+            /usr/local/bin/arango-deregister.sh
+          chmod +x /usr/local/bin/arango-deregister.sh
+
+          # Strip the block-scalar indentation: systemd requires section headers
+          # like [Unit] at column 0 and rejects leading whitespace.
+          sed 's/^          //' > /etc/systemd/system/arango-deregister.service << 'UNIT'
+          [Unit]
+          Description=Deregister ArangoDB instance from Cloud Map / ALB on shutdown
+          # Run the deregister as part of normal shutdown.
+          After=network-online.target
+          Wants=network-online.target
+          [Service]
+          Type=oneshot
+          RemainAfterExit=yes
+          # ExecStart is a no-op marker; the real work happens on stop.
+          ExecStart=/bin/true
+          ExecStop=/usr/local/bin/arango-deregister.sh
+          [Install]
+          WantedBy=multi-user.target
+          UNIT
+          systemctl daemon-reload
+          systemctl enable arango-deregister.service
+          systemctl start arango-deregister.service
 
           echo "==> Setup complete $(date)"
 

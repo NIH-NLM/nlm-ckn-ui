@@ -151,12 +151,13 @@ aws ssm get-parameter \
   --region "$AWS_REGION" 2>/dev/null || echo "none"
 
 echo ""
-echo "==> Updating dataset version to: $DATASET_S3_KEY"
-aws ssm put-parameter \
-  --name "$SSM_PARAMETER" \
-  --value "$DATASET_S3_KEY" \
-  --overwrite \
-  --region "$AWS_REGION"
+echo "==> Target dataset version: $DATASET_S3_KEY"
+# NOTE: the dataset-version SSM parameter (the published source of truth) is
+# intentionally NOT updated here. It is written only after the blue-green swap
+# succeeds (see the Success branch of the SSM poll loop below), so a failed or
+# aborted restore leaves the parameter pointing at the previously-live version.
+# The restore script receives the target version directly via __DATASET_S3_KEY__
+# substitution rather than reading it from SSM.
 
 echo ""
 echo "==> Triggering restore on instance $INSTANCE_ID..."
@@ -196,9 +197,10 @@ BUCKET=$(aws ssm get-parameter \
   --name "/$PROJECT_NAME/shared/arangodb-bucket-name" \
   --query 'Parameter.Value' --output text --region "$REGION")
 
-VERSION=$(aws ssm get-parameter \
-  --name "/$PROJECT_NAME/$ENVIRONMENT/arango/dataset-version" \
-  --query 'Parameter.Value' --output text --region "$REGION")
+# Target version is injected directly by the dispatcher rather than read from
+# SSM: the dataset-version SSM parameter is only advanced to this value *after*
+# a successful swap, so during the restore SSM still reflects the old version.
+VERSION="__DATASET_S3_KEY__"
 
 ARANGO_PASSWORD=$(aws secretsmanager get-secret-value \
   --secret-id "/$PROJECT_NAME/$ENVIRONMENT/secrets/arangodb-password" \
@@ -511,6 +513,7 @@ sed \
   -e "s|__ENVIRONMENT__|${ENVIRONMENT}|g" \
   -e "s|__AWS_REGION__|${AWS_REGION}|g" \
   -e "s|__FORCE__|${FORCE}|g" \
+  -e "s|__DATASET_S3_KEY__|${DATASET_S3_KEY}|g" \
   "$RESTORE_SCRIPT_TMP" > "${RESTORE_SCRIPT_TMP}.new"
 mv "${RESTORE_SCRIPT_TMP}.new" "$RESTORE_SCRIPT_TMP"
 
@@ -609,6 +612,17 @@ while [ "$ELAPSED" -lt "$SSM_TIMEOUT_SECONDS" ]; do
       echo -e "${GREEN}==> Restore succeeded!${NC}"
       echo ""
       print_ssm_output "$COMMAND_ID" "$INSTANCE_ID" "$AWS_REGION"
+      # Publish the new version ONLY now that the blue-green swap has completed
+      # successfully. Until this point the parameter still advertises the
+      # previously-live version, so any earlier failure/abort path leaves the
+      # source of truth pointing at the data that is actually live.
+      echo ""
+      echo "==> Publishing dataset version to SSM: $DATASET_S3_KEY"
+      aws ssm put-parameter \
+        --name "$SSM_PARAMETER" \
+        --value "$DATASET_S3_KEY" \
+        --overwrite \
+        --region "$AWS_REGION"
       echo ""
       echo -e "Active dataset version: ${GREEN}$(aws ssm get-parameter \
         --name "$SSM_PARAMETER" \

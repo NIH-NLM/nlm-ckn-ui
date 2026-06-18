@@ -63,11 +63,14 @@ docker exec -i arangodb arangosh \
 REMOTE_EOF
 
 echo "==> Sending SSM command to create/update '${MONITOR_USER}'..."
+# Pass parameters as JSON (not the key=value shorthand): the shorthand parser
+# splits on commas and quotes, which the embedded arangosh script is full of.
+PARAMS=$(jq -n --arg cmd "$REMOTE" '{commands: [$cmd]}')
 CMD_ID=$(aws ssm send-command \
   --instance-ids "$INSTANCE_ID" \
   --document-name "AWS-RunShellScript" \
   --comment "create arango monitor user" \
-  --parameters commands="$REMOTE" \
+  --parameters "$PARAMS" \
   --region "$AWS_REGION" \
   --query 'Command.CommandId' --output text)
 
