@@ -1,0 +1,301 @@
+#!/bin/bash
+# ==============================================================================
+# arango-restore-remote.sh.tmpl - On-instance ArangoDB blue-green restore
+# ==============================================================================
+# This template runs ON the ArangoDB EC2 host, sent via SSM Run Command. It is
+# the same blue-green restore logic used by deploy-dataset.sh, but parameterized
+# by the SSM/secret parameter *names* so it works in accounts whose parameter
+# paths differ from the cell-kn-<env> convention (e.g. the sandbox account).
+#
+# Placeholders (substituted by the caller before sending):
+#   __AWS_REGION__       AWS region
+#   __FORCE__            "true" to re-restore even if already on target version
+#   __BUCKET_PARAM__     SSM param holding the ArangoDB dataset S3 bucket name
+#   __VERSION_PARAM__    SSM param holding the active dataset version (object key)
+#   __PASSWORD_SECRET__  Secrets Manager id holding the ArangoDB root password
+# ==============================================================================
+set -euo pipefail
+
+REGION="__AWS_REGION__"
+FORCE="__FORCE__"
+BUCKET_PARAM="__BUCKET_PARAM__"
+VERSION_PARAM="__VERSION_PARAM__"
+PASSWORD_SECRET="__PASSWORD_SECRET__"
+
+DATA_DIR=/var/lib/arangodb3
+APPS_DIR=/var/lib/arangodb3-apps
+# Stage green data INSIDE the EBS mount so the swap uses intra-filesystem
+# renames (instant) rather than cross-device copies. /var/lib/arangodb3 is
+# the EBS mount point and cannot itself be mv'd ("Device or resource busy").
+GREEN_DATA=/var/lib/arangodb3/_green
+GREEN_APPS=/var/lib/arangodb3-apps-green
+# Space-separated list of ArangoDB databases that must exist after restore.
+# Override with the EXPECTED_DBS env var when the schema changes.
+EXPECTED_DBS="${EXPECTED_DBS:-Cell-KN-Ontologies Cell-KN-Phenotypes}"
+
+echo "==> Starting ArangoDB blue-green dataset restore $(date)"
+
+BUCKET=$(aws ssm get-parameter \
+  --name "$BUCKET_PARAM" \
+  --query 'Parameter.Value' --output text --region "$REGION")
+
+VERSION=$(aws ssm get-parameter \
+  --name "$VERSION_PARAM" \
+  --query 'Parameter.Value' --output text --region "$REGION")
+
+ARANGO_PASSWORD=$(aws secretsmanager get-secret-value \
+  --secret-id "$PASSWORD_SECRET" \
+  --query 'SecretString' --output text --region "$REGION")
+
+LAST_RESTORED=$(cat "$DATA_DIR/.dataset-version" 2>/dev/null || echo "none")
+echo "Target version : $VERSION"
+echo "Last restored  : $LAST_RESTORED"
+
+if [ "$VERSION" = "$LAST_RESTORED" ] && [ "$FORCE" != "true" ]; then
+  echo "Already on version $VERSION — nothing to do"
+  exit 0
+elif [ "$VERSION" = "$LAST_RESTORED" ] && [ "$FORCE" = "true" ]; then
+  echo "Already on version $VERSION — forcing re-restore (--force)"
+fi
+
+if [ "$VERSION" = "none" ] || [ -z "$VERSION" ]; then
+  echo "No dataset version configured — skipping"
+  exit 0
+fi
+
+# ── Download and extract the arangodump archive ──────────────────────────────
+echo "==> Downloading s3://$BUCKET/$VERSION"
+aws s3 cp "s3://$BUCKET/$VERSION" /tmp/restore.tar.gz
+
+DUMP_EXTRACT_DIR=/tmp/arango-dump
+rm -rf "$DUMP_EXTRACT_DIR"
+mkdir -p "$DUMP_EXTRACT_DIR"
+tar -xzf /tmp/restore.tar.gz -C "$DUMP_EXTRACT_DIR"
+rm -f /tmp/restore.tar.gz
+
+# Locate the dump root (strip a single wrapper directory if present).
+TOP_LEVEL=$(ls -1 "$DUMP_EXTRACT_DIR" | head -1)
+if [ -n "$TOP_LEVEL" ] && [ -d "$DUMP_EXTRACT_DIR/$TOP_LEVEL" ] && \
+   [ "$(ls -1 "$DUMP_EXTRACT_DIR" | wc -l)" = "1" ]; then
+  DUMP_DIR="$DUMP_EXTRACT_DIR/$TOP_LEVEL"
+else
+  DUMP_DIR="$DUMP_EXTRACT_DIR"
+fi
+echo "==> Dump root: $DUMP_DIR"
+
+if [ -f "$DUMP_DIR/MANIFEST.json" ]; then
+  RESTORE_EXTRA_ARGS=""
+  echo "==> Single-database dump detected"
+else
+  RESTORE_EXTRA_ARGS="--all-databases true"
+  echo "==> Multi-database dump detected"
+fi
+
+# ── Start green instance on port 8530 ────────────────────────────────────────
+echo "==> Starting arango-green on port 8530..."
+docker rm -f arango-green 2>/dev/null || true
+rm -rf "$GREEN_DATA" "$GREEN_APPS"
+mkdir -p "$GREEN_DATA" "$GREEN_APPS"
+chown -R 1000:1000 "$GREEN_DATA" "$GREEN_APPS"
+
+docker run -d --name arango-green \
+  -p 8530:8529 \
+  -e ARANGO_ROOT_PASSWORD="$ARANGO_PASSWORD" \
+  -e ARANGODB_OVERRIDE_DETECTED_TOTAL_MEMORY=3g \
+  -v "$GREEN_DATA:/var/lib/arangodb3" \
+  -v "$GREEN_APPS:/var/lib/arangodb3-apps" \
+  arangodb:3.12
+
+GREEN_READY=0
+for i in $(seq 1 60); do
+  if curl -sf http://localhost:8530/_admin/server/availability > /dev/null 2>&1; then
+    echo "==> arango-green ready (attempt $i)"
+    GREEN_READY=1
+    break
+  fi
+  sleep 5
+done
+if [ "$GREEN_READY" = "0" ]; then
+  echo "ERROR: arango-green did not become ready — blue unchanged"
+  docker logs arango-green --tail 20 || true
+  docker rm -f arango-green || true
+  rm -rf "$GREEN_DATA" "$GREEN_APPS"
+  exit 1
+fi
+
+# ── Run arangorestore into green ──────────────────────────────────────────────
+_run_restore() {
+  local log="$1"; shift
+  set +e
+  # shellcheck disable=SC2086
+  docker run --rm \
+    --network host \
+    -v "$DUMP_DIR:/dump" \
+    arangodb:3.12 \
+    arangorestore \
+    --server.endpoint tcp://127.0.0.1:8530 \
+    --server.password "$ARANGO_PASSWORD" \
+    "$@" \
+    2>&1 | tee "$log" | grep --line-buffered -v " INFO "
+  local rc=${PIPESTATUS[0]}
+  set -e
+  if [ "$rc" -ne 0 ]; then
+    echo "ERROR: arangorestore failed (exit $rc) — errors from $log:"
+    grep -v " INFO " "$log" | tail -40
+    exit 1
+  fi
+}
+
+echo "==> Running arangorestore into arango-green (data collections)..."
+_run_restore /tmp/arangorestore-pass1.log \
+  --create-database true \
+  --create-collection true \
+  --overwrite true \
+  --include-system-collections false \
+  --input-directory /dump \
+  $RESTORE_EXTRA_ARGS
+
+# ── Import named graphs and custom analyzers from sidecar JSON files ──────────
+echo "==> Importing named graphs and custom analyzers from sidecar files (if present)..."
+_import_graphs_and_analyzers() {
+  local DB="$1"
+  local AUTH
+  AUTH="$(printf 'root:%s' "$ARANGO_PASSWORD" | base64 | tr -d '\n')"
+  local BASE_URL="http://localhost:8530"
+
+  local ANALYZER_FILE="$DUMP_DIR/$DB/ckn-analyzers.ndjson"
+  if [ -f "$ANALYZER_FILE" ]; then
+    echo "  [$DB] Importing analyzers from $ANALYZER_FILE"
+    while IFS= read -r OBJ; do
+      [ -z "$OBJ" ] && continue
+      local NAME STRIPPED
+      NAME=$(jq -r '.name' <<<"$OBJ")
+      STRIPPED="${NAME##*::}"
+      BODY=$(jq -c --arg n "$STRIPPED" '.name = $n' <<<"$OBJ")
+      HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+        -X POST \
+        -H "Authorization: Basic $AUTH" \
+        -H "Content-Type: application/json" \
+        -d "$BODY" \
+        "$BASE_URL/_db/$DB/_api/analyzer")
+      if [ "$HTTP_CODE" = "201" ] || [ "$HTTP_CODE" = "200" ]; then
+        echo "    [analyzer] $STRIPPED created ($HTTP_CODE)"
+      elif [ "$HTTP_CODE" = "409" ]; then
+        echo "    [analyzer] $STRIPPED already exists — skipped"
+      else
+        echo "    [analyzer] ERROR: $STRIPPED returned HTTP $HTTP_CODE"
+        exit 1
+      fi
+    done < <(jq -c '.' "$ANALYZER_FILE")
+  fi
+
+  local GRAPH_FILE="$DUMP_DIR/$DB/ckn-graphs.ndjson"
+  if [ -f "$GRAPH_FILE" ]; then
+    echo "  [$DB] Importing named graphs from $GRAPH_FILE"
+    while IFS= read -r OBJ; do
+      [ -z "$OBJ" ] && continue
+      local GNAME
+      GNAME=$(jq -r '.name' <<<"$OBJ")
+      HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+        -X POST \
+        -H "Authorization: Basic $AUTH" \
+        -H "Content-Type: application/json" \
+        -d "$OBJ" \
+        "$BASE_URL/_db/$DB/_api/gharial")
+      if [ "$HTTP_CODE" = "201" ] || [ "$HTTP_CODE" = "202" ]; then
+        echo "    [graph] $GNAME created ($HTTP_CODE)"
+      elif [ "$HTTP_CODE" = "409" ]; then
+        echo "    [graph] $GNAME already exists — skipped"
+      else
+        echo "    [graph] ERROR: $GNAME returned HTTP $HTTP_CODE"
+        exit 1
+      fi
+    done < <(jq -c '.' "$GRAPH_FILE")
+  fi
+}
+
+# shellcheck disable=SC2086  # intentional word-split on space-separated list
+for _DB in $EXPECTED_DBS; do
+  _import_graphs_and_analyzers "$_DB"
+done
+unset _DB
+
+# ── Health check green post-restore ──────────────────────────────────────────
+echo "==> Health checking arango-green post-restore..."
+DB_LIST=$(curl -sf -u "root:$ARANGO_PASSWORD" \
+  "http://localhost:8530/_api/database" 2>/dev/null || true)
+
+if [ -z "$DB_LIST" ]; then
+  echo "ERROR: arango-green failed post-restore health check (no API response) — blue unchanged"
+  docker rm -f arango-green || true
+  rm -rf "$GREEN_DATA" "$GREEN_APPS"
+  exit 1
+fi
+
+MISSING_DBS=()
+# shellcheck disable=SC2086  # intentional word-split on space-separated list
+for EXPECTED_DB in $EXPECTED_DBS; do
+  if ! echo "$DB_LIST" | grep -q "\"$EXPECTED_DB\""; then
+    MISSING_DBS+=("$EXPECTED_DB")
+  fi
+done
+
+if [ "${#MISSING_DBS[@]}" -gt 0 ]; then
+  echo "ERROR: arango-green is missing expected databases after restore — blue unchanged"
+  echo "  Missing: ${MISSING_DBS[*]}"
+  echo "  API response: $DB_LIST"
+  docker rm -f arango-green || true
+  rm -rf "$GREEN_DATA" "$GREEN_APPS"
+  exit 1
+fi
+
+echo "==> arango-green healthy (all expected databases present)"
+
+# ── Swap: blue → green (downtime window starts here) ─────────────────────────
+echo "==> Swapping to green data..."
+docker stop arango-green && docker rm arango-green
+docker stop arangodb || true
+
+rm -rf "$DATA_DIR/_blue_backup"
+mkdir -p "$DATA_DIR/_blue_backup"
+find "$DATA_DIR" -mindepth 1 -maxdepth 1 \
+  ! -name '_blue_backup' ! -name '_green' \
+  -exec mv {} "$DATA_DIR/_blue_backup/" \;
+
+find "$GREEN_DATA" -mindepth 1 -maxdepth 1 -exec mv {} "$DATA_DIR/" \;
+rmdir "$GREEN_DATA"
+
+rm -rf "${APPS_DIR}-blue-old"
+mv "$APPS_DIR" "${APPS_DIR}-blue-old"
+mv "$GREEN_APPS" "$APPS_DIR"
+
+docker start arangodb
+
+SWAP_READY=0
+for i in $(seq 1 60); do
+  if curl -sf http://localhost:8529/_admin/server/availability > /dev/null 2>&1; then
+    echo "==> arangodb ready on green data (attempt $i)"
+    SWAP_READY=1
+    break
+  fi
+  sleep 5
+done
+
+if [ "$SWAP_READY" = "0" ]; then
+  echo "ERROR: arangodb failed to start on green data — rolling back to blue"
+  docker stop arangodb || true
+  find "$DATA_DIR" -mindepth 1 -maxdepth 1 ! -name '_blue_backup' -exec rm -rf {} \;
+  find "$DATA_DIR/_blue_backup" -mindepth 1 -maxdepth 1 -exec mv {} "$DATA_DIR/" \;
+  rmdir "$DATA_DIR/_blue_backup"
+  rm -rf "$APPS_DIR"
+  mv "${APPS_DIR}-blue-old" "$APPS_DIR"
+  docker start arangodb
+  echo "==> Rollback complete — still on version $LAST_RESTORED"
+  exit 1
+fi
+
+echo "$VERSION" > "$DATA_DIR/.dataset-version"
+
+rm -rf "$DATA_DIR/_blue_backup" "${APPS_DIR}-blue-old" "$DUMP_EXTRACT_DIR"
+
+echo "==> Blue-green swap complete $(date)"
