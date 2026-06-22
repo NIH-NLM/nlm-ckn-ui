@@ -35,6 +35,9 @@ Metadata:
 
 Conditions:
   IsProd: !Equals [!Ref Environment, 'prod']
+  # Stage is the promotion source for the sandbox account: its frontend bucket
+  # grants cross-account read so deploy-sandbox.sh can sync the built bundle.
+  IsStage: !Equals [!Ref Environment, 'stage']
 
 Resources:
   # ============================================================================
@@ -90,6 +93,22 @@ Resources:
             Condition:
               StringEquals:
                 AWS:SourceArn: !Sub 'arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}'
+          # Stage only: allow the sandbox account (206537881715) to read the
+          # built frontend so it can be promoted cross-account (mirrors the
+          # ArangoDB dataset bucket grant in shared/shared-resources.yaml).
+          - !If
+              - IsStage
+              - Sid: AllowSandboxPromotionRead
+                Effect: Allow
+                Principal:
+                  AWS: 'arn:aws:iam::206537881715:root'
+                Action:
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt FrontendBucket.Arn
+                  - !Sub '${FrontendBucket.Arn}/*'
+              - !Ref 'AWS::NoValue'
 
   # ============================================================================
   # CloudFront Origin Access Control

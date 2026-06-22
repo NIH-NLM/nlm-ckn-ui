@@ -20,6 +20,8 @@
 #                   environments without a FrontendUrl output (e.g. sandbox) or a
 #                   local/preview deploy. Also reads BASE_URL from the env.
 #   --timeout N     Per-request timeout in seconds (default: 10).
+#   -k, --insecure  Skip TLS cert verification (for a tunnelled localhost URL
+#                   where the cert won't match, e.g. via alb-tunnel.sh).
 #   -h, --help      Show this help.
 #
 # EXIT CODES: 0 = all probes passed, 1 = one or more failed, 2 = setup error.
@@ -29,6 +31,7 @@ set -uo pipefail
 ENVIRONMENT="stage"
 BASE_URL="${BASE_URL:-}"
 TIMEOUT=10
+INSECURE=""
 PROJECT="cell-kn"
 export AWS_REGION="${AWS_REGION:-us-east-1}"
 
@@ -38,7 +41,8 @@ while [ $# -gt 0 ]; do
     --url=*) BASE_URL="${1#*=}"; shift ;;
     --timeout) TIMEOUT="$2"; shift 2 ;;
     --timeout=*) TIMEOUT="${1#*=}"; shift ;;
-    -h|--help) sed -n '2,27p' "$0"; exit 0 ;;
+    -k|--insecure) INSECURE=1; shift ;;
+    -h|--help) sed -n '2,28p' "$0"; exit 0 ;;
     dev|stage|prod|sandbox) ENVIRONMENT="$1"; shift ;;
     *) echo "unknown argument: $1 (try --help)" >&2; exit 2 ;;
   esac
@@ -70,6 +74,7 @@ probe() {
   local label="$1" path="$2" want="$3" pattern="${4:-}" data="${5:-}"
   local body status time
   local args=(-sS -m "$TIMEOUT" -w '\n%{http_code} %{time_total}')
+  [ -n "$INSECURE" ] && args+=(-k)
   [ -n "$data" ] && args+=(-H 'Content-Type: application/json' --data "$data")
   body=$(curl "${args[@]}" "${BASE_URL}${path}" 2>/dev/null)
   read -r status time <<<"$(printf '%s' "$body" | tail -1)"

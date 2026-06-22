@@ -464,31 +464,21 @@ Resources:
           echo "==> Starting ArangoDB setup $(date)"
 
           # ── 2. Mount EBS data volume ─────────────────────────────────────────
-          # The data volume is a standalone, RETAINED EBS volume attached as
-          # /dev/sdf by the self-attach block above (see DataVolume). It
-          # persists across instance replacement, so on every boot after the very
-          # first it ALREADY contains an XFS filesystem + ArangoDB data. We must
-          # mount it WITHOUT reformatting — a stray mkfs here would wipe the DB.
+          # Standalone RETAINED volume; persists across replacement. Mount without
+          # reformatting so a populated volume is never wiped. See DataVolume.
           DATA_DIR=/var/lib/arangodb3
           APPS_DIR=/var/lib/arangodb3-apps
 
           mkdir -p "$DATA_DIR" "$APPS_DIR"
 
-          # Resolve the data device by elimination. On Nitro/Graviton the volume
-          # may present as NVMe (/dev/nvme1n1) regardless of the /dev/sdf request,
-          # so we don't hard-code a name. The root disk is whatever backs "/";
-          # the data volume is the other whole disk. The attachment can lag the
-          # instance boot, so we poll for it.
+          # Resolve the data device by elimination (Nitro may rename /dev/sdf to
+          # NVMe): root disk backs "/", the data volume is the other whole disk.
           ROOT_DISK=$(lsblk -no pkname "$(findmnt -no SOURCE /)")
           echo "==> Root disk: $ROOT_DISK"
 
-          # Attach the standalone data volume to THIS instance from UserData.
-          # We can't use a CloudFormation AWS::EC2::VolumeAttachment: it depends on
-          # the instance reaching CREATE_COMPLETE, but our CreationPolicy only
-          # signals success after the volume is mounted -> deadlock. Doing the
-          # attach here also lets us force-detach the volume from a prior instance
-          # during an in-place replacement (e.g. an InstanceType resize), which a
-          # static VolumeAttachment can't coordinate within the same stack update.
+          # Self-attach the volume from UserData (a CFN VolumeAttachment would
+          # deadlock against the CreationPolicy; see the NOTE at end of file).
+          # Force-detach from a prior instance covers in-place replacement.
           DATA_VOLUME_ID="${DataVolume}"
           IMDS_TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" \
             -H "X-aws-ec2-metadata-token-ttl-seconds: 300")
@@ -518,9 +508,7 @@ Resources:
           echo "==> Waiting for data volume to surface as a block device..."
           DATA_DEVICE=""
           for i in $(seq 1 30); do
-            # `|| true`: until the volume attaches, grep -v matches nothing and
-            # exits 1, which under `set -e -o pipefail` would abort the script
-            # before this poll loop can retry. Tolerate it and keep polling.
+            # `|| true`: grep -v exits 1 until the volume attaches; tolerate under set -e.
             DATA_DEVICE=$(lsblk -dpno NAME | grep -v "^/dev/${!ROOT_DISK}$" | head -1 || true)
             if [ -n "$DATA_DEVICE" ]; then
               echo "==> Data device found: $DATA_DEVICE (attempt $i)"
@@ -539,9 +527,7 @@ Resources:
             exit 1
           fi
 
-          # Only format if the device has NO filesystem yet. blkid prints a TYPE=
-          # field only when a filesystem (or other signature) is present, so this
-          # guard ensures a populated volume from a prior instance is never wiped.
+          # Format only if blkid finds no filesystem (TYPE=) — never wipe a populated volume.
           if blkid "$DATA_DEVICE" | grep -q 'TYPE='; then
             echo "==> Data volume already has a filesystem, skipping mkfs (preserving data)"
           else
@@ -549,8 +535,7 @@ Resources:
             mkfs.xfs "$DATA_DEVICE"
           fi
 
-          # Mount by filesystem UUID (stable across reboots / device renaming),
-          # idempotent via fstab.
+          # Mount by UUID (stable across device renames), idempotent via fstab.
           DATA_UUID=$(blkid -s UUID -o value "$DATA_DEVICE")
           if ! grep -q "$DATA_UUID" /etc/fstab; then
             echo "UUID=$DATA_UUID $DATA_DIR xfs defaults,nofail 0 2" >> /etc/fstab
@@ -579,24 +564,10 @@ Resources:
           INSTANCE_ID=$(curl -s -H "X-aws-ec2-metadata-token: $IMDS_TOKEN" \
             http://169.254.169.254/latest/meta-data/instance-id)
 
-          # ── Cache budget (derived from this host's actual RAM) ───────────────
-          # ArangoDB was running starved: column cache DISABLED
-          # (arangodb_search_columns_cache_size = 0), ~512 MiB RocksDB block cache
-          # and ~256 MiB in-RAM cache — so most of the working set lived on EBS
-          # and every restart paid a 2–4.5 s cold-cache window (2026-06-15
-          # postmortem, Springbok-LLC/upptime#2). We size the caches from real RAM
-          # so they scale with the instance type (t4g.medium 4 / m7g.large 8 /
-          # m7g.xlarge 16 GiB) without per-env constants.
-          #
-          # MEM_TOTAL_MIB = physical RAM. We hand ArangoDB ~75% of it via
-          # ARANGODB_OVERRIDE_DETECTED_TOTAL_MEMORY (leaving ~25%, min 2 GiB, for
-          # the OS + Docker + ArangoSearch query/working memory), then pin the two
-          # big caches explicitly (an explicit value overrides ArangoDB's
-          # memory-derived default):
-          #   --rocksdb.block-cache-size      ≈ 25% of host RAM
-          #   --arangosearch.columns-cache-limit ≈ 12.5% of host RAM (0 = off was the bug)
-          # The in-RAM hash/edge cache (--cache.size) is left at its default,
-          # which ArangoDB derives from the override (~(override-2GiB)*0.25).
+          # ── Cache budget (derived from host RAM) ─────────────────────────────
+          # Sized from real RAM so caches scale with instance type (2026-06-15
+          # cold-cache postmortem). Hand ArangoDB ~75% RAM (OS reserve min 2 GiB),
+          # pin block cache ≈25% and columns cache ≈12.5% (0 = off was the bug).
           MEM_TOTAL_MIB=$(free -m | awk '/^Mem:/{print $2}')
           OS_RESERVE_MIB=$(( MEM_TOTAL_MIB / 4 ))
           [ "$OS_RESERVE_MIB" -lt 2048 ] && OS_RESERVE_MIB=2048
@@ -622,9 +593,7 @@ Resources:
             --rocksdb.block-cache-size "$BLOCK_CACHE_BYTES" \
             --arangosearch.columns-cache-limit "$COLUMNS_CACHE_BYTES"
 
-          # ArangoDB first-boot initialisation (password setup, key generation) can
-          # take several minutes. Poll for up to 10 minutes before giving up.
-          # /_admin/server/availability returns 200 without authentication.
+          # First-boot init can take minutes; poll availability for up to 10 min.
           echo "==> Waiting for ArangoDB to be ready (up to 10 min)..."
           READY=0
           for i in $(seq 1 60); do
@@ -648,9 +617,7 @@ Resources:
           fi
 
           # ── 4. Restore dataset via arangorestore ─────────────────────────────
-          # On first boot (or after instance replacement) we restore the dataset
-          # version recorded in SSM. No blue-green swap is needed here because
-          # ArangoDB just initialised with an empty database.
+          # Restore the SSM-recorded dataset version on first boot / replacement.
           echo "==> Dataset restore check"
 
           ARANGODB_S3_BUCKET=$(aws ssm get-parameter \
@@ -668,9 +635,7 @@ Resources:
           echo "Dataset bucket:  $ARANGODB_S3_BUCKET"
           echo "Dataset version: $CURRENT_VERSION"
 
-          # On a retained volume that already holds this dataset version (e.g. after
-          # an instance replacement), skip the restore so we don't clobber the live
-          # data — the volume already carries it.
+          # Skip restore if the retained volume already holds this version.
           RESTORED_MARKER=""
           [ -f "$DATA_DIR/.dataset-version" ] && RESTORED_MARKER=$(cat "$DATA_DIR/.dataset-version")
 
@@ -750,18 +715,10 @@ Resources:
             --region "$REGION"
 
           # ── 7. Reconcile Cloud Map: drop stale (dead) registrations ──────────
-          # When this instance replaced a prior one (e.g. an InstanceType resize),
-          # the OLD instance's Cloud Map registration is NOT removed — nothing runs
-          # on a terminated host to deregister it. The service then accumulates dead
-          # A-records and the Django backend (which resolves arangodb via Cloud Map
-          # DNS, not the ALB) round-robins onto dead IPs and hangs until timeout
-          # (3.5s, or 30s -> CloudFront 504). See the 2026-06-15 stage postmortem.
-          #
-          # We self-heal on every boot: list the service's registered instances and
-          # deregister any whose EC2 instance is not 'running' (terminated, stopped,
-          # or already gone). Our own freshly-registered id is always running, so it
-          # is preserved. This makes replacement self-correcting without an ASG
-          # lifecycle hook, which this single CloudFormation-managed instance has not.
+          # A replaced instance leaves its old Cloud Map A-record behind; the
+          # backend resolves arangodb via Cloud Map DNS and hangs on dead IPs
+          # (2026-06-15 stage 504 postmortem). Self-heal each boot: deregister any
+          # registered instance whose EC2 state is not 'running' (ours always is).
           echo "==> Reconciling Cloud Map service $SD_SERVICE_ID (removing dead registrations)"
           REGISTERED_IDS=$(aws servicediscovery list-instances \
             --service-id "$SD_SERVICE_ID" \
@@ -772,9 +729,7 @@ Resources:
             if [ "$RID" = "$INSTANCE_ID" ]; then
               continue
             fi
-            # Registered Cloud Map instance ids are EC2 instance ids (we register
-            # with --instance-id "$INSTANCE_ID"). A missing/terminated instance
-            # yields an empty/"None"/error state, which we also treat as stale.
+            # Cloud Map instance ids are EC2 ids; missing/terminated => treat as stale.
             RID_STATE=$(aws ec2 describe-instances \
               --instance-ids "$RID" \
               --query 'Reservations[0].Instances[0].State.Name' \
@@ -792,14 +747,9 @@ Resources:
           done
 
           # ── 8. Install a shutdown hook to deregister this instance ────────────
-          # Belt-and-suspenders to the boot-time reconcile above: on a *graceful*
-          # stop/terminate (which CloudFormation issues when replacing the
-          # instance), systemd runs this oneshot's ExecStop, removing our own
-          # Cloud Map + ALB registration before we go away. The boot-time reconcile
-          # still covers the hard-kill case where ExecStop never runs.
-          # sed strips the YAML block-scalar indentation so the shebang lands at
-          # byte 0 (required for execve) — the heredoc body has no intentional
-          # leading whitespace, so this is safe.
+          # On graceful stop/terminate, systemd ExecStop deregisters us from Cloud
+          # Map + ALB (boot-time reconcile covers the hard-kill case). sed strips
+          # block-scalar indent so the shebang lands at byte 0.
           sed 's/^          //' > /usr/local/bin/arango-deregister.sh << 'DEREG'
           #!/bin/bash
           set -uo pipefail
@@ -827,18 +777,15 @@ Resources:
             /usr/local/bin/arango-deregister.sh
           chmod +x /usr/local/bin/arango-deregister.sh
 
-          # Strip the block-scalar indentation: systemd requires section headers
-          # like [Unit] at column 0 and rejects leading whitespace.
+          # Strip block-scalar indent: systemd requires [Unit] at column 0.
           sed 's/^          //' > /etc/systemd/system/arango-deregister.service << 'UNIT'
           [Unit]
           Description=Deregister ArangoDB instance from Cloud Map / ALB on shutdown
-          # Run the deregister as part of normal shutdown.
           After=network-online.target
           Wants=network-online.target
           [Service]
           Type=oneshot
           RemainAfterExit=yes
-          # ExecStart is a no-op marker; the real work happens on stop.
           ExecStart=/bin/true
           ExecStop=/usr/local/bin/arango-deregister.sh
           [Install]
