@@ -1,6 +1,7 @@
 // Graph slice actions and thunks
 export {
   addToLassoSelection,
+  clearAllPins,
   clearGraphData,
   clearLassoSelection,
   clearNodeToCenter,

@@ -10,6 +10,7 @@ import { ActionCreators } from "redux-undo";
 import { fetchNeighborCollections } from "services";
 import {
   addToLassoSelection,
+  clearAllPins,
   clearGraphData,
   clearLassoSelection,
   clearNodeToCenter,
@@ -132,6 +133,10 @@ const ForceGraph = ({
     isEdge: false,
     nodeId: null,
     nodeLabel: null,
+    // Whether the right-clicked node is currently user-pinned. Drives the
+    // Pin/Unpin button label inside the context menu. Sourced from the live
+    // simulation node at handleNodeClick time.
+    userPinned: false,
     position: { x: 0, y: 0 },
   });
   const [collectionMenu, setCollectionMenu] = useState({
@@ -283,8 +288,13 @@ const ForceGraph = ({
 
   // --- Event Handlers ---
   const handleNodeDragEnd = useCallback(
-    ({ nodeId, x, y }) => {
-      dispatch({ type: "graph/updateNodePosition", payload: { nodeId, x, y } });
+    ({ nodeId, x, y, userPinned }) => {
+      // userPinned is set by the constructor's drag-end handler so the
+      // store mirrors the pin state set in-memory on the simulation node.
+      dispatch({
+        type: "graph/updateNodePosition",
+        payload: { nodeId, x, y, userPinned },
+      });
     },
     [dispatch],
   );
@@ -348,6 +358,10 @@ const ForceGraph = ({
       nodeId: nodeData._id,
       nodeLabel: getLabel(nodeData),
       isEdge: nodeData._id.split("/")[0].includes("-"),
+      // nodeData is the live D3 simulation node — userPinned is set on it by
+      // drag-end and setNodePinned and survives merges (preserved by ref in
+      // processGraphData).
+      userPinned: !!nodeData.userPinned,
       position: { x, y },
     });
   };
@@ -776,6 +790,15 @@ const ForceGraph = ({
     graphInstanceRef.current?.setLayoutMode(settings.layoutMode || "force", settings.labelStates);
   };
 
+  // Reset positions: clear every user-pin (live D3 + Redux) and reheat the
+  // simulation so the layout relaxes from current positions. Companion to
+  // Restart Simulation. The constructor's unpinAll handles the data-sim-settled
+  // sentinel + reheat lifecycle.
+  const handleResetPositions = () => {
+    graphInstanceRef.current?.unpinAll?.();
+    dispatch(clearAllPins());
+  };
+
   // --- Popup Handlers ---
   const handleExpand = () => {
     if (!popup.nodeId) return;
@@ -854,6 +877,26 @@ const ForceGraph = ({
       const prev = items[(idx - 1 + items.length) % items.length];
       prev?.focus();
     }
+  };
+
+  // Toggle the right-clicked node's user-pin. setNodePinned mutates the live
+  // simulation node (fx/fy + userPinned). We mirror the change to Redux via
+  // updateNodePosition so the store reflects pin state and survives a
+  // constructor remount (saved graphs read back the field via the same merge).
+  const handlePinToggle = () => {
+    if (!popup.nodeId) return;
+    const newPinned = !popup.userPinned;
+    // popup.nodeId comes from nodeData._id (see handleNodeClick); match on
+    // either field for consistency with the rest of this file (e.g.,
+    // handleSimulationEnd merge, expand merge).
+    const node = graphData.nodes.find((n) => (n._id || n.id) === popup.nodeId);
+    if (!node) return;
+    graphInstanceRef.current?.setNodePinned(popup.nodeId, newPinned);
+    dispatch({
+      type: "graph/updateNodePosition",
+      payload: { nodeId: popup.nodeId, x: node.x, y: node.y, userPinned: newPinned },
+    });
+    handlePopupClose();
   };
 
   const handleCollapse = () => {
@@ -1092,6 +1135,14 @@ const ForceGraph = ({
           <button
             type="button"
             className="document-popup-button"
+            onClick={handlePinToggle}
+            style={{ display: !popup.isEdge ? "block" : "none" }}
+          >
+            {popup.userPinned ? "Unpin" : "Pin"}
+          </button>
+          <button
+            type="button"
+            className="document-popup-button"
             onClick={handleCollapse}
             style={{ display: !popup.isEdge ? "block" : "none" }}
           >
@@ -1238,6 +1289,7 @@ const ForceGraph = ({
                       dispatch(updateSetting({ setting: "layoutMode", value: e.target.value }))
                     }
                     onSimulationRestart={handleSimulationRestart}
+                    onResetPositions={handleResetPositions}
                   />
                 )}
                 {activeSecondaryTab === "filters" && (

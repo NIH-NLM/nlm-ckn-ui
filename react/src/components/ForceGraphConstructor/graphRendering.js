@@ -82,7 +82,11 @@ export function renderGraph(_simulation, nodes, links, d3, containers, options) 
     options.selectedNodeIds instanceof Set
       ? options.selectedNodeIds
       : new Set(options.selectedNodeIds || []);
-  nodeEnter.merge(nodeSelection).classed("selected", (d) => selectedSet.has(d.id));
+  const merged = nodeEnter.merge(nodeSelection);
+  merged.classed("selected", (d) => selectedSet.has(d.id));
+  // Reflect the user-pin flag (set by drag, the Pin action, or restore) as a
+  // CSS class on the node group so the pin marker becomes visible.
+  merged.classed("pinned", (d) => !!d.userPinned);
 
   // For each new node, create visual representation.
   nodeEnter.each(function (d) {
@@ -141,6 +145,20 @@ export function renderGraph(_simulation, nodes, links, d3, containers, options) 
           ? options.collectionMaps.get(d._id.split("/")[0]).abbreviated_name
           : d._id.split("/")[0],
       );
+
+    // Pin marker — an inline Material Design push_pin path. Hidden by default
+    // via CSS; revealed by the `.pinned` class on the parent g.node. Inline
+    // SVG path (not an emoji) so rendering is OS-independent at small sizes.
+    // viewBox transform: scale to ~12px and offset to the node's top-right.
+    const pinMarker = nodeG
+      .append("g")
+      .attr("class", "node-pin-marker")
+      .attr(
+        "transform",
+        `translate(${options.nodeRadius * 0.55}, ${-options.nodeRadius - 4}) scale(0.5)`,
+      )
+      .style("pointer-events", "none");
+    pinMarker.append("path").attr("d", "M16,12V4h1V2H7v2h1v8l-2,2v2h5.2v6h1.6v-6H18v-2L16,12z");
   });
 
   // Handle link enter/exit/update.
