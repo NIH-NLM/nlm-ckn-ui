@@ -66,6 +66,8 @@ function ForceGraphConstructor(
           snapshot.set(id, { node, startX: node.x, startY: node.y });
           node.fx = node.x;
           node.fy = node.y;
+          // Mark as user-set so the incremental-expand auto-release skips it.
+          node.userPinned = true;
         }
         groupDragSnapshot = {
           subjectId: event.subject.id,
@@ -113,9 +115,16 @@ function ForceGraphConstructor(
             // click on a selected node).
             node.x = node.fx;
             node.y = node.fy;
-            positions.push({ nodeId: id, x: node.fx, y: node.fy });
+            // userPinned was set in the drag-start snapshot loop above; mirror
+            // it onto the Redux payload so the store reflects the pin.
+            positions.push({ nodeId: id, x: node.fx, y: node.fy, userPinned: true });
           }
           mergedOptions.onMultiNodeDragEnd?.(positions);
+          // Drag-end mutated userPinned on each selected node but did not
+          // touch the DOM — refresh the .pinned class so the pin markers
+          // appear immediately. Without this, the icons only appear after a
+          // later renderGraph (or a manual Pin action) re-syncs the class.
+          applyPinnedHighlight();
           groupDragSnapshot = null;
           // Repaint at final positions. simulation.alpha(...) without restart()
           // won't run a tick once the simulation has cooled, so call ticked()
@@ -127,11 +136,13 @@ function ForceGraphConstructor(
 
         if (!event.active) simulation.alphaTarget(0);
         // Pin the node at the dropped position so it stays put while the
-        // simulation continues to settle the rest of the graph. The post-rebuild
-        // unpin loop in updateGraph (and restoreGraph) is the existing release
-        // path — rebuilding the graph clears all pins.
+        // simulation continues to settle the rest of the graph. Mark as a
+        // user-set pin so the incremental-expand auto-release loop in
+        // updateGraph (and the post-load release in restoreGraph) leaves it
+        // alone — only auto-set pins are cleared after settle.
         event.subject.fx = event.x;
         event.subject.fy = event.y;
+        event.subject.userPinned = true;
         // Emit the same coords we just pinned (event.x/y), not
         // event.subject.x/y — the latter is the simulation's last-tick
         // position and can lag by a frame, so subscribers (e.g., Redux
@@ -140,7 +151,11 @@ function ForceGraphConstructor(
           nodeId: event.subject.id,
           x: event.x,
           y: event.y,
+          userPinned: true,
         });
+        // Refresh the .pinned class so the marker appears on the just-dropped
+        // node without waiting for a renderGraph rebuild.
+        applyPinnedHighlight();
       } finally {
         // Decrement after the dispatch so any synchronous subscriber observes
         // isDragging() as still true during its own work. Use finally so a
@@ -196,6 +211,11 @@ function ForceGraphConstructor(
   });
 
   // Select and configure SVG element.
+  // data-sim-settled is a deterministic sentinel for Playwright: "true" means
+  // the simulation has cooled and rendered positions are stable; "false" means
+  // a layout pass is in flight. Tests gate assertions on
+  // svg[data-sim-settled="true"] rather than fixed timeouts. Initialized true
+  // because an empty graph has nothing to settle.
   const svg = d3
     .select(svgElement)
     .attr("width", mergedOptions.width)
@@ -206,7 +226,8 @@ function ForceGraphConstructor(
       mergedOptions.width,
       mergedOptions.height,
     ])
-    .attr("style", "width: 100%; height: 100%;");
+    .attr("style", "width: 100%; height: 100%;")
+    .attr("data-sim-settled", "true");
 
   const g = svg.append("g");
 
@@ -268,6 +289,15 @@ function ForceGraphConstructor(
   // the zoom filter (to suppress pan/zoom while drawing) and by the lasso
   // attachment itself (to gate pointerdown).
   let lassoEnabled = false;
+
+  // Refresh the .pinned class on every node group from each node's userPinned
+  // field. State lives on the node objects themselves (processGraphData
+  // preserves it by reference across rebuilds), so this is a pure read —
+  // no auxiliary set to keep in sync. Called after public state-changing
+  // operations (setNodePinned, unpinAll) and after every renderGraph.
+  const applyPinnedHighlight = () => {
+    nodeContainer.selectAll("g.node").classed("pinned", (d) => !!d.userPinned);
+  };
 
   // The current set of lasso-selected node IDs. Used by renderGraph to apply
   // the .selected class on the parent <g> and by the drag handler to detect
@@ -618,6 +648,7 @@ function ForceGraphConstructor(
   // Rebuilds graph from a saved state object.
   // Fixes node positions initially to prevent simulation drift on restore.
   function restoreGraph({ nodes, links, labelStates }) {
+    svg.attr("data-sim-settled", "false");
     // Invalidate any in-flight waitForAlpha promises from prior updateGraph
     // calls — without this, a callback resolving after restoreGraph would
     // call onSimulationEnd with stale `processedNodes` and dispatch
@@ -681,14 +712,23 @@ function ForceGraphConstructor(
     simulation.alpha(0);
     ticked();
 
-    // Unfix node positions to allow interaction.
+    // Unfix node positions to allow interaction — except for nodes the user
+    // explicitly pinned before saving. Honoring userPinned here is what makes
+    // pin state survive save/load: getCurrentGraph spreads ...rest so
+    // userPinned/fx/fy ride along in the saved payload; loadGraph assigns
+    // graphData verbatim; renderGraph's merged classed("pinned", ...) makes
+    // the marker reappear automatically.
     for (const node of processedNodes) {
+      if (node.userPinned) continue;
       node.fx = null;
       node.fy = null;
     }
 
     // Use the zoom-aware function to set initial label visibility.
     updateLabelVisibilityOnZoom(d3.zoomTransform(svg.node()).k);
+
+    // Restore is a single-tick draw, so positions are stable immediately.
+    svg.attr("data-sim-settled", "true");
   }
 
   // Restore force strengths and apply the current layout mode.
@@ -725,6 +765,9 @@ function ForceGraphConstructor(
     save = true,
     labelStates = mergedOptions.initialLabelStates,
   } = {}) {
+    // Mark the sim as unsettled for the duration of this rebuild — tests gate
+    // on this attribute to avoid racing the alpha cooldown.
+    svg.attr("data-sim-settled", "false");
     if (resetData) {
       resetGraph();
     }
@@ -735,6 +778,12 @@ function ForceGraphConstructor(
     if (mergedOptions.useFocusNodes && newOriginNodeIds.length > 0) {
       mergedOptions.originNodeIds = newOriginNodeIds;
     }
+
+    // Snapshot the IDs of nodes that exist BEFORE the merge. Used after the
+    // merge to auto-pin pre-existing nodes during the post-expand reheat so
+    // the existing layout stays put while only the new nodes flow in
+    // ("preserve mental map" / incremental layout). Released after settle.
+    const prevNodeIds = new Set(processedNodes.map((n) => n.id));
 
     // Process and merge new data into internal state.
     processedNodes = processGraphData(
@@ -781,6 +830,23 @@ function ForceGraphConstructor(
     simulation.nodes(processedNodes);
     forceLink.links(processedLinks);
 
+    // Auto-pin pre-existing nodes before the simulation reheats so their
+    // positions stay put during the new-node settle. Skip nodes the user has
+    // explicitly pinned (drag-end, Pin action) — those carry their own fx/fy
+    // and userPinned=true; we leave them alone. Mark our own auto-pins with
+    // _autoPinned so the post-settle release loop only touches what we set.
+    // Skipped entirely on resetData (no pre-existing nodes to preserve).
+    if (!resetData) {
+      for (const node of processedNodes) {
+        if (!prevNodeIds.has(node.id)) continue;
+        if (node.userPinned) continue;
+        if (node.fx != null || node.fy != null) continue;
+        node.fx = node.x;
+        node.fy = node.y;
+        node._autoPinned = true;
+      }
+    }
+
     // Re-render DOM with updated data.
     renderGraph(
       simulation,
@@ -818,7 +884,18 @@ function ForceGraphConstructor(
     if (currentLayoutMode && currentLayoutMode !== "force") {
       isLiveSimulationRunning = false;
       applyCurrentLayoutMode(() => {
+        // Release auto-pins set above so subsequent interactions (drag,
+        // simulation toggle) can move pre-existing nodes again. User-pinned
+        // nodes are untouched.
+        for (const node of processedNodes) {
+          if (node._autoPinned) {
+            node.fx = null;
+            node.fy = null;
+            delete node._autoPinned;
+          }
+        }
         updateLabelVisibilityOnZoom(d3.zoomTransform(svg.node()).k);
+        svg.attr("data-sim-settled", "true");
         if (save === true && typeof mergedOptions.onSimulationEnd === "function") {
           const finalNodes = processedNodes.map(({ x, y, index, vx, vy, ...rest }) => ({
             x,
@@ -858,6 +935,18 @@ function ForceGraphConstructor(
       // Ensure the live simulation flag is reset after auto-stabilization.
       isLiveSimulationRunning = false;
 
+      // Release the auto-pins we set before the reheat. Leave user-pinned
+      // nodes' fx/fy intact so an explicit Pin (or drag-end pin) survives.
+      // runSimulation(false) already drained alpha to 0; no further tick is
+      // needed — the rendered positions are the visible ones.
+      for (const node of processedNodes) {
+        if (node._autoPinned) {
+          node.fx = null;
+          node.fy = null;
+          delete node._autoPinned;
+        }
+      }
+
       // Perform post-simulation actions.
       if (centerNodeId) {
         centerOnNode(centerNodeId);
@@ -865,6 +954,9 @@ function ForceGraphConstructor(
 
       // Use the zoom-aware function to set final label visibility.
       updateLabelVisibilityOnZoom(d3.zoomTransform(svg.node()).k);
+
+      // Signal to tests that the rendered positions are now stable.
+      svg.attr("data-sim-settled", "true");
 
       // Save final state if required.
       if (save === true && typeof mergedOptions.onSimulationEnd === "function") {
@@ -922,6 +1014,58 @@ function ForceGraphConstructor(
     // Reads the current selection. Returns a copy so callers can't mutate
     // the internal Set used by the drag handler and applySelectionHighlight.
     getSelectedNodeIds: () => new Set(currentSelectedNodeIds),
+    // Sets or clears a user-pin on a node by id. When pinned, the node's
+    // current x/y become fx/fy and userPinned=true, so the incremental-expand
+    // auto-release skips it. When unpinned, fx/fy are cleared and the node
+    // re-joins the live simulation. Refreshes the visible pin marker.
+    setNodePinned: (nodeId, pinned) => {
+      const node = simulation.nodes().find((n) => n.id === nodeId);
+      if (!node) return;
+      if (pinned) {
+        node.fx = node.x;
+        node.fy = node.y;
+        node.userPinned = true;
+      } else {
+        node.fx = null;
+        node.fy = null;
+        node.userPinned = false;
+        delete node._autoPinned;
+      }
+      applyPinnedHighlight();
+    },
+    // Clears every user-pin and reheats the simulation so the layout relaxes
+    // from its current positions. Used by the "Reset positions" settings
+    // button — analogous to Restart Simulation but also releases pin state.
+    // The existing waitForAlpha callback handles the re-cool + the
+    // data-sim-settled sentinel flip.
+    unpinAll: () => {
+      for (const node of simulation.nodes()) {
+        node.fx = null;
+        node.fy = null;
+        node.userPinned = false;
+        delete node._autoPinned;
+      }
+      applyPinnedHighlight();
+      svg.attr("data-sim-settled", "false");
+      runSimulation(
+        true,
+        simulation,
+        forceNode,
+        forceCenter,
+        forceLink,
+        processedLinks,
+        mergedOptions.nodeForceStrength,
+        mergedOptions.centerForceStrength,
+        linkForceStrength,
+      );
+      const threshold = Math.max(1 / (processedNodes.length || 1), 0.002);
+      waitForAlpha(simulation, threshold, simulationGeneration).then((stillValid) => {
+        if (!stillValid) return;
+        runSimulation(false, simulation, forceNode, forceCenter, forceLink);
+        updateLabelVisibilityOnZoom(d3.zoomTransform(svg.node()).k);
+        svg.attr("data-sim-settled", "true");
+      });
+    },
     // Returns the current node/link state suitable for saving.
     getCurrentGraph: () => {
       const finalNodes = processedNodes.map(({ x, y, index, vx, vy, ...rest }) => ({

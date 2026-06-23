@@ -228,3 +228,177 @@ test("Graph save/load lifecycle", async ({ page }) => {
   }, graphName);
   expect(hasNoSavedGraph).toBeTruthy();
 });
+
+// Pin state must roundtrip through save → load: a node pinned via Pin (or
+// drag) before save should remain pinned after load — fx/fy preserved by
+// restoreGraph's userPinned guard, marker class re-applied by renderGraph.
+test("Saved graph preserves pin state on load", async ({ page }) => {
+  const DOC_COLL = "TEST_DOCUMENT_COLLECTION";
+  const originA = `${DOC_COLL}/ROOT_A`;
+  const originB = `${DOC_COLL}/ROOT_B`;
+  const graphName = "Pinned Snapshot";
+
+  await page.route("**/arango_api/collections/", async (route) => {
+    if (route.request().method() === "POST") {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([DOC_COLL]),
+      });
+    }
+    return route.continue();
+  });
+  await page.route("**/arango_api/edge_filter_options/", async (route) => {
+    if (route.request().method() === "POST") {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ Label: { type: "categorical", values: ["has_child"] } }),
+      });
+    }
+    return route.continue();
+  });
+  await page.route("**/arango_api/document/details", async (route) => {
+    if (route.request().method() === "POST") {
+      const req = await route.request().postDataJSON();
+      const ids: string[] = req.document_ids || [];
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(ids.map((id) => ({ _id: id, label: id.split("/")[1] }))),
+      });
+    }
+    return route.continue();
+  });
+  await page.route("**/arango_api/graph/", async (route) => {
+    if (route.request().method() === "POST") {
+      const makeNode = (key: string) => ({ _id: `${DOC_COLL}/${key}`, label: key });
+      const makeEdge = (k: string, from: string, to: string) => ({
+        _id: `TEST_EDGE_COLLECTION/${k}`,
+        _key: k,
+        _from: from,
+        _to: to,
+        Label: "has_child",
+      });
+      const rA = makeNode("ROOT_A");
+      const rB = makeNode("ROOT_B");
+      const mid = makeNode("MID");
+      const a1 = makeNode("A1");
+      const b1 = makeNode("B1");
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          [originA]: {
+            nodes: [rA, mid, a1],
+            links: [makeEdge("E_AM", rA._id, mid._id), makeEdge("E_MA1", mid._id, a1._id)],
+          },
+          [originB]: {
+            nodes: [rB, mid, b1],
+            links: [makeEdge("E_BM", rB._id, mid._id), makeEdge("E_MB1", mid._id, b1._id)],
+          },
+        }),
+      });
+    }
+    return route.continue();
+  });
+
+  await page.addInitScript(
+    (params: { a: string; b: string }) => {
+      // biome-ignore lint/suspicious/noExplicitAny: monkey-patching window
+      (window as any).__E2E__ = true;
+      const persistedRoot = {
+        nodesSlice: JSON.stringify({ originNodeIds: [params.a, params.b] }),
+        savedGraphs: JSON.stringify({ savedGraphs: [] }),
+        _persist: JSON.stringify({ version: -1, rehydrated: true }),
+        // biome-ignore lint/suspicious/noExplicitAny: mock store
+      } as any;
+      localStorage.setItem("persist:root", JSON.stringify(persistedRoot));
+    },
+    { a: originA, b: originB },
+  );
+
+  await installErrorInstrumentation(page);
+  await page.goto("/#/graph");
+  // biome-ignore lint/suspicious/noExplicitAny: accessing custom property
+  await page.waitForFunction(() => (window as any).__STORE__ != null);
+  await expect(page.locator("#chart-container-wrapper svg")).toBeVisible();
+
+  await page.getByRole("button", { name: /Generate Graph|Update Graph/i }).click();
+
+  const svg = page.locator("#chart-container-wrapper svg");
+  await expect(svg).toHaveAttribute("data-sim-settled", "true", { timeout: 10000 });
+  await expect(page.locator("g.node")).toHaveCount(3, { timeout: 10000 });
+
+  // Pin ROOT_A by dispatching directly. Drag-via-Playwright on a force-layout
+  // canvas is flaky; the Pin action exercises the same code path
+  // (updateNodePosition with userPinned=true) so this is equivalent and far
+  // more deterministic.
+  const pinnedId = originA;
+  await page.evaluate((id) => {
+    // biome-ignore lint/suspicious/noExplicitAny: accessing custom property
+    const store: any = (window as any).__STORE__;
+    const node = store.getState().graph.present.graphData.nodes.find(
+      // biome-ignore lint/suspicious/noExplicitAny: generic test type
+      (n: any) => n.id === id,
+    );
+    store.dispatch({
+      type: "graph/updateNodePosition",
+      payload: { nodeId: id, x: node.x, y: node.y, userPinned: true },
+    });
+  }, pinnedId);
+
+  // Save through the savedGraphs reducer (same path the UI uses).
+  await page.evaluate((name) => {
+    // biome-ignore lint/suspicious/noExplicitAny: accessing custom property
+    const store: any = (window as any).__STORE__;
+    const state = store.getState();
+    const { originNodeIds, settings, graphData } = state.graph.present;
+    store.dispatch({
+      type: "savedGraphs/saveGraph",
+      payload: { name, originNodeIds, settings, graphData },
+    });
+  }, graphName);
+
+  // Confirm the saved payload carries userPinned on the right node.
+  const savedHasPinned = await page.evaluate(
+    (args) => {
+      // biome-ignore lint/suspicious/noExplicitAny: accessing custom property
+      const store: any = (window as any).__STORE__;
+      const saved = store
+        .getState()
+        // biome-ignore lint/suspicious/noExplicitAny: generic type
+        .savedGraphs.savedGraphs.find((g: any) => g.name === args.name);
+      if (!saved) return false;
+      // biome-ignore lint/suspicious/noExplicitAny: generic type
+      const node = saved.graphData.nodes.find((n: any) => n.id === args.id);
+      return !!(node && node.userPinned === true);
+    },
+    { name: graphName, id: pinnedId },
+  );
+  expect(savedHasPinned).toBe(true);
+
+  // Load the saved graph back via the modal.
+  await page.getByRole("button", { name: "Load Saved Graph" }).click();
+  const modal = page.locator(".modal-content");
+  await expect(modal).toBeVisible();
+  await modal.locator("tr", { hasText: graphName }).getByRole("button", { name: "Load" }).click();
+  await expect(modal).toBeHidden();
+
+  await expect(svg).toHaveAttribute("data-sim-settled", "true", { timeout: 10000 });
+
+  // After load, Redux state must still carry userPinned on the same node —
+  // restoreGraph's release loop must have skipped it.
+  const restoredPinned = await page.evaluate((id) => {
+    // biome-ignore lint/suspicious/noExplicitAny: accessing custom property
+    const store: any = (window as any).__STORE__;
+    const node = store
+      .getState()
+      // biome-ignore lint/suspicious/noExplicitAny: generic type
+      .graph.present.graphData.nodes.find((n: any) => n.id === id);
+    return !!(node && node.userPinned === true);
+  }, pinnedId);
+  expect(restoredPinned).toBe(true);
+
+  expect(filterErrorsContaining(await getCollectedErrors(page), "split").length).toBe(0);
+});

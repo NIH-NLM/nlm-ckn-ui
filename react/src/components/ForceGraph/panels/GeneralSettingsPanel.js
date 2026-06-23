@@ -25,6 +25,7 @@ const GeneralSettingsPanel = ({
   onGraphToggle,
   onLayoutModeChange,
   onSimulationRestart,
+  onResetPositions,
 }) => {
   const collapseLeafSelectId = useId();
   const layoutModeSelectId = useId();
@@ -184,6 +185,17 @@ const GeneralSettingsPanel = ({
         <p className="hotkey-hint">
           Hold<kbd>S</kbd> to run live
         </p>
+      </div>
+
+      <div className="option-group">
+        <button
+          type="button"
+          className="simulation-toggle background-color-bg"
+          onClick={onResetPositions}
+        >
+          Reset positions
+        </button>
+        <p className="hotkey-hint">Releases every pinned node and relaxes the layout.</p>
       </div>
     </div>
   );

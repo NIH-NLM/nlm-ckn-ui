@@ -38,6 +38,22 @@ g.node.selected circle:not(.donut-inner) {
   filter: drop-shadow(0 0 4px rgba(255, 183, 77, 0.6));
 }
 
+/* Pin marker — inline push-pin SVG inside every g.node. Hidden by default;
+   revealed when the parent g.node carries the .pinned class. Position and
+   scale come from the transform applied at render time in graphRendering.js. */
+g.node .node-pin-marker {
+  display: none;
+}
+g.node.pinned .node-pin-marker {
+  display: block;
+}
+g.node.pinned .node-pin-marker path {
+  fill: #444;
+  stroke: #fff;
+  stroke-width: 1.5;
+  paint-order: stroke fill;
+}
+
 /* Graph Component Wrapper - Mobile First */
 
 .graph-component-wrapper {
