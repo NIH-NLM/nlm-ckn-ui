@@ -6,9 +6,12 @@
 # container, including the named graphs + analyzers (required for traversals).
 #
 # USAGE:
-#   ./scripts/dev/load-dump-local.sh [VERSION] [PORT]
+#   ./scripts/dev/load-dump-local.sh [VERSION|S3_URI] [PORT] [NAME]
 #
-#   VERSION  ETL dataset version (default: value of ETL_VERSION at repo root)
+#   VERSION  ETL dataset version (default: value of ETL_VERSION at repo root),
+#            mapped to the default cell-kn golden-dump path in S3. Alternatively
+#            pass a full s3:// URI here (or via DUMP_S3_URI) when the bucket/key
+#            layout differs from the default (e.g. the nlm-2026 staging bucket).
 #   PORT     host port for the container (default: 8529 = the port the Django
 #            app points at via ARANGO_DB_HOST in .env; use 8540 for a
 #            side-by-side container that doesn't touch the app's DB)
@@ -17,6 +20,8 @@
 # EXAMPLES:
 #   ./scripts/dev/load-dump-local.sh v1.4.6-alpha.32        # onto :8529 (app uses it)
 #   ./scripts/dev/load-dump-local.sh v1.4.6-alpha.32 8540   # side-by-side on :8540
+#   ./scripts/dev/load-dump-local.sh \
+#     s3://nlm-2026-staging-graphs-ec2-675671393318/DATA/nlm-ckn-golden-dump-v1.4.6-rc.6.tar.gz
 #
 # PREREQUISITES: aws cli (read access to the bucket), docker, jq, an .env with
 # ARANGO_DB_PASSWORD. List available versions with:
@@ -37,6 +42,8 @@ PORT="${2:-8529}"
 if [ -n "${3:-}" ]; then CONTAINER="$3"
 elif [ "$PORT" = "8529" ]; then CONTAINER="arango-current"
 else CONTAINER="arango-ckn-$PORT"; fi
+# Default source bucket/layout. Overridden when a full s3:// URI is supplied
+# (as $1 or via DUMP_S3_URI), since other accounts use different key layouts.
 BUCKET="cell-kn-arangodb-data-952291113202"
 # Pinnable for reproducibility: golden dumps are produced against a specific
 # ArangoDB; override with ARANGO_IMAGE if a future major version breaks restore.
@@ -44,18 +51,35 @@ IMAGE="${ARANGO_IMAGE:-arangodb:latest}"
 PW=$(grep -m1 -E '^ARANGO_DB_PASSWORD=' .env | cut -d= -f2-)
 [ -n "$PW" ] || { echo "ERROR: ARANGO_DB_PASSWORD not found in .env"; exit 1; }
 
+# Resolve the S3 source. Accept either a bare VERSION (mapped to the default
+# cell-kn golden-dump path) or a full s3:// URI used verbatim, since bucket/key
+# layouts differ across accounts.
+if [ -n "${DUMP_S3_URI:-}" ]; then
+  S3_URI="$DUMP_S3_URI"
+elif [[ "$VERSION" == s3://* ]]; then
+  S3_URI="$VERSION"
+  VERSION="${S3_URI##*/}"          # use the filename as the display label
+else
+  S3_URI="s3://$BUCKET/runs/$VERSION/06-golden-dump.tar.gz"
+fi
+
 echo "==> Version: $VERSION   Port: $PORT   Container: $CONTAINER"
 
 # 1. Download + extract the dump from S3. Clean the temp dir on any exit.
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
-echo "==> Downloading s3://$BUCKET/runs/$VERSION/06-golden-dump.tar.gz"
-aws s3 cp "s3://$BUCKET/runs/$VERSION/06-golden-dump.tar.gz" "$TMP/dump.tar.gz"
+echo "==> Downloading $S3_URI"
+aws s3 cp "$S3_URI" "$TMP/dump.tar.gz"
 tar -xzf "$TMP/dump.tar.gz" -C "$TMP"
-DUMP_DIR=$(find "$TMP" -maxdepth 1 -type d -name 'arangodump*')
-[ -d "$DUMP_DIR" ] || { echo "ERROR: no arangodump directory in the tarball"; exit 1; }
-[ "$(printf '%s\n' "$DUMP_DIR" | wc -l)" -eq 1 ] || {
-  echo "ERROR: multiple arangodump directories in the tarball"; exit 1; }
+# Locate the dump root. arangodump --all-databases produces a directory holding
+# per-database subdirs (Cell-KN-Ontologies, Cell-KN-Phenotypes). The tarball may
+# wrap it in a top-level folder of any name (older cell-kn dumps used
+# arangodump*; the nlm-2026 dumps differ), so find the directory that actually
+# contains the expected database subdir rather than matching on the wrapper name.
+ONTO_DIR=$(find "$TMP" -maxdepth 3 -type d -name 'Cell-KN-Ontologies' -print -quit)
+DUMP_DIR="${ONTO_DIR%/Cell-KN-Ontologies}"
+[ -n "$DUMP_DIR" ] && [ -d "$DUMP_DIR" ] || {
+  echo "ERROR: could not locate the dump root (no Cell-KN-Ontologies dir in the tarball)"; exit 1; }
 echo "==> Dump extracted: $DUMP_DIR"
 
 # 2. (Re)create the container. NOTE: if :8529 is in use by the old dev DB
