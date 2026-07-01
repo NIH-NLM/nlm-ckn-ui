@@ -100,6 +100,7 @@ export const expandNode = createAsyncThunk(
       settings.graphType,
       allowedCollections,
       settings.includeInterNodeEdges ?? true,
+      settings.edgeFilters,
     );
     return {
       newNodes: expansionData?.[nodeId]?.nodes || [],

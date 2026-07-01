@@ -218,12 +218,13 @@ describe("ForceGraph", () => {
       });
 
       await waitFor(() => {
-        // fetchNodeExpansion(nodeId, graphType, allowedCollections, includeInterNodeEdges)
+        // fetchNodeExpansion(nodeId, graphType, allowedCollections, includeInterNodeEdges, edgeFilters)
         expect(fetchNodeExpansion).toHaveBeenCalledWith(
           "GO/0000001",
           expect.any(String),
           ["CL"],
           expect.any(Boolean),
+          expect.any(Object),
         );
       });
     });
