@@ -123,6 +123,7 @@ export const fetchEdgesBetween = async (nodeIds, graphType, edgeFilters) => {
  * @param {string} graphType - Graph/database type.
  * @param {Array<string>} allowedCollections - Collections to include in traversal.
  * @param {boolean} [includeInterNodeEdges=true] - Include edges between result nodes.
+ * @param {Object} [edgeFilters={}] - Edge attribute filters to apply to the expansion.
  * @returns {Promise<Object>} Expansion data with nodes and links.
  */
 export const fetchNodeExpansion = async (
@@ -130,6 +131,7 @@ export const fetchNodeExpansion = async (
   graphType,
   allowedCollections,
   includeInterNodeEdges = true,
+  edgeFilters = {},
 ) => {
   return postJson(GRAPH_ENDPOINT, {
     node_ids: [nodeId],
@@ -137,7 +139,7 @@ export const fetchNodeExpansion = async (
     edge_direction: "ANY",
     allowed_collections: allowedCollections,
     graph: graphType,
-    edge_filters: {},
+    edge_filters: edgeFilters,
     include_inter_node_edges: includeInterNodeEdges,
   });
 };
