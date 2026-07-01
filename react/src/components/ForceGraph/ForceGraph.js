@@ -426,11 +426,24 @@ const ForceGraph = ({
         // Mark as initialized to prevent the initialization effect from triggering
         // fetchAndProcessGraph — we already have the data we need.
         hasInitializedGraph.current = true;
+        // Build collapse list for workflow-init render (mirrors fetch/fulfilled and setGraphData logic).
+        let collapseList = finalCollapseList;
+        if (collapsed?.initial?.length === 0) {
+          const initialCollapseList = graphData.nodes
+            .filter((node) => !originNodeIds.includes(node._id))
+            .map((node) => node._id);
+          dispatch(setInitialCollapseList(initialCollapseList));
+          if (collapseMode && collapseMode !== "off") {
+            collapseList = initialCollapseList;
+          }
+        }
         newGraphInstance.updateGraph({
           newOriginNodeIds: originNodeIds,
           newNodes: graphData.nodes,
           newLinks: graphData.links,
           resetData: true,
+          collapseNodes: collapseList,
+          collapseMode: collapseMode || "standard",
           labelStates: settings.labelStates,
         });
         return; // Early return since we've handled rendering

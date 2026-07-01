@@ -2,7 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { MemoryRouter } from "react-router-dom";
-import graphReducer, { setAvailableCollections } from "../../store/graphSlice";
+import graphReducer, { setAvailableCollections, setGraphData } from "../../store/graphSlice";
 import nodesReducer from "../../store/nodesSlice";
 import savedGraphsReducer from "../../store/savedGraphsSlice";
 import { ToastProvider } from "../Toast";
@@ -226,6 +226,46 @@ describe("ForceGraph", () => {
           expect.any(Boolean),
         );
       });
+    });
+
+    it("forwards collapseNodes and collapseMode to updateGraph on workflow init", async () => {
+      const store = createTestStore();
+      const origin = { _id: "CL/0001", id: "CL/0001" };
+      const leafA = { _id: "GO/0010", id: "GO/0010" };
+      const leafB = { _id: "GO/0020", id: "GO/0020" };
+      await act(async () => {
+        store.dispatch(setAvailableCollections(["CL", "GO"]));
+        store.dispatch(
+          setGraphData({
+            graphData: {
+              nodes: [origin, leafA, leafB],
+              links: [
+                { source: "CL/0001", target: "GO/0010" },
+                { source: "CL/0001", target: "GO/0020" },
+              ],
+            },
+            originNodeIds: [origin._id],
+            source: "workflow",
+            collapseLeafNodes: "all",
+          }),
+        );
+      });
+      await act(async () => {
+        render(
+          <Provider store={store}>
+            <MemoryRouter>
+              <ToastProvider>
+                <ForceGraph />
+              </ToastProvider>
+            </MemoryRouter>
+          </Provider>,
+        );
+      });
+      await waitFor(() => expect(mockGraphInstance.updateGraph).toHaveBeenCalled());
+      const firstCall = mockGraphInstance.updateGraph.mock.calls[0][0];
+      expect(firstCall.collapseMode).toBe("all");
+      expect(firstCall.collapseNodes).toEqual(expect.arrayContaining([leafA._id, leafB._id]));
+      expect(firstCall.collapseNodes).not.toContain(origin._id);
     });
 
     it("does not show an error state when popup is closed before the fetch resolves (abort)", async () => {
