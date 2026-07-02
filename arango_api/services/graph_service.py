@@ -11,8 +11,16 @@ from arango_api.services.collection_service import get_collections
 
 logger = logging.getLogger(__name__)
 
+# Edge filter dict keys are interpolated directly into AQL attribute accessors
+# (e.`<field>`), so each must be a plain identifier. Rejecting anything else
+# (backticks, dots, whitespace) prevents AQL injection.
+# \Z (not $) so a trailing newline (e.g. "Label\n") is not accepted.
+_SAFE_EDGE_FIELD = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*\Z")
 
-def _build_edge_filter_clause(edge_filters, bind_vars):
+
+def _build_edge_filter_clause(
+    edge_filters, bind_vars, exclude_filters=None, field_ref="e"
+):
     """
     Translate an edge_filters dict into AQL clause condition lists.
 
@@ -24,14 +32,23 @@ def _build_edge_filter_clause(edge_filters, bind_vars):
 
     Callers compose the final AQL by joining positive_conditions with
     " AND " (for FILTER) and negative_conditions with " OR " (for PRUNE).
+
+    field_ref is the AQL variable the conditions read the edge attribute from
+    (default "e" for the normal edge-traversal FILTER/PRUNE clauses; callers
+    that filter per-path edges pass "CURRENT" so the conditions reference
+    p.edges[* FILTER CURRENT.<field> ...]). Only the referenced variable
+    changes; bind-var names are unaffected.
     """
     positive_conditions = []
     negative_conditions = []
 
-    if not edge_filters:
+    if not edge_filters and not exclude_filters:
         return positive_conditions, negative_conditions
 
-    for key, values in edge_filters.items():
+    for key, values in (edge_filters or {}).items():
+        if not _SAFE_EDGE_FIELD.match(key):
+            logger.warning("Skipping edge filter with unsafe field name: %r", key)
+            continue
         safe_key = re.sub(r"[^a-zA-Z0-9_]", "", key)
 
         # Numeric range filter: values is a dict with min/max keys
@@ -41,20 +58,25 @@ def _build_edge_filter_clause(edge_filters, bind_vars):
             if filter_min is None and filter_max is None:
                 continue
 
-            range_parts = [f"e.`{key}` != null", f'e.`{key}` != ""']
+            range_parts = [f"{field_ref}.`{key}` != null", f'{field_ref}.`{key}` != ""']
             if filter_min is not None:
                 bind_min = f"filter_min_{safe_key}"
-                range_parts.append(f"TO_NUMBER(e.`{key}`) >= @{bind_min}")
+                range_parts.append(f"TO_NUMBER({field_ref}.`{key}`) >= @{bind_min}")
                 bind_vars[bind_min] = filter_min
             if filter_max is not None:
                 bind_max = f"filter_max_{safe_key}"
-                range_parts.append(f"TO_NUMBER(e.`{key}`) <= @{bind_max}")
+                range_parts.append(f"TO_NUMBER({field_ref}.`{key}`) <= @{bind_max}")
                 bind_vars[bind_max] = filter_max
 
             pos_cond = f"({' AND '.join(range_parts)})"
             positive_conditions.append(pos_cond)
 
-            neg_cond = f"(e.`{key}` != null AND NOT ({' AND '.join(range_parts[2:])}))"
+            # PRUNE any real edge that does not satisfy the include condition —
+            # including edges missing the attribute — so traversal does not walk
+            # through a hidden edge and surface its descendants as orphans. The
+            # `{field_ref} != null` guard keeps depth 0 (the start vertex, where
+            # the edge is null) from being pruned, which would halt traversal.
+            neg_cond = f"({field_ref} != null AND NOT {pos_cond})"
             negative_conditions.append(neg_cond)
             continue
 
@@ -63,21 +85,73 @@ def _build_edge_filter_clause(edge_filters, bind_vars):
             bind_key = f"filter_value_{safe_key}"
 
             pos_cond = (
-                f"(e.`{key}` != null AND ("
-                f"(IS_STRING(e.`{key}`) AND e.`{key}` IN @{bind_key}) OR "
-                f"(IS_ARRAY(e.`{key}`) AND LENGTH(INTERSECTION(e.`{key}`, @{bind_key})) > 0)"
+                f"({field_ref}.`{key}` != null AND ("
+                f"(IS_STRING({field_ref}.`{key}`) AND {field_ref}.`{key}` IN @{bind_key}) OR "
+                f"(IS_ARRAY({field_ref}.`{key}`) AND LENGTH(INTERSECTION({field_ref}.`{key}`, @{bind_key})) > 0)"
                 f"))"
             )
             positive_conditions.append(pos_cond)
 
-            neg_cond = (
-                f"(e.`{key}` != null AND NOT ("
-                f"(IS_STRING(e.`{key}`) AND e.`{key}` IN @{bind_key}) OR "
-                f"(IS_ARRAY(e.`{key}`) AND LENGTH(INTERSECTION(e.`{key}`, @{bind_key})) > 0)"
-                f"))"
-            )
+            # PRUNE any real edge that does not satisfy the include condition —
+            # including edges missing the attribute — so traversal does not walk
+            # through a hidden edge and surface its descendants as orphans. The
+            # `{field_ref} != null` guard keeps depth 0 (the start vertex, where
+            # the edge is null) from being pruned, which would halt traversal.
+            neg_cond = f"({field_ref} != null AND NOT {pos_cond})"
             negative_conditions.append(neg_cond)
 
+            bind_vars[bind_key] = values
+
+    if exclude_filters:
+        for key, values in exclude_filters.items():
+            if not _SAFE_EDGE_FIELD.match(key):
+                logger.warning(
+                    "Skipping edge filter with unsafe field name: %r", key
+                )
+                continue
+            if not values:
+                continue
+            safe_key = re.sub(r"[^a-zA-Z0-9_]", "", key)
+
+            # Numeric range exclude: values is a dict with min/max keys
+            if isinstance(values, dict):
+                ex_min = values.get("min")
+                ex_max = values.get("max")
+                if ex_min is None and ex_max is None:
+                    continue
+                range_parts = []
+                if ex_min is not None:
+                    bind_min = f"exclude_min_{safe_key}"
+                    range_parts.append(f"TO_NUMBER({field_ref}.`{key}`) >= @{bind_min}")
+                    bind_vars[bind_min] = ex_min
+                if ex_max is not None:
+                    bind_max = f"exclude_max_{safe_key}"
+                    range_parts.append(f"TO_NUMBER({field_ref}.`{key}`) <= @{bind_max}")
+                    bind_vars[bind_max] = ex_max
+                in_range = " AND ".join(range_parts)
+                # Keep edges with no/empty attribute or outside the range.
+                positive_conditions.append(
+                    f'({field_ref}.`{key}` == null OR {field_ref}.`{key}` == "" OR NOT ({in_range}))'
+                )
+                # Prune traversal through edges that fall inside the excluded
+                # range so their unique descendants are not walked (FILTER alone
+                # hides the edge but does not stop descent).
+                negative_conditions.append(
+                    f'({field_ref}.`{key}` != null AND {field_ref}.`{key}` != "" AND ({in_range}))'
+                )
+                continue
+
+            # Categorical exclude: values is a list
+            bind_key = f"exclude_value_{safe_key}"
+            match = (
+                f"(IS_STRING({field_ref}.`{key}`) AND {field_ref}.`{key}` IN @{bind_key}) OR "
+                f"(IS_ARRAY({field_ref}.`{key}`) AND LENGTH(INTERSECTION({field_ref}.`{key}`, @{bind_key})) > 0)"
+            )
+            # Keep edges that either lack the attribute or do not match.
+            positive_conditions.append(f"({field_ref}.`{key}` == null OR NOT ({match}))")
+            # Prune traversal through edges that match the excluded value(s) so
+            # their unique descendants are not walked.
+            negative_conditions.append(f"({match})")
             bind_vars[bind_key] = values
 
     return positive_conditions, negative_conditions
@@ -90,6 +164,7 @@ def traverse_graph(
     allowed_collections,
     graph,
     edge_filters,
+    exclude_edge_filters=None,
     include_inter_node_edges=True,
     exclude_closing_edges=None,
     require_closing_edges=None,
@@ -142,10 +217,17 @@ def traverse_graph(
     filter_string = ""
     prune_string = ""
     positive_conditions, negative_conditions = _build_edge_filter_clause(
-        edge_filters, bind_vars
+        edge_filters, bind_vars, exclude_filters=exclude_edge_filters
     )
     if positive_conditions:
         filter_string = f"FILTER {' AND '.join(positive_conditions)}"
+    # PRUNE is emitted whenever there are negative (prune) conditions to act on.
+    # Both categorical and numeric exclude filters now populate
+    # negative_conditions (to stop descent through excluded edges), as do the
+    # "not matched" branches of include filters. The guard only avoids emitting
+    # an empty (syntactically invalid) PRUNE clause when there are genuinely no
+    # negative conditions.
+    if negative_conditions:
         prune_string = f"PRUNE {' OR '.join(negative_conditions)}"
 
     # The two path-closing filters cannot compose in one pass, so reject the
@@ -168,6 +250,10 @@ def traverse_graph(
         # the edge is null). The correlated sub-query finds closing edges that
         # link the endpoint back to its own origin; the path survives when that
         # set is empty (exclude / anti-edge) or non-empty (require / dipper).
+        # The full include/exclude edge-filter clause is applied per path edge
+        # (not just a Label include), so an exclude-mode edge filter combined
+        # with a closing-edge setting is honored: a path is kept only when
+        # every one of its edges satisfies the clause.
         # Build a dedicated bind-var set; the edge-filter clause helper may have
         # registered bind vars that this query does not reference, and ArangoDB
         # rejects declared-but-unused bind parameters.
@@ -178,13 +264,19 @@ def traverse_graph(
             "allowed_collections": allowed_collections,
             "closing_labels": closing_labels,
         }
-        positive_labels = (edge_filters or {}).get("Label") or []
+        path_positive, _ = _build_edge_filter_clause(
+            edge_filters,
+            anti_bind_vars,
+            exclude_filters=exclude_edge_filters,
+            field_ref="CURRENT",
+        )
         path_label_filter = ""
-        if positive_labels:
-            anti_bind_vars["positive_labels"] = positive_labels
+        if path_positive:
+            path_conditions = " AND ".join(path_positive)
+            # Keep a path only if NONE of its edges violate the include/exclude
+            # clause (i.e. every path edge satisfies it).
             path_label_filter = (
-                "FILTER LENGTH(p.edges[* FILTER CURRENT.Label "
-                "NOT IN @positive_labels]) == 0"
+                f"FILTER LENGTH(p.edges[* FILTER NOT ({path_conditions})]) == 0"
             )
         aql_query = f"""
          FOR start_node_id IN @node_ids
@@ -259,7 +351,9 @@ def traverse_graph(
 
         if all_node_ids:
             inter_edges = find_inter_node_edges(
-                list(all_node_ids), graph, edge_filters=edge_filters
+                list(all_node_ids), graph,
+                edge_filters=edge_filters,
+                exclude_edge_filters=exclude_edge_filters,
             )
             inter_by_id = {e["_id"]: e for e in inter_edges if e and e.get("_id")}
 
@@ -311,6 +405,7 @@ def traverse_graph_advanced(
         edge_direction = settings.get("edgeDirection", "ANY")
         allowed_collections = settings.get("allowedCollections", [])
         edge_filters = settings.get("edgeFilters", {})
+        exclude_edge_filters = settings.get("excludeEdgeFilters", {})
 
         result_for_node = traverse_graph(
             node_ids=[node_id],
@@ -319,6 +414,7 @@ def traverse_graph_advanced(
             allowed_collections=allowed_collections,
             graph=graph,
             edge_filters=edge_filters,
+            exclude_edge_filters=exclude_edge_filters,
             include_inter_node_edges=include_inter_node_edges,
             exclude_closing_edges=settings.get("excludeClosingEdges"),
             require_closing_edges=settings.get("requireClosingEdges"),
@@ -363,7 +459,9 @@ def get_neighbor_collections(node_id, graph="ontologies", edge_direction="ANY"):
     return sorted(x for x in cursor if x is not None)
 
 
-def find_inter_node_edges(node_ids, graph="ontologies", edge_filters=None):
+def find_inter_node_edges(
+    node_ids, graph="ontologies", edge_filters=None, exclude_edge_filters=None
+):
     """
     Find all edges between a given set of nodes using direct edge collection scans.
 
@@ -387,7 +485,9 @@ def find_inter_node_edges(node_ids, graph="ontologies", edge_filters=None):
         return []
 
     bind_vars = {"vertex_ids": node_ids}
-    positive_conditions, _ = _build_edge_filter_clause(edge_filters, bind_vars)
+    positive_conditions, _ = _build_edge_filter_clause(
+        edge_filters, bind_vars, exclude_filters=exclude_edge_filters
+    )
     extra_filter = (
         f" AND ({' AND '.join(positive_conditions)})" if positive_conditions else ""
     )

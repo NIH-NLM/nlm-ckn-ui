@@ -21,9 +21,36 @@ from rest_framework import serializers
 # Rejecting anything else (backticks, dots, whitespace) prevents AQL injection.
 # Leading underscores are allowed because the frontend searches system/edge
 # attributes such as _from, _to and _key.
-_VALID_FIELD_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+# \Z (not $) so a trailing newline (e.g. "Label\n") is not accepted.
+_VALID_FIELD_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*\Z")
 
 GRAPH_CHOICES = ["ontologies", "phenotypes"]
+
+
+def _validate_edge_filter_field_names(value):
+    """Reject edge filter dicts whose keys are not plain AQL identifiers.
+
+    Edge filter keys are interpolated into AQL attribute accessors
+    (e.`<field>`) by graph_service, so any key containing backticks or other
+    non-identifier characters could be used for AQL injection.
+
+    A non-dict value (e.g. a list nested inside advanced_settings, which is a
+    free-form DictField and does not type-check its members) is rejected here
+    so it fails with a 400 rather than reaching the query builder and raising
+    a 500 on `.items()`.
+    """
+    if value is None:
+        return value
+    if not isinstance(value, dict):
+        raise serializers.ValidationError(
+            "Edge filter must be an object mapping field names to values."
+        )
+    invalid = [k for k in value if not _VALID_FIELD_NAME.match(k)]
+    if invalid:
+        raise serializers.ValidationError(
+            f"Invalid edge filter field name(s): {invalid}"
+        )
+    return value
 
 
 class GraphRequestSerializer(serializers.Serializer):
@@ -65,10 +92,22 @@ class GraphTraversalSerializer(GraphRequestSerializer):
         default=None,
         help_text="Dictionary of edge filters",
     )
+    exclude_edge_filters = serializers.DictField(
+        required=False,
+        allow_null=True,
+        default=None,
+        help_text="Dictionary of edge filters whose matching edges are hidden",
+    )
     include_inter_node_edges = serializers.BooleanField(
         required=False,
         default=True,
     )
+
+    def validate_edge_filters(self, value):
+        return _validate_edge_filter_field_names(value)
+
+    def validate_exclude_edge_filters(self, value):
+        return _validate_edge_filter_field_names(value)
 
 
 class AdvancedGraphTraversalSerializer(GraphRequestSerializer):
@@ -86,6 +125,19 @@ class AdvancedGraphTraversalSerializer(GraphRequestSerializer):
         required=False,
         default=True,
     )
+
+    def validate_advanced_settings(self, value):
+        for node_id, node_settings in (value or {}).items():
+            # Per-node settings must be objects; a non-dict here would reach
+            # traverse_graph_advanced's settings.get(...) and raise a 500, so
+            # reject it at the boundary with a 400.
+            if not isinstance(node_settings, dict):
+                raise serializers.ValidationError(
+                    f"Settings for node '{node_id}' must be an object."
+                )
+            for key in ("edgeFilters", "excludeEdgeFilters"):
+                _validate_edge_filter_field_names(node_settings.get(key))
+        return value
 
 
 class NeighborCollectionsSerializer(GraphRequestSerializer):
@@ -133,6 +185,18 @@ class EdgesBetweenSerializer(GraphRequestSerializer):
         default=None,
         help_text="Dictionary of edge filters",
     )
+    exclude_edge_filters = serializers.DictField(
+        required=False,
+        allow_null=True,
+        default=None,
+        help_text="Dictionary of edge filters whose matching edges are hidden",
+    )
+
+    def validate_edge_filters(self, value):
+        return _validate_edge_filter_field_names(value)
+
+    def validate_exclude_edge_filters(self, value):
+        return _validate_edge_filter_field_names(value)
 
 
 class SearchRequestSerializer(serializers.Serializer):

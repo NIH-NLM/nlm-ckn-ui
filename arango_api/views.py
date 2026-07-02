@@ -138,6 +138,7 @@ class GraphTraversalView(APIView):
                 allowed_collections=data["allowed_collections"],
                 graph=data.get("graph", "ontologies"),
                 edge_filters=data.get("edge_filters"),
+                exclude_edge_filters=data.get("exclude_edge_filters"),
                 include_inter_node_edges=data.get("include_inter_node_edges", True),
             )
 
@@ -209,6 +210,7 @@ class EdgesBetweenView(APIView):
             node_ids=data["node_ids"],
             graph=data.get("graph", "ontologies"),
             edge_filters=data.get("edge_filters") or {},
+            exclude_edge_filters=data.get("exclude_edge_filters") or {},
         )
         return Response(edges)
 
