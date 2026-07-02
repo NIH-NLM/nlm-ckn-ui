@@ -38,6 +38,7 @@ export const fetchGraphData = async (params) => {
     nodeLimit,
     graphType,
     edgeFilters,
+    excludeEdgeFilters,
     advancedSettings,
     includeInterNodeEdges = true,
   } = params;
@@ -50,6 +51,9 @@ export const fetchGraphData = async (params) => {
   let body;
 
   if (useShortestPath) {
+    // NOTE: shortest-path queries do not apply edge_filters/exclude_edge_filters.
+    // The ShortestPaths backend endpoint does not support edge-attribute filtering;
+    // filtering is only available on standard traversal and node expansion.
     body = {
       node_ids: nodeIds,
       edge_direction: edgeDirection,
@@ -70,6 +74,7 @@ export const fetchGraphData = async (params) => {
       node_limit: nodeLimit,
       graph: graphType,
       edge_filters: edgeFilters,
+      exclude_edge_filters: excludeEdgeFilters || {},
       include_inter_node_edges: includeInterNodeEdges,
     };
   }
@@ -87,12 +92,14 @@ export const fetchGraphData = async (params) => {
  * @returns {Promise<Object>} Graph data with nodes and links on connecting paths.
  */
 export const fetchConnectingPaths = async (params) => {
-  const { nodeIds, graphType, allowedCollections, edgeFilters, maxDepth } = params;
+  const { nodeIds, graphType, allowedCollections, edgeFilters, excludeEdgeFilters, maxDepth } =
+    params;
   const body = {
     node_ids: nodeIds,
     graph: graphType,
     allowed_collections: allowedCollections || [],
     edge_filters: edgeFilters || {},
+    exclude_edge_filters: excludeEdgeFilters || {},
   };
   if (maxDepth != null) {
     body.max_depth = maxDepth;
@@ -108,12 +115,13 @@ export const fetchConnectingPaths = async (params) => {
  * @param {Object} [edgeFilters] - Edge attribute filters (categorical or numeric).
  * @returns {Promise<Array>} Array of edge documents.
  */
-export const fetchEdgesBetween = async (nodeIds, graphType, edgeFilters) => {
+export const fetchEdgesBetween = async (nodeIds, graphType, edgeFilters, excludeEdgeFilters) => {
   if (!nodeIds || nodeIds.length < 2) return [];
   return postJson(`${GRAPH_ENDPOINT}edges-between/`, {
     node_ids: nodeIds,
     graph: graphType,
     edge_filters: edgeFilters || {},
+    exclude_edge_filters: excludeEdgeFilters || {},
   });
 };
 
@@ -123,7 +131,6 @@ export const fetchEdgesBetween = async (nodeIds, graphType, edgeFilters) => {
  * @param {string} graphType - Graph/database type.
  * @param {Array<string>} allowedCollections - Collections to include in traversal.
  * @param {boolean} [includeInterNodeEdges=true] - Include edges between result nodes.
- * @param {Object} [edgeFilters={}] - Edge attribute filters to apply to the expansion.
  * @returns {Promise<Object>} Expansion data with nodes and links.
  */
 export const fetchNodeExpansion = async (
@@ -132,6 +139,7 @@ export const fetchNodeExpansion = async (
   allowedCollections,
   includeInterNodeEdges = true,
   edgeFilters = {},
+  excludeEdgeFilters = {},
 ) => {
   return postJson(GRAPH_ENDPOINT, {
     node_ids: [nodeId],
@@ -140,6 +148,7 @@ export const fetchNodeExpansion = async (
     allowed_collections: allowedCollections,
     graph: graphType,
     edge_filters: edgeFilters,
+    exclude_edge_filters: excludeEdgeFilters,
     include_inter_node_edges: includeInterNodeEdges,
   });
 };

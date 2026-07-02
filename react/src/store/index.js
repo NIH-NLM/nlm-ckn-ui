@@ -16,6 +16,7 @@ export {
   loadGraphFromJson,
   setAllCollections,
   setAvailableCollections,
+  setEdgeFilterMode,
   setEdgeFilters,
   setGraphData,
   setInitialCollapseList,
