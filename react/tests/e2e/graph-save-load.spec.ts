@@ -335,6 +335,18 @@ test("Saved graph preserves pin state on load", async ({ page }) => {
   // (updateNodePosition with userPinned=true) so this is equivalent and far
   // more deterministic.
   const pinnedId = originA;
+  // Wait until the origin node is actually in the store before reading its
+  // position: the rendered DOM (data-sim-settled + g.node count) can settle a
+  // tick before graphData.nodes is populated with it, which made the
+  // `node.x` read below intermittently throw on undefined.
+  await page.waitForFunction(
+    (id) =>
+      // biome-ignore lint/suspicious/noExplicitAny: accessing custom property
+      (window as any).__STORE__
+        ?.getState?.()
+        .graph?.present?.graphData?.nodes?.some((n: { id: string }) => n.id === id),
+    originA,
+  );
   await page.evaluate((id) => {
     // biome-ignore lint/suspicious/noExplicitAny: accessing custom property
     const store: any = (window as any).__STORE__;
