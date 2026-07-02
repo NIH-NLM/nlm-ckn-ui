@@ -21,6 +21,7 @@ import {
   fetchNodeExpansion,
 } from "../services";
 import { getFilterableEdgeFields, performSetOperation } from "../utils";
+import { splitEdgeFiltersByMode } from "../utils/edgeFilters";
 
 // Async thunk for fetching graph data.
 export const fetchAndProcessGraph = createAsyncThunk(
@@ -40,6 +41,10 @@ export const fetchAndProcessGraph = createAsyncThunk(
       };
     } else {
       // Otherwise, construct parameters using the global settings.
+      const { include, exclude } = splitEdgeFiltersByMode(
+        settings.edgeFilters,
+        settings.edgeFilterModes,
+      );
       params = {
         nodeIds: originNodeIds,
         shortestPaths: settings.findShortestPaths,
@@ -48,7 +53,8 @@ export const fetchAndProcessGraph = createAsyncThunk(
         allowedCollections: settings.allowedCollections,
         nodeLimit: settings.nodeLimit,
         graphType: settings.graphType,
-        edgeFilters: settings.edgeFilters,
+        edgeFilters: include,
+        excludeEdgeFilters: exclude,
         includeInterNodeEdges: settings.includeInterNodeEdges,
       };
     }
@@ -95,12 +101,17 @@ export const expandNode = createAsyncThunk(
     const allowedCollections = collectionOverride
       ? [collectionOverride]
       : settings.allowedCollections;
+    const { include, exclude } = splitEdgeFiltersByMode(
+      settings.edgeFilters,
+      settings.edgeFilterModes,
+    );
     const expansionData = await fetchNodeExpansion(
       nodeId,
       settings.graphType,
       allowedCollections,
       settings.includeInterNodeEdges ?? true,
-      settings.edgeFilters,
+      include,
+      exclude,
     );
     return {
       newNodes: expansionData?.[nodeId]?.nodes || [],
@@ -132,6 +143,10 @@ const initialState = {
     layoutMode: "force",
     edgeFilters: getFilterableEdgeFields().reduce((acc, field) => {
       acc[field] = [];
+      return acc;
+    }, {}),
+    edgeFilterModes: getFilterableEdgeFields().reduce((acc, field) => {
+      acc[field] = "include";
       return acc;
     }, {}),
     lastAppliedOriginNodeIds: [],
@@ -279,6 +294,15 @@ const graphSlice = createSlice({
       };
 
       state.lastActionType = "updateEdgeFilter";
+    },
+    // Sets the include/exclude mode for a specific edge filter field.
+    setEdgeFilterMode: (state, action) => {
+      const { field, mode } = action.payload;
+      state.settings.edgeFilterModes = {
+        ...state.settings.edgeFilterModes,
+        [field]: mode === "exclude" ? "exclude" : "include",
+      };
+      state.lastActionType = "setEdgeFilterMode";
     },
     // Updates a numeric edge filter range for a specific field.
     updateNumericEdgeFilter: (state, action) => {
@@ -573,6 +597,7 @@ export const {
   collapseNodes,
   updateEdgeFilter,
   updateNumericEdgeFilter,
+  setEdgeFilterMode,
   setEdgeFilters,
   loadGraph,
   loadGraphFromJson,

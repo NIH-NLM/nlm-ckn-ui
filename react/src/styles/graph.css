@@ -551,3 +551,23 @@ g.node.pinned .node-pin-marker path {
     transform: none;
   }
 }
+
+.edge-filter-mode-toggle {
+  display: inline-flex;
+  gap: 0;
+  margin-bottom: 4px;
+  padding: 0;
+  border: none;
+  min-inline-size: 0;
+}
+
+.edge-filter-mode-toggle button {
+  padding: 2px 8px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.edge-filter-mode-toggle button.active {
+  font-weight: 600;
+  text-decoration: underline;
+}
