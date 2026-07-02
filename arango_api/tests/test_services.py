@@ -206,6 +206,98 @@ class GraphServiceTestCase(ArangoDBTestCase):
         )
         self.assertEqual(result["CL/0000061"]["links"], [])
 
+    def test_traverse_graph_exclude_categorical(self):
+        # OUTBOUND from CL/0000061 with subClassOf excluded: the CL-CL subClassOf
+        # edge is dropped, the GO/UBERON edges remain.
+        result = graph_service.traverse_graph(
+            node_ids=["CL/0000061"],
+            depth=1,
+            edge_direction="OUTBOUND",
+            allowed_collections=["CL", "GO", "UBERON"],
+            graph="ontologies",
+            edge_filters=None,
+            exclude_edge_filters={"label": ["subClassOf"]},
+            include_inter_node_edges=False,
+        )
+        labels = sorted(link["label"] for link in result["CL/0000061"]["links"])
+        self.assertNotIn("subClassOf", labels)
+        self.assertIn("participates_in", labels)
+
+    def test_exclude_categorical_adds_prune_condition(self):
+        bind_vars = {}
+        pos, neg = graph_service._build_edge_filter_clause(
+            None, bind_vars, exclude_filters={"label": ["subClassOf"]}
+        )
+        # FILTER keeps non-excluded edges. The excluded value is passed via a
+        # bind var (not interpolated into the clause text), so assert on the
+        # bind var content rather than searching the generated AQL.
+        self.assertTrue(pos)
+        self.assertEqual(bind_vars.get("exclude_value_label"), ["subClassOf"])
+        # ...and PRUNE now stops traversal through excluded edges.
+        self.assertTrue(neg, "exclude must contribute a PRUNE (negative) condition")
+
+    def test_exclude_numeric_adds_prune_condition(self):
+        bind_vars = {}
+        pos, neg = graph_service._build_edge_filter_clause(
+            None, bind_vars, exclude_filters={"score": {"min": 0.5, "max": 1.0}}
+        )
+        self.assertTrue(pos)
+        self.assertTrue(neg, "numeric exclude must contribute a PRUNE condition")
+
+    def test_build_edge_filter_clause_rejects_unsafe_field_name(self):
+        bind_vars = {}
+        # A key with a backtick must NOT be interpolated into AQL.
+        pos, neg = graph_service._build_edge_filter_clause(
+            {"bad`key": ["x"]}, bind_vars
+        )
+        self.assertEqual(pos, [])
+        self.assertEqual(neg, [])
+        self.assertEqual(bind_vars, {})
+
+    def test_build_edge_filter_clause_rejects_unsafe_exclude_field_name(self):
+        bind_vars = {}
+        pos, neg = graph_service._build_edge_filter_clause(
+            None, bind_vars, exclude_filters={"bad`key": ["x"]}
+        )
+        self.assertEqual(pos, [])
+        self.assertEqual(neg, [])
+        self.assertEqual(bind_vars, {})
+
+    def test_build_edge_filter_clause_rejects_trailing_newline_field_name(self):
+        # `$` matches before a trailing newline; the guard must use `\Z` so a
+        # key like "Label\n" is not interpolated into AQL.
+        bind_vars = {}
+        pos, neg = graph_service._build_edge_filter_clause(
+            {"Label\n": ["IS_A"]}, bind_vars
+        )
+        self.assertEqual(pos, [])
+        self.assertEqual(neg, [])
+        self.assertEqual(bind_vars, {})
+
+    def test_include_categorical_prunes_missing_attribute_edges(self):
+        # An include filter must PRUNE every real edge that does not satisfy it,
+        # including edges missing the attribute — otherwise traversal walks
+        # through a hidden (filtered-out) edge and returns its descendants as
+        # orphans. The prune condition negates the include condition (so it is
+        # true for a null/absent attribute) but guards on `e != null` so the
+        # start vertex at depth 0 (edge is null) is not pruned.
+        bind_vars = {}
+        pos, neg = graph_service._build_edge_filter_clause(
+            {"Label": ["IS_A"]}, bind_vars
+        )
+        self.assertEqual(len(pos), 1)
+        self.assertEqual(len(neg), 1)
+        self.assertEqual(neg[0], f"(e != null AND NOT {pos[0]})")
+
+    def test_include_numeric_prunes_missing_attribute_edges(self):
+        bind_vars = {}
+        pos, neg = graph_service._build_edge_filter_clause(
+            {"score": {"min": 0.5, "max": 1.0}}, bind_vars
+        )
+        self.assertEqual(len(pos), 1)
+        self.assertEqual(len(neg), 1)
+        self.assertEqual(neg[0], f"(e != null AND NOT {pos[0]})")
+
     def test_find_inter_node_edges_no_filters(self):
         # Without filters, all edges between the given nodes are returned.
         # CL/0000061 connects to CL/0000151 (subClassOf), GO/0008150
@@ -233,6 +325,44 @@ class GraphServiceTestCase(ArangoDBTestCase):
             edge_filters={"score": {"min": 0.5, "max": 1.0}},
         )
         self.assertEqual(result, [])
+
+    def test_find_inter_node_edges_exclude_categorical(self):
+        # Exclude the subClassOf edge; the other two (participates_in, part_of)
+        # must remain.
+        result = graph_service.find_inter_node_edges(
+            node_ids=["CL/0000061", "CL/0000151", "GO/0008150", "UBERON/0000061"],
+            graph="ontologies",
+            exclude_edge_filters={"label": ["subClassOf"]},
+        )
+        labels = sorted(e["label"] for e in result)
+        self.assertEqual(labels, ["part_of", "participates_in"])
+
+    def test_find_inter_node_edges_exclude_empty_is_noop(self):
+        result = graph_service.find_inter_node_edges(
+            node_ids=["CL/0000061", "CL/0000151", "GO/0008150", "UBERON/0000061"],
+            graph="ontologies",
+            exclude_edge_filters={"label": []},
+        )
+        self.assertEqual(len(result), 3)
+
+    def test_find_inter_node_edges_exclude_numeric(self):
+        # No seed edges carry a numeric `score`, so excluding a score range
+        # keeps all 3 edges (null-score edges are kept) and must not crash.
+        result = graph_service.find_inter_node_edges(
+            node_ids=["CL/0000061", "CL/0000151", "GO/0008150", "UBERON/0000061"],
+            graph="ontologies",
+            exclude_edge_filters={"score": {"min": 0.0, "max": 1.0}},
+        )
+        self.assertEqual(len(result), 3)
+
+    def test_build_edge_filter_clause_numeric_exclude_generates_condition(self):
+        bind_vars = {}
+        pos, _ = graph_service._build_edge_filter_clause(
+            None, bind_vars, exclude_filters={"score": {"min": 0.5, "max": 1.0}}
+        )
+        self.assertTrue(any("score" in c for c in pos))
+        self.assertIn("exclude_min_score", bind_vars)
+        self.assertIn("exclude_max_score", bind_vars)
 
     def test_traverse_graph_inter_node_edges_respect_filters(self):
         # When traverse_graph's self-call to find_inter_node_edges runs,
@@ -405,6 +535,67 @@ class AntiEdgeTraversalTestCase(ArangoDBTestCase):
                 exclude_closing_edges={"Label": ["IS_SUBSTANCE_THAT_TREATS"]},
                 require_closing_edges={"Label": ["IS_SUBSTANCE_THAT_TREATS"]},
             )
+
+    def test_build_edge_filter_clause_custom_field_ref(self):
+        bind_vars = {}
+        pos, _ = graph_service._build_edge_filter_clause(
+            {"Label": ["IS_A"]}, bind_vars, field_ref="CURRENT"
+        )
+        joined = " ".join(pos)
+        self.assertIn("CURRENT.`Label`", joined)
+        self.assertNotIn("e.`Label`", joined)
+        self.assertIn("filter_value_Label", bind_vars)
+
+    def _genes_from_diseases_exclude(self, exclude_edge_filters):
+        # Mirror _genes_from_diseases, but exercise the exclude-mode edge filter
+        # inside the closing-edge branch (exclude_closing_edges is set to trigger
+        # the path-aware query). The include filter stays permissive (the same
+        # three path labels) so the exclude is the only discriminating factor.
+        results = graph_service.traverse_graph(
+            node_ids=["MONDO/nac_d1", "MONDO/nac_d2", "MONDO/nac_d3"],
+            depth=3,
+            edge_direction="ANY",
+            allowed_collections=["GS", "PR", "CHEMBL"],
+            graph="phenotypes",
+            edge_filters={
+                "Label": [
+                    "IS_GENETIC_BASIS_FOR_CONDITION",
+                    "PRODUCES",
+                    "MOLECULARLY_INTERACTS_WITH",
+                ]
+            },
+            include_inter_node_edges=False,
+            exclude_closing_edges={"Label": ["IS_SUBSTANCE_THAT_TREATS"]},
+            exclude_edge_filters=exclude_edge_filters,
+        )
+        gene_ids = set()
+        for data in results.values():
+            for node in data["nodes"]:
+                if node["_id"].startswith("GS/"):
+                    gene_ids.add(node["_id"])
+        return gene_ids
+
+    def test_closing_branch_applies_exclude_edge_filter(self):
+        # IS_GENETIC_BASIS_FOR_CONDITION is the disease->gene edge on EVERY gene
+        # path (nac_b1, nac_c1, nac_x1), so excluding it means every path has an
+        # excluded edge and no gene survives. Before the closing-edge branch
+        # applied exclude filters this returned {g1, g3} (exclude ignored); now
+        # it is empty.
+        genes = self._genes_from_diseases_exclude(
+            exclude_edge_filters={"Label": ["IS_GENETIC_BASIS_FOR_CONDITION"]}
+        )
+        self.assertEqual(genes, set())
+
+    def test_closing_branch_exclude_unrelated_label_is_noop(self):
+        # Excluding a label that appears on no path edge is a no-op, so the
+        # result matches the baseline anti-edge set {g1, g3}: the exclude filter
+        # neither drops extra paths nor errors on unused bind parameters.
+        genes = self._genes_from_diseases_exclude(
+            exclude_edge_filters={"Label": ["NONEXISTENT_LABEL"]}
+        )
+        self.assertIn("GS/nac_g1", genes)
+        self.assertIn("GS/nac_g3", genes)
+        self.assertNotIn("GS/nac_g2", genes)
 
 
 class WorkflowServiceTestCase(ArangoDBTestCase):
