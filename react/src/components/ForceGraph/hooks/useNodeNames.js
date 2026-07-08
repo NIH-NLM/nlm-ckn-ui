@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { fetchNodeDetailsByIds as fetchNodeDetailsByIdsHelper } from "../../../services";
 import { getLabel } from "../../../utils";
 
@@ -50,6 +50,10 @@ export function useNodeNames(graphData, originNodeIds, graphType) {
 
   const persistCachedNames = useCallback(
     (newNames) => {
+      // Nothing resolved (e.g. the backend had no details for these ids): skip
+      // the state update so cachedNames keeps a stable identity and the
+      // name-resolution effect does not re-fire.
+      if (!newNames || Object.keys(newNames).length === 0) return;
       try {
         const merged = { ...(cachedNames || {}), ...(newNames || {}) };
         setCachedNames(merged);
@@ -82,11 +86,19 @@ export function useNodeNames(graphData, originNodeIds, graphType) {
     [graphType, persistCachedNames],
   );
 
+  // Ids already sent to the details endpoint this mount. Prevents refetching an
+  // id whose details the backend cannot resolve (empty response), which would
+  // otherwise loop the effect forever and flood the server.
+  const attemptedIdsRef = useRef(new Set());
+
   // Ensure origin node labels are available: prefer graphData labels, then cached, otherwise fetch and cache them.
   useEffect(() => {
     if (!originNodeIds || originNodeIds.length === 0) return;
-    const missing = originNodeIds.filter((id) => !nodeNameMap?.get(id) && !cachedNames[id]);
+    const missing = originNodeIds.filter(
+      (id) => !nodeNameMap?.get(id) && !cachedNames[id] && !attemptedIdsRef.current.has(id),
+    );
     if (missing.length === 0) return;
+    for (const id of missing) attemptedIdsRef.current.add(id);
     // fire-and-forget
     fetchNodeDetailsByIds(missing).catch(() => {});
   }, [originNodeIds, nodeNameMap, cachedNames, fetchNodeDetailsByIds]);
