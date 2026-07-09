@@ -23,10 +23,6 @@ const FiltersPanel = ({
   onCollectionChange,
   onCollectionsClearAll,
   graphLinks = [],
-  // The Include/Exclude mode is only applied to the standard (non-advanced)
-  // graph query, so the toggle is hidden in advanced mode to avoid showing a
-  // control that appears to work but does not affect the query.
-  isAdvancedMode = false,
 }) => {
   const dispatch = useDispatch();
 
@@ -99,17 +95,6 @@ const FiltersPanel = ({
                 currentMin={settings.edgeFilters[field]?.min}
                 currentMax={settings.edgeFilters[field]?.max}
                 onRangeChange={handleNumericRangeChange}
-              />
-            ) : isAdvancedMode ? (
-              // Advanced mode does not yet apply edge-filter modes, so render the
-              // include-only dropdown without the Include/Exclude toggle.
-              <FilterableDropdown
-                key={field}
-                label={field}
-                options={filterData.values || []}
-                selectedOptions={settings.edgeFilters[field] || []}
-                onOptionToggle={(value) => dispatch(updateEdgeFilter({ field, value }))}
-                onClearAll={() => dispatch(setEdgeFilters({ [field]: [] }))}
               />
             ) : (
               <div key={field} className="edge-filter-field">

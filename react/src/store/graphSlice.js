@@ -32,10 +32,22 @@ export const fetchAndProcessGraph = createAsyncThunk(
     let params;
 
     if (isAdvancedMode) {
-      // If in advanced mode, construct parameters with the per-node settings object.
+      // If in advanced mode, construct parameters with the per-node settings
+      // object. Each node's edgeFilters must be split by the global
+      // edgeFilterModes so fields set to "exclude" are sent as
+      // excludeEdgeFilters rather than silently treated as include filters.
+      const advancedSettings = Object.fromEntries(
+        Object.entries(perNodeSettings || {}).map(([nodeId, nodeSettings]) => {
+          const { include, exclude } = splitEdgeFiltersByMode(nodeSettings.edgeFilters, {
+            ...settings.edgeFilterModes,
+            ...(nodeSettings.edgeFilterModes || {}),
+          });
+          return [nodeId, { ...nodeSettings, edgeFilters: include, excludeEdgeFilters: exclude }];
+        }),
+      );
       params = {
         nodeIds: originNodeIds,
-        advancedSettings: perNodeSettings,
+        advancedSettings,
         graphType: settings.graphType,
         includeInterNodeEdges: settings.includeInterNodeEdges,
       };

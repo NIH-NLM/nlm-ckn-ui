@@ -28,6 +28,7 @@ import {
   fetchNodeDetailsByIds,
 } from "../services";
 import { performSetOperation } from "../utils";
+import { splitEdgeFiltersByMode } from "../utils/edgeFilters";
 
 /**
  * Generates a unique ID for workflows and phases.
@@ -273,10 +274,16 @@ export const executePhase = createAsyncThunk(
       if (phase.settings.includeInterNodeEdges !== false && combinedResult.nodes?.length >= 2) {
         const allNodeIds = combinedResult.nodes.map((n) => n._id || n.id).filter(Boolean);
         const existingLinkIds = new Set(combinedResult.links.map((l) => l._id).filter(Boolean));
+        const { include: combineIncludeEdges, exclude: combineExcludeEdges } =
+          splitEdgeFiltersByMode(
+            phase.settings.edgeFilters || {},
+            phase.settings.edgeFilterModes || {},
+          );
         const interEdges = await fetchEdgesBetween(
           allNodeIds,
           phase.settings.graphType,
-          phase.settings.edgeFilters || {},
+          combineIncludeEdges,
+          combineExcludeEdges,
         );
         const nodeIdSet = new Set(allNodeIds);
         for (const edge of interEdges) {
@@ -332,6 +339,21 @@ export const executePhase = createAsyncThunk(
       // Get per-node overrides for this specific node
       const nodeOverrides = perNodeSettings[nodeId] || {};
 
+      // Split this node's effective edge filters into positive (include) and
+      // negative (exclude) dicts based on the parallel per-field mode map.
+      const effectiveEdgeFilters = nodeOverrides.edgeFilters ??
+        phase.settings.edgeFilters ?? { Label: [], Source: [] };
+      // Merge modes per field so a node overriding only some fields still
+      // inherits the phase-level mode for the rest (matches graphSlice).
+      const effectiveEdgeFilterModes = {
+        ...(phase.settings.edgeFilterModes || {}),
+        ...(nodeOverrides.edgeFilterModes || {}),
+      };
+      const { include: includeEdgeFilters, exclude: excludeEdgeFilters } = splitEdgeFiltersByMode(
+        effectiveEdgeFilters,
+        effectiveEdgeFilterModes,
+      );
+
       advancedSettings[nodeId] = {
         // Use per-node override if available, otherwise use shared phase settings
         depth: nodeOverrides.depth ?? phase.settings.depth,
@@ -354,8 +376,8 @@ export const executePhase = createAsyncThunk(
         collapseOnStart: phase.settings.collapseLeafNodes ?? "standard",
         graphType: phase.settings.graphType,
         includeInterNodeEdges: phase.settings.includeInterNodeEdges ?? true,
-        edgeFilters: nodeOverrides.edgeFilters ??
-          phase.settings.edgeFilters ?? { Label: [], Source: [] },
+        edgeFilters: includeEdgeFilters,
+        excludeEdgeFilters,
         excludeClosingEdges: nodeOverrides.excludeClosingEdges ??
           phase.settings.excludeClosingEdges ?? { Label: [] },
         requireClosingEdges: nodeOverrides.requireClosingEdges ??
@@ -369,11 +391,16 @@ export const executePhase = createAsyncThunk(
 
     // "Connected Paths" uses a dedicated API to find shortest paths between origins
     if (phase.settings.setOperation === "Connected Paths") {
+      const { include: pathIncludeEdges, exclude: pathExcludeEdges } = splitEdgeFiltersByMode(
+        phase.settings.edgeFilters || {},
+        phase.settings.edgeFilterModes || {},
+      );
       mergedResult = await fetchConnectingPaths({
         nodeIds: originNodeIds,
         graphType: phase.settings.graphType,
         allowedCollections: phase.settings.allowedCollections,
-        edgeFilters: phase.settings.edgeFilters,
+        edgeFilters: pathIncludeEdges,
+        excludeEdgeFilters: pathExcludeEdges,
         maxDepth: phase.settings.depth || undefined,
       });
     } else {
@@ -438,10 +465,15 @@ export const executePhase = createAsyncThunk(
     if (phase.settings.includeInterNodeEdges !== false && mergedResult.nodes?.length >= 2) {
       const allNodeIds = mergedResult.nodes.map((n) => n._id || n.id).filter(Boolean);
       const existingLinkIds = new Set(mergedResult.links.map((l) => l._id).filter(Boolean));
+      const { include: mergeIncludeEdges, exclude: mergeExcludeEdges } = splitEdgeFiltersByMode(
+        phase.settings.edgeFilters || {},
+        phase.settings.edgeFilterModes || {},
+      );
       const interEdges = await fetchEdgesBetween(
         allNodeIds,
         phase.settings.graphType,
-        phase.settings.edgeFilters || {},
+        mergeIncludeEdges,
+        mergeExcludeEdges,
       );
       const nodeIdSet = new Set(allNodeIds);
       for (const edge of interEdges) {

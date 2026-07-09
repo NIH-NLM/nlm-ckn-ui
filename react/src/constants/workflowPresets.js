@@ -14,6 +14,7 @@ export const QUERY_DEFAULTS = {
   edgeDirection: "ANY",
   allowedCollections: [],
   edgeFilters: { Label: [], Source: [] },
+  edgeFilterModes: { Label: "include", Source: "include" },
   excludeClosingEdges: { Label: [] },
   requireClosingEdges: { Label: [] },
   setOperation: "Union",
@@ -58,6 +59,7 @@ export const createEmptyPhase = (index) => ({
   settings: {
     ...DEFAULT_PHASE_SETTINGS,
     edgeFilters: { Label: [], Source: [] },
+    edgeFilterModes: { Label: "include", Source: "include" },
     excludeClosingEdges: { Label: [] },
     requireClosingEdges: { Label: [] },
   },

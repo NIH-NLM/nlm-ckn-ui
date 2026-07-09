@@ -12,6 +12,7 @@ const PER_NODE_SETTINGS = [
   "labelStates",
   "collapseOnStart",
   "edgeFilters",
+  "edgeFilterModes",
 ];
 
 // Settings that take effect immediately (display-only) and should NOT
@@ -76,9 +77,16 @@ export function usePerNodeSettings(
   }, [isAdvancedMode, activeOriginNodeId, dispatch]);
 
   // Effect to sync filter changes back to local per-node state.
+  const prevActiveNodeForFiltersRef = useRef(activeOriginNodeId);
   useEffect(() => {
     // Only run this logic if advanced mode is active and a node is selected.
     if (isAdvancedMode && activeOriginNodeId) {
+      const nodeJustChanged = prevActiveNodeForFiltersRef.current !== activeOriginNodeId;
+      prevActiveNodeForFiltersRef.current = activeOriginNodeId;
+      // On a node switch the active-node push effect is authoritative; skip the
+      // mirror so we don't overwrite the newly-selected node's saved filters with
+      // the previous node's/global value before it has propagated.
+      if (nodeJustChanged) return;
       // Check if the edgeFilters in Redux are different from what's stored locally.
       if (
         JSON.stringify(settings.edgeFilters) !==
@@ -96,6 +104,31 @@ export function usePerNodeSettings(
       }
     }
   }, [settings.edgeFilters, isAdvancedMode, activeOriginNodeId, perNodeSettings]);
+
+  // Effect to sync edge filter MODE changes back to local per-node state.
+  const prevActiveNodeForModesRef = useRef(activeOriginNodeId);
+  useEffect(() => {
+    if (isAdvancedMode && activeOriginNodeId) {
+      const nodeJustChanged = prevActiveNodeForModesRef.current !== activeOriginNodeId;
+      prevActiveNodeForModesRef.current = activeOriginNodeId;
+      // On a node switch the active-node push effect is authoritative; skip the
+      // mirror so we don't overwrite the newly-selected node's saved modes with
+      // the previous node's/global value before it has propagated.
+      if (nodeJustChanged) return;
+      if (
+        JSON.stringify(settings.edgeFilterModes) !==
+        JSON.stringify(perNodeSettings[activeOriginNodeId]?.edgeFilterModes)
+      ) {
+        setPerNodeSettings((prevSettings) => ({
+          ...prevSettings,
+          [activeOriginNodeId]: {
+            ...prevSettings[activeOriginNodeId],
+            edgeFilterModes: settings.edgeFilterModes,
+          },
+        }));
+      }
+    }
+  }, [settings.edgeFilterModes, isAdvancedMode, activeOriginNodeId, perNodeSettings]);
 
   // Calculate if settings are stale (only for query-affecting settings).
   const isSettingsStale = useMemo(() => {
