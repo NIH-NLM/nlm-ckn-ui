@@ -32,7 +32,9 @@ ENVIRONMENT="stage"
 BASE_URL="${BASE_URL:-}"
 TIMEOUT=10
 INSECURE=""
-PROJECT="cell-kn"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/../common.sh"
+PROJECT="$PROJECT_NAME"
 export AWS_REGION="${AWS_REGION:-us-east-1}"
 
 while [ $# -gt 0 ]; do

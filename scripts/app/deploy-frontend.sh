@@ -16,7 +16,7 @@
 # PREREQUISITES:
 #   - AWS CLI configured with appropriate credentials
 #   - Node.js and npm installed
-#   - Infrastructure deployed (scripts/infra/deploy-environment.sh)
+#   - Infrastructure deployed (nlm-ckn-iac: deploy/02-deploy-environment.sh)
 #   - React application in ../react directory
 #
 #
@@ -53,7 +53,7 @@ if [ $# -ne 1 ]; then
 fi
 
 ENVIRONMENT=$1
-PROJECT_NAME="cell-kn"
+source "$SCRIPT_DIR/../common.sh"
 AWS_REGION=${AWS_REGION:-us-east-1}
 STACK_NAME="${PROJECT_NAME}-${ENVIRONMENT}-frontend"
 

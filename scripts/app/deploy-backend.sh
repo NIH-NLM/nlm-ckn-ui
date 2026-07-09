@@ -37,7 +37,7 @@
 # ROLLBACK:
 #   List recent image tags (most recent first):
 #     aws ecr describe-images \
-#       --repository-name cell-kn-backend \
+#       --repository-name nlm-ckn-backend \
 #       --query 'sort_by(imageDetails,&imagePushedAt)[-10:].imageTags[0]' \
 #       --output table
 #
@@ -46,12 +46,12 @@
 #
 # MONITORING:
 #   Watch logs:
-#     aws logs tail /ecs/cell-kn-<env>-backend --follow
+#     aws logs tail /ecs/nlm-ckn-<env>-backend --follow
 #
 #   Check service status:
 #     aws ecs describe-services \
-#       --cluster cell-kn-<env>-cluster \
-#       --services cell-kn-<env>-backend
+#       --cluster nlm-ckn-<env>-cluster \
+#       --services nlm-ckn-<env>-backend
 # ==============================================================================
 set -e
 
@@ -72,7 +72,7 @@ if [ $# -ne 1 ]; then
 fi
 
 ENVIRONMENT=$1
-PROJECT_NAME="cell-kn"
+source "$SCRIPT_DIR/../common.sh"
 AWS_REGION=${AWS_REGION:-us-east-1}
 STACK_NAME="${PROJECT_NAME}-${ENVIRONMENT}"
 
@@ -109,7 +109,7 @@ ECR_REPO=$(aws ssm get-parameter \
   exit 1
 }
 
-# Read service name from the backend service stack (cell-kn-<env>-backend)
+# Read service name from the backend service stack (nlm-ckn-<env>-backend)
 BACKEND_STACK="${PROJECT_NAME}-${ENVIRONMENT}-backend"
 SERVICE_NAME=$(aws cloudformation describe-stacks \
   --stack-name "$BACKEND_STACK" \
@@ -128,7 +128,7 @@ TASK_FAMILY="${PROJECT_NAME}-${ENVIRONMENT}-backend"
 if [ -z "$ECR_REPO" ] || [ -z "$ECS_CLUSTER" ] || [ -z "$SERVICE_NAME" ]; then
   echo -e "${RED}Error: Could not read required values.${NC}"
   echo "  ECR Repo:    ${ECR_REPO:-(empty)} — needs shared stack deployed"
-  echo "  ECS Cluster: ${ECS_CLUSTER:-(empty)} — needs infra stack (cell-kn-${ENVIRONMENT}) deployed"
+  echo "  ECS Cluster: ${ECS_CLUSTER:-(empty)} — needs infra stack (nlm-ckn-${ENVIRONMENT}) deployed"
   echo "  ECS Service: ${SERVICE_NAME:-(empty)} — needs backend stack (${BACKEND_STACK}) deployed"
   exit 1
 fi
@@ -245,7 +245,7 @@ aws ecs describe-services \
   --query 'services[0].{Status:status,Desired:desiredCount,Running:runningCount,Pending:pendingCount,TaskDef:taskDefinition}' \
   --output table
 
-# Show backend URL from infra stack outputs (BackendUrl lives in cell-kn-<env>)
+# Show backend URL from infra stack outputs (BackendUrl lives in nlm-ckn-<env>)
 INFRA_STACK="${PROJECT_NAME}-${ENVIRONMENT}"
 BACKEND_URL=$(aws cloudformation describe-stacks \
   --stack-name "$INFRA_STACK" \

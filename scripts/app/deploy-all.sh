@@ -35,7 +35,7 @@
 # MONITORING:
 #   The script shows all application URLs at completion.
 #   Watch logs:
-#     aws logs tail /ecs/cell-kn-dev-backend --follow
+#     aws logs tail /ecs/nlm-ckn-dev-backend --follow
 # ==============================================================================
 set -e
 
