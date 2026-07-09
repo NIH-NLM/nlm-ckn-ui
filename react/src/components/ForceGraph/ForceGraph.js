@@ -1314,7 +1314,6 @@ const ForceGraph = ({
                     onCollectionChange={handleCollectionChange}
                     onCollectionsClearAll={handleCollectionsClearAll}
                     graphLinks={graphData.links}
-                    isAdvancedMode={isAdvancedMode}
                   />
                 )}
               </div>

@@ -245,6 +245,17 @@ const PhaseEditor = ({
     [phase.settings.excludeClosingEdges, phase.settings.requireClosingEdges, onUpdateSettings],
   );
 
+  // Handle include/exclude mode change for a specific categorical edge field
+  const handleEdgeFilterModeChange = useCallback(
+    (field, mode) => {
+      onUpdateSettings("edgeFilterModes", {
+        ...phase.settings.edgeFilterModes,
+        [field]: mode === "exclude" ? "exclude" : "include",
+      });
+    },
+    [phase.settings.edgeFilterModes, onUpdateSettings],
+  );
+
   // Handle numeric edge filter range change
   const handleNumericEdgeFilterChange = useCallback(
     (field, min, max) => {
@@ -720,13 +731,43 @@ const PhaseEditor = ({
                       onRangeChange={handleNumericEdgeFilterChange}
                     />
                   ) : (
-                    <FilterableDropdown
-                      key={field}
-                      label={field}
-                      options={filterData.values || []}
-                      selectedOptions={phase.settings.edgeFilters?.[field] || []}
-                      onOptionToggle={(value) => handleEdgeFilterToggle(field, value)}
-                    />
+                    <div key={field} className="edge-filter-field">
+                      <fieldset
+                        className="edge-filter-mode-toggle"
+                        aria-label={`${field} filter mode`}
+                      >
+                        <button
+                          type="button"
+                          className={
+                            (phase.settings.edgeFilterModes?.[field] ?? "include") === "include"
+                              ? "active"
+                              : ""
+                          }
+                          aria-pressed={
+                            (phase.settings.edgeFilterModes?.[field] ?? "include") === "include"
+                          }
+                          onClick={() => handleEdgeFilterModeChange(field, "include")}
+                        >
+                          Include
+                        </button>
+                        <button
+                          type="button"
+                          className={
+                            phase.settings.edgeFilterModes?.[field] === "exclude" ? "active" : ""
+                          }
+                          aria-pressed={phase.settings.edgeFilterModes?.[field] === "exclude"}
+                          onClick={() => handleEdgeFilterModeChange(field, "exclude")}
+                        >
+                          Exclude
+                        </button>
+                      </fieldset>
+                      <FilterableDropdown
+                        label={field}
+                        options={filterData.values || []}
+                        selectedOptions={phase.settings.edgeFilters?.[field] || []}
+                        onOptionToggle={(value) => handleEdgeFilterToggle(field, value)}
+                      />
+                    </div>
                   ),
                 )}
               </div>

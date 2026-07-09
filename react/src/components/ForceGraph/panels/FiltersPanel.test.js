@@ -4,7 +4,7 @@ import { Provider } from "react-redux";
 import graphReducer, { setEdgeFilterMode } from "../../../store/graphSlice";
 import FiltersPanel from "./FiltersPanel";
 
-const renderPanel = (mode = "include", isAdvancedMode = false) => {
+const renderPanel = (mode = "include") => {
   const store = configureStore({ reducer: { graph: graphReducer } });
   const dispatchSpy = jest.spyOn(store, "dispatch");
   const settings = {
@@ -23,7 +23,6 @@ const renderPanel = (mode = "include", isAdvancedMode = false) => {
         onCollectionChange={() => {}}
         onCollectionsClearAll={() => {}}
         graphLinks={[{ Label: "DERIVES_FROM" }]}
-        isAdvancedMode={isAdvancedMode}
       />
     </Provider>,
   );
@@ -76,14 +75,11 @@ describe("FiltersPanel edge filter mode toggle", () => {
     expect(screen.getByPlaceholderText("Filter by Label...")).toBeInTheDocument();
   });
 
-  it("hides the Include/Exclude toggle in advanced mode", () => {
-    // Advanced mode does not apply edge-filter modes yet, so the toggle must
-    // not be shown; the legacy include-only dropdown is rendered instead.
-    renderPanel("include", true);
-    expect(screen.queryByRole("button", { name: /exclude/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /^include$/i })).not.toBeInTheDocument();
-    // Legacy dropdown uses the bare field name as its placeholder label.
-    expect(screen.getByPlaceholderText(/filter by label/i)).toBeInTheDocument();
-    expect(screen.queryByPlaceholderText(/show only these|hide these/i)).not.toBeInTheDocument();
+  it("shows the Include/Exclude toggle regardless of mode", () => {
+    // Advanced (per-node) mode now applies edge-filter modes, so the toggle is
+    // always rendered; both Include and Exclude controls must be present.
+    renderPanel("include");
+    expect(screen.getByRole("button", { name: /^include$/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /exclude/i })).toBeInTheDocument();
   });
 });

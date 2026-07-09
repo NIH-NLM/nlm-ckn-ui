@@ -231,6 +231,141 @@ describe("executePhase forwards requireClosingEdges", () => {
   });
 });
 
+describe("executePhase routes edge filters by include/exclude mode", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("splits an exclude-mode field into excludeEdgeFilters in advanced_settings", async () => {
+    services.fetchGraphData.mockResolvedValue({
+      "CL/origin": { nodes: [{ _id: "CL/origin" }, { _id: "CL/neighbor" }], links: [] },
+    });
+    if (services.fetchEdgesBetween) services.fetchEdgesBetween.mockResolvedValue([]);
+
+    const store = makeStore();
+    store.dispatch(
+      loadWorkflow({
+        phases: [
+          {
+            id: "p1",
+            originSource: "manual",
+            originNodeIds: ["CL/origin"],
+            previousPhaseId: null,
+            settings: {
+              graphType: "ontologies",
+              depth: 1,
+              edgeDirection: "OUTBOUND",
+              allowedCollections: ["CL"],
+              setOperation: "Union",
+              includeInterNodeEdges: false,
+              edgeFilters: { Label: ["DERIVES_FROM"] },
+              edgeFilterModes: { Label: "exclude" },
+            },
+          },
+        ],
+      }),
+    );
+
+    await store.dispatch(executePhase({ phaseId: "p1" }));
+
+    expect(services.fetchGraphData).toHaveBeenCalledTimes(1);
+    const params = services.fetchGraphData.mock.calls[0][0];
+    const nodeSettings = params.advancedSettings["CL/origin"];
+    expect(nodeSettings.excludeEdgeFilters).toEqual({ Label: ["DERIVES_FROM"] });
+    // The excluded field must NOT appear in the (positive) include filters.
+    expect(nodeSettings.edgeFilters).toEqual({});
+  });
+
+  it("keeps an include-mode field in edgeFilters and out of excludeEdgeFilters", async () => {
+    services.fetchGraphData.mockResolvedValue({
+      "CL/origin": { nodes: [{ _id: "CL/origin" }, { _id: "CL/neighbor" }], links: [] },
+    });
+    if (services.fetchEdgesBetween) services.fetchEdgesBetween.mockResolvedValue([]);
+
+    const store = makeStore();
+    store.dispatch(
+      loadWorkflow({
+        phases: [
+          {
+            id: "p1",
+            originSource: "manual",
+            originNodeIds: ["CL/origin"],
+            previousPhaseId: null,
+            settings: {
+              graphType: "ontologies",
+              depth: 1,
+              edgeDirection: "OUTBOUND",
+              allowedCollections: ["CL"],
+              setOperation: "Union",
+              includeInterNodeEdges: false,
+              edgeFilters: { Label: ["DERIVES_FROM"] },
+              edgeFilterModes: { Label: "include" },
+            },
+          },
+        ],
+      }),
+    );
+
+    await store.dispatch(executePhase({ phaseId: "p1" }));
+
+    const params = services.fetchGraphData.mock.calls[0][0];
+    const nodeSettings = params.advancedSettings["CL/origin"];
+    expect(nodeSettings.edgeFilters).toEqual({ Label: ["DERIVES_FROM"] });
+    expect(nodeSettings.excludeEdgeFilters).toEqual({});
+  });
+});
+
+describe("executePhase merges edge filter modes per field for node overrides", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("inherits phase-level mode for fields a node override omits", async () => {
+    services.fetchGraphData.mockResolvedValue({
+      "CL/origin": { nodes: [{ _id: "CL/origin" }, { _id: "CL/neighbor" }], links: [] },
+    });
+    if (services.fetchEdgesBetween) services.fetchEdgesBetween.mockResolvedValue([]);
+
+    const store = makeStore();
+    store.dispatch(
+      loadWorkflow({
+        phases: [
+          {
+            id: "p1",
+            originSource: "manual",
+            originNodeIds: ["CL/origin"],
+            previousPhaseId: null,
+            perNodeSettings: {
+              // Node overrides only the Label mode; Source is omitted and must
+              // fall back to the phase-level mode (exclude).
+              "CL/origin": { edgeFilterModes: { Label: "include" } },
+            },
+            settings: {
+              graphType: "ontologies",
+              depth: 1,
+              edgeDirection: "OUTBOUND",
+              allowedCollections: ["CL"],
+              setOperation: "Union",
+              includeInterNodeEdges: false,
+              edgeFilters: { Label: ["DERIVES_FROM"], Source: ["cellxgene"] },
+              edgeFilterModes: { Label: "exclude", Source: "exclude" },
+            },
+          },
+        ],
+      }),
+    );
+
+    await store.dispatch(executePhase({ phaseId: "p1" }));
+
+    const params = services.fetchGraphData.mock.calls[0][0];
+    const nodeSettings = params.advancedSettings["CL/origin"];
+    // Label follows the node override (include) -> positive filters.
+    // Source has no node override, so it inherits the phase mode (exclude).
+    expect(nodeSettings.edgeFilters).toEqual({ Label: ["DERIVES_FROM"] });
+    expect(nodeSettings.excludeEdgeFilters).toEqual({ Source: ["cellxgene"] });
+  });
+});
+
 describe("executePhase caps collection origins at originLimit", () => {
   beforeEach(() => {
     jest.clearAllMocks();
