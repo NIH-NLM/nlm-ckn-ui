@@ -17,6 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include, re_path
 from django.views.generic import TemplateView
+from django.views.decorators.cache import never_cache
 from django.http import HttpResponse
 
 urlpatterns = [
@@ -26,6 +27,10 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("arango_api/", include("arango_api.urls")),
     path("api/", include("api.urls")),
-    # React catch-all
-    re_path(r"^.*$", TemplateView.as_view(template_name="index.html")),
+    # React catch-all. never_cache marks the SPA shell non-cacheable
+    # (no-store / no-cache) so browsers always fetch the current index.html and
+    # its current hashed asset references. Without this the shell was served
+    # with no cache headers, letting a stale index.html linger and pull old CSS/JS
+    # (whitenoise still serves every previously collected hash).
+    re_path(r"^.*$", never_cache(TemplateView.as_view(template_name="index.html"))),
 ]
