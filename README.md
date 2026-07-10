@@ -21,6 +21,10 @@ The `nlm-ckn-ui` repository provides the user interface for querying, visualizin
 
 ## Setup & Installation
 
+> **New here?** [`SETUP.md`](SETUP.md) is a start-to-finish local development
+> walkthrough (prerequisites, `.env`, ArangoDB data load, database migrations,
+> build, and run). The sections below cover the same ground in reference form.
+
 ### 1. Clone Repository
 
 ```bash
