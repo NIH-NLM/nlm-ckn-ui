@@ -432,7 +432,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           # Role created by cloudformation/bootstrap/bootstrap.yaml
-          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/cell-kn-github-actions
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/nlm-ckn-github-actions
           aws-region: us-east-1
 
       - name: Setup Node.js
@@ -464,7 +464,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           # Role created by cloudformation/bootstrap/bootstrap.yaml
-          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/cell-kn-github-actions
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/nlm-ckn-github-actions
           aws-region: us-east-1
 
       - name: Deploy backend to dev
