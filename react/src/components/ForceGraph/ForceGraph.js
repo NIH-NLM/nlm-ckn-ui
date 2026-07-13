@@ -28,7 +28,14 @@ import {
   updateNodePositions,
   updateSetting,
 } from "store";
-import { getLabel, hasNodesInRawData, isMac, LoadingBar, performSetOperation } from "utils";
+import {
+  captureGraphThumbnail,
+  getLabel,
+  hasNodesInRawData,
+  isMac,
+  LoadingBar,
+  performSetOperation,
+} from "utils";
 // Import extracted hooks
 import { useGraphExport, useNodeNames, usePerNodeSettings } from "./hooks";
 // Import extracted panels
@@ -48,6 +55,7 @@ const ForceGraph = ({
   // Accept node IDs via props for direct linking (e.g., landing pages).
   nodeIds: _originNodeIdsFromProps = [],
   settings: settingsFromProps,
+  onNodeSelect = () => {},
 }) => {
   const dispatch = useDispatch();
 
@@ -366,6 +374,27 @@ const ForceGraph = ({
     });
   };
 
+  // Left-click selects the node for the inspector; right-click keeps the
+  // context menu (handleNodeClick above) without swapping the inspector.
+  const handleNodeLeftClick = (e, nodeData) => {
+    onNodeSelect(nodeData._id);
+  };
+
+  // Double-click toggles the node's user-pin. setNodePinned mutates the live
+  // simulation node (fx/fy + userPinned); mirror to Redux via updateNodePosition
+  // so the pin persists across a constructor remount and into saved graphs —
+  // the same path as the context-menu Pin action (handlePinToggle).
+  const handleNodeDoubleClick = (e, nodeData) => {
+    const nodeId = nodeData._id || nodeData.id;
+    if (!nodeId) return;
+    const newPinned = !nodeData.userPinned;
+    graphInstanceRef.current?.setNodePinned(nodeId, newPinned);
+    dispatch({
+      type: "graph/updateNodePosition",
+      payload: { nodeId, x: nodeData.x, y: nodeData.y, userPinned: newPinned },
+    });
+  };
+
   // Main effect for synchronizing D3 instance with Redux state.
   // biome-ignore lint/correctness/useExhaustiveDependencies: complex effect intentionally limited deps
   useEffect(() => {
@@ -385,6 +414,8 @@ const ForceGraph = ({
           nodeGroups: settings.availableCollections,
           collectionMaps: collectionMaps,
           onNodeClick: handleNodeClick,
+          onNodeLeftClick: handleNodeLeftClick,
+          onNodeDoubleClick: handleNodeDoubleClick,
           onNodeDragEnd: handleNodeDragEnd,
           onLassoSelection: handleLassoSelection,
           onMultiNodeDragEnd: handleMultiNodeDragEnd,
@@ -718,17 +749,24 @@ const ForceGraph = ({
 
   const handleSave = useCallback(() => {
     const graphName = window.prompt("Please enter a name for your graph:");
-    if (graphName) {
+    if (!graphName) return;
+    const persist = (thumbnail) => {
       dispatch(
         saveGraph({
           name: graphName,
           originNodeIds: originNodeIds,
           settings: settings,
           graphData: graphData,
+          thumbnail,
         }),
       );
       alert(`Graph "${graphName}" saved successfully!`);
-    }
+    };
+    // captureGraphThumbnail is best-effort and resolves to null on failure, but
+    // guard the chain so the save is never dropped if it ever rejects.
+    captureGraphThumbnail(svgRef.current)
+      .then(persist)
+      .catch(() => persist(null));
   }, [dispatch, originNodeIds, settings, graphData]);
 
   const handleLoad = useCallback(() => {

@@ -217,9 +217,16 @@ const graphSlice = createSlice({
         if (action.payload.originNodeIds) {
           state.originNodeIds = action.payload.originNodeIds;
           state.lastAppliedOriginNodeIds = action.payload.originNodeIds;
+          // Restore any saved display settings (filters, collapse-on-start, …)
+          // first so a restored graph comes back to its saved configuration.
+          if (action.payload.settings) {
+            state.settings = { ...state.settings, ...action.payload.settings };
+          }
           // Configure display settings for pre-fetched workflow results
           // and snapshot lastAppliedSettings so the "Apply Changes" banner
-          // appears when the user changes query-affecting settings.
+          // appears when the user changes query-affecting settings. These
+          // override any restored values because the data is already resolved,
+          // so re-querying (depth/focus) must stay disabled.
           state.settings.depth = 0;
           state.settings.useFocusNodes = false;
           if (action.payload.collapseLeafNodes !== undefined) {

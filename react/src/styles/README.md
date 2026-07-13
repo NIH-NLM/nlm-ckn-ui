@@ -203,9 +203,9 @@ All base styles are designed for mobile (<640px) first. Media queries progressiv
 - Mobile: Vertical stack, reduced padding
 - Desktop: Horizontal layout with spacing
 
-**Document Page**
-- Mobile: `.document-card-panel` and `.force-graph-panel` stack vertically
-- Tablet+: Side-by-side layout (40% / 60% split)
+**Graph Workspace**
+- Mobile (≤768px): `.graph-workspace-inspector` and `.graph-workspace-canvas` stack vertically
+- Desktop: Side-by-side layout (fixed-width inspector / flexible canvas)
 
 **Graph Side Panel**
 - Mobile: Full-screen overlay (slides in from right)

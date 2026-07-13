@@ -18,7 +18,7 @@ import workflowBuilderReducer from "./workflowBuilderSlice";
 const persistConfig = {
   key: "root",
   storage,
-  whitelist: ["nodesSlice", "savedGraphs"],
+  whitelist: ["nodesSlice"],
 };
 
 const rootReducer = combineReducers({

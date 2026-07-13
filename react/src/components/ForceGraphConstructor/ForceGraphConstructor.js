@@ -40,6 +40,13 @@ function ForceGraphConstructor(
   // delta. Lives in module scope so the handler closure can read/clear it.
   let groupDragSnapshot = null;
 
+  // Pointer position where a single-node drag began, in simulation coordinates.
+  // Used at drag-end to tell a real drag from a zero/near-zero-distance click so
+  // a plain click (which now selects a node for the inspector) does not pin it.
+  let singleDragStart = null;
+  // Below this pointer travel (sim units) a "drag" is treated as a click.
+  const DRAG_PIN_THRESHOLD = 4;
+
   const isGroupDragActive = (subjectId) =>
     currentSelectedNodeIds.size > 1 && currentSelectedNodeIds.has(subjectId);
 
@@ -49,6 +56,10 @@ function ForceGraphConstructor(
   // those guards.
   mergedOptions.drag = d3
     .drag()
+    // Keep d3's own click-vs-drag threshold aligned with DRAG_PIN_THRESHOLD so a
+    // sub-threshold movement that we treat as a click for pinning does not get
+    // its native "click" (node selection) suppressed by d3.
+    .clickDistance(DRAG_PIN_THRESHOLD)
     .on("start", (event, _d) => {
       activeDrags += 1;
       mergedOptions.interactionCallback();
@@ -80,6 +91,7 @@ function ForceGraphConstructor(
 
       // Single-node fallback path — unchanged from the pre-lasso behavior.
       if (!event.active) simulation.alphaTarget(0.1).restart();
+      singleDragStart = { x: event.x, y: event.y };
       event.subject.fx = event.subject.x;
       event.subject.fy = event.subject.y;
     })
@@ -135,6 +147,27 @@ function ForceGraphConstructor(
         }
 
         if (!event.active) simulation.alphaTarget(0);
+        // Distinguish a real drag from a click: a click is a zero-distance drag,
+        // and d3-drag still fires start+end for it. This handler used to pin
+        // unconditionally, so once left-click began selecting a node for the
+        // inspector, every inspect-click also pinned. Only a drag past the
+        // threshold pins now; a click leaves the node unpinned.
+        const start = singleDragStart;
+        singleDragStart = null;
+        const moved = start
+          ? Math.hypot(event.x - start.x, event.y - start.y)
+          : Number.POSITIVE_INFINITY;
+        if (moved < DRAG_PIN_THRESHOLD) {
+          // Release the hold drag-start placed on an unpinned node so it rejoins
+          // the simulation instead of sticking where it was clicked; leave an
+          // already-pinned node pinned.
+          if (!event.subject.userPinned) {
+            event.subject.fx = null;
+            event.subject.fy = null;
+          }
+          applyPinnedHighlight();
+          return;
+        }
         // Pin the node at the dropped position so it stays put while the
         // simulation continues to settle the rest of the graph. Mark as a
         // user-set pin so the incremental-expand auto-release loop in
@@ -699,6 +732,8 @@ function ForceGraphConstructor(
         linkStrokeLinecap: mergedOptions.linkStrokeLinecap,
         linkFontSize: mergedOptions.linkFontSize,
         onNodeClick: mergedOptions.onNodeClick,
+        onNodeLeftClick: mergedOptions.onNodeLeftClick,
+        onNodeDoubleClick: mergedOptions.onNodeDoubleClick,
         drag: mergedOptions.drag,
         originNodeIds: mergedOptions.originNodeIds,
         useFocusNodes: mergedOptions.useFocusNodes,
@@ -864,6 +899,8 @@ function ForceGraphConstructor(
         linkStrokeLinecap: mergedOptions.linkStrokeLinecap,
         linkFontSize: mergedOptions.linkFontSize,
         onNodeClick: mergedOptions.onNodeClick,
+        onNodeLeftClick: mergedOptions.onNodeLeftClick,
+        onNodeDoubleClick: mergedOptions.onNodeDoubleClick,
         drag: mergedOptions.drag,
         originNodeIds: mergedOptions.originNodeIds,
         useFocusNodes: mergedOptions.useFocusNodes,
