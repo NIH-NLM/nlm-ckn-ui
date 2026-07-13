@@ -19,6 +19,15 @@
   display: flex;
   flex-direction: column;
   flex-grow: 1;
+  /* The unified graph workspace is a full-bleed page (matches the Figma "for
+     dev" frame): drop the standard content-card gutters, rounding, and shadow
+     so the workspace meets the viewport edges. Scoped to the document page. */
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.content-page-layout.document-details-page-layout {
+  padding: 0;
 }
 
 /* Mobile: Stack panels vertically */
@@ -32,45 +41,19 @@
   min-height: auto;
 }
 
-.document-card-panel {
-  flex: 1 1 auto;
-  min-width: 0;
+/* Node inspector (unified graph workspace left column) */
+
+.node-inspector {
   display: flex;
   flex-direction: column;
-  background-color: var(--color-light-bg);
-  border-radius: var(--border-radius);
-  border: 1px solid var(--color-light);
-  overflow: hidden;
-  margin: var(--spacing-md) 0;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  height: 100%;
 }
 
-.document-card-panel.hidden {
-  display: none;
-}
-
-.force-graph-panel {
-  flex: 1 1 auto;
-  min-width: 0;
-  min-height: 500px;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  background-color: var(--color-white);
-  border-radius: var(--border-radius);
-  border: 1px solid var(--color-light);
-  padding: 0;
-  transition: all 0.3s ease;
-  overflow: hidden;
-}
-
-.force-graph-panel.flex-full {
-  flex: 1 1 100%;
-}
-
-.force-graph-panel.flex-full {
-  flex: 1 1 100%;
+.node-inspector-loading,
+.node-inspector-fallback {
+  padding: var(--spacing-md);
+  color: var(--color-gray);
+  font-size: var(--font-size-sm);
 }
 
 /* Panel headers for better UX */
@@ -106,14 +89,6 @@
   overflow-y: auto;
   padding: var(--spacing-sm);
   box-sizing: border-box;
-}
-
-.force-graph-panel #chart-container-wrapper {
-  flex-grow: 1;
-  min-height: 400px;
-  width: 100%;
-  position: relative;
-  overflow: hidden;
 }
 
 .document-info-fieldset {
@@ -693,27 +668,10 @@ a.document-popup-button {
     height: calc(100vh - 200px);
   }
 
-  .document-card-panel {
-    flex: 0 0 40%;
-    min-width: 300px;
-    margin: var(--spacing-lg) 0;
-  }
-
   .document-item-list-wrapper {
     max-height: none;
     height: calc(100vh - 80px);
     padding: var(--spacing-sm);
-  }
-
-  .force-graph-panel {
-    flex: 0 0 60%;
-    min-height: calc(100vh - 250px);
-    height: calc(100vh - 250px);
-  }
-
-  .force-graph-panel #chart-container-wrapper {
-    height: 100%;
-    min-height: 600px;
   }
 
   .content-box.document-details-content-box {

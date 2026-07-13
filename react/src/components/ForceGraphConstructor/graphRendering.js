@@ -101,6 +101,17 @@ export function renderGraph(_simulation, nodes, links, d3, containers, options) 
         .on("contextmenu", (event, d) => {
           event.preventDefault();
           options.onNodeClick(event, d);
+        })
+        .on("click", (event, d) => {
+          // Left-click selects the node for the inspector; right-click keeps the context menu.
+          if (typeof options.onNodeLeftClick === "function") options.onNodeLeftClick(event, d);
+        })
+        .on("dblclick", (event, d) => {
+          // Double-click toggles the node's pin. Stop propagation so it does not
+          // also trigger the zoom behavior's double-click-to-zoom.
+          event.preventDefault();
+          event.stopPropagation();
+          if (typeof options.onNodeDoubleClick === "function") options.onNodeDoubleClick(event, d);
         });
       // Inner circle for donut effect.
       nodeG
@@ -111,6 +122,17 @@ export function renderGraph(_simulation, nodes, links, d3, containers, options) 
         .on("contextmenu", (event, d) => {
           event.preventDefault();
           options.onNodeClick(event, d);
+        })
+        .on("click", (event, d) => {
+          // Left-click selects the node for the inspector; right-click keeps the context menu.
+          if (typeof options.onNodeLeftClick === "function") options.onNodeLeftClick(event, d);
+        })
+        .on("dblclick", (event, d) => {
+          // Double-click toggles the node's pin. Stop propagation so it does not
+          // also trigger the zoom behavior's double-click-to-zoom.
+          event.preventDefault();
+          event.stopPropagation();
+          if (typeof options.onNodeDoubleClick === "function") options.onNodeDoubleClick(event, d);
         });
     } else {
       // Render as standard circle.
@@ -121,6 +143,17 @@ export function renderGraph(_simulation, nodes, links, d3, containers, options) 
         .on("contextmenu", (event, d) => {
           event.preventDefault();
           options.onNodeClick(event, d);
+        })
+        .on("click", (event, d) => {
+          // Left-click selects the node for the inspector; right-click keeps the context menu.
+          if (typeof options.onNodeLeftClick === "function") options.onNodeLeftClick(event, d);
+        })
+        .on("dblclick", (event, d) => {
+          // Double-click toggles the node's pin. Stop propagation so it does not
+          // also trigger the zoom behavior's double-click-to-zoom.
+          event.preventDefault();
+          event.stopPropagation();
+          if (typeof options.onNodeDoubleClick === "function") options.onNodeDoubleClick(event, d);
         });
     }
     // Append tooltip title and hidden labels.
