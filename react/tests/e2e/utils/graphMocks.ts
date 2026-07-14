@@ -94,7 +94,7 @@ export async function setupGraphMocks(page: Page, originId: string, options: Gra
       "persist:root",
       JSON.stringify({
         nodesSlice: JSON.stringify({ originNodeIds: [origin] }),
-        savedGraphs: JSON.stringify({ graphs: [] }),
+        savedGraphs: JSON.stringify({ savedGraphs: [], activeGraphId: null }),
         _persist: JSON.stringify({ version: -1, rehydrated: true }),
       }),
     );

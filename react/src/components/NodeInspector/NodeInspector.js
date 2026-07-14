@@ -6,12 +6,22 @@ import { useNodeDocument } from "hooks";
  * then swaps to the selected node's document (fetched on demand).
  * @param {object} props
  * @param {string|null} props.selectedNodeId  "COLL/key" of the clicked node, or null.
- * @param {object} props.originDocument        The page's origin document.
+ * @param {object} [props.originDocument]      The page's origin document, if any. Hosts
+ *   without a single origin (Graph Builder, Workflow) omit it and rely on selection.
  */
-const NodeInspector = ({ selectedNodeId, originDocument }) => {
+const NodeInspector = ({ selectedNodeId, originDocument = null }) => {
   const { document, loading, error } = useNodeDocument(selectedNodeId);
 
   if (!selectedNodeId) {
+    // No selection: show the origin document if the host provides one, otherwise
+    // prompt the user to pick a node (Graph Builder / Workflow hosts).
+    if (!originDocument) {
+      return (
+        <div className="node-inspector">
+          <div className="node-inspector-empty">Select a node to inspect it.</div>
+        </div>
+      );
+    }
     return (
       <div className="node-inspector">
         <DocumentCard document={originDocument} />

@@ -1,10 +1,10 @@
 import { useDispatch, useSelector } from "react-redux";
 import { loadGraph } from "../../store/graphSlice";
-import { deleteGraph } from "../../store/savedGraphsSlice";
+import { deleteGraph, selectSavedGraphs } from "../../store/savedGraphsSlice";
 
 const LoadGraphModal = ({ isOpen, onClose }) => {
   const dispatch = useDispatch();
-  const { savedGraphs } = useSelector((state) => state.savedGraphs);
+  const savedGraphs = useSelector(selectSavedGraphs);
 
   if (!isOpen) {
     return null;

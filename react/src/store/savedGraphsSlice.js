@@ -43,12 +43,24 @@ const savedGraphsSlice = createSlice({
 
 export const { saveGraph, deleteGraph, renameGraph, setActiveGraph } = savedGraphsSlice.actions;
 
+// Stable empty reference so the fallback doesn't churn selector identity.
+const EMPTY_SAVED_GRAPHS = [];
+
+/**
+ * Reads the saved-graph list, normalizing to an empty array. `savedGraphs` is
+ * session-only, but a stale blob rehydrated from an older build can leave the
+ * array undefined; every consumer goes through here so none of them crash on it.
+ * @param {object} state
+ * @returns {Array}
+ */
+export const selectSavedGraphs = (state) => state.savedGraphs.savedGraphs ?? EMPTY_SAVED_GRAPHS;
+
 /**
  * Restores a saved graph into the live graph and marks it active.
  * @param {string} id
  */
 export const restoreSavedGraph = (id) => (dispatch, getState) => {
-  const graph = getState().savedGraphs.savedGraphs.find((g) => g.id === id);
+  const graph = selectSavedGraphs(getState()).find((g) => g.id === id);
   if (!graph) return;
   dispatch(
     setGraphData({
