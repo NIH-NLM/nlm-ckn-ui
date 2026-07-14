@@ -6,11 +6,11 @@
  * - Table view of results (default)
  * - Graph visualization of results
  * - Shareable URLs with encoded workflow state
- * - Integration with existing ForceGraph component
+ * - Graph results rendered in the shared GraphWorkspace shell
  */
 
 import ErrorBoundary from "components/ErrorBoundary";
-import ForceGraph from "components/ForceGraph/ForceGraph";
+import GraphWorkspace from "components/GraphWorkspace";
 import WorkflowBuilder from "components/WorkflowBuilder";
 import ResultsTable from "components/WorkflowBuilder/ResultsTable";
 import { GRAPH_STATUS } from "constants/index";
@@ -198,7 +198,7 @@ const WorkflowBuilderPage = () => {
                   style={{ display: activeView === "graph" ? "block" : "none" }}
                 >
                   <ErrorBoundary>
-                    <ForceGraph />
+                    <GraphWorkspace />
                   </ErrorBoundary>
                 </div>
               )}

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { deleteGraph, renameGraph, restoreSavedGraph } from "store";
+import { deleteGraph, renameGraph, restoreSavedGraph, selectSavedGraphs } from "store";
 
 /**
  * Bottom filmstrip of session-saved graphs. Click a card to restore it; use the
@@ -8,7 +8,7 @@ import { deleteGraph, renameGraph, restoreSavedGraph } from "store";
  */
 const SavedGraphShelf = () => {
   const dispatch = useDispatch();
-  const savedGraphs = useSelector((s) => s.savedGraphs.savedGraphs);
+  const savedGraphs = useSelector(selectSavedGraphs);
   const activeGraphId = useSelector((s) => s.savedGraphs.activeGraphId);
   const [editingId, setEditingId] = useState(null);
   const renameInputRef = useRef(null);
@@ -19,6 +19,8 @@ const SavedGraphShelf = () => {
     }
   }, [editingId]);
 
+  // selectSavedGraphs normalizes a stale/undefined array to [], so the shelf
+  // never crashes the surrounding workspace.
   if (!savedGraphs.length) {
     return <div className="saved-graph-shelf saved-graph-shelf--empty">No saved graphs yet</div>;
   }

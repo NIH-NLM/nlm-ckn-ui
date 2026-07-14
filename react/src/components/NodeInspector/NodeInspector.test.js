@@ -19,6 +19,13 @@ describe("NodeInspector", () => {
     expect(screen.getByTestId("doc-card")).toHaveTextContent("CSD/origin");
   });
 
+  it("renders an empty-state placeholder when there is no selection and no origin document", () => {
+    useNodeDocument.mockReturnValue({ document: null, loading: false, error: null });
+    const { container } = render(<NodeInspector selectedNodeId={null} originDocument={null} />);
+    expect(container.querySelector(".node-inspector-empty")).toBeInTheDocument();
+    expect(screen.queryByTestId("doc-card")).not.toBeInTheDocument();
+  });
+
   it("renders a loading skeleton while fetching a selected node", () => {
     useNodeDocument.mockReturnValue({ document: null, loading: true, error: null });
     const { container } = render(

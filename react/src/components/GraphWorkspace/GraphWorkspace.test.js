@@ -12,13 +12,14 @@ jest.mock("components/ForceGraph/ForceGraph", () => ({ onNodeSelect }) => (
   </button>
 ));
 jest.mock("components/NodeInspector", () => ({ selectedNodeId, originDocument }) => (
-  <div data-testid="inspector">{selectedNodeId ?? originDocument._id}</div>
+  <div data-testid="inspector">{selectedNodeId ?? originDocument?._id ?? "empty"}</div>
 ));
 jest.mock("components/SavedGraphShelf", () => () => <div data-testid="shelf" />);
 
-const renderWorkspace = () => {
+const renderWorkspace = (props = {}, preloadedGraph) => {
   const store = configureStore({
     reducer: { graph: graphReducer, savedGraphs: savedGraphsReducer },
+    ...(preloadedGraph ? { preloadedState: { graph: preloadedGraph } } : {}),
   });
   return render(
     <Provider store={store}>
@@ -26,6 +27,7 @@ const renderWorkspace = () => {
         originDocument={{ _id: "CSD/origin" }}
         nodeIds={["CSD/origin"]}
         settings={{}}
+        {...props}
       />
     </Provider>,
   );
@@ -42,5 +44,21 @@ describe("GraphWorkspace", () => {
     renderWorkspace();
     fireEvent.click(screen.getByText("graph"));
     expect(screen.getByTestId("inspector")).toHaveTextContent("CS/clicked");
+  });
+
+  it("defaults the inspector to the first origin node when no origin document is given", () => {
+    renderWorkspace(
+      { originDocument: undefined },
+      { past: [], present: { originNodeIds: ["CS/first", "CS/second"] }, future: [] },
+    );
+    expect(screen.getByTestId("inspector")).toHaveTextContent("CS/first");
+  });
+
+  it("shows an empty inspector when there is neither an origin document nor origin nodes", () => {
+    renderWorkspace(
+      { originDocument: undefined },
+      { past: [], present: { originNodeIds: [] }, future: [] },
+    );
+    expect(screen.getByTestId("inspector")).toHaveTextContent("empty");
   });
 });

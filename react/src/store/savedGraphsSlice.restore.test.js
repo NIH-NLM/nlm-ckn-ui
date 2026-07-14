@@ -5,6 +5,7 @@ import savedGraphsReducer, {
   renameGraph,
   restoreSavedGraph,
   saveGraph,
+  selectSavedGraphs,
   setActiveGraph,
   snapshotCurrentGraph,
 } from "./savedGraphsSlice";
@@ -38,6 +39,14 @@ describe("savedGraphsSlice extensions", () => {
     const id = state(store).savedGraphs[0].id;
     store.dispatch(renameGraph({ id, name: "Renamed" }));
     expect(state(store).savedGraphs[0].name).toBe("Renamed");
+  });
+
+  it("selectSavedGraphs normalizes an undefined array to an empty array", () => {
+    expect(selectSavedGraphs({ savedGraphs: { activeGraphId: null } })).toEqual([]);
+    // Stable reference so it doesn't churn selector identity across calls.
+    expect(selectSavedGraphs({ savedGraphs: {} })).toBe(
+      selectSavedGraphs({ savedGraphs: { savedGraphs: undefined } }),
+    );
   });
 
   it("setActiveGraph sets the active id", () => {

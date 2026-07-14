@@ -37,6 +37,20 @@ describe("SavedGraphShelf", () => {
     expect(container.querySelector(".saved-graph-shelf--empty")).toBeInTheDocument();
   });
 
+  it("renders the empty state without crashing when the array is undefined (stale rehydrate)", () => {
+    const store = configureStore({
+      reducer: { graph: graphReducer, savedGraphs: savedGraphsReducer },
+      // Mimic a stale persisted blob that rehydrated without a savedGraphs array.
+      preloadedState: { savedGraphs: { activeGraphId: null } },
+    });
+    const { container } = render(
+      <Provider store={store}>
+        <SavedGraphShelf />
+      </Provider>,
+    );
+    expect(container.querySelector(".saved-graph-shelf--empty")).toBeInTheDocument();
+  });
+
   it("renders a card per saved graph and highlights the active one", () => {
     const { container } = renderWithState(
       [card({ id: "1" }), card({ id: "2", name: "Second" })],

@@ -45,6 +45,7 @@ export {
   renameGraph,
   restoreSavedGraph,
   saveGraph,
+  selectSavedGraphs,
   setActiveGraph as setActiveSavedGraph,
   snapshotCurrentGraph,
 } from "./savedGraphsSlice";
