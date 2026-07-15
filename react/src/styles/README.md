@@ -166,14 +166,14 @@ All base styles are designed for mobile (<640px) first. Media queries progressiv
 
 ```css
 /* Mobile base (no media query) */
-.app-header {
+.example-component {
   flex-direction: column;
   padding: var(--spacing-md);
 }
 
 /* Tablet and up */
 @media (min-width: 640px) {
-  .app-header {
+  .example-component {
     flex-direction: row;
     padding: var(--spacing-lg);
   }
@@ -181,7 +181,7 @@ All base styles are designed for mobile (<640px) first. Media queries progressiv
 
 /* Desktop and up */
 @media (min-width: 1024px) {
-  .app-header {
+  .example-component {
     padding: calc(var(--spacing-lg) * 1.5);
   }
 }

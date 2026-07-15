@@ -20,7 +20,7 @@ const SearchIcon = () => (
   </svg>
 );
 
-const SearchBar = () => {
+const SearchBar = ({ placeholder = "Search NLM-CKN..." }) => {
   const { graphType } = useContext(GraphContext);
 
   const { query, setQuery, results, isOpen, setIsOpen, containerRef } = useSearch(graphType);
@@ -34,7 +34,7 @@ const SearchBar = () => {
           <input
             type="text"
             className="search-input"
-            placeholder="Search NLM-CKN..."
+            placeholder={placeholder}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setIsOpen(true)}
