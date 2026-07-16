@@ -46,7 +46,8 @@ for arg in "$@"; do
   esac
 done
 
-PROJECT_NAME="cell-kn"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/common.sh"
 AWS_REGION="us-east-1"
 STACK_NAME="${PROJECT_NAME}-${ENVIRONMENT}-arangodb"
 LOCAL_PORT="8530"

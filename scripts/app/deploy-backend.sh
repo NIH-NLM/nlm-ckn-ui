@@ -17,8 +17,11 @@
 #   3. Logs in to Amazon ECR
 #   4. Builds Docker image from project root
 #   5. Tags image with git SHA (e.g. abc1234) - never overwrites an existing tag
-#   6. Pushes to ECR
-#   7. Stores the active image tag in SSM (/${ProjectName}/${Environment}/backend/image-tag)
+#   6. Pushes to ECR, and moves the `latest` tag onto the same image
+#      (the CloudFormation task definition pulls `latest`)
+#   7. If the backend stack is still provisioning, stops here so CloudFormation
+#      can pick up the image and finish; otherwise continues:
+#   8. Stores the active image tag in SSM (/${ProjectName}/${Environment}/backend/image-tag)
 #   8. Registers a new ECS task definition revision with the specific image URI
 #   9. Updates ECS service to use the new task definition
 #  10. Waits for service to stabilize
@@ -37,7 +40,7 @@
 # ROLLBACK:
 #   List recent image tags (most recent first):
 #     aws ecr describe-images \
-#       --repository-name cell-kn-backend \
+#       --repository-name nlm-ckn-backend \
 #       --query 'sort_by(imageDetails,&imagePushedAt)[-10:].imageTags[0]' \
 #       --output table
 #
@@ -46,12 +49,12 @@
 #
 # MONITORING:
 #   Watch logs:
-#     aws logs tail /ecs/cell-kn-<env>-backend --follow
+#     aws logs tail /ecs/nlm-ckn-<env>-backend --follow
 #
 #   Check service status:
 #     aws ecs describe-services \
-#       --cluster cell-kn-<env>-cluster \
-#       --services cell-kn-<env>-backend
+#       --cluster nlm-ckn-<env>-cluster \
+#       --services nlm-ckn-<env>-backend
 # ==============================================================================
 set -e
 
@@ -72,7 +75,7 @@ if [ $# -ne 1 ]; then
 fi
 
 ENVIRONMENT=$1
-PROJECT_NAME="cell-kn"
+source "$SCRIPT_DIR/../common.sh"
 AWS_REGION=${AWS_REGION:-us-east-1}
 STACK_NAME="${PROJECT_NAME}-${ENVIRONMENT}"
 
@@ -109,13 +112,13 @@ ECR_REPO=$(aws ssm get-parameter \
   exit 1
 }
 
-# Read service name from the backend service stack (cell-kn-<env>-backend)
+# The backend stack (nlm-ckn-<env>-backend) creates the ECS service. Its name is
+# deterministic and matches the task family, so derive it directly rather than
+# reading a CloudFormation output — that output is absent while the stack is
+# still provisioning and would resolve to the literal string "None", which then
+# slips past the empty-check below and produces "Service not found".
 BACKEND_STACK="${PROJECT_NAME}-${ENVIRONMENT}-backend"
-SERVICE_NAME=$(aws cloudformation describe-stacks \
-  --stack-name "$BACKEND_STACK" \
-  --region "$AWS_REGION" \
-  --query 'Stacks[0].Outputs[?OutputKey==`ServiceName`].OutputValue' \
-  --output text 2>/dev/null) || SERVICE_NAME=""
+SERVICE_NAME="${PROJECT_NAME}-${ENVIRONMENT}-backend"
 
 # Read ECS cluster name from the infra stack exports (set by ecs-cluster.yaml nested stack)
 ECS_CLUSTER=$(aws cloudformation list-exports \
@@ -128,7 +131,7 @@ TASK_FAMILY="${PROJECT_NAME}-${ENVIRONMENT}-backend"
 if [ -z "$ECR_REPO" ] || [ -z "$ECS_CLUSTER" ] || [ -z "$SERVICE_NAME" ]; then
   echo -e "${RED}Error: Could not read required values.${NC}"
   echo "  ECR Repo:    ${ECR_REPO:-(empty)} — needs shared stack deployed"
-  echo "  ECS Cluster: ${ECS_CLUSTER:-(empty)} — needs infra stack (cell-kn-${ENVIRONMENT}) deployed"
+  echo "  ECS Cluster: ${ECS_CLUSTER:-(empty)} — needs infra stack (nlm-ckn-${ENVIRONMENT}) deployed"
   echo "  ECS Service: ${SERVICE_NAME:-(empty)} — needs backend stack (${BACKEND_STACK}) deployed"
   exit 1
 fi
@@ -169,6 +172,73 @@ else
   docker push "$FULL_IMAGE_URI"
   echo -e "${GREEN}✓ Image pushed: ${FULL_IMAGE_URI}${NC}"
 fi
+
+# Also move the `latest` tag onto this image. The CloudFormation-managed task
+# definition pulls `nlm-ckn-backend:latest`, so a fresh stack CREATE hangs until
+# a `latest` exists — pushing only the immutable SHA tag never unblocks it.
+# Retag server-side (copy the manifest to the `latest` tag) rather than
+# docker pull/tag/push: it works whether or not the build/push above was skipped,
+# and it doesn't fail on arm64 hosts (the image is linux/amd64-only, so a local
+# `docker pull` of the manifest list has no matching platform).
+echo -e "\n${GREEN}Updating 'latest' tag -> ${IMAGE_TAG}...${NC}"
+ECR_REPO_NAME="$(echo "$ECR_REPO" | sed 's|.*/||')"
+IMAGE_MANIFEST=$(aws ecr batch-get-image \
+  --repository-name "$ECR_REPO_NAME" \
+  --image-ids imageTag="$IMAGE_TAG" \
+  --query 'images[0].imageManifest' \
+  --output text \
+  --region "$AWS_REGION")
+if PUT_OUTPUT=$(aws ecr put-image \
+    --repository-name "$ECR_REPO_NAME" \
+    --image-tag latest \
+    --image-manifest "$IMAGE_MANIFEST" \
+    --region "$AWS_REGION" \
+    --no-cli-pager 2>&1); then
+  echo -e "${GREEN}✓ latest -> ${IMAGE_TAG}${NC}"
+elif echo "$PUT_OUTPUT" | grep -q "ImageAlreadyExistsException"; then
+  echo -e "${GREEN}✓ latest already points to ${IMAGE_TAG}${NC}"
+else
+  echo -e "${RED}Error updating 'latest' tag:${NC}"
+  echo "$PUT_OUTPUT"
+  exit 1
+fi
+
+# If the backend stack is still provisioning, CloudFormation owns the ECS service
+# and task definition — a hung CREATE just needs the image to exist so its tasks
+# can start. Registering a task-def revision or updating the service here would
+# fight the in-flight stack, so stop after the push and let CloudFormation finish.
+STACK_STATUS=$(aws cloudformation describe-stacks \
+  --stack-name "$BACKEND_STACK" \
+  --region "$AWS_REGION" \
+  --query 'Stacks[0].StackStatus' \
+  --output text 2>/dev/null) || STACK_STATUS=""
+
+case "$STACK_STATUS" in
+  # Successful, deployable terminal states — the ECS service/task-def exist, so
+  # continue to the SSM + ECS rollout below. (UPDATE_ROLLBACK_COMPLETE rolled
+  # back to a prior working state, so its resources are usable too.)
+  CREATE_COMPLETE|UPDATE_COMPLETE|IMPORT_COMPLETE|UPDATE_ROLLBACK_COMPLETE)
+    ;;
+  # Empty status means the describe-stacks lookup failed or the stack doesn't
+  # exist yet — preserve the prior behavior of falling through.
+  "")
+    ;;
+  # Failed terminal states that also end in _COMPLETE (e.g. ROLLBACK_COMPLETE,
+  # DELETE_COMPLETE) or otherwise. The stack has no usable ECS resources, so an
+  # SSM/ECS rollout would fight the broken stack or fail confusingly. Stop here.
+  ROLLBACK_COMPLETE|ROLLBACK_FAILED|UPDATE_ROLLBACK_FAILED|DELETE_COMPLETE|DELETE_FAILED|CREATE_FAILED|UPDATE_FAILED)
+    echo -e "\n${RED}Backend stack ${BACKEND_STACK} is in a failed state (status: ${STACK_STATUS}).${NC}"
+    echo -e "${RED}The image has been pushed, but resolve the stack in CloudFormation before deploying application code.${NC}"
+    exit 1
+    ;;
+  # Anything else is a non-terminal, in-progress state — still provisioning.
+  *)
+    echo -e "\n${YELLOW}Backend stack ${BACKEND_STACK} is not ready (status: ${STACK_STATUS}).${NC}"
+    echo -e "${YELLOW}The image has been pushed — CloudFormation will pick it up as it finishes provisioning.${NC}"
+    echo -e "${YELLOW}Re-run this script once the stack reaches a *_COMPLETE state to roll out future revisions.${NC}"
+    exit 0
+    ;;
+esac
 
 # Store the active image tag in SSM (for auditability and rollback reference)
 SSM_IMAGE_TAG_PARAM="/${PROJECT_NAME}/${ENVIRONMENT}/backend/image-tag"
@@ -245,7 +315,7 @@ aws ecs describe-services \
   --query 'services[0].{Status:status,Desired:desiredCount,Running:runningCount,Pending:pendingCount,TaskDef:taskDefinition}' \
   --output table
 
-# Show backend URL from infra stack outputs (BackendUrl lives in cell-kn-<env>)
+# Show backend URL from infra stack outputs (BackendUrl lives in nlm-ckn-<env>)
 INFRA_STACK="${PROJECT_NAME}-${ENVIRONMENT}"
 BACKEND_URL=$(aws cloudformation describe-stacks \
   --stack-name "$INFRA_STACK" \

@@ -81,7 +81,7 @@ fi
 DATASET_S3_KEY="runs/${ETL_VERSION}/06-golden-dump.tar.gz"
 echo "ETL version : $ETL_VERSION"
 echo "S3 key      : $DATASET_S3_KEY"
-PROJECT_NAME="cell-kn"
+source "$SCRIPT_DIR/../common.sh"
 AWS_REGION=${AWS_REGION:-us-east-1}
 STACK_NAME="${PROJECT_NAME}-${ENVIRONMENT}-arangodb"
 
