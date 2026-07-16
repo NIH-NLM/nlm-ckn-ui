@@ -6,22 +6,27 @@ see [`README.md`](./README.md).
 
 ## Architecture in one paragraph
 
-Everything keys off two constants — `PROJECT_NAME="cell-kn"` and
-`AWS_REGION=us-east-1` — and a strict stack-naming convention
-(`cell-kn-<env>`, `cell-kn-<env>-frontend`, `cell-kn-<env>-arangodb`,
-`cell-kn-<env>-backend`). Scripts discover everything else at runtime from
-CloudFormation outputs/exports, SSM parameters, and Secrets Manager rather than
-hardcoding ARNs, so the same script works across `dev` / `stage` / `sandbox` /
-`prod`. Scripts are split into **infra** (provision/change AWS resources, run
-rarely) and **app** (ship code to existing resources, run every release), with
-standalone ops scripts at the top level.
+Everything keys off two constants — `PROJECT_NAME="nlm-ckn"` (defined once in
+[`common.sh`](./common.sh), sourced by the app + ops scripts) and
+`AWS_REGION=us-east-1` — and a strict
+stack-naming convention (`nlm-ckn-<env>`, `nlm-ckn-<env>-frontend`,
+`nlm-ckn-<env>-arangodb`, `nlm-ckn-<env>-backend`). Scripts discover everything
+else at runtime from CloudFormation outputs/exports, SSM parameters, and Secrets
+Manager rather than hardcoding ARNs, so the same script works across `dev` /
+`stage` / `prod`. Infrastructure provisioning (the CloudFormation stacks above)
+lives in the [`nlm-ckn-iac`](https://github.com/Springbok-LLC/nlm-ckn-iac) repo;
+the scripts here are **app** scripts (ship code to existing resources, run every
+release) plus a few standalone ops scripts at the top level.
 
 ## Script map
 
+Infrastructure provisioning (account setup, environment stacks) now lives in the
+[`nlm-ckn-iac`](https://github.com/Springbok-LLC/nlm-ckn-iac) repo
+(`deploy/01-deploy-account-setup.sh`, `deploy/02-deploy-environment.sh`). The
+scripts in this repo:
+
 | Script | Layer | Purpose |
 |---|---|---|
-| `infra/deploy-account-setup.sh` | infra | One-time per account: bootstrap stack (S3 template bucket, GitHub OIDC role, IAM) + shared stack (ECR repo, ArangoDB S3 bucket). Writes `ecr-url` and `arangodb-bucket-name` to SSM. |
-| `infra/deploy-environment.sh <env>` | infra | Provisions one environment via changesets (diff preview, replacement warnings, confirmation prompt). Phase 1: `cell-kn-<env>`. Phase 2: frontend → arangodb → backend. |
 | `app/push-backend-image.sh` | app | Build + push backend image only (bootstrap before first env deploy; also tags `latest`). |
 | `app/deploy-backend.sh <env>` | app | Build → push (immutable git-SHA tag) → register ECS task def → update service → wait stable. |
 | `app/deploy-frontend.sh <env>` | app | `npm ci` + build → `s3 sync --delete` → CloudFront invalidation. |
@@ -33,7 +38,8 @@ standalone ops scripts at the top level.
 ## Workflow map
 
 All deploy workflows authenticate via **GitHub OIDC** (assume
-`role/cell-kn-github-actions`, created by the bootstrap stack) — no stored AWS keys.
+`role/nlm-ckn-github-actions`, created by the `nlm-ckn-iac` account-setup) — no
+stored AWS keys.
 
 | Workflow | Trigger | What it runs |
 |---|---|---|
@@ -52,13 +58,13 @@ the restore. The expected key is hard-coded as:
 runs/<ETL_VERSION>/06-golden-dump.tar.gz
 ```
 
-in the shared bucket (name in SSM at `/cell-kn/shared/arangodb-bucket-name`).
+in the shared bucket (name in SSM at `/nlm-ckn/shared/arangodb-bucket-name`).
 
 **1. Upload your dump to the exact key** (`ETL_VERSION` here is `v1.4.6-alpha.34`):
 
 ```bash
 BUCKET=$(aws ssm get-parameter \
-  --name /cell-kn/shared/arangodb-bucket-name \
+  --name /nlm-ckn/shared/arangodb-bucket-name \
   --query Parameter.Value --output text --region us-east-1)
 
 aws s3 cp /path/to/your-golden-dump.tar.gz \

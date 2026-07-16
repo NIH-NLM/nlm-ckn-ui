@@ -27,8 +27,8 @@
 #
 # ENABLE ECS EXEC (one-time setup):
 #   aws ecs update-service \
-#     --cluster cell-kn-<env>-cluster \
-#     --service cell-kn-<env>-arangodb \
+#     --cluster nlm-ckn-<env>-cluster \
+#     --service nlm-ckn-<env>-arangodb \
 #     --enable-execute-command
 #
 # ALTERNATIVE BACKUP METHODS:
@@ -57,7 +57,8 @@ fi
 
 ENVIRONMENT=$1
 BACKUP_NAME=${2:-"arangodb-backup-$(date +%Y%m%d-%H%M%S)"}
-PROJECT_NAME="cell-kn"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/common.sh"
 AWS_REGION=${AWS_REGION:-us-east-1}
 STACK_NAME="${PROJECT_NAME}-${ENVIRONMENT}"
 
