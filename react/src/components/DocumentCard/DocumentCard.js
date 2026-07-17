@@ -27,7 +27,8 @@ const DocumentCard = ({ document }) => {
   };
 
   return (
-    <div className="document-item-list-wrapper">
+    <div className="document-item-list-wrapper inspector-overview">
+      <h3 className="inspector-overview-title">Overview</h3>
       <fieldset className="document-info-fieldset">
         <legend className="document-info-legend">
           {/* Render legend as link only if primary URL exists. */}

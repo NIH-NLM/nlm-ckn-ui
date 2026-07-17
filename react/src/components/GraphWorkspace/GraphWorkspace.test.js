@@ -6,10 +6,13 @@ import graphReducer from "store/graphSlice";
 import savedGraphsReducer from "store/savedGraphsSlice";
 
 // Stub heavy children so the test targets composition + selection wiring.
-jest.mock("components/ForceGraph/ForceGraph", () => ({ onNodeSelect }) => (
-  <button type="button" onClick={() => onNodeSelect("CS/clicked")}>
-    graph
-  </button>
+jest.mock("components/ForceGraph/ForceGraph", () => ({ onNodeSelect, title }) => (
+  <div>
+    <span data-testid="graph-title">{title}</span>
+    <button type="button" onClick={() => onNodeSelect("CS/clicked")}>
+      graph
+    </button>
+  </div>
 ));
 jest.mock("components/NodeInspector", () => ({ selectedNodeId, originDocument }) => (
   <div data-testid="inspector">{selectedNodeId ?? originDocument?._id ?? "empty"}</div>
@@ -60,5 +63,24 @@ describe("GraphWorkspace", () => {
       { past: [], present: { originNodeIds: [] }, future: [] },
     );
     expect(screen.getByTestId("inspector")).toHaveTextContent("empty");
+  });
+
+  it("passes an explicit title through to the graph", () => {
+    renderWorkspace({ title: "My Graph" });
+    expect(screen.getByTestId("graph-title")).toHaveTextContent("My Graph");
+  });
+
+  it("derives the title from the origin document when no title prop is given", () => {
+    renderWorkspace({ originDocument: { _id: "CSD/origin" } });
+    // getTitle prefixes the collection display name ("Cell set dataset").
+    expect(screen.getByTestId("graph-title")).toHaveTextContent(/cell set dataset/i);
+  });
+
+  it('falls back to "Graph" with no title and no origin document', () => {
+    renderWorkspace(
+      { originDocument: undefined, title: undefined },
+      { past: [], present: { originNodeIds: [] }, future: [] },
+    );
+    expect(screen.getByTestId("graph-title")).toHaveTextContent("Graph");
   });
 });

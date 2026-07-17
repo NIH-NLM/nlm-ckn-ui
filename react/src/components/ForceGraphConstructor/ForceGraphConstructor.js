@@ -422,10 +422,15 @@ function ForceGraphConstructor(
 
   const legendSize = 12;
   const legendSpacing = 4;
+  let legendItemCount = 0;
 
-  // Positions legend in top-left corner of SVG viewbox.
+  // Positions legend in bottom-left corner of SVG viewbox.
   function placeLegend(svgWidth, svgHeight) {
-    legend.attr("transform", `translate(${-(svgWidth / 2) + 20}, ${-(svgHeight / 2) + 20})`);
+    const legendHeight = legendItemCount * (legendSize + legendSpacing);
+    legend.attr(
+      "transform",
+      `translate(${-(svgWidth / 2) + 20}, ${svgHeight / 2 - 20 - legendHeight})`,
+    );
   }
 
   // Handles resizing of SVG container.
@@ -475,6 +480,9 @@ function ForceGraphConstructor(
       (id) => id && id !== "edges" && mergedOptions.collectionMaps.has(id),
     );
     presentCollectionIds.sort();
+
+    legendItemCount = presentCollectionIds.length;
+    placeLegend(mergedOptions.width, mergedOptions.height);
 
     const legendItems = legend.selectAll(".legend-item").data(presentCollectionIds, (d) => d);
 
