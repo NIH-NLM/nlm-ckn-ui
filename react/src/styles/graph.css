@@ -257,11 +257,26 @@ g.node.pinned .node-pin-marker path {
   margin-right: 10px;
 }
 
+.graph-title-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+}
+.graph-title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text);
+}
+.graph-title-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
 .toggle-options-button {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 20;
   padding: 8px 12px;
   margin: 0;
   background-color: var(--color-white);
@@ -272,12 +287,8 @@ g.node.pinned .node-pin-marker path {
   box-shadow: var(--shadow-sm);
 }
 
-/* Lasso-mode toggle: stacked under the options toggle so they don't overlap. */
+/* Lasso-mode toggle now sits alongside the options toggle in the title bar. */
 .lasso-toggle-button {
-  position: absolute;
-  top: 50px;
-  right: 10px;
-  z-index: 20;
   padding: 8px 12px;
   margin: 0;
   background-color: var(--color-white);
@@ -522,6 +533,31 @@ g.node.pinned .node-pin-marker path {
   box-shadow: var(--shadow-sm);
 }
 
+/* Inspector Overview Card */
+
+.inspector-overview-title {
+  margin: 0 0 var(--spacing-sm);
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.inspector-overview .document-attributes-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.inspector-overview .document-attributes-table .attribute-key {
+  color: var(--color-text-muted);
+  font-weight: 500;
+  padding: var(--spacing-xs) var(--spacing-sm) var(--spacing-xs) 0;
+  vertical-align: top;
+}
+
+.inspector-overview .document-attributes-table .attribute-value {
+  padding: var(--spacing-xs) 0;
+}
+
 /* Desktop and up: Side-by-Side Layout */
 @media (min-width: 1024px) {
   .graph-component-wrapper {
@@ -708,6 +744,9 @@ g.node.pinned .node-pin-marker path {
 }
 
 .saved-graph-card-thumb {
+  /* Thumbnail renders above the title; markup order is unchanged so the
+     rename-input logic stays intact. */
+  order: -1;
   background: none;
   border: none;
   padding: 0;
@@ -717,6 +756,7 @@ g.node.pinned .node-pin-marker path {
   height: 100px;
   display: block;
   overflow: hidden;
+  border-radius: var(--radius-sm);
 }
 
 .saved-graph-card-thumb img {
