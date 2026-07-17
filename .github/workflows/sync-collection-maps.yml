@@ -1,0 +1,160 @@
+name: Sync collection maps to nlm-ckn-etl
+
+# nlm-ckn-collection-maps.json is kept byte-identical in this repo
+# (react/src/assets/) and in nlm-ckn-etl (data/). The ETL builds the
+# ArangoSearch view from it; the UI queries/displays against it. If the two
+# copies drift, the view and the UI disagree and searches silently return empty
+# with no error. When this repo's copy changes on main, this workflow opens (or
+# updates) a PR on nlm-ckn-etl mirroring the change, so the paired edit stays
+# paired. A twin workflow in nlm-ckn-etl syncs the other direction.
+#
+# Loop safety (this is bidirectional): the drift step below only opens a PR when
+# the sibling copy actually differs. When our mirror PR merges in the sibling,
+# the sibling's twin workflow fetches our copy, finds them equal, and no-ops —
+# so the sync terminates after one hop and cannot ping-pong.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - react/src/assets/nlm-ckn-collection-maps.json
+  workflow_dispatch:
+
+# Serialize so two quick pushes can't both pass the drift check and race on PR
+# creation. Don't cancel an in-flight run — its change still needs mirroring.
+concurrency:
+  group: sync-collection-maps
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    # Only run on the Springbok-LLC fork's main branch. The NIH-NLM mirror
+    # receives this file via promote-to-upstream and must not sync it back; the
+    # github.ref guard also stops a manual workflow_dispatch from a feature
+    # branch from mirroring non-main content (workflow_dispatch has no on: branch
+    # filter, so the guard lives here).
+    if: github.repository_owner == 'Springbok-LLC' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      SIBLING_REPO: Springbok-LLC/nlm-ckn-etl
+      SOURCE_PATH: react/src/assets/nlm-ckn-collection-maps.json
+      SIBLING_PATH: data/nlm-ckn-collection-maps.json
+      SYNC_BRANCH: sync/collection-maps-from-ui
+      # PAT or GitHub App token with contents:write + pull_requests:write on
+      # BOTH Springbok-LLC/nlm-ckn-ui and Springbok-LLC/nlm-ckn-etl. The default
+      # GITHUB_TOKEN cannot push to another repo, so this secret is required.
+      GH_TOKEN: ${{ secrets.COLLECTION_MAPS_SYNC_TOKEN }}
+    steps:
+      - name: Checkout this repo (source of the change)
+        uses: actions/checkout@v4
+
+      - name: Checkout sibling repo (nlm-ckn-etl)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.SIBLING_REPO }}
+          token: ${{ secrets.COLLECTION_MAPS_SYNC_TOKEN }}
+          path: sibling
+          fetch-depth: 0
+
+      - name: Copy file and detect drift
+        id: drift
+        run: |
+          set -euo pipefail
+          cp "$SOURCE_PATH" "sibling/$SIBLING_PATH"
+          cd sibling
+          if git diff --quiet -- "$SIBLING_PATH"; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::collection-maps already in sync with $SIBLING_REPO — nothing to do."
+            # The copies match, so any sync PR still open from this direction is
+            # stale (e.g. the source change was reverted before its mirror PR
+            # merged). Close it so a moot PR doesn't linger.
+            OWNER=$(echo "$SIBLING_REPO" | cut -d/ -f1)
+            STALE=$(gh api -X GET "repos/$SIBLING_REPO/pulls" \
+              -F head="$OWNER:$SYNC_BRANCH" -F base=main -F state=open \
+              --jq '.[0].number // empty')
+            if [ -n "$STALE" ]; then
+              gh api "repos/$SIBLING_REPO/issues/$STALE/comments" \
+                -f body="Collection-maps are back in sync — closing this stale sync PR automatically." >/dev/null 2>&1 || true
+              gh api -X PATCH "repos/$SIBLING_REPO/pulls/$STALE" -f state=closed >/dev/null
+              echo "::notice::Closed stale sync PR #$STALE on $SIBLING_REPO (copies already match)."
+            fi
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::collection-maps drift detected — opening/updating a sync PR on $SIBLING_REPO."
+          fi
+
+      - name: Push branch and open or update PR
+        if: steps.drift.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          cd sibling
+
+          git config user.name  "nlm-ckn-sync-bot"
+          git config user.email "nlm-ckn-sync-bot@users.noreply.github.com"
+
+          # Recreate the sync branch at main HEAD each run so repeated source
+          # pushes update one branch/PR rather than piling up new ones.
+          git checkout -B "$SYNC_BRANCH"
+          git add "$SIBLING_PATH"
+          git commit -m "Sync nlm-ckn-collection-maps.json from nlm-ckn-ui" \
+                     -m "Automated mirror of ${{ github.repository }}@${{ github.sha }}."
+          git push --force origin "$SYNC_BRANCH"
+
+          # Loud, action-oriented PR body. Quoted heredoc: bash leaves the
+          # markdown backticks alone; GitHub Actions still expands ${{ ... }}.
+          cat > "$RUNNER_TEMP/pr_body.md" <<'EOF'
+          ## 🔁 Action required — shared file changed in `nlm-ckn-ui`
+
+          `nlm-ckn-collection-maps.json` was changed on `main` in **nlm-ckn-ui**, and
+          this repo keeps a byte-identical copy. **This PR mirrors that change here.**
+
+          ### Why this can't be ignored (the failure is silent)
+          The ETL builds the ArangoSearch view from this file; the UI queries and
+          displays against it. If the two copies drift, the view and the UI disagree
+          and searches **silently return empty — no error is raised**. Merging this PR
+          keeps the paired change paired.
+
+          ### What to do
+          - **Normal case:** review and merge. CI here re-verifies the file against this
+            repo's build.
+          - **Intentionally diverging the copies?** Close this PR and note it on
+            [nlm-ckn-rnd#4](https://github.com/Springbok-LLC/nlm-ckn-rnd/issues/4). The
+            parity check will stay red until the two copies match again.
+          - **A competing sync PR is open in the other direction (etl → ui)?** The two
+            repos were edited at once. Do **not** blind-merge both — pick the intended
+            content and resolve manually.
+
+          Source change: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
+
+          _Opened automatically by `.github/workflows/sync-collection-maps.yml`. Not auto-merged by design._
+          EOF
+
+          BODY="$(cat "$RUNNER_TEMP/pr_body.md")"
+          TITLE="🔁 [action required] Sync collection-maps.json from nlm-ckn-ui"
+
+          # Use the API directly — gh pr list is unreliable for a head branch that
+          # was just force-pushed (mirrors the promote-to-upstream workflow).
+          EXISTING=$(gh api -X GET "repos/$SIBLING_REPO/pulls" \
+            -F head="$(echo "$SIBLING_REPO" | cut -d/ -f1):$SYNC_BRANCH" \
+            -F base=main -F state=open \
+            --jq '.[0].number // empty')
+
+          if [ -z "$EXISTING" ]; then
+            PR_NUM=$(gh api "repos/$SIBLING_REPO/pulls" \
+              -f title="$TITLE" \
+              -f head="$SYNC_BRANCH" \
+              -f base=main \
+              -f body="$BODY" \
+              --jq '.number')
+            echo "::notice::Opened sync PR #$PR_NUM on $SIBLING_REPO."
+          else
+            PR_NUM=$EXISTING
+            gh api -X PATCH "repos/$SIBLING_REPO/pulls/$PR_NUM" -f body="$BODY" >/dev/null
+            echo "::notice::Updated existing sync PR #$PR_NUM on $SIBLING_REPO."
+          fi
+
+          # Best-effort label so these PRs are filterable. Non-fatal: a missing
+          # label or a token without labels scope must not fail the sync.
+          gh api "repos/$SIBLING_REPO/issues/$PR_NUM/labels" \
+            -f "labels[]=automated-sync" >/dev/null 2>&1 || \
+            echo "::notice::Could not add 'automated-sync' label (non-fatal)."
