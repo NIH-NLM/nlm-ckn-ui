@@ -39,6 +39,7 @@ export {
   mergeChildren,
   parseId,
 } from "./graph";
+export { captureGraphThumbnail } from "./graphThumbnail";
 // Platform utilities
 export { isMac } from "./platform";
 // Set operations for graphs

@@ -1,6 +1,7 @@
 import { useActiveNav } from "contexts";
 import { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
+import TitleBar from "./TitleBar";
 
 const Header = () => {
   const { activeNav, setActive } = useActiveNav();
@@ -13,10 +14,7 @@ const Header = () => {
 
   return (
     <div>
-      <div className="app-header background-color-main">
-        <h1>NLM Cell Knowledge Network</h1>
-        {/*<div>Login</div>*/}
-      </div>
+      <TitleBar />
       <div className="navbar background-color-light-bg">
         <Link to="/">
           <h4 className={activeNav === "/" ? "active-nav" : ""}>Search</h4>

@@ -1,8 +1,7 @@
 import collectionDefaults from "assets/collection-defaults.json";
 import Breadcrumbs from "components/Breadcrumbs";
-import DocumentCard from "components/DocumentCard";
-import ForceGraph from "components/ForceGraph/ForceGraph";
 import FTUIllustration from "components/FTUIllustration";
+import GraphWorkspace from "components/GraphWorkspace";
 import { FTU_ILLUSTRATIONS_JSONLD_URL } from "constants/index";
 import { useFtuParts } from "contexts";
 import { useEffect, useMemo, useState } from "react";
@@ -17,7 +16,6 @@ const DocumentPage = () => {
   const { coll, id } = useParams();
   const [document, setDocument] = useState(null);
   const [nodeIds, setNodeIds] = useState(null);
-  const [isPanelVisible, setIsPanelVisible] = useState(true);
 
   const { ftuParts } = useFtuParts();
 
@@ -116,30 +114,21 @@ const DocumentPage = () => {
           ]}
         />
         <div className="document-item-header">
-          <button
-            type="button"
-            onClick={() => setIsPanelVisible(!isPanelVisible)}
-            className={"toggle-options-button"}
-            style={{ position: "static" }}
-          >
-            {isPanelVisible ? "<" : ">"}
-          </button>
           <h1>{getTitle(document)}</h1>
           {document.term && <span>Term: {document.term}</span>}{" "}
         </div>
+        {ftuIllustrationUrl && (
+          <FTUIllustration
+            selectedIllustration={ftuIllustrationUrl}
+            illustrations={FTU_ILLUSTRATIONS_JSONLD_URL}
+          />
+        )}
         <div className="document-page-main-content-area">
-          <div className={`document-card-panel ${isPanelVisible ? "" : "hidden"}`}>
-            <DocumentCard document={document} />
-            {ftuIllustrationUrl && (
-              <FTUIllustration
-                selectedIllustration={ftuIllustrationUrl}
-                illustrations={FTU_ILLUSTRATIONS_JSONLD_URL}
-              />
-            )}
-          </div>
-          <div className={`force-graph-panel ${isPanelVisible ? "" : "flex-full"}`}>
-            <ForceGraph nodeIds={nodeIds} settings={forceGraphSettings} />
-          </div>
+          <GraphWorkspace
+            originDocument={document}
+            nodeIds={nodeIds}
+            settings={forceGraphSettings}
+          />
         </div>
       </div>
     </div>

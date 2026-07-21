@@ -28,7 +28,14 @@ import {
   updateNodePositions,
   updateSetting,
 } from "store";
-import { getLabel, hasNodesInRawData, isMac, LoadingBar, performSetOperation } from "utils";
+import {
+  captureGraphThumbnail,
+  getLabel,
+  hasNodesInRawData,
+  isMac,
+  LoadingBar,
+  performSetOperation,
+} from "utils";
 // Import extracted hooks
 import { useGraphExport, useNodeNames, usePerNodeSettings } from "./hooks";
 // Import extracted panels
@@ -48,6 +55,8 @@ const ForceGraph = ({
   // Accept node IDs via props for direct linking (e.g., landing pages).
   nodeIds: _originNodeIdsFromProps = [],
   settings: settingsFromProps,
+  onNodeSelect = () => {},
+  title,
 }) => {
   const dispatch = useDispatch();
 
@@ -366,6 +375,27 @@ const ForceGraph = ({
     });
   };
 
+  // Left-click selects the node for the inspector; right-click keeps the
+  // context menu (handleNodeClick above) without swapping the inspector.
+  const handleNodeLeftClick = (e, nodeData) => {
+    onNodeSelect(nodeData._id);
+  };
+
+  // Double-click toggles the node's user-pin. setNodePinned mutates the live
+  // simulation node (fx/fy + userPinned); mirror to Redux via updateNodePosition
+  // so the pin persists across a constructor remount and into saved graphs —
+  // the same path as the context-menu Pin action (handlePinToggle).
+  const handleNodeDoubleClick = (e, nodeData) => {
+    const nodeId = nodeData._id || nodeData.id;
+    if (!nodeId) return;
+    const newPinned = !nodeData.userPinned;
+    graphInstanceRef.current?.setNodePinned(nodeId, newPinned);
+    dispatch({
+      type: "graph/updateNodePosition",
+      payload: { nodeId, x: nodeData.x, y: nodeData.y, userPinned: newPinned },
+    });
+  };
+
   // Main effect for synchronizing D3 instance with Redux state.
   // biome-ignore lint/correctness/useExhaustiveDependencies: complex effect intentionally limited deps
   useEffect(() => {
@@ -385,6 +415,8 @@ const ForceGraph = ({
           nodeGroups: settings.availableCollections,
           collectionMaps: collectionMaps,
           onNodeClick: handleNodeClick,
+          onNodeLeftClick: handleNodeLeftClick,
+          onNodeDoubleClick: handleNodeDoubleClick,
           onNodeDragEnd: handleNodeDragEnd,
           onLassoSelection: handleLassoSelection,
           onMultiNodeDragEnd: handleMultiNodeDragEnd,
@@ -718,17 +750,24 @@ const ForceGraph = ({
 
   const handleSave = useCallback(() => {
     const graphName = window.prompt("Please enter a name for your graph:");
-    if (graphName) {
+    if (!graphName) return;
+    const persist = (thumbnail) => {
       dispatch(
         saveGraph({
           name: graphName,
           originNodeIds: originNodeIds,
           settings: settings,
           graphData: graphData,
+          thumbnail,
         }),
       );
       alert(`Graph "${graphName}" saved successfully!`);
-    }
+    };
+    // captureGraphThumbnail is best-effort and resolves to null on failure, but
+    // guard the chain so the save is never dropped if it ever rejects.
+    captureGraphThumbnail(svgRef.current)
+      .then(persist)
+      .catch(() => persist(null));
   }, [dispatch, originNodeIds, settings, graphData]);
 
   const handleLoad = useCallback(() => {
@@ -989,37 +1028,42 @@ const ForceGraph = ({
       className={`graph-component-wrapper ${optionsVisible ? "options-open" : "options-closed"}`}
     >
       <div className="graph-main-area">
-        <button
-          type="button"
-          onClick={toggleOptionsVisibility}
-          className="toggle-options-button"
-          aria-expanded={optionsVisible}
-          aria-controls="graph-options-panel"
-        >
-          <svg
-            aria-hidden="true"
-            focusable="false"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            width="14"
-            height="14"
-            fill="currentColor"
-            style={{ marginRight: "5px", verticalAlign: "middle" }}
-          >
-            <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.25 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
-          </svg>
-          {optionsVisible ? "Hide Settings" : "Settings"}
-        </button>
+        <div className="graph-title-bar">
+          <h2 className="graph-title">{title}</h2>
+          <div className="graph-title-actions">
+            <button
+              type="button"
+              onClick={toggleOptionsVisibility}
+              className="toggle-options-button"
+              aria-expanded={optionsVisible}
+              aria-controls="graph-options-panel"
+            >
+              <svg
+                aria-hidden="true"
+                focusable="false"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                width="14"
+                height="14"
+                fill="currentColor"
+                style={{ marginRight: "5px", verticalAlign: "middle" }}
+              >
+                <path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+              </svg>
+              {optionsVisible ? "Hide Options" : "Show Options"}
+            </button>
 
-        <button
-          type="button"
-          onClick={() => setLassoMode((m) => !m)}
-          className={`lasso-toggle-button${lassoMode ? " active" : ""}`}
-          aria-pressed={lassoMode}
-          title="Drag to select multiple nodes (shift to add to selection, Esc to exit)"
-        >
-          {lassoMode ? "Lasso: on" : "Lasso"}
-        </button>
+            <button
+              type="button"
+              onClick={() => setLassoMode((m) => !m)}
+              className={`lasso-toggle-button${lassoMode ? " active" : ""}`}
+              aria-pressed={lassoMode}
+              title="Drag to select multiple nodes (shift to add to selection, Esc to exit)"
+            >
+              {lassoMode ? "Lasso: on" : "Lasso"}
+            </button>
+          </div>
+        </div>
 
         {status === "loading" && <LoadingBar />}
 

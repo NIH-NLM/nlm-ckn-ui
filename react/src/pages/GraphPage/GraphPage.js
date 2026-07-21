@@ -1,6 +1,6 @@
 import Breadcrumbs from "components/Breadcrumbs";
 import ErrorBoundary from "components/ErrorBoundary";
-import ForceGraph from "components/ForceGraph/ForceGraph";
+import GraphWorkspace from "components/GraphWorkspace";
 import LoadGraphModal from "components/LoadGraphModal";
 import SelectedItemsTable from "components/SelectedItemsTable";
 import { SkeletonTable, SkeletonWrapper } from "components/Skeleton";
@@ -307,7 +307,7 @@ const GraphPage = () => {
 
       <div className={!showGraph ? "hidden" : "graph-display-area"} ref={graphDisplayAreaRef}>
         <ErrorBoundary>
-          <ForceGraph />
+          <GraphWorkspace />
         </ErrorBoundary>
       </div>
       <LoadGraphModal isOpen={isLoadModalOpen} onClose={() => setIsLoadModalOpen(false)} />

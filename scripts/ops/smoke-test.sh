@@ -32,7 +32,9 @@ ENVIRONMENT="stage"
 BASE_URL="${BASE_URL:-}"
 TIMEOUT=10
 INSECURE=""
-PROJECT="cell-kn"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/../common.sh"
+PROJECT="$PROJECT_NAME"
 export AWS_REGION="${AWS_REGION:-us-east-1}"
 
 while [ $# -gt 0 ]; do
@@ -49,11 +51,19 @@ while [ $# -gt 0 ]; do
 done
 
 # ── Resolve the base URL ──────────────────────────────────────────────────────
+# CloudFront was split out of the frontend bucket stack into a separate CDN
+# stack (see deploy-frontend.sh): the FrontendUrl output now lives in
+# ${PROJECT}-${ENVIRONMENT}-frontend-cdn, while the bucket stack exposes only
+# BucketName. Check the bucket stack first (for not-yet-split envs), then the
+# CDN stack, which wins if present.
 if [ -z "$BASE_URL" ]; then
-  BASE_URL=$(aws cloudformation describe-stacks \
-    --stack-name "${PROJECT}-${ENVIRONMENT}-frontend" \
-    --query "Stacks[0].Outputs[?OutputKey=='FrontendUrl'].OutputValue" \
-    --output text 2>/dev/null)
+  for stack in "${PROJECT}-${ENVIRONMENT}-frontend" "${PROJECT}-${ENVIRONMENT}-frontend-cdn"; do
+    url=$(aws cloudformation describe-stacks \
+      --stack-name "$stack" \
+      --query "Stacks[0].Outputs[?OutputKey=='FrontendUrl'].OutputValue" \
+      --output text 2>/dev/null)
+    [ -n "$url" ] && [ "$url" != "None" ] && BASE_URL="$url"
+  done
 fi
 if [ -z "$BASE_URL" ] || [ "$BASE_URL" = "None" ]; then
   echo "Could not resolve a base URL for env '$ENVIRONMENT'." >&2

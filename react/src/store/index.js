@@ -39,7 +39,16 @@ export {
   toggleNodesSliceItem,
 } from "./nodesSlice";
 // Saved graphs slice actions
-export { default as savedGraphsReducer, deleteGraph, saveGraph } from "./savedGraphsSlice";
+export {
+  default as savedGraphsReducer,
+  deleteGraph,
+  renameGraph,
+  restoreSavedGraph,
+  saveGraph,
+  selectSavedGraphs,
+  setActiveGraph as setActiveSavedGraph,
+  snapshotCurrentGraph,
+} from "./savedGraphsSlice";
 // Store configuration
 export { persistor, store } from "./store";
 // Workflow builder slice actions

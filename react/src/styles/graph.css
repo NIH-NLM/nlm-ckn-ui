@@ -257,11 +257,26 @@ g.node.pinned .node-pin-marker path {
   margin-right: 10px;
 }
 
+.graph-title-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+}
+.graph-title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text);
+}
+.graph-title-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
 .toggle-options-button {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 20;
   padding: 8px 12px;
   margin: 0;
   background-color: var(--color-white);
@@ -272,12 +287,8 @@ g.node.pinned .node-pin-marker path {
   box-shadow: var(--shadow-sm);
 }
 
-/* Lasso-mode toggle: stacked under the options toggle so they don't overlap. */
+/* Lasso-mode toggle now sits alongside the options toggle in the title bar. */
 .lasso-toggle-button {
-  position: absolute;
-  top: 50px;
-  right: 10px;
-  z-index: 20;
   padding: 8px 12px;
   margin: 0;
   background-color: var(--color-white);
@@ -522,6 +533,31 @@ g.node.pinned .node-pin-marker path {
   box-shadow: var(--shadow-sm);
 }
 
+/* Inspector Overview Card */
+
+.inspector-overview-title {
+  margin: 0 0 var(--spacing-sm);
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.inspector-overview .document-attributes-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.inspector-overview .document-attributes-table .attribute-key {
+  color: var(--color-text-muted);
+  font-weight: 500;
+  padding: var(--spacing-xs) var(--spacing-sm) var(--spacing-xs) 0;
+  vertical-align: top;
+}
+
+.inspector-overview .document-attributes-table .attribute-value {
+  padding: var(--spacing-xs) 0;
+}
+
 /* Desktop and up: Side-by-Side Layout */
 @media (min-width: 1024px) {
   .graph-component-wrapper {
@@ -570,4 +606,200 @@ g.node.pinned .node-pin-marker path {
 .edge-filter-mode-toggle button.active {
   font-weight: 600;
   text-decoration: underline;
+}
+
+/* Unified graph workspace */
+
+.graph-workspace {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+  font-family: var(--font-family-base);
+}
+
+.graph-workspace-body {
+  display: flex;
+  flex-direction: row;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.graph-workspace-inspector {
+  flex: 0 0 345px;
+  width: 345px;
+  overflow-y: auto;
+  background-color: var(--color-white);
+  border-right: 1px solid var(--color-gray-lighter);
+}
+
+.graph-workspace-canvas {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.graph-workspace-canvas #chart-container-wrapper {
+  flex-grow: 1;
+  min-height: 400px;
+}
+
+.graph-workspace-shelf {
+  flex: 0 0 auto;
+  width: 100%;
+  /* No design-token equivalent for the shelf strip's light-blue background; value taken directly from Figma */
+  background: #f7fbfd;
+  border-top: 1px solid var(--color-gray-lighter);
+  padding: var(--spacing-sm);
+}
+
+@media (max-width: 768px) {
+  .graph-workspace-body {
+    flex-direction: column;
+  }
+
+  .graph-workspace-inspector {
+    flex: 0 0 auto;
+    width: 100%;
+    max-height: 40vh;
+    overflow-y: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--color-gray-lighter);
+  }
+
+  .graph-workspace-canvas {
+    flex: 1 1 auto;
+    min-height: 300px;
+  }
+
+  /* Match the base 400px wrapper floor to the tighter mobile canvas so the
+     flex child does not force the canvas taller than intended. */
+  .graph-workspace-canvas #chart-container-wrapper {
+    min-height: 300px;
+  }
+
+  .graph-workspace-shelf {
+    padding: var(--spacing-xs);
+  }
+}
+
+/* Saved graph shelf */
+
+.saved-graph-shelf {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  overflow-x: auto;
+}
+
+.saved-graph-shelf--empty {
+  color: var(--color-gray);
+  font-size: var(--font-size-sm);
+  padding: var(--spacing-sm);
+}
+
+.saved-graph-card {
+  flex: 0 0 auto;
+  width: 180px;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-white);
+  border: 1px solid var(--color-gray-lighter);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-xs);
+  box-sizing: border-box;
+  position: relative;
+}
+
+.saved-graph-card--active {
+  /* 2px border in place of the 1px default; compensate padding by 1px so layout doesn't shift */
+  border: 2px solid var(--color-primary);
+  padding: calc(var(--spacing-xs) - 1px);
+  /* No design-token equivalent for the selection tint; value taken directly from Figma */
+  background-color: #dce4ef;
+}
+
+.saved-graph-card-title,
+.saved-graph-card-title-input {
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+  font-size: var(--font-size-sm);
+  color: var(--color-base);
+  padding: var(--spacing-xs) 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.saved-graph-card-title-input {
+  cursor: text;
+}
+
+.saved-graph-card-thumb {
+  /* Thumbnail renders above the title; markup order is unchanged so the
+     rename-input logic stays intact. */
+  order: -1;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100px;
+  display: block;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+}
+
+.saved-graph-card-thumb img {
+  max-width: 100%;
+  display: block;
+}
+
+.saved-graph-card-thumb .thumb-placeholder {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-color: var(--color-gray-lightest);
+}
+
+.saved-graph-card-delete {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  position: absolute;
+  top: var(--spacing-xs);
+  right: var(--spacing-xs);
+  color: var(--color-gray);
+  font-size: var(--font-size-sm);
+  line-height: 1;
+}
+
+/* Rename control sits just left of the delete control, same treatment. */
+.saved-graph-card-rename {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  position: absolute;
+  top: var(--spacing-xs);
+  right: calc(var(--spacing-xs) + 18px);
+  color: var(--color-gray);
+  font-size: var(--font-size-sm);
+  line-height: 1;
+}
+
+.saved-graph-card-delete:hover {
+  color: var(--color-secondary);
 }

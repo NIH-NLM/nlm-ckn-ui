@@ -135,14 +135,14 @@ describe("ForceGraph", () => {
   it("Should toggle options when toggle options button is clicked", () => {
     render(
       <Provider store={createTestStore()}>
-        <ForceGraph />
+        <ForceGraph title="Test Graph Title" />
       </Provider>,
     );
 
     // Get the button that toggles the options visibility
-    // Button text is "Settings" when closed, "Hide Settings" when open
+    // Button text is "Show Options" when closed, "Hide Options" when open
     const toggleButton = screen.getByRole("button", {
-      name: /settings/i,
+      name: /show options/i,
     });
     // Get the graph-options panel by its ID
     const optionsPanel = document.getElementById("graph-options-panel");
@@ -155,13 +155,23 @@ describe("ForceGraph", () => {
     // After clicking, the options should be visible
     expect(optionsPanel).toHaveStyle("display: flex");
 
-    // Click the toggle button again (now should say "Hide Settings")
+    // Click the toggle button again (now should say "Hide Options")
     const hideButton = screen.getByRole("button", {
-      name: /hide settings/i,
+      name: /hide options/i,
     });
     fireEvent.click(hideButton);
     // After clicking again, the options should be hidden
     expect(optionsPanel).toHaveStyle("display: none");
+  });
+
+  it("renders the graph title", () => {
+    render(
+      <Provider store={createTestStore()}>
+        <ForceGraph title="Test Graph Title" />
+      </Provider>,
+    );
+
+    expect(screen.getByRole("heading", { name: "Test Graph Title" })).toBeInTheDocument();
   });
 
   describe("Expand by Collection submenu", () => {

@@ -1,44 +1,97 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { v4 as uuidv4 } from "uuid"; // A library for generating unique IDs
+import { v4 as uuidv4 } from "uuid";
+import { setGraphData } from "./graphSlice";
 
-// Initial state for the saved graphs slice.
 const initialState = {
-  // An array to hold all the saved graph objects.
   savedGraphs: [],
+  activeGraphId: null,
 };
 
 const savedGraphsSlice = createSlice({
   name: "savedGraphs",
   initialState,
   reducers: {
-    /**
-     * Saves the current graph configuration to the list.
-     * action.payload should be: { name: string, originNodeIds: string[], settings: object }
-     */
     saveGraph: (state, action) => {
-      const { name, originNodeIds, settings, graphData } = action.payload;
+      const { name, originNodeIds, settings, graphData, thumbnail } = action.payload;
       const newSavedGraph = {
         id: uuidv4(),
-        name: name,
+        name,
         timestamp: new Date().toISOString(),
-        originNodeIds: originNodeIds,
-        settings: settings,
-        graphData: graphData,
+        originNodeIds,
+        settings,
+        graphData,
+        thumbnail: thumbnail ?? null,
       };
       state.savedGraphs.push(newSavedGraph);
+      state.activeGraphId = newSavedGraph.id;
     },
-
-    /**
-     * Deletes a saved graph by its unique ID.
-     * action.payload should be the ID of the graph to delete.
-     */
     deleteGraph: (state, action) => {
       const idToDelete = action.payload;
-      state.savedGraphs = state.savedGraphs.filter((graph) => graph.id !== idToDelete);
+      state.savedGraphs = state.savedGraphs.filter((g) => g.id !== idToDelete);
+      if (state.activeGraphId === idToDelete) state.activeGraphId = null;
+    },
+    renameGraph: (state, action) => {
+      const { id, name } = action.payload;
+      const graph = state.savedGraphs.find((g) => g.id === id);
+      if (graph) graph.name = name;
+    },
+    setActiveGraph: (state, action) => {
+      state.activeGraphId = action.payload;
     },
   },
 });
 
-export const { saveGraph, deleteGraph } = savedGraphsSlice.actions;
+export const { saveGraph, deleteGraph, renameGraph, setActiveGraph } = savedGraphsSlice.actions;
+
+// Stable empty reference so the fallback doesn't churn selector identity.
+const EMPTY_SAVED_GRAPHS = [];
+
+/**
+ * Reads the saved-graph list, normalizing to an empty array. `savedGraphs` is
+ * session-only, but a stale blob rehydrated from an older build can leave the
+ * array undefined; every consumer goes through here so none of them crash on it.
+ * @param {object} state
+ * @returns {Array}
+ */
+export const selectSavedGraphs = (state) => state.savedGraphs.savedGraphs ?? EMPTY_SAVED_GRAPHS;
+
+/**
+ * Restores a saved graph into the live graph and marks it active.
+ * @param {string} id
+ */
+export const restoreSavedGraph = (id) => (dispatch, getState) => {
+  const graph = selectSavedGraphs(getState()).find((g) => g.id === id);
+  if (!graph) return;
+  dispatch(
+    setGraphData({
+      graphData: graph.graphData,
+      originNodeIds: graph.originNodeIds,
+      settings: graph.settings,
+      skipUndo: true,
+    }),
+  );
+  dispatch(setActiveGraph(id));
+};
+
+/**
+ * Snapshots the current live graph onto the shelf. No-op if the graph is empty.
+ * @param {{ name?: string, thumbnail?: string|null }} [opts]
+ */
+export const snapshotCurrentGraph =
+  ({ name = "Graph Title", thumbnail = null } = {}) =>
+  (dispatch, getState) => {
+    const present = getState().graph.present;
+    const nodes = present?.graphData?.nodes ?? [];
+    if (!nodes.length) return;
+    dispatch(
+      saveGraph({
+        name,
+        originNodeIds: present.originNodeIds ?? [],
+        settings: present.settings ?? {},
+        graphData: present.graphData,
+        thumbnail,
+      }),
+    );
+  };
 
 export default savedGraphsSlice.reducer;

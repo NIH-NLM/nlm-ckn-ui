@@ -26,6 +26,12 @@ jest.mock("../../assets/nlm-ckn-collection-maps.json", () => ({
 }));
 
 describe("DocumentCard", () => {
+  it("renders an Overview section header", () => {
+    const document = { _id: "CL/0", _key: "0", label: "Document Label", prop1: "value1" };
+    render(<DocumentCard document={document} />);
+    expect(screen.getByRole("heading", { name: /overview/i })).toBeInTheDocument();
+  });
+
   it("renders the component correctly with a string label", () => {
     const document = {
       _id: "CL/0",

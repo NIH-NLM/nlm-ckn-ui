@@ -166,14 +166,14 @@ All base styles are designed for mobile (<640px) first. Media queries progressiv
 
 ```css
 /* Mobile base (no media query) */
-.app-header {
+.example-component {
   flex-direction: column;
   padding: var(--spacing-md);
 }
 
 /* Tablet and up */
 @media (min-width: 640px) {
-  .app-header {
+  .example-component {
     flex-direction: row;
     padding: var(--spacing-lg);
   }
@@ -181,7 +181,7 @@ All base styles are designed for mobile (<640px) first. Media queries progressiv
 
 /* Desktop and up */
 @media (min-width: 1024px) {
-  .app-header {
+  .example-component {
     padding: calc(var(--spacing-lg) * 1.5);
   }
 }
@@ -203,9 +203,9 @@ All base styles are designed for mobile (<640px) first. Media queries progressiv
 - Mobile: Vertical stack, reduced padding
 - Desktop: Horizontal layout with spacing
 
-**Document Page**
-- Mobile: `.document-card-panel` and `.force-graph-panel` stack vertically
-- Tablet+: Side-by-side layout (40% / 60% split)
+**Graph Workspace**
+- Mobile (≤768px): `.graph-workspace-inspector` and `.graph-workspace-canvas` stack vertically
+- Desktop: Side-by-side layout (fixed-width inspector / flexible canvas)
 
 **Graph Side Panel**
 - Mobile: Full-screen overlay (slides in from right)

@@ -23,7 +23,8 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-PROJECT_NAME="cell-kn"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/../common.sh"
 AWS_REGION=${AWS_REGION:-us-east-1}
 
 # Change to project root (script lives in scripts/app/)
@@ -40,14 +41,14 @@ else
   }
 fi
 
-# Read ECR URL from SSM (written by scripts/infra/deploy-account-setup.sh)
+# Read ECR URL from SSM (written by the nlm-ckn-iac account-setup deploy)
 ECR_REPO=$(aws ssm get-parameter \
   --name "/${PROJECT_NAME}/shared/ecr-url" \
   --query 'Parameter.Value' \
   --output text \
   --region "$AWS_REGION" 2>/dev/null) || {
   echo -e "${RED}Error: Could not read ECR URL from SSM (/${PROJECT_NAME}/shared/ecr-url).${NC}"
-  echo "Run ./scripts/infra/deploy-account-setup.sh first."
+  echo "Run the nlm-ckn-iac account-setup deploy first (see nlm-ckn-iac repo)."
   exit 1
 }
 
@@ -85,5 +86,5 @@ echo -e "\n${GREEN}Tagging as latest...${NC}"
 docker tag "$FULL_IMAGE_URI" "${ECR_REPO}:latest"
 docker push "${ECR_REPO}:latest"
 
-echo -e "\n${GREEN}✓ Done. You can now run:${NC}"
-echo "   ./scripts/infra/deploy-environment.sh <environment>"
+echo -e "\n${GREEN}✓ Done. You can now provision the environment:${NC}"
+echo "   nlm-ckn-iac: ./deploy/02-deploy-environment.sh <environment>"
