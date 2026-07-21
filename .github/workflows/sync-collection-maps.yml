@@ -101,7 +101,9 @@ jobs:
           git push --force origin "$SYNC_BRANCH"
 
           # Loud, action-oriented PR body. Quoted heredoc: bash leaves the
-          # markdown backticks alone; GitHub Actions still expands ${{ ... }}.
+          # markdown backticks alone while Actions still substitutes its own
+          # expression tokens (e.g. the commit URL below). Do NOT write a literal
+          # GitHub expression in this comment — Actions parses run: comments too.
           cat > "$RUNNER_TEMP/pr_body.md" <<'EOF'
           ## 🔁 Action required — shared file changed in `nlm-ckn-ui`
 
