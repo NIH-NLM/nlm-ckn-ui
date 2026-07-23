@@ -723,8 +723,7 @@ g.node.pinned .node-pin-marker path {
   background-color: #dce4ef;
 }
 
-.saved-graph-card-title,
-.saved-graph-card-title-input {
+.saved-graph-card-title {
   background: none;
   border: none;
   font: inherit;
@@ -739,13 +738,8 @@ g.node.pinned .node-pin-marker path {
   width: 100%;
 }
 
-.saved-graph-card-title-input {
-  cursor: text;
-}
-
 .saved-graph-card-thumb {
-  /* Thumbnail renders above the title; markup order is unchanged so the
-     rename-input logic stays intact. */
+  /* Thumbnail renders above the title. */
   order: -1;
   background: none;
   border: none;
@@ -753,14 +747,16 @@ g.node.pinned .node-pin-marker path {
   margin: 0;
   cursor: pointer;
   width: 100%;
-  height: 100px;
+  aspect-ratio: 3 / 2;
   display: block;
   overflow: hidden;
   border-radius: var(--radius-sm);
 }
 
 .saved-graph-card-thumb img {
-  max-width: 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
   display: block;
 }
 
@@ -780,21 +776,6 @@ g.node.pinned .node-pin-marker path {
   position: absolute;
   top: var(--spacing-xs);
   right: var(--spacing-xs);
-  color: var(--color-gray);
-  font-size: var(--font-size-sm);
-  line-height: 1;
-}
-
-/* Rename control sits just left of the delete control, same treatment. */
-.saved-graph-card-rename {
-  background: none;
-  border: none;
-  padding: 0;
-  margin: 0;
-  cursor: pointer;
-  position: absolute;
-  top: var(--spacing-xs);
-  right: calc(var(--spacing-xs) + 18px);
   color: var(--color-gray);
   font-size: var(--font-size-sm);
   line-height: 1;

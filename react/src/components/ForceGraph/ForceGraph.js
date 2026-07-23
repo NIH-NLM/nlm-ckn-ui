@@ -9,6 +9,7 @@ import { shallowEqual, useDispatch, useSelector } from "react-redux";
 import { ActionCreators } from "redux-undo";
 import { fetchNeighborCollections } from "services";
 import {
+  addHistoryEntry,
   addToLassoSelection,
   clearAllPins,
   clearGraphData,
@@ -20,6 +21,7 @@ import {
   fetchAndProcessGraph,
   initializeGraph,
   saveGraph,
+  selectOriginHistory,
   setGraphData,
   setInitialCollapseList,
   setLassoSelection,
@@ -116,6 +118,9 @@ const ForceGraph = ({
     }),
     shallowEqual,
   );
+
+  // Origins already captured as history entries (used to auto-append new ones below).
+  const originHistory = useSelector(selectOriginHistory);
 
   // Use extracted hooks
   const { nodeNameMap, cachedNames } = useNodeNames(graphData, originNodeIds, settings.graphType);
@@ -482,7 +487,11 @@ const ForceGraph = ({
       }
     }
 
-    if (isRestoring === true || lastActionType === "loadGraph") {
+    if (
+      isRestoring === true ||
+      lastActionType === "loadGraph" ||
+      lastActionType === "restoreGraph"
+    ) {
       if (graphInstance) {
         graphInstance.restoreGraph({
           nodes: graphData.nodes,
@@ -626,6 +635,47 @@ const ForceGraph = ({
       }
     }
   }, [rawData, graphData, settings.availableCollections]);
+
+  // Auto-captures a history entry (subgraph + thumbnail) the first time a new
+  // origin resolves. Skipped on restore renders (undo/redo/load) since those
+  // replay prior state rather than introduce a new origin. The slice reducer
+  // also dedupes by originId, but this guard avoids redundant thumbnail work.
+  // Simplification: the entry's subgraph is a snapshot of the full current
+  // graphData rather than just that origin's contribution — acceptable for
+  // this first cut since each entry restores independently.
+  const capturedOriginIdsRef = useRef(new Set());
+  useEffect(() => {
+    if (isRestoring || lastActionType === "loadGraph" || lastActionType === "restoreGraph") return;
+    if (!graphData?.nodes?.length || !originNodeIds?.length) return;
+
+    const historyOriginIds = new Set(originHistory.map((entry) => entry.originId));
+    const newOriginIds = originNodeIds.filter(
+      (originId) => !historyOriginIds.has(originId) && !capturedOriginIdsRef.current.has(originId),
+    );
+    if (newOriginIds.length === 0) return;
+
+    // Capture the thumbnail once and reuse it for every origin resolving in this
+    // run (a multi-origin query shares one graph image). Best-effort: a failed
+    // capture yields a null thumbnail but still records each entry, so no origin
+    // is silently dropped from history.
+    for (const originId of newOriginIds) capturedOriginIdsRef.current.add(originId);
+    captureGraphThumbnail(svgRef.current)
+      .catch(() => null)
+      .then((thumbnail) => {
+        for (const originId of newOriginIds) {
+          dispatch(
+            addHistoryEntry({
+              id: `hist-${originId}`,
+              originId,
+              label: nodeNameMap?.get(originId) ?? originId,
+              subgraph: { nodes: graphData.nodes, links: graphData.links },
+              thumbnail,
+              timestamp: new Date().toISOString(),
+            }),
+          );
+        }
+      });
+  }, [dispatch, graphData, originNodeIds, originHistory, lastActionType, nodeNameMap, isRestoring]);
 
   // Updates D3 node font size when setting changes.
   useEffect(() => {

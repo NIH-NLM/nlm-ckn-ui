@@ -255,7 +255,10 @@ const graphSlice = createSlice({
         state.source = action.payload.source;
       }
       state.status = GRAPH_STATUS.SUCCEEDED;
-      state.lastActionType = "setGraphData";
+      // A restore render (saved-graph load, history recompose) already has
+      // fixed node positions and must skip the fresh-query simulation reheat,
+      // so flag it distinctly for the ForceGraph render effect to branch on.
+      state.lastActionType = action.payload.isRestore ? "restoreGraph" : "setGraphData";
     },
     // Clears graph data, used when navigating away from workflow results to the graph page.
     clearGraphData: (state) => {

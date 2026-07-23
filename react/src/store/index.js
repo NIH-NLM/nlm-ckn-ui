@@ -40,14 +40,16 @@ export {
 } from "./nodesSlice";
 // Saved graphs slice actions
 export {
+  addHistoryEntry,
   default as savedGraphsReducer,
   deleteGraph,
-  renameGraph,
-  restoreSavedGraph,
+  deleteHistoryEntry,
+  restoreHistoryEntry,
   saveGraph,
+  selectOriginHistory,
   selectSavedGraphs,
   setActiveGraph as setActiveSavedGraph,
-  snapshotCurrentGraph,
+  setActiveHistory,
 } from "./savedGraphsSlice";
 // Store configuration
 export { persistor, store } from "./store";
