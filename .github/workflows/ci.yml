@@ -431,7 +431,7 @@ jobs:
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          # Role created by cloudformation/bootstrap/bootstrap.yaml
+          # Role created by the nlm-ckn-iac account-setup (bootstrap) stack
           role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/nlm-ckn-github-actions
           aws-region: us-east-1
 
@@ -463,7 +463,7 @@ jobs:
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          # Role created by cloudformation/bootstrap/bootstrap.yaml
+          # Role created by the nlm-ckn-iac account-setup (bootstrap) stack
           role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/nlm-ckn-github-actions
           aws-region: us-east-1
 

@@ -10,8 +10,11 @@
 #   source "$SCRIPT_DIR/common.sh"          # scripts at scripts/
 #   source "$SCRIPT_DIR/../common.sh"       # scripts at scripts/app/ or scripts/ops/
 #
-# NOTE: the sandbox scripts (scripts/sandbox/) are intentionally NOT wired to
-# this constant — the sandbox account keeps its own cell-kn-* naming contract.
+# NOTE: scripts/sandbox/resolve-env.sh sources this for the dev/stage/prod
+# stacks and the cross-account promotion sources, which all live in the springbok
+# account. The sandbox account's OWN resources keep their org-imposed cell-kn-*
+# / NLM-SBOX-* naming and are deliberately not driven by this constant — see the
+# header of resolve-env.sh before renaming anything there.
 # ==============================================================================
 
 # Project name — the prefix for all CloudFormation stacks, SSM parameters,
