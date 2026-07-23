@@ -35,20 +35,32 @@
     gap: var(--spacing-sm);
   }
 
-  /* Graph panel becomes overlay */
+  /* Options panel: full-width in-flow block on mobile (not a trapping overlay).
+     Stacks below the graph controls (the wrapper is already column here); the
+     toggle in the title bar stays reachable. */
   .graph-options-side-panel {
-    position: fixed;
-    top: 0;
-    left: 0;
+    position: static;
     width: 100%;
-    height: 100vh;
-    z-index: 1000;
-    transform: translateX(-100%);
-    transition: transform var(--transition-slow);
+    max-width: none;
+    height: auto;
+    z-index: auto;
+    transform: none;
+    transition: none;
   }
 
-  .graph-options-side-panel.open {
-    transform: translateX(0);
+  .graph-component-wrapper.options-open .graph-options-side-panel {
+    display: flex;
+  }
+
+  .graph-component-wrapper.options-closed .graph-options-side-panel {
+    display: none;
+  }
+
+  /* Give the panel room to enter the viewport: shrink the chart's forced
+     min-height while options are open so the panel isn't pushed fully
+     below the fold on short mobile screens. */
+  .graph-component-wrapper.options-open #chart-container-wrapper {
+    min-height: 150px;
   }
 
   /* Reduce padding on small screens */

@@ -186,6 +186,11 @@
     flex-basis: auto;
     max-width: none;
   }
+
+  .app-title-wordmark {
+    font-size: var(--font-size-lg); /* 18px, down from 24px */
+    white-space: normal; /* allow wrapping instead of forcing the full intrinsic width */
+  }
 }
 
 /* Mobile overrides for footer */
