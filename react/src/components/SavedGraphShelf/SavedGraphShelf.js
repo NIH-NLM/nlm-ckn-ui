@@ -1,77 +1,54 @@
-import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { deleteGraph, renameGraph, restoreSavedGraph, selectSavedGraphs } from "store";
+import { deleteHistoryEntry, restoreHistoryEntry, selectOriginHistory } from "store";
 
 /**
- * Bottom filmstrip of session-saved graphs. Click a card to restore it; use the
- * rename control to rename it; use the delete control to remove it.
+ * Bottom filmstrip of auto-captured origin snapshots. Click a card to restore
+ * it in place (positions preserved); use the delete control to remove it.
  */
 const SavedGraphShelf = () => {
   const dispatch = useDispatch();
-  const savedGraphs = useSelector(selectSavedGraphs);
-  const activeGraphId = useSelector((s) => s.savedGraphs.activeGraphId);
-  const [editingId, setEditingId] = useState(null);
-  const renameInputRef = useRef(null);
+  const originHistory = useSelector(selectOriginHistory);
+  const activeHistoryId = useSelector((s) => s.savedGraphs.activeHistoryId);
 
-  useEffect(() => {
-    if (editingId !== null) {
-      renameInputRef.current?.focus();
-    }
-  }, [editingId]);
-
-  // selectSavedGraphs normalizes a stale/undefined array to [], so the shelf
+  // selectOriginHistory normalizes a stale/undefined array to [], so the shelf
   // never crashes the surrounding workspace.
-  if (!savedGraphs.length) {
-    return <div className="saved-graph-shelf saved-graph-shelf--empty">No saved graphs yet</div>;
+  if (!originHistory.length) {
+    return (
+      <div className="saved-graph-shelf saved-graph-shelf--empty">
+        Your graph history will appear here
+      </div>
+    );
   }
 
   return (
     <div className="saved-graph-shelf">
-      {savedGraphs.map((g) => {
-        const restore = () => dispatch(restoreSavedGraph(g.id));
+      {originHistory.map((entry) => {
+        const restore = () => dispatch(restoreHistoryEntry(entry.id));
         return (
           <div
-            key={g.id}
-            className={`saved-graph-card ${g.id === activeGraphId ? "saved-graph-card--active" : ""}`}
+            key={entry.id}
+            className={`saved-graph-card ${entry.id === activeHistoryId ? "saved-graph-card--active" : ""}`}
           >
-            {editingId === g.id ? (
-              <input
-                ref={renameInputRef}
-                className="saved-graph-card-title-input"
-                defaultValue={g.name}
-                onBlur={(e) => {
-                  const name = e.target.value.trim();
-                  // Ignore an empty/whitespace value so a card never ends up with a
-                  // blank title and broken aria-labels; just leave rename mode.
-                  if (name) dispatch(renameGraph({ id: g.id, name }));
-                  setEditingId(null);
-                }}
-              />
-            ) : (
-              <button type="button" className="saved-graph-card-title" onClick={restore}>
-                {g.name}
-              </button>
-            )}
-            <button type="button" className="saved-graph-card-thumb" onClick={restore}>
-              {g.thumbnail ? (
-                <img src={g.thumbnail} alt={g.name} />
+            <button
+              type="button"
+              className="saved-graph-card-thumb"
+              aria-label={`Restore ${entry.label}`}
+              onClick={restore}
+            >
+              {entry.thumbnail ? (
+                <img src={entry.thumbnail} alt={entry.label} />
               ) : (
                 <span className="thumb-placeholder" />
               )}
             </button>
-            <button
-              type="button"
-              className="saved-graph-card-rename"
-              aria-label={`Rename ${g.name}`}
-              onClick={() => setEditingId(g.id)}
-            >
-              ✎
+            <button type="button" className="saved-graph-card-title" onClick={restore}>
+              {entry.label}
             </button>
             <button
               type="button"
               className="saved-graph-card-delete"
-              aria-label={`Delete ${g.name}`}
-              onClick={() => dispatch(deleteGraph(g.id))}
+              aria-label={`Delete ${entry.label}`}
+              onClick={() => dispatch(deleteHistoryEntry(entry.id))}
             >
               ×
             </button>

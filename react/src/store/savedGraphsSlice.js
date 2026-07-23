@@ -5,6 +5,8 @@ import { setGraphData } from "./graphSlice";
 const initialState = {
   savedGraphs: [],
   activeGraphId: null,
+  originHistory: [],
+  activeHistoryId: null,
 };
 
 const savedGraphsSlice = createSlice({
@@ -30,18 +32,39 @@ const savedGraphsSlice = createSlice({
       state.savedGraphs = state.savedGraphs.filter((g) => g.id !== idToDelete);
       if (state.activeGraphId === idToDelete) state.activeGraphId = null;
     },
-    renameGraph: (state, action) => {
-      const { id, name } = action.payload;
-      const graph = state.savedGraphs.find((g) => g.id === id);
-      if (graph) graph.name = name;
-    },
     setActiveGraph: (state, action) => {
       state.activeGraphId = action.payload;
+    },
+    addHistoryEntry: (state, action) => {
+      // Strip any incoming "checked" field (a UI-only selection flag); history
+      // entries never persist it.
+      // biome-ignore lint/correctness/noUnusedVariables: destructured only to omit it from entry
+      const { checked, ...entry } = action.payload;
+      // One entry per origin; re-adding an already-tracked origin doesn't
+      // duplicate it, but still focuses it as the active version.
+      if (!state.originHistory.some((e) => e.originId === entry.originId)) {
+        state.originHistory.push({ thumbnail: null, ...entry });
+      }
+      state.activeHistoryId = entry.id;
+    },
+    deleteHistoryEntry: (state, action) => {
+      state.originHistory = state.originHistory.filter((h) => h.id !== action.payload);
+      if (state.activeHistoryId === action.payload) state.activeHistoryId = null;
+    },
+    setActiveHistory: (state, action) => {
+      state.activeHistoryId = action.payload;
     },
   },
 });
 
-export const { saveGraph, deleteGraph, renameGraph, setActiveGraph } = savedGraphsSlice.actions;
+export const {
+  saveGraph,
+  deleteGraph,
+  setActiveGraph,
+  addHistoryEntry,
+  deleteHistoryEntry,
+  setActiveHistory,
+} = savedGraphsSlice.actions;
 
 // Stable empty reference so the fallback doesn't churn selector identity.
 const EMPTY_SAVED_GRAPHS = [];
@@ -55,43 +78,26 @@ const EMPTY_SAVED_GRAPHS = [];
  */
 export const selectSavedGraphs = (state) => state.savedGraphs.savedGraphs ?? EMPTY_SAVED_GRAPHS;
 
-/**
- * Restores a saved graph into the live graph and marks it active.
- * @param {string} id
- */
-export const restoreSavedGraph = (id) => (dispatch, getState) => {
-  const graph = selectSavedGraphs(getState()).find((g) => g.id === id);
-  if (!graph) return;
-  dispatch(
-    setGraphData({
-      graphData: graph.graphData,
-      originNodeIds: graph.originNodeIds,
-      settings: graph.settings,
-      skipUndo: true,
-    }),
-  );
-  dispatch(setActiveGraph(id));
-};
+const EMPTY_HISTORY = [];
 
 /**
- * Snapshots the current live graph onto the shelf. No-op if the graph is empty.
- * @param {{ name?: string, thumbnail?: string|null }} [opts]
+ * Reads the origin-history list, normalizing to an empty array. `originHistory`
+ * is session-only.
+ * @param {object} state
+ * @returns {Array}
  */
-export const snapshotCurrentGraph =
-  ({ name = "Graph Title", thumbnail = null } = {}) =>
-  (dispatch, getState) => {
-    const present = getState().graph.present;
-    const nodes = present?.graphData?.nodes ?? [];
-    if (!nodes.length) return;
-    dispatch(
-      saveGraph({
-        name,
-        originNodeIds: present.originNodeIds ?? [],
-        settings: present.settings ?? {},
-        graphData: present.graphData,
-        thumbnail,
-      }),
-    );
-  };
+export const selectOriginHistory = (state) => state.savedGraphs.originHistory ?? EMPTY_HISTORY;
+
+/**
+ * Restores a history entry's subgraph into the live graph and marks it active,
+ * preserving positions (no re-query, no re-simulation).
+ * @param {string} id
+ */
+export const restoreHistoryEntry = (id) => (dispatch, getState) => {
+  const entry = selectOriginHistory(getState()).find((e) => e.id === id);
+  if (!entry) return;
+  dispatch(setGraphData({ graphData: entry.subgraph, isRestore: true, skipUndo: true }));
+  dispatch(setActiveHistory(id));
+};
 
 export default savedGraphsSlice.reducer;

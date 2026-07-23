@@ -4,7 +4,7 @@ import { Provider } from "react-redux";
 import { MemoryRouter } from "react-router-dom";
 import graphReducer, { setAvailableCollections, setGraphData } from "../../store/graphSlice";
 import nodesReducer from "../../store/nodesSlice";
-import savedGraphsReducer from "../../store/savedGraphsSlice";
+import savedGraphsReducer, { selectOriginHistory } from "../../store/savedGraphsSlice";
 import { ToastProvider } from "../Toast";
 import ForceGraph from "./ForceGraph";
 
@@ -278,6 +278,110 @@ describe("ForceGraph", () => {
       expect(firstCall.collapseMode).toBe("all");
       expect(firstCall.collapseNodes).toEqual(expect.arrayContaining([leafA._id, leafB._id]));
       expect(firstCall.collapseNodes).not.toContain(origin._id);
+    });
+
+    it("routes a restore render through restoreGraph, not updateGraph", async () => {
+      const store = createStoreWithCollections();
+      const origin = { _id: "CL/0001", id: "CL/0001", x: 10, y: 20 };
+      const leaf = { _id: "GO/0010", id: "GO/0010", x: 30, y: 40 };
+      await act(async () => {
+        render(
+          <Provider store={store}>
+            <MemoryRouter>
+              <ToastProvider>
+                <ForceGraph />
+              </ToastProvider>
+            </MemoryRouter>
+          </Provider>,
+        );
+      });
+      mockGraphInstance.restoreGraph.mockClear();
+      mockGraphInstance.updateGraph.mockClear();
+
+      await act(async () => {
+        store.dispatch(
+          setGraphData({
+            graphData: {
+              nodes: [origin, leaf],
+              links: [{ source: "CL/0001", target: "GO/0010" }],
+            },
+            isRestore: true,
+          }),
+        );
+      });
+
+      await waitFor(() => expect(mockGraphInstance.restoreGraph).toHaveBeenCalled());
+      expect(mockGraphInstance.updateGraph).not.toHaveBeenCalled();
+    });
+
+    it("auto-captures a history entry once when a new origin resolves, and not again on re-resolve or restore", async () => {
+      const store = createStoreWithCollections();
+      const origin = { _id: "CL/0001", id: "CL/0001" };
+      const leaf = { _id: "GO/0010", id: "GO/0010" };
+      await act(async () => {
+        render(
+          <Provider store={store}>
+            <MemoryRouter>
+              <ToastProvider>
+                <ForceGraph />
+              </ToastProvider>
+            </MemoryRouter>
+          </Provider>,
+        );
+      });
+
+      // First resolution of a new origin: history should gain exactly one entry.
+      await act(async () => {
+        store.dispatch(
+          setGraphData({
+            graphData: {
+              nodes: [origin, leaf],
+              links: [{ source: "CL/0001", target: "GO/0010" }],
+            },
+            originNodeIds: [origin._id],
+          }),
+        );
+      });
+
+      await waitFor(() => {
+        const history = selectOriginHistory(store.getState());
+        expect(history).toHaveLength(1);
+        expect(history[0].originId).toBe(origin._id);
+      });
+
+      // Re-resolving the same origin must not add a duplicate entry.
+      await act(async () => {
+        store.dispatch(
+          setGraphData({
+            graphData: {
+              nodes: [origin, leaf],
+              links: [{ source: "CL/0001", target: "GO/0010" }],
+            },
+            originNodeIds: [origin._id],
+          }),
+        );
+      });
+
+      await waitFor(() => {
+        expect(selectOriginHistory(store.getState())).toHaveLength(1);
+      });
+
+      // A restore render must not spawn a new history entry.
+      await act(async () => {
+        store.dispatch(
+          setGraphData({
+            graphData: {
+              nodes: [origin, leaf],
+              links: [{ source: "CL/0001", target: "GO/0010" }],
+            },
+            originNodeIds: [origin._id],
+            isRestore: true,
+          }),
+        );
+      });
+
+      await waitFor(() => expect(mockGraphInstance.restoreGraph).toHaveBeenCalled());
+      expect(selectOriginHistory(store.getState())).toHaveLength(1);
     });
 
     it("does not show an error state when popup is closed before the fetch resolves (abort)", async () => {

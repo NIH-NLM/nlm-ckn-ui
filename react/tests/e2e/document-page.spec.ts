@@ -226,28 +226,17 @@ test("DocumentPage: inspector swaps on node click and saved-graph shelf gains a 
   // Inspector swaps to the clicked node's document.
   await expect(inspectorLegend).not.toContainText(`${TEST_COLL}_${originKey}`, { timeout: 5000 });
 
-  // Saved-graph shelf gains a card when a graph is saved via the store.
+  // Saved-graph shelf auto-gains a card for the origin (History strip).
   await page.waitForFunction(
     () => (window as unknown as { __STORE__?: unknown }).__STORE__ != null,
   );
-  await page.evaluate((graphName) => {
-    // biome-ignore lint/suspicious/noExplicitAny: accessing custom property
-    const store: any = (window as any).__STORE__;
-    const present = store.getState().graph.present;
-    store.dispatch({
-      type: "savedGraphs/saveGraph",
-      payload: {
-        name: graphName,
-        originNodeIds: present.originNodeIds ?? [],
-        settings: present.settings ?? {},
-        graphData: present.graphData,
-      },
-    });
-  }, "Task 12 Shelf Graph");
 
   const shelfCard = page.locator(".saved-graph-card");
   await expect(shelfCard).toBeVisible();
-  await expect(shelfCard).toContainText("Task 12 Shelf Graph");
+  // The auto-captured History card carries a graph thumbnail (a serialized SVG
+  // data URL). The label resolves to the origin's display name, so assert the
+  // thumbnail rather than a specific, resolution-dependent label string.
+  await expect(shelfCard.locator("img")).toHaveAttribute("src", /^data:image\/svg\+xml/);
 
   expect(filterErrorsContaining(await getCollectedErrors(page), "split").length).toBe(0);
 });
