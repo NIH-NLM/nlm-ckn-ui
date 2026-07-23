@@ -3,16 +3,31 @@
 # resolve-env.sh - Resolve deployment resource names for an environment
 # ==============================================================================
 # Centralizes how the deploy scripts discover AWS resource names. Most
-# environments (dev/stage/prod) follow the `cell-kn-<env>-*` CloudFormation
-# stack naming convention, so values are read from stack outputs/exports.
+# environments (dev/stage/prod) follow the `${PROJECT_NAME}-<env>-*`
+# CloudFormation stack naming convention -- PROJECT_NAME comes from
+# scripts/common.sh -- so values are read from stack outputs/exports.
 #
 # The `sandbox` account does NOT follow that convention: stack names are
 # org-imposed (e.g. NLM-SBOX-CELL-KN-vpc-101-cellkn-arangodb) and the
-# architecture differs (frontend is served via ALB->S3, not CloudFront;
-# backend runs on ECS-on-EC2). Instead of remapping the messy stack names,
-# sandbox exposes a stable contract via CloudFormation exports
-# (cell-kn-sandbox-*) and SSM parameters (/platform/cell-kn/*), which we
-# resolve here.
+# architecture differs (frontend is served via ALB->S3, not CloudFront; backend
+# runs on ECS-on-EC2). Instead of remapping the messy stack names, sandbox
+# exposes a stable contract via CloudFormation exports
+# (${TARGET_PROJECT}-sandbox-*) and SSM parameters (/platform/${TARGET_PROJECT}/*),
+# which we resolve here.
+#
+# TWO PROJECT NAMESPACES — DO NOT CONFLATE:
+#   PROJECT_NAME   ("nlm-ckn", from scripts/common.sh) names resources in the
+#                  springbok account: the dev/stage/prod stacks, plus the
+#                  cross-account promotion sources (CKN_PROMOTE_*) that sandbox
+#                  pulls its artifacts from.
+#   TARGET_PROJECT ("cell-kn", defined below) names the sandbox account's OWN
+#                  resources. These are NOT the decommissioned cell-kn-* stacks
+#                  that used to live in springbok — they only share a prefix.
+#                  Driving them from PROJECT_NAME breaks sandbox deploys.
+#
+# The sandbox ECS cluster export additionally embeds NLM-SBOX-CELL-KN, the
+# org-assigned AWS account moniker. That is a separate identifier from the app
+# name and would not necessarily change in a rename, so it stays literal.
 #
 # USAGE (sourced):
 #   source "$(dirname "$0")/resolve-env.sh"
@@ -38,6 +53,25 @@
 #   CKN_ARANGO_BUCKET      S3 bucket holding ArangoDB dataset dumps
 #   CKN_DATASET_VERSION    Active dataset version (object key under the bucket)
 # ==============================================================================
+
+# PROJECT_NAME (the stack-name prefix for dev/stage/prod) comes from the shared
+# constant. Resolved via BASH_SOURCE so it works whether this file is sourced by
+# another script or executed directly.
+# shellcheck source=../common.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../common.sh"
+# Fail loudly: an empty PROJECT_NAME would silently resolve to names like
+# "-stage-frontend" rather than erroring. Requires bash (BASH_SOURCE above).
+: "${PROJECT_NAME:?PROJECT_NAME not set — scripts/common.sh failed to source (run under bash, not sh/zsh)}"
+
+# TARGET_PROJECT is the project namespace baked into the SANDBOX account's own
+# resource names — its CloudFormation exports (${TARGET_PROJECT}-sandbox-*) and
+# SSM parameters (/platform/${TARGET_PROJECT}/*). It is deliberately separate
+# from PROJECT_NAME: the two accounts renamed on different schedules, and the
+# sandbox side still answers to "cell-kn". See the header before changing it.
+# Export TARGET_PROJECT to re-point a one-off run (e.g. a sandbox rename).
+# Unset-only defaulting (`=`, not `:=`): an explicitly empty TARGET_PROJECT is
+# preserved so the required-value check in resolve_env can reject it.
+: "${TARGET_PROJECT=cell-kn}"
 
 # Helpers print the resolved value (empty if missing/unauthorized) and always
 # return 0, so a failed lookup never trips the caller's `set -e` mid-resolution.
@@ -80,11 +114,17 @@ resolve_env() {
 
   case "$env" in
     sandbox)
-      # Sandbox: stable contract via exports + SSM (see header).
-      CKN_FRONTEND_BUCKET=$(_cfn_export "cell-kn-sandbox-frontend-bucket")
+      # Sandbox: stable contract via exports + SSM, namespaced by TARGET_PROJECT
+      # (see header — these are sandbox-account names, not springbok ones).
+      # Checked at call time: an empty value would resolve to "-sandbox-*" and
+      # every lookup would quietly return nothing. To override, `export
+      # TARGET_PROJECT=...`; prefixing it onto `source` does not persist.
+      : "${TARGET_PROJECT:?TARGET_PROJECT is empty — export it before calling resolve_env}"
+      CKN_FRONTEND_BUCKET=$(_cfn_export "${TARGET_PROJECT}-sandbox-frontend-bucket")
       CKN_CF_DIST_ID=""                                   # no CloudFront; ALB->S3
-      CKN_ECR_URL=$(_ssm "/platform/cell-kn/shared/pEcrUrl")
-      CKN_ECS_CLUSTER=$(_cfn_export "NLM-SBOX-CELL-KN-cell-kn-ECS-Cluster")
+      CKN_ECR_URL=$(_ssm "/platform/${TARGET_PROJECT}/shared/pEcrUrl")
+      # NLM-SBOX-CELL-KN is the account moniker, not the app name — see header.
+      CKN_ECS_CLUSTER=$(_cfn_export "NLM-SBOX-CELL-KN-${TARGET_PROJECT}-ECS-Cluster")
       CKN_BACKEND_SERVICE=""                              # not an ECS service; plain docker on EC2
       # Backend runs as a plain `backend` docker container on an EC2 host that is
       # registered as the target of the backend ALB target group. Resolve the
@@ -95,12 +135,12 @@ resolve_env() {
         : # honor caller-provided override
       else
         # The ALB forwards to the "-tg-80" target group (the one with the
-        # backend instance registered). An older "cell-kn-sandbox-backend-tg"
-        # export points at an empty target group, so prefer "-tg-80-arn" and
-        # only fall back to the legacy name.
+        # backend instance registered). An older "-sandbox-backend-tg" export
+        # points at an empty target group, so prefer "-tg-80-arn" and only fall
+        # back to the legacy name.
         local btg
-        btg=$(_cfn_export "cell-kn-sandbox-backend-tg-80-arn")
-        [ -z "$btg" ] && btg=$(_cfn_export "cell-kn-sandbox-backend-tg-arn")
+        btg=$(_cfn_export "${TARGET_PROJECT}-sandbox-backend-tg-80-arn")
+        [ -z "$btg" ] && btg=$(_cfn_export "${TARGET_PROJECT}-sandbox-backend-tg-arn")
         if [ -n "$btg" ]; then
           CKN_BACKEND_INSTANCE_ID=$(_clean "$(aws elbv2 describe-target-health \
             --region "${AWS_REGION:-us-east-1}" --target-group-arn "$btg" \
@@ -109,28 +149,38 @@ resolve_env() {
           CKN_BACKEND_INSTANCE_ID=""
         fi
       fi
-      CKN_BACKEND_URL=$(_cfn_export "cell-kn-sandbox-backend-url")
-      CKN_ARANGO_INSTANCE_ID=$(_cfn_export "cell-kn-dev-arangodb-instance-id")
-      CKN_ARANGO_BUCKET=$(_ssm "/platform/cell-kn/arango/pArangodbBucketName")
-      CKN_DATASET_VERSION=$(_ssm "/platform/cell-kn/arango/pDatasetVersion")
+      CKN_BACKEND_URL=$(_cfn_export "${TARGET_PROJECT}-sandbox-backend-url")
+      # "-dev-", not "-sandbox-": the sandbox account's ArangoDB stack was
+      # deployed with Environment=dev, so its export carries that name. This is
+      # still a SANDBOX-account export (cross-account exports aren't readable
+      # here) — it is not the springbok cell-kn-dev-* stack of the same name.
+      CKN_ARANGO_INSTANCE_ID=$(_cfn_export "${TARGET_PROJECT}-dev-arangodb-instance-id")
+      CKN_ARANGO_BUCKET=$(_ssm "/platform/${TARGET_PROJECT}/arango/pArangodbBucketName")
+      CKN_DATASET_VERSION=$(_ssm "/platform/${TARGET_PROJECT}/arango/pDatasetVersion")
       # ── Promotion sources (springbok account 952291113202) ──────────────
       # Sandbox promotes already-built stage artifacts cross-account, the same
       # way the dataset is pulled from the springbok Arango bucket. These are
       # pinned constants: cross-account CloudFormation exports aren't readable
-      # from the sandbox account, so they can't be looked up here.
-      #   Frontend: synced from the stage frontend bucket (grant in
-      #     cloudformation/environment/frontend.yaml, IsStage condition).
-      #   Backend: pulled from the shared cell-kn-backend ECR repo (grant in
-      #     cloudformation/shared/shared-resources.yaml).
-      CKN_PROMOTE_FRONTEND_BUCKET="cell-kn-stage-frontend"
+      # from the sandbox account, so they can't be looked up here. They follow
+      # PROJECT_NAME because they name springbok resources, not sandbox ones.
+      #   Frontend: synced from the stage frontend bucket (AllowSandboxPromotionRead
+      #     grant in nlm-ckn-iac: environment/services/frontend/cloudformation/
+      #     frontend-cdn.yaml, IsStage condition).
+      #   Backend: pulled from the shared ${PROJECT_NAME}-backend ECR repo
+      #     (AllowCrossAccountAccess grant in nlm-ckn-iac:
+      #     shared/cloudformation/shared-resources.yaml).
+      CKN_PROMOTE_FRONTEND_BUCKET="${PROJECT_NAME}-stage-frontend"
       CKN_PROMOTE_ECR_REGISTRY="952291113202.dkr.ecr.us-east-1.amazonaws.com"
-      CKN_PROMOTE_ECR_REPO="cell-kn-backend"
+      CKN_PROMOTE_ECR_REPO="${PROJECT_NAME}-backend"
       ;;
     dev|stage|prod)
-      # Conventional cell-kn-<env>-* stacks.
-      local p="cell-kn"
+      # Conventional ${PROJECT_NAME}-<env>-* stacks (see scripts/common.sh).
+      local p="$PROJECT_NAME"
       CKN_FRONTEND_BUCKET=$(_stack_output "${p}-${env}-frontend" "BucketName")
-      CKN_CF_DIST_ID=$(_stack_output "${p}-${env}-frontend" "CloudFrontDistributionId")
+      # CloudFront lives in its own `-frontend-cdn` stack, split out from the
+      # bucket stack so the distribution can be created alias-less and cut over
+      # separately (nlm-ckn-iac: environment/services/frontend/cloudformation/).
+      CKN_CF_DIST_ID=$(_stack_output "${p}-${env}-frontend-cdn" "CloudFrontDistributionId")
       CKN_ECR_URL=""                                      # resolved in deploy-backend (shared stack)
       CKN_ECS_CLUSTER=$(_cfn_export "${p}-${env}-cluster-name")
       CKN_BACKEND_SERVICE=$(_stack_output "${p}-${env}-backend" "ServiceName")
