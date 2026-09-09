@@ -1284,16 +1284,26 @@ const ForceGraph = ({
   const handlePinToggle = () => {
     if (!popup.nodeId) return;
     const newPinned = !popup.userPinned;
+    graphInstanceRef.current?.setNodePinned(popup.nodeId, newPinned);
+
+    // Position comes from the live simulation first, as it does on the
+    // double-click path. Resolving only against Redux graphData made this a
+    // silent no-op whenever that state lagged what D3 had already rendered:
+    // the handler returned before closing the popup, so Pin appeared to do
+    // nothing at all.
     // popup.nodeId comes from nodeData._id (see handleNodeClick); match on
     // either field for consistency with the rest of this file (e.g.,
     // handleSimulationEnd merge, expand merge).
-    const node = graphData.nodes.find((n) => (n._id || n.id) === popup.nodeId);
-    if (!node) return;
-    graphInstanceRef.current?.setNodePinned(popup.nodeId, newPinned);
-    dispatch({
-      type: "graph/updateNodePosition",
-      payload: { nodeId: popup.nodeId, x: node.x, y: node.y, userPinned: newPinned },
-    });
+    const matches = (n) => (n._id || n.id) === popup.nodeId;
+    const node =
+      graphInstanceRef.current?.getCurrentGraph?.()?.nodes?.find(matches) ??
+      graphData.nodes.find(matches);
+    if (node) {
+      dispatch({
+        type: "graph/updateNodePosition",
+        payload: { nodeId: popup.nodeId, x: node.x, y: node.y, userPinned: newPinned },
+      });
+    }
     handlePopupClose();
   };
 
