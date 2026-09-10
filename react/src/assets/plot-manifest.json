@@ -1,0 +1,1249 @@
+{
+  "tag": "v1.0.0-rc.10",
+  "datasets": {
+    "bone_marrow/04d255": {
+      "dir": "bone_marrow/sc-nsforest-qc-nf/results/bone_marrow-Dominguez_Conde-Science-2022-04d255",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_bone_marrow_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_bone_marrow_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.html",
+          "svg": "silhouette_fscore_summary_bone_marrow_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_bone_marrow_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.svg"
+        }
+      }
+    },
+    "bone_marrow/5188c1": {
+      "dir": "bone_marrow/sc-nsforest-qc-nf/results/bone_marrow-Xu-Cell-2023-5188c1",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_bone_marrow_Xu_Cell_2023_Curated_annotation_X_umap_5188c1.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_bone_marrow_Xu_Cell_2023_Curated_annotation_X_umap_5188c1.html",
+          "svg": "silhouette_fscore_summary_bone_marrow_Xu_Cell_2023_Curated_annotation_X_umap_5188c1.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_bone_marrow_Xu_Cell_2023_Curated_annotation_X_umap_5188c1.svg"
+        }
+      }
+    },
+    "bone_marrow/5c7ea7": {
+      "dir": "bone_marrow/sc-nsforest-qc-nf/results/bone_marrow-Han-Nature-2020-5c7ea7",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_bone_marrow_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_bone_marrow_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.html",
+          "svg": "silhouette_fscore_summary_bone_marrow_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_bone_marrow_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        }
+      }
+    },
+    "bone_marrow/74e9e1": {
+      "dir": "bone_marrow/sc-nsforest-qc-nf/results/bone_marrow-Wells-Nat Immunol-2025-74e9e1",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_bone_marrow_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_bone_marrow_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.html",
+          "svg": "silhouette_fscore_summary_bone_marrow_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_bone_marrow_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
+        }
+      }
+    },
+    "bone_marrow/77f3db": {
+      "dir": "bone_marrow/sc-nsforest-qc-nf/results/bone_marrow-Triana-Nat Immunol-2021-77f3db",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_bone_marrow_Triana_Nat_Immunol_2021_Cell_label_X_umap_77f3db.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_bone_marrow_Triana_Nat_Immunol_2021_Cell_label_X_umap_77f3db.html",
+          "svg": "silhouette_fscore_summary_bone_marrow_Triana_Nat_Immunol_2021_Cell_label_X_umap_77f3db.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_bone_marrow_Triana_Nat_Immunol_2021_Cell_label_X_umap_77f3db.svg"
+        }
+      }
+    },
+    "bone_marrow/bba832": {
+      "dir": "bone_marrow/sc-nsforest-qc-nf/results/bone_marrow-Zeng-Blood Cancer Discovery-2025-bba832",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_bone_marrow_Zeng_Blood_Cancer_Discovery_2025_AuthorCellType_X_umap_bba832.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_bone_marrow_Zeng_Blood_Cancer_Discovery_2025_AuthorCellType_X_umap_bba832.html",
+          "svg": "silhouette_fscore_summary_bone_marrow_Zeng_Blood_Cancer_Discovery_2025_AuthorCellType_X_umap_bba832.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_bone_marrow_Zeng_Blood_Cancer_Discovery_2025_AuthorCellType_X_umap_bba832.svg"
+        }
+      }
+    },
+    "digestive_tract/30933d": {
+      "dir": "digestive_tract/sc-nsforest-qc-nf/results/digestive_tract-Xu-Cell-2023-30933d",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_digestive_tract_Xu_Cell_2023_Curated_annotation_X_umap_30933d.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_digestive_tract_Xu_Cell_2023_Curated_annotation_X_umap_30933d.html",
+          "svg": "silhouette_fscore_summary_digestive_tract_Xu_Cell_2023_Curated_annotation_X_umap_30933d.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_digestive_tract_Xu_Cell_2023_Curated_annotation_X_umap_30933d.svg"
+        }
+      }
+    },
+    "digestive_tract/5247a6": {
+      "dir": "digestive_tract/sc-nsforest-qc-nf/results/digestive_tract-Burclaff-Cellular and Molecular Gastroenterology and Hepatology-2022-5247a6",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_digestive_tract_Burclaff_Cellular_and_Molecular_Gastroenterology_and_Hepatology_2022_lineage_X_umap_5247a6.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_digestive_tract_Burclaff_Cellular_and_Molecular_Gastroenterology_and_Hepatology_2022_lineage_X_umap_5247a6.html",
+          "svg": "silhouette_fscore_summary_digestive_tract_Burclaff_Cellular_and_Molecular_Gastroenterology_and_Hepatology_2022_lineage_X_umap_5247a6.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_digestive_tract_Burclaff_Cellular_and_Molecular_Gastroenterology_and_Hepatology_2022_lineage_X_umap_5247a6.svg"
+        }
+      }
+    },
+    "digestive_tract/59ef00": {
+      "dir": "digestive_tract/sc-nsforest-qc-nf/results/digestive_tract-Martin-Cell-2019-59ef00",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_digestive_tract_Martin_Cell_2019_author_cell_type1_X_umap_hm_59ef00.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_digestive_tract_Martin_Cell_2019_author_cell_type1_X_umap_hm_59ef00.html",
+          "svg": "silhouette_fscore_summary_digestive_tract_Martin_Cell_2019_author_cell_type1_X_umap_hm_59ef00.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_digestive_tract_Martin_Cell_2019_author_cell_type1_X_umap_hm_59ef00.svg"
+        }
+      }
+    },
+    "digestive_tract/5c7ea7": {
+      "dir": "digestive_tract/sc-nsforest-qc-nf/results/digestive_tract-Han-Nature-2020-5c7ea7",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_digestive_tract_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_digestive_tract_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.html",
+          "svg": "silhouette_fscore_summary_digestive_tract_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_digestive_tract_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        }
+      }
+    },
+    "digestive_tract/7e7800": {
+      "dir": "digestive_tract/sc-nsforest-qc-nf/results/digestive_tract-Garrido-Trigo-Nat Commun-2023-7e7800",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_digestive_tract_Garrido-Trigo_Nat_Commun_2023_cell_type_X_umap_7e7800.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_digestive_tract_Garrido-Trigo_Nat_Commun_2023_cell_type_X_umap_7e7800.html",
+          "svg": "silhouette_fscore_summary_digestive_tract_Garrido-Trigo_Nat_Commun_2023_cell_type_X_umap_7e7800.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_digestive_tract_Garrido-Trigo_Nat_Commun_2023_cell_type_X_umap_7e7800.svg"
+        }
+      }
+    },
+    "digestive_tract/a60caa": {
+      "dir": "digestive_tract/sc-nsforest-qc-nf/results/digestive_tract-Oliver-Nature-2024-a60caa",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_digestive_tract_Oliver_Nature_2024_level_3_annot_X_umap_a60caa.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_digestive_tract_Oliver_Nature_2024_level_3_annot_X_umap_a60caa.html",
+          "svg": "silhouette_fscore_summary_digestive_tract_Oliver_Nature_2024_level_3_annot_X_umap_a60caa.svg"
+        }
+      }
+    },
+    "digestive_tract/ae6cbe": {
+      "dir": "digestive_tract/sc-nsforest-qc-nf/results/digestive_tract-Horeth-J Dent Res-2023-ae6cbe",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_digestive_tract_Horeth_J_Dent_Res_2023_author_cell_type_X_umap_ae6cbe.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_digestive_tract_Horeth_J_Dent_Res_2023_author_cell_type_X_umap_ae6cbe.html",
+          "svg": "silhouette_fscore_summary_digestive_tract_Horeth_J_Dent_Res_2023_author_cell_type_X_umap_ae6cbe.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_digestive_tract_Horeth_J_Dent_Res_2023_author_cell_type_X_umap_ae6cbe.svg"
+        }
+      }
+    },
+    "digestive_tract/bbedd2": {
+      "dir": "digestive_tract/sc-nsforest-qc-nf/results/digestive_tract-Smillie-Cell-2019-bbedd2",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_digestive_tract_Smillie_Cell_2019_CellType_X_umap_hm_bbedd2.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_digestive_tract_Smillie_Cell_2019_CellType_X_umap_hm_bbedd2.html",
+          "svg": "silhouette_fscore_summary_digestive_tract_Smillie_Cell_2019_CellType_X_umap_hm_bbedd2.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_digestive_tract_Smillie_Cell_2019_CellType_X_umap_hm_bbedd2.svg"
+        }
+      }
+    },
+    "digestive_tract/bf2a8d": {
+      "dir": "digestive_tract/sc-nsforest-qc-nf/results/digestive_tract-Elmentaite-Nature-2021-bf2a8d",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_digestive_tract_Elmentaite_Nature_2021_author_cell_type_X_umap_bf2a8d.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_digestive_tract_Elmentaite_Nature_2021_author_cell_type_X_umap_bf2a8d.html",
+          "svg": "silhouette_fscore_summary_digestive_tract_Elmentaite_Nature_2021_author_cell_type_X_umap_bf2a8d.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_digestive_tract_Elmentaite_Nature_2021_author_cell_type_X_umap_bf2a8d.svg"
+        }
+      }
+    },
+    "digestive_tract/e72b7b": {
+      "dir": "digestive_tract/sc-nsforest-qc-nf/results/digestive_tract-Nowicki-Osuch-Cancer Discovery-2023-e72b7b",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_digestive_tract_Nowicki-Osuch_Cancer_Discovery_2023_Detailed_Cell_Type_umap_MinDist_0.5_N_Neighbors_15_e72b7b.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_digestive_tract_Nowicki-Osuch_Cancer_Discovery_2023_Detailed_Cell_Type_umap_MinDist_0.5_N_Neighbors_15_e72b7b.html",
+          "svg": "silhouette_fscore_summary_digestive_tract_Nowicki-Osuch_Cancer_Discovery_2023_Detailed_Cell_Type_umap_MinDist_0.5_N_Neighbors_15_e72b7b.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_digestive_tract_Nowicki-Osuch_Cancer_Discovery_2023_Detailed_Cell_Type_umap_MinDist_0.5_N_Neighbors_15_e72b7b.svg"
+        }
+      }
+    },
+    "digestive_tract/f35993": {
+      "dir": "digestive_tract/sc-nsforest-qc-nf/results/digestive_tract-Madissoon-Genome Biol-2020-f35993",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_digestive_tract_Madissoon_Genome_Biol_2020_author_cell_type_X_umap_f35993.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_digestive_tract_Madissoon_Genome_Biol_2020_author_cell_type_X_umap_f35993.html",
+          "svg": "silhouette_fscore_summary_digestive_tract_Madissoon_Genome_Biol_2020_author_cell_type_X_umap_f35993.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_digestive_tract_Madissoon_Genome_Biol_2020_author_cell_type_X_umap_f35993.svg"
+        }
+      }
+    },
+    "digestive_tract/f44b0f": {
+      "dir": "digestive_tract/sc-nsforest-qc-nf/results/digestive_tract-Eraslan-Science-2022-f44b0f",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_digestive_tract_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_digestive_tract_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.html",
+          "svg": "silhouette_fscore_summary_digestive_tract_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_digestive_tract_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
+        }
+      }
+    },
+    "digestive_tract/f5803a": {
+      "dir": "digestive_tract/sc-nsforest-qc-nf/results/digestive_tract-Zwick-Nat Cell Biol-2024-f5803a",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_digestive_tract_Zwick_Nat_Cell_Biol_2024_cell.type_X_umap_f5803a.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_digestive_tract_Zwick_Nat_Cell_Biol_2024_cell.type_X_umap_f5803a.html",
+          "svg": "silhouette_fscore_summary_digestive_tract_Zwick_Nat_Cell_Biol_2024_cell.type_X_umap_f5803a.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_digestive_tract_Zwick_Nat_Cell_Biol_2024_cell.type_X_umap_f5803a.svg"
+        }
+      }
+    },
+    "heart_plus_pericardium/2fcb9b": {
+      "dir": "heart_plus_pericardium/sc-nsforest-qc-nf/results/heart_plus_pericardium-Litvinukova-Nature-2020-2fcb9b",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_heart_plus_pericardium_Litvinukova_Nature_2020_cell_type_X_umap_2fcb9b.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_heart_plus_pericardium_Litvinukova_Nature_2020_cell_type_X_umap_2fcb9b.html",
+          "svg": "silhouette_fscore_summary_heart_plus_pericardium_Litvinukova_Nature_2020_cell_type_X_umap_2fcb9b.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_heart_plus_pericardium_Litvinukova_Nature_2020_cell_type_X_umap_2fcb9b.svg"
+        }
+      }
+    },
+    "heart_plus_pericardium/5c7ea7": {
+      "dir": "heart_plus_pericardium/sc-nsforest-qc-nf/results/heart_plus_pericardium-Han-Nature-2020-5c7ea7",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_heart_plus_pericardium_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_heart_plus_pericardium_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.html",
+          "svg": "silhouette_fscore_summary_heart_plus_pericardium_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_heart_plus_pericardium_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        }
+      }
+    },
+    "heart_plus_pericardium/626931": {
+      "dir": "heart_plus_pericardium/sc-nsforest-qc-nf/results/heart_plus_pericardium-Hulsmans-Science-2023-626931",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_heart_plus_pericardium_Hulsmans_Science_2023_celltype_X_umap_626931.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_heart_plus_pericardium_Hulsmans_Science_2023_celltype_X_umap_626931.html",
+          "svg": "silhouette_fscore_summary_heart_plus_pericardium_Hulsmans_Science_2023_celltype_X_umap_626931.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_heart_plus_pericardium_Hulsmans_Science_2023_celltype_X_umap_626931.svg"
+        }
+      }
+    },
+    "heart_plus_pericardium/7d4811": {
+      "dir": "heart_plus_pericardium/sc-nsforest-qc-nf/results/heart_plus_pericardium-Xu-Cell-2023-7d4811",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_heart_plus_pericardium_Xu_Cell_2023_Curated_annotation_X_umap_7d4811.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_heart_plus_pericardium_Xu_Cell_2023_Curated_annotation_X_umap_7d4811.html",
+          "svg": "silhouette_fscore_summary_heart_plus_pericardium_Xu_Cell_2023_Curated_annotation_X_umap_7d4811.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_heart_plus_pericardium_Xu_Cell_2023_Curated_annotation_X_umap_7d4811.svg"
+        }
+      }
+    },
+    "heart_plus_pericardium/9b5568": {
+      "dir": "heart_plus_pericardium/sc-nsforest-qc-nf/results/heart_plus_pericardium-Zhao-Cell Genomics-2025-9b5568",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_heart_plus_pericardium_Zhao_Cell_Genomics_2025_author_cell_type_X_umap_9b5568.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_heart_plus_pericardium_Zhao_Cell_Genomics_2025_author_cell_type_X_umap_9b5568.html",
+          "svg": "silhouette_fscore_summary_heart_plus_pericardium_Zhao_Cell_Genomics_2025_author_cell_type_X_umap_9b5568.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_heart_plus_pericardium_Zhao_Cell_Genomics_2025_author_cell_type_X_umap_9b5568.svg"
+        }
+      }
+    },
+    "heart_plus_pericardium/a8bcce": {
+      "dir": "heart_plus_pericardium/sc-nsforest-qc-nf/results/heart_plus_pericardium-Selewa-Nat Commun-2023-a8bcce",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_heart_plus_pericardium_Selewa_Nat_Commun_2023_author_cell_type_X_umap_a8bcce.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_heart_plus_pericardium_Selewa_Nat_Commun_2023_author_cell_type_X_umap_a8bcce.html",
+          "svg": "silhouette_fscore_summary_heart_plus_pericardium_Selewa_Nat_Commun_2023_author_cell_type_X_umap_a8bcce.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_heart_plus_pericardium_Selewa_Nat_Commun_2023_author_cell_type_X_umap_a8bcce.svg"
+        }
+      }
+    },
+    "heart_plus_pericardium/b6d046": {
+      "dir": "heart_plus_pericardium/sc-nsforest-qc-nf/results/heart_plus_pericardium-Maatz-Nat Cardiovasc Res-2025-b6d046",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_heart_plus_pericardium_Maatz_Nat_Cardiovasc_Res_2025_author_cell_type_X_umap_b6d046.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_heart_plus_pericardium_Maatz_Nat_Cardiovasc_Res_2025_author_cell_type_X_umap_b6d046.html",
+          "svg": "silhouette_fscore_summary_heart_plus_pericardium_Maatz_Nat_Cardiovasc_Res_2025_author_cell_type_X_umap_b6d046.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_heart_plus_pericardium_Maatz_Nat_Cardiovasc_Res_2025_author_cell_type_X_umap_b6d046.svg"
+        }
+      }
+    },
+    "heart_plus_pericardium/d94be2": {
+      "dir": "heart_plus_pericardium/sc-nsforest-qc-nf/results/heart_plus_pericardium-Sim-Circulation-2021-d94be2",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_heart_plus_pericardium_Sim_Circulation_2021_cell_type_X_umap_d94be2.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_heart_plus_pericardium_Sim_Circulation_2021_cell_type_X_umap_d94be2.html",
+          "svg": "silhouette_fscore_summary_heart_plus_pericardium_Sim_Circulation_2021_cell_type_X_umap_d94be2.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_heart_plus_pericardium_Sim_Circulation_2021_cell_type_X_umap_d94be2.svg"
+        }
+      }
+    },
+    "heart_plus_pericardium/f44b0f": {
+      "dir": "heart_plus_pericardium/sc-nsforest-qc-nf/results/heart_plus_pericardium-Eraslan-Science-2022-f44b0f",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_heart_plus_pericardium_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_heart_plus_pericardium_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.html",
+          "svg": "silhouette_fscore_summary_heart_plus_pericardium_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_heart_plus_pericardium_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
+        }
+      }
+    },
+    "kidney/01cfaa": {
+      "dir": "kidney/sc-nsforest-qc-nf/results/kidney-McEvoy-Nat Commun-2022-01cfaa",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_kidney_McEvoy_Nat_Commun_2022_author_cell_type_X_umap_01cfaa.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_kidney_McEvoy_Nat_Commun_2022_author_cell_type_X_umap_01cfaa.html",
+          "svg": "silhouette_fscore_summary_kidney_McEvoy_Nat_Commun_2022_author_cell_type_X_umap_01cfaa.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_kidney_McEvoy_Nat_Commun_2022_author_cell_type_X_umap_01cfaa.svg"
+        }
+      }
+    },
+    "kidney/4af23f": {
+      "dir": "kidney/sc-nsforest-qc-nf/results/kidney-Lake-Nature-2023-4af23f",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_kidney_Lake_Nature_2023_subclass.full_X_umap_4af23f.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_kidney_Lake_Nature_2023_subclass.full_X_umap_4af23f.html",
+          "svg": "silhouette_fscore_summary_kidney_Lake_Nature_2023_subclass.full_X_umap_4af23f.svg"
+        }
+      }
+    },
+    "kidney/57f337": {
+      "dir": "kidney/sc-nsforest-qc-nf/results/kidney-Young-Science-2018-57f337",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_kidney_Young_Science_2018_author_cell_type_X_umap_57f337.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_kidney_Young_Science_2018_author_cell_type_X_umap_57f337.html",
+          "svg": "silhouette_fscore_summary_kidney_Young_Science_2018_author_cell_type_X_umap_57f337.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_kidney_Young_Science_2018_author_cell_type_X_umap_57f337.svg"
+        }
+      }
+    },
+    "kidney/5c7ea7": {
+      "dir": "kidney/sc-nsforest-qc-nf/results/kidney-Han-Nature-2020-5c7ea7",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_kidney_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_kidney_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.html",
+          "svg": "silhouette_fscore_summary_kidney_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_kidney_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        }
+      }
+    },
+    "kidney/71ffd1": {
+      "dir": "kidney/sc-nsforest-qc-nf/results/kidney-Xu-Cell-2023-71ffd1",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_kidney_Xu_Cell_2023_Curated_annotation_X_umap_71ffd1.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_kidney_Xu_Cell_2023_Curated_annotation_X_umap_71ffd1.html",
+          "svg": "silhouette_fscore_summary_kidney_Xu_Cell_2023_Curated_annotation_X_umap_71ffd1.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_kidney_Xu_Cell_2023_Curated_annotation_X_umap_71ffd1.svg"
+        }
+      }
+    },
+    "kidney/9c7fc3": {
+      "dir": "kidney/sc-nsforest-qc-nf/results/kidney-Wilson-Nat Commun-2022-9c7fc3",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_kidney_Wilson_Nat_Commun_2022_author_cell_type_X_umap_9c7fc3.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_kidney_Wilson_Nat_Commun_2022_author_cell_type_X_umap_9c7fc3.html",
+          "svg": "silhouette_fscore_summary_kidney_Wilson_Nat_Commun_2022_author_cell_type_X_umap_9c7fc3.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_kidney_Wilson_Nat_Commun_2022_author_cell_type_X_umap_9c7fc3.svg"
+        }
+      }
+    },
+    "kidney/de3575": {
+      "dir": "kidney/sc-nsforest-qc-nf/results/kidney-Stewart-Science-2019-de3575",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_kidney_Stewart_Science_2019_author_cell_type_X_umap_de3575.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_kidney_Stewart_Science_2019_author_cell_type_X_umap_de3575.html",
+          "svg": "silhouette_fscore_summary_kidney_Stewart_Science_2019_author_cell_type_X_umap_de3575.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_kidney_Stewart_Science_2019_author_cell_type_X_umap_de3575.svg"
+        }
+      }
+    },
+    "kidney/ec4b39": {
+      "dir": "kidney/sc-nsforest-qc-nf/results/kidney-Muto-Nat Commun-2021-ec4b39",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_kidney_Muto_Nat_Commun_2021_author_cell_type_X_umap_ec4b39.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_kidney_Muto_Nat_Commun_2021_author_cell_type_X_umap_ec4b39.html",
+          "svg": "silhouette_fscore_summary_kidney_Muto_Nat_Commun_2021_author_cell_type_X_umap_ec4b39.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_kidney_Muto_Nat_Commun_2021_author_cell_type_X_umap_ec4b39.svg"
+        }
+      }
+    },
+    "kidney/ffd4ba": {
+      "dir": "kidney/sc-nsforest-qc-nf/results/kidney-Reck-Nat Commun-2025-ffd4ba",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_kidney_Reck_Nat_Commun_2025_celltype_l2_X_umap_ffd4ba.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_kidney_Reck_Nat_Commun_2025_celltype_l2_X_umap_ffd4ba.html",
+          "svg": "silhouette_fscore_summary_kidney_Reck_Nat_Commun_2025_celltype_l2_X_umap_ffd4ba.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_kidney_Reck_Nat_Commun_2025_celltype_l2_X_umap_ffd4ba.svg"
+        }
+      }
+    },
+    "liver/00ddc4": {
+      "dir": "liver/sc-nsforest-qc-nf/results/liver-Andrews-Journal of Hepatology-2024-00ddc4",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_liver_Andrews_Journal_of_Hepatology_2024_author_cell_type_X_umap_00ddc4.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_liver_Andrews_Journal_of_Hepatology_2024_author_cell_type_X_umap_00ddc4.html",
+          "svg": "silhouette_fscore_summary_liver_Andrews_Journal_of_Hepatology_2024_author_cell_type_X_umap_00ddc4.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_liver_Andrews_Journal_of_Hepatology_2024_author_cell_type_X_umap_00ddc4.svg"
+        }
+      }
+    },
+    "liver/04d255": {
+      "dir": "liver/sc-nsforest-qc-nf/results/liver-Dominguez_Conde-Science-2022-04d255",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_liver_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_liver_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.html",
+          "svg": "silhouette_fscore_summary_liver_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_liver_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.svg"
+        }
+      }
+    },
+    "liver/2b80fc": {
+      "dir": "liver/sc-nsforest-qc-nf/results/liver-Andrews-Journal of Hepatology-2024-2b80fc",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_liver_Andrews_Journal_of_Hepatology_2024_author_cell_type_X_umap_2b80fc.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_liver_Andrews_Journal_of_Hepatology_2024_author_cell_type_X_umap_2b80fc.html",
+          "svg": "silhouette_fscore_summary_liver_Andrews_Journal_of_Hepatology_2024_author_cell_type_X_umap_2b80fc.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_liver_Andrews_Journal_of_Hepatology_2024_author_cell_type_X_umap_2b80fc.svg"
+        }
+      }
+    },
+    "liver/3d10a5": {
+      "dir": "liver/sc-nsforest-qc-nf/results/liver-Andrews-Hepatol Commun-2022-3d10a5",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_liver_Andrews_Hepatol_Commun_2022_author_cell_type_X_umap_3d10a5.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_liver_Andrews_Hepatol_Commun_2022_author_cell_type_X_umap_3d10a5.html",
+          "svg": "silhouette_fscore_summary_liver_Andrews_Hepatol_Commun_2022_author_cell_type_X_umap_3d10a5.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_liver_Andrews_Hepatol_Commun_2022_author_cell_type_X_umap_3d10a5.svg"
+        }
+      }
+    },
+    "liver/5c7ea7": {
+      "dir": "liver/sc-nsforest-qc-nf/results/liver-Han-Nature-2020-5c7ea7",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_liver_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_liver_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.html",
+          "svg": "silhouette_fscore_summary_liver_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_liver_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        }
+      }
+    },
+    "liver/74e9e1": {
+      "dir": "liver/sc-nsforest-qc-nf/results/liver-Wells-Nat Immunol-2025-74e9e1",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_liver_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_liver_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.html",
+          "svg": "silhouette_fscore_summary_liver_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_liver_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
+        }
+      }
+    },
+    "liver/90971d": {
+      "dir": "liver/sc-nsforest-qc-nf/results/liver-Edgar-Hepatology Communications-2025-90971d",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_liver_Edgar_Hepatology_Communications_2025_author_cell_type_X_umap_90971d.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_liver_Edgar_Hepatology_Communications_2025_author_cell_type_X_umap_90971d.html",
+          "svg": "silhouette_fscore_summary_liver_Edgar_Hepatology_Communications_2025_author_cell_type_X_umap_90971d.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_liver_Edgar_Hepatology_Communications_2025_author_cell_type_X_umap_90971d.svg"
+        }
+      }
+    },
+    "liver/9f00be": {
+      "dir": "liver/sc-nsforest-qc-nf/results/liver-MacParland-Nat Commun-2018-9f00be",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_liver_MacParland_Nat_Commun_2018_CellType_X_umap_hm_9f00be.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_liver_MacParland_Nat_Commun_2018_CellType_X_umap_hm_9f00be.html",
+          "svg": "silhouette_fscore_summary_liver_MacParland_Nat_Commun_2018_CellType_X_umap_hm_9f00be.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_liver_MacParland_Nat_Commun_2018_CellType_X_umap_hm_9f00be.svg"
+        }
+      }
+    },
+    "liver/a72286": {
+      "dir": "liver/sc-nsforest-qc-nf/results/liver-Xu-Cell-2023-a72286",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_liver_Xu_Cell_2023_Curated_annotation_X_umap_a72286.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_liver_Xu_Cell_2023_Curated_annotation_X_umap_a72286.html",
+          "svg": "silhouette_fscore_summary_liver_Xu_Cell_2023_Curated_annotation_X_umap_a72286.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_liver_Xu_Cell_2023_Curated_annotation_X_umap_a72286.svg"
+        }
+      }
+    },
+    "liver/c0113a": {
+      "dir": "liver/sc-nsforest-qc-nf/results/liver-Edgar-Hepatology Communications-2025-c0113a",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_liver_Edgar_Hepatology_Communications_2025_author_cell_type_X_umap_c0113a.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_liver_Edgar_Hepatology_Communications_2025_author_cell_type_X_umap_c0113a.html",
+          "svg": "silhouette_fscore_summary_liver_Edgar_Hepatology_Communications_2025_author_cell_type_X_umap_c0113a.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_liver_Edgar_Hepatology_Communications_2025_author_cell_type_X_umap_c0113a.svg"
+        }
+      }
+    },
+    "liver/ec5dd4": {
+      "dir": "liver/sc-nsforest-qc-nf/results/liver-Guilliams-Cell-2022-ec5dd4",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_liver_Guilliams_Cell_2022_author_cell_type_X_umap_ec5dd4.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_liver_Guilliams_Cell_2022_author_cell_type_X_umap_ec5dd4.html",
+          "svg": "silhouette_fscore_summary_liver_Guilliams_Cell_2022_author_cell_type_X_umap_ec5dd4.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_liver_Guilliams_Cell_2022_author_cell_type_X_umap_ec5dd4.svg"
+        }
+      }
+    },
+    "pancreas/5c7ea7": {
+      "dir": "pancreas/sc-nsforest-qc-nf/results/pancreas-Han-Nature-2020-5c7ea7",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_pancreas_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_pancreas_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.html",
+          "svg": "silhouette_fscore_summary_pancreas_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_pancreas_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        }
+      }
+    },
+    "pancreas/652149": {
+      "dir": "pancreas/sc-nsforest-qc-nf/results/pancreas-Muraro-Cell Systems-2016-652149",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_pancreas_Muraro_Cell_Systems_2016_cellular_classification_X_tsne_652149.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_pancreas_Muraro_Cell_Systems_2016_cellular_classification_X_tsne_652149.html",
+          "svg": "silhouette_fscore_summary_pancreas_Muraro_Cell_Systems_2016_cellular_classification_X_tsne_652149.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_pancreas_Muraro_Cell_Systems_2016_cellular_classification_X_tsne_652149.svg"
+        }
+      }
+    },
+    "pancreas/77ee93": {
+      "dir": "pancreas/sc-nsforest-qc-nf/results/pancreas-Fasolino-Nat Metab-2022-77ee93",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_pancreas_Fasolino_Nat_Metab_2022_cell_label_X_umap_77ee93.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_pancreas_Fasolino_Nat_Metab_2022_cell_label_X_umap_77ee93.html",
+          "svg": "silhouette_fscore_summary_pancreas_Fasolino_Nat_Metab_2022_cell_label_X_umap_77ee93.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_pancreas_Fasolino_Nat_Metab_2022_cell_label_X_umap_77ee93.svg"
+        }
+      }
+    },
+    "pancreas/98d050": {
+      "dir": "pancreas/sc-nsforest-qc-nf/results/pancreas-Tritschler-Molecular Metabolism-2022-98d050",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_pancreas_Tritschler_Molecular_Metabolism_2022_louvain_anno_fine_X_umap_98d050.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_pancreas_Tritschler_Molecular_Metabolism_2022_louvain_anno_fine_X_umap_98d050.html",
+          "svg": "silhouette_fscore_summary_pancreas_Tritschler_Molecular_Metabolism_2022_louvain_anno_fine_X_umap_98d050.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_pancreas_Tritschler_Molecular_Metabolism_2022_louvain_anno_fine_X_umap_98d050.svg"
+        }
+      }
+    },
+    "pancreas/f2ac0d": {
+      "dir": "pancreas/sc-nsforest-qc-nf/results/pancreas-Xu-Cell-2023-f2ac0d",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_pancreas_Xu_Cell_2023_Curated_annotation_X_umap_f2ac0d.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_pancreas_Xu_Cell_2023_Curated_annotation_X_umap_f2ac0d.html",
+          "svg": "silhouette_fscore_summary_pancreas_Xu_Cell_2023_Curated_annotation_X_umap_f2ac0d.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_pancreas_Xu_Cell_2023_Curated_annotation_X_umap_f2ac0d.svg"
+        }
+      }
+    },
+    "respiratory_system/045011": {
+      "dir": "respiratory_system/sc-nsforest-qc-nf/results/respiratory_system-Ziegler-Cell-2021-045011",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_respiratory_system_Ziegler_Cell_2021_Detailed_Cell_Annotations_X_umap_045011.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_respiratory_system_Ziegler_Cell_2021_Detailed_Cell_Annotations_X_umap_045011.html",
+          "svg": "silhouette_fscore_summary_respiratory_system_Ziegler_Cell_2021_Detailed_Cell_Annotations_X_umap_045011.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_respiratory_system_Ziegler_Cell_2021_Detailed_Cell_Annotations_X_umap_045011.svg"
+        }
+      }
+    },
+    "respiratory_system/04a4fd": {
+      "dir": "respiratory_system/sc-nsforest-qc-nf/results/respiratory_system-Travaglini-Nature-2020-04a4fd",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_respiratory_system_Travaglini_Nature_2020_free_annotation_X_tSNE_04a4fd.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_respiratory_system_Travaglini_Nature_2020_free_annotation_X_tSNE_04a4fd.html",
+          "svg": "silhouette_fscore_summary_respiratory_system_Travaglini_Nature_2020_free_annotation_X_tSNE_04a4fd.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_respiratory_system_Travaglini_Nature_2020_free_annotation_X_tSNE_04a4fd.svg"
+        }
+      }
+    },
+    "respiratory_system/04d255": {
+      "dir": "respiratory_system/sc-nsforest-qc-nf/results/respiratory_system-Dominguez_Conde-Science-2022-04d255",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_respiratory_system_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_respiratory_system_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.html",
+          "svg": "silhouette_fscore_summary_respiratory_system_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_respiratory_system_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.svg"
+        }
+      }
+    },
+    "respiratory_system/17763a": {
+      "dir": "respiratory_system/sc-nsforest-qc-nf/results/respiratory_system-Berg-Journal of Cystic Fibrosis-2025-17763a",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_respiratory_system_Berg_Journal_of_Cystic_Fibrosis_2025_Level_5_X_umap_17763a.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_respiratory_system_Berg_Journal_of_Cystic_Fibrosis_2025_Level_5_X_umap_17763a.html",
+          "svg": "silhouette_fscore_summary_respiratory_system_Berg_Journal_of_Cystic_Fibrosis_2025_Level_5_X_umap_17763a.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_respiratory_system_Berg_Journal_of_Cystic_Fibrosis_2025_Level_5_X_umap_17763a.svg"
+        }
+      }
+    },
+    "respiratory_system/2ee7d6": {
+      "dir": "respiratory_system/sc-nsforest-qc-nf/results/respiratory_system-Madissoon-Genome Biol-2020-2ee7d6",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_respiratory_system_Madissoon_Genome_Biol_2020_author_cell_type_X_umap_2ee7d6.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_respiratory_system_Madissoon_Genome_Biol_2020_author_cell_type_X_umap_2ee7d6.html",
+          "svg": "silhouette_fscore_summary_respiratory_system_Madissoon_Genome_Biol_2020_author_cell_type_X_umap_2ee7d6.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_respiratory_system_Madissoon_Genome_Biol_2020_author_cell_type_X_umap_2ee7d6.svg"
+        }
+      }
+    },
+    "respiratory_system/3058a2": {
+      "dir": "respiratory_system/sc-nsforest-qc-nf/results/respiratory_system-Guo-Nat Commun-2023.0-3058a2",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_respiratory_system_Guo_Nat_Commun_2023.0_celltype_level3_X_umap_3058a2.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_respiratory_system_Guo_Nat_Commun_2023.0_celltype_level3_X_umap_3058a2.html",
+          "svg": "silhouette_fscore_summary_respiratory_system_Guo_Nat_Commun_2023.0_celltype_level3_X_umap_3058a2.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_respiratory_system_Guo_Nat_Commun_2023.0_celltype_level3_X_umap_3058a2.svg"
+        }
+      }
+    },
+    "respiratory_system/3db111": {
+      "dir": "respiratory_system/sc-nsforest-qc-nf/results/respiratory_system-Wong-American Journal of Transplantation-2024-3db111",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_respiratory_system_Wong_American_Journal_of_Transplantation_2024_GSVA_anno_labels_lowcluster_X_umap_3db111.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_respiratory_system_Wong_American_Journal_of_Transplantation_2024_GSVA_anno_labels_lowcluster_X_umap_3db111.html",
+          "svg": "silhouette_fscore_summary_respiratory_system_Wong_American_Journal_of_Transplantation_2024_GSVA_anno_labels_lowcluster_X_umap_3db111.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_respiratory_system_Wong_American_Journal_of_Transplantation_2024_GSVA_anno_labels_lowcluster_X_umap_3db111.svg"
+        }
+      }
+    },
+    "respiratory_system/552c94": {
+      "dir": "respiratory_system/sc-nsforest-qc-nf/results/respiratory_system-Sikkema-Nat Med-2023-552c94",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_respiratory_system_Sikkema_Nat_Med_2023_ann_finest_level_X_umap_552c94.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_respiratory_system_Sikkema_Nat_Med_2023_ann_finest_level_X_umap_552c94.html",
+          "svg": "silhouette_fscore_summary_respiratory_system_Sikkema_Nat_Med_2023_ann_finest_level_X_umap_552c94.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_respiratory_system_Sikkema_Nat_Med_2023_ann_finest_level_X_umap_552c94.svg"
+        }
+      }
+    },
+    "respiratory_system/56ce23": {
+      "dir": "respiratory_system/sc-nsforest-qc-nf/results/respiratory_system-Rustam-Am J Respir Crit Care Med-2023-56ce23",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_respiratory_system_Rustam_Am_J_Respir_Crit_Care_Med_2023_author_cell_type_X_umap_56ce23.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_respiratory_system_Rustam_Am_J_Respir_Crit_Care_Med_2023_author_cell_type_X_umap_56ce23.html",
+          "svg": "silhouette_fscore_summary_respiratory_system_Rustam_Am_J_Respir_Crit_Care_Med_2023_author_cell_type_X_umap_56ce23.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_respiratory_system_Rustam_Am_J_Respir_Crit_Care_Med_2023_author_cell_type_X_umap_56ce23.svg"
+        }
+      }
+    },
+    "respiratory_system/5c7ea7": {
+      "dir": "respiratory_system/sc-nsforest-qc-nf/results/respiratory_system-Han-Nature-2020-5c7ea7",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_respiratory_system_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_respiratory_system_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.html",
+          "svg": "silhouette_fscore_summary_respiratory_system_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_respiratory_system_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        }
+      }
+    },
+    "respiratory_system/74e9e1": {
+      "dir": "respiratory_system/sc-nsforest-qc-nf/results/respiratory_system-Wells-Nat Immunol-2025-74e9e1",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_respiratory_system_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_respiratory_system_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.html",
+          "svg": "silhouette_fscore_summary_respiratory_system_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_respiratory_system_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
+        }
+      }
+    },
+    "respiratory_system/78cea8": {
+      "dir": "respiratory_system/sc-nsforest-qc-nf/results/respiratory_system-Xu-Cell-2023-78cea8",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_respiratory_system_Xu_Cell_2023_Original_annotation_X_umap_78cea8.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_respiratory_system_Xu_Cell_2023_Original_annotation_X_umap_78cea8.html",
+          "svg": "silhouette_fscore_summary_respiratory_system_Xu_Cell_2023_Original_annotation_X_umap_78cea8.svg"
+        }
+      }
+    },
+    "respiratory_system/81a82c": {
+      "dir": "respiratory_system/sc-nsforest-qc-nf/results/respiratory_system-Travaglini-Nature-2020-81a82c",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_respiratory_system_Travaglini_Nature_2020_free_annotation_X_tSNE_81a82c.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_respiratory_system_Travaglini_Nature_2020_free_annotation_X_tSNE_81a82c.html",
+          "svg": "silhouette_fscore_summary_respiratory_system_Travaglini_Nature_2020_free_annotation_X_tSNE_81a82c.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_respiratory_system_Travaglini_Nature_2020_free_annotation_X_tSNE_81a82c.svg"
+        }
+      }
+    },
+    "respiratory_system/81ecd6": {
+      "dir": "respiratory_system/sc-nsforest-qc-nf/results/respiratory_system-Xu-Sci Rep-2022-81ecd6",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_respiratory_system_Xu_Sci_Rep_2022_cell_type_X_umap_81ecd6.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_respiratory_system_Xu_Sci_Rep_2022_cell_type_X_umap_81ecd6.html",
+          "svg": "silhouette_fscore_summary_respiratory_system_Xu_Sci_Rep_2022_cell_type_X_umap_81ecd6.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_respiratory_system_Xu_Sci_Rep_2022_cell_type_X_umap_81ecd6.svg"
+        }
+      }
+    },
+    "respiratory_system/8dc8be": {
+      "dir": "respiratory_system/sc-nsforest-qc-nf/results/respiratory_system-Yoshida-Nature-2022-8dc8be",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_respiratory_system_Yoshida_Nature_2022_Cell_type_annotation_level3_X_umap_8dc8be.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_respiratory_system_Yoshida_Nature_2022_Cell_type_annotation_level3_X_umap_8dc8be.html",
+          "svg": "silhouette_fscore_summary_respiratory_system_Yoshida_Nature_2022_Cell_type_annotation_level3_X_umap_8dc8be.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_respiratory_system_Yoshida_Nature_2022_Cell_type_annotation_level3_X_umap_8dc8be.svg"
+        }
+      }
+    },
+    "respiratory_system/9a27e4": {
+      "dir": "respiratory_system/sc-nsforest-qc-nf/results/respiratory_system-Natri-Nat Genet-2024-9a27e4",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_respiratory_system_Natri_Nat_Genet_2024_manual_annotation_1_X_umap_9a27e4.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_respiratory_system_Natri_Nat_Genet_2024_manual_annotation_1_X_umap_9a27e4.html",
+          "svg": "silhouette_fscore_summary_respiratory_system_Natri_Nat_Genet_2024_manual_annotation_1_X_umap_9a27e4.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_respiratory_system_Natri_Nat_Genet_2024_manual_annotation_1_X_umap_9a27e4.svg"
+        }
+      }
+    },
+    "respiratory_system/bb4707": {
+      "dir": "respiratory_system/sc-nsforest-qc-nf/results/respiratory_system-Szabo-Nat Commun-2019-bb4707",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_respiratory_system_Szabo_Nat_Commun_2019_status_X_umap_bb4707.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_respiratory_system_Szabo_Nat_Commun_2019_status_X_umap_bb4707.html",
+          "svg": "silhouette_fscore_summary_respiratory_system_Szabo_Nat_Commun_2019_status_X_umap_bb4707.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_respiratory_system_Szabo_Nat_Commun_2019_status_X_umap_bb4707.svg"
+        }
+      }
+    },
+    "respiratory_system/c3bd89": {
+      "dir": "respiratory_system/sc-nsforest-qc-nf/results/respiratory_system-Wang-eLife-2020-c3bd89",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_respiratory_system_Wang_eLife_2020_author_cell_type_X_umap_c3bd89.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_respiratory_system_Wang_eLife_2020_author_cell_type_X_umap_c3bd89.html",
+          "svg": "silhouette_fscore_summary_respiratory_system_Wang_eLife_2020_author_cell_type_X_umap_c3bd89.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_respiratory_system_Wang_eLife_2020_author_cell_type_X_umap_c3bd89.svg"
+        }
+      }
+    },
+    "respiratory_system/c42060": {
+      "dir": "respiratory_system/sc-nsforest-qc-nf/results/respiratory_system-Melms-Nature-2021-c42060",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_respiratory_system_Melms_Nature_2021_cell_type_fine_X_UMAP_c42060.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_respiratory_system_Melms_Nature_2021_cell_type_fine_X_UMAP_c42060.html",
+          "svg": "silhouette_fscore_summary_respiratory_system_Melms_Nature_2021_cell_type_fine_X_UMAP_c42060.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_respiratory_system_Melms_Nature_2021_cell_type_fine_X_UMAP_c42060.svg"
+        }
+      }
+    },
+    "respiratory_system/c7b336": {
+      "dir": "respiratory_system/sc-nsforest-qc-nf/results/respiratory_system-Watanabe-Am J Respir Cell Mol Biol-2022-c7b336",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_respiratory_system_Watanabe_Am_J_Respir_Cell_Mol_Biol_2022_author_cell_type_X_umap_c7b336.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_respiratory_system_Watanabe_Am_J_Respir_Cell_Mol_Biol_2022_author_cell_type_X_umap_c7b336.html",
+          "svg": "silhouette_fscore_summary_respiratory_system_Watanabe_Am_J_Respir_Cell_Mol_Biol_2022_author_cell_type_X_umap_c7b336.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_respiratory_system_Watanabe_Am_J_Respir_Cell_Mol_Biol_2022_author_cell_type_X_umap_c7b336.svg"
+        }
+      }
+    },
+    "respiratory_system/dc2012": {
+      "dir": "respiratory_system/sc-nsforest-qc-nf/results/respiratory_system-Xu-Sci Rep-2022-dc2012",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_respiratory_system_Xu_Sci_Rep_2022_author_cell_type_final_X_umap_dc2012.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_respiratory_system_Xu_Sci_Rep_2022_author_cell_type_final_X_umap_dc2012.html",
+          "svg": "silhouette_fscore_summary_respiratory_system_Xu_Sci_Rep_2022_author_cell_type_final_X_umap_dc2012.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_respiratory_system_Xu_Sci_Rep_2022_author_cell_type_final_X_umap_dc2012.svg"
+        }
+      }
+    },
+    "respiratory_system/ee858a": {
+      "dir": "respiratory_system/sc-nsforest-qc-nf/results/respiratory_system-Madissoon-Nat Genet-2023-ee858a",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_respiratory_system_Madissoon_Nat_Genet_2023_Celltypes_X_umap_ee858a.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_respiratory_system_Madissoon_Nat_Genet_2023_Celltypes_X_umap_ee858a.html",
+          "svg": "silhouette_fscore_summary_respiratory_system_Madissoon_Nat_Genet_2023_Celltypes_X_umap_ee858a.svg"
+        }
+      }
+    },
+    "respiratory_system/f44b0f": {
+      "dir": "respiratory_system/sc-nsforest-qc-nf/results/respiratory_system-Eraslan-Science-2022-f44b0f",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_respiratory_system_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_respiratory_system_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.html",
+          "svg": "silhouette_fscore_summary_respiratory_system_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_respiratory_system_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
+        }
+      }
+    },
+    "retina/cbd4aa": {
+      "dir": "retina/sc-nsforest-qc-nf/results/retina-Li-Nat Genet-2026-cbd4aa",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_retina_Li_Nat_Genet_2026_author_cell_type_X_umap_cbd4aa.svg"
+        },
+        "silhouette_fscore_summary": {
+          "svg": "silhouette_fscore_summary_retina_Li_Nat_Genet_2026_author_cell_type_X_umap_cbd4aa.svg"
+        }
+      }
+    },
+    "skin_of_body/05d19d": {
+      "dir": "skin_of_body/sc-nsforest-qc-nf/results/skin_of_body-Reynolds-Science-2021-05d19d",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_skin_of_body_Reynolds_Science_2021_full_clustering_X_umap_05d19d.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_skin_of_body_Reynolds_Science_2021_full_clustering_X_umap_05d19d.html",
+          "svg": "silhouette_fscore_summary_skin_of_body_Reynolds_Science_2021_full_clustering_X_umap_05d19d.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_skin_of_body_Reynolds_Science_2021_full_clustering_X_umap_05d19d.svg"
+        }
+      }
+    },
+    "skin_of_body/74e9e1": {
+      "dir": "skin_of_body/sc-nsforest-qc-nf/results/skin_of_body-Wells-Nat Immunol-2025-74e9e1",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_skin_of_body_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_skin_of_body_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.html",
+          "svg": "silhouette_fscore_summary_skin_of_body_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_skin_of_body_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
+        }
+      }
+    },
+    "skin_of_body/7d9c31": {
+      "dir": "skin_of_body/sc-nsforest-qc-nf/results/skin_of_body-Sole-Boldo-Commun Biol-2020-7d9c31",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_skin_of_body_Sole-Boldo_Commun_Biol_2020_Celltype_X_umap_7d9c31.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_skin_of_body_Sole-Boldo_Commun_Biol_2020_Celltype_X_umap_7d9c31.html",
+          "svg": "silhouette_fscore_summary_skin_of_body_Sole-Boldo_Commun_Biol_2020_Celltype_X_umap_7d9c31.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_skin_of_body_Sole-Boldo_Commun_Biol_2020_Celltype_X_umap_7d9c31.svg"
+        }
+      }
+    },
+    "skin_of_body/892850": {
+      "dir": "skin_of_body/sc-nsforest-qc-nf/results/skin_of_body-Gao-Cell Death Dis-2021-892850",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_skin_of_body_Gao_Cell_Death_Dis_2021_CellTypes_X_umap_892850.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_skin_of_body_Gao_Cell_Death_Dis_2021_CellTypes_X_umap_892850.html",
+          "svg": "silhouette_fscore_summary_skin_of_body_Gao_Cell_Death_Dis_2021_CellTypes_X_umap_892850.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_skin_of_body_Gao_Cell_Death_Dis_2021_CellTypes_X_umap_892850.svg"
+        }
+      }
+    },
+    "skin_of_body/adafa7": {
+      "dir": "skin_of_body/sc-nsforest-qc-nf/results/skin_of_body-Cheng-Cell Reports-2018-adafa7",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_skin_of_body_Cheng_Cell_Reports_2018_Re-annotation_X_umap_hm_adafa7.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_skin_of_body_Cheng_Cell_Reports_2018_Re-annotation_X_umap_hm_adafa7.html",
+          "svg": "silhouette_fscore_summary_skin_of_body_Cheng_Cell_Reports_2018_Re-annotation_X_umap_hm_adafa7.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_skin_of_body_Cheng_Cell_Reports_2018_Re-annotation_X_umap_hm_adafa7.svg"
+        }
+      }
+    },
+    "skin_of_body/e60c65": {
+      "dir": "skin_of_body/sc-nsforest-qc-nf/results/skin_of_body-Wiedemann-Cell Reports-2023-e60c65",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_skin_of_body_Wiedemann_Cell_Reports_2023_author_cell_type_X_tsne_e60c65.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_skin_of_body_Wiedemann_Cell_Reports_2023_author_cell_type_X_tsne_e60c65.html",
+          "svg": "silhouette_fscore_summary_skin_of_body_Wiedemann_Cell_Reports_2023_author_cell_type_X_tsne_e60c65.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_skin_of_body_Wiedemann_Cell_Reports_2023_author_cell_type_X_tsne_e60c65.svg"
+        }
+      }
+    },
+    "skin_of_body/f44b0f": {
+      "dir": "skin_of_body/sc-nsforest-qc-nf/results/skin_of_body-Eraslan-Science-2022-f44b0f",
+      "figures": {
+        "dendrogram": {
+          "svg": "dendrogram_skin_of_body_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
+        },
+        "silhouette_fscore_summary": {
+          "html": "silhouette_fscore_summary_skin_of_body_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.html",
+          "svg": "silhouette_fscore_summary_skin_of_body_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
+        },
+        "stacked_violin": {
+          "svg": "stacked_violin_skin_of_body_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
+        }
+      }
+    }
+  }
+}
