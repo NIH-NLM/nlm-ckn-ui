@@ -166,3 +166,58 @@ describe("FiltersPanel terminal collections", () => {
     expect(onTerminalCollectionChange).toHaveBeenCalledWith("UBERON");
   });
 });
+
+describe("FiltersPanel keeps an active edge filter reachable", () => {
+  it("still renders a selected field when the filter emptied the graph", () => {
+    // A selection that matches no edges empties the graph, which empties
+    // graphLinks. Deriving the visible fields from graphLinks alone therefore
+    // removed the dropdown holding the selection that caused it, leaving no way
+    // to toggle the filter back off.
+    renderPanel({
+      settings: { edgeFilters: { Label: ["DERIVES_FROM"] } },
+      graphLinks: [],
+    });
+
+    expect(screen.getByPlaceholderText("Filter by Label...")).toBeInTheDocument();
+  });
+
+  it("still renders a selected field the current graph has no edge for", () => {
+    renderPanel({
+      settings: { edgeFilters: { Label: ["DERIVES_FROM"] } },
+      graphLinks: [{ Score: 0.5 }],
+    });
+
+    expect(screen.getByPlaceholderText("Filter by Label...")).toBeInTheDocument();
+  });
+
+  it("still renders a numeric field narrowed off its full range", () => {
+    renderPanel({
+      availableEdgeFilters: { Score: { type: "numeric", min: 0, max: 1 } },
+      settings: { edgeFilters: { Score: { min: 0.4, max: 1 } } },
+      graphLinks: [],
+    });
+
+    expect(screen.getByText("Edge Filters:")).toBeInTheDocument();
+  });
+
+  it("hides a numeric field still spanning its full range", () => {
+    // Every numeric field is seeded with its full {min, max} on load, so a
+    // seeded range is not a selection and must not pin the field open.
+    renderPanel({
+      availableEdgeFilters: { Score: { type: "numeric", min: 0, max: 1 } },
+      settings: { edgeFilters: { Score: { min: 0, max: 1 } } },
+      graphLinks: [],
+    });
+
+    expect(screen.queryByText("Edge Filters:")).not.toBeInTheDocument();
+  });
+
+  it("hides an unselected field the current graph has no edge for", () => {
+    renderPanel({
+      settings: { edgeFilters: { Label: [] } },
+      graphLinks: [{ Score: 0.5 }],
+    });
+
+    expect(screen.queryByPlaceholderText("Filter by Label...")).not.toBeInTheDocument();
+  });
+});
