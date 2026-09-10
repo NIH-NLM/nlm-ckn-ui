@@ -33,6 +33,8 @@ export { LoadingBar } from "./components";
 export { composeGraph } from "./composeGraph";
 // CSV and file download utilities
 export { downloadBlob, downloadFile, generateCsv } from "./csvHelpers";
+// Cell set dataset figure utilities
+export { getDatasetFigures, getDatasetPlotKey } from "./datasetFigures";
 // FTU utilities
 export { findFtuUrlById } from "./ftu";
 // Graph and tree utilities

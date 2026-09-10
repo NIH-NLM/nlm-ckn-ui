@@ -181,6 +181,24 @@ connectivity end to end. Exits non-zero on any failure, so it can gate a deploy.
 ./scripts/app/deploy-dataset.sh dev   # Dataset only (version from ETL_VERSION)
 ```
 
+### `dev/build-plot-manifest.py` - Regenerate the cell set dataset figure index
+
+```bash
+./scripts/dev/build-plot-manifest.py                  # tag resolved from ETL_VERSION
+./scripts/dev/build-plot-manifest.py --tag v1.0.0-rc.10
+```
+
+Rewrites `react/src/assets/plot-manifest.json`, the committed index the UI reads
+to find a cell set dataset's published quality-control figures (nlm-ckn#283).
+Nothing in the graph records those paths and they cannot be derived from a CSD
+document, so they are enumerated from the published assets and committed.
+
+**Rerun it whenever `ETL_VERSION` moves to a release built from a different
+`nlm-ckn` tag**, in the same commit — the manifest records the tag its paths live
+under, so a stale one shows up in the diff instead of as missing figures in the
+browser. Reading the SSM parameters needs the deploy role; pass
+`--static-assets-bucket` / `--dataset-bucket` to skip those lookups.
+
 ## Documentation
 
 All scripts have comprehensive headers with usage, step-by-step behavior,
