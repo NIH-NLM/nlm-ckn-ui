@@ -1508,6 +1508,60 @@ describe("ForceGraph", () => {
     });
   });
 
+  describe("BMC collection defaults reach the cell set, its dataset and the anatomical structure", () => {
+    it("sends depth 2, the four-collection allow list, and the predicates that pin the shape", async () => {
+      // A marker set page should show its own marker genes, the cell set it
+      // characterizes, that cell set's dataset, and the anatomical structure the
+      // dataset is about -- and nothing else.
+      //
+      // The anatomical structure is reached through CS -DERIVES_FROM-> UBERON at
+      // hop 2, NOT by expanding the CSD at hop 3. IS_ABOUT also links a CSD to
+      // every cell set in its dataset, so that third hop drags in the sibling
+      // cell sets (32 of them, measured on BMC/oz8fp9m8a9b5 against dev
+      // v1.7.0-rc.2). The CSD -IS_ABOUT-> UBERON edge still gets drawn: both
+      // endpoints are in the result set, so the inter-node-edge pass adds it.
+      const bmcDefaults = collectionDefaults.BMC;
+      fetchGraphData.mockResolvedValue({ nodes: [], links: [] });
+      const store = createTestStore();
+      // The prop-defaults effect intersects allowedCollections against the
+      // available list, so seed it with every collection the defaults name.
+      store.dispatch(setAvailableCollections(bmcDefaults.allowedCollections));
+
+      await act(async () => {
+        render(
+          <Provider store={store}>
+            <MemoryRouter>
+              <ToastProvider>
+                <ForceGraph settings={bmcDefaults} />
+              </ToastProvider>
+            </MemoryRouter>
+          </Provider>,
+        );
+      });
+
+      await waitFor(() => {
+        expect(fetchGraphData).toHaveBeenCalled();
+      });
+
+      const params = fetchGraphData.mock.calls[0][0];
+      expect(params.depth).toBe(2);
+      expect(params.allowedCollections).toEqual(["CS", "GS", "CSD", "UBERON"]);
+      expect(params.edgeFilters.Label).toEqual([
+        "HAS_CHARACTERIZING_MARKER_SET",
+        "PART_OF",
+        "IS_ABOUT",
+        "DERIVES_FROM",
+      ]);
+    });
+
+    it("does not collapse leaf nodes on start", () => {
+      // Every node this page is meant to show is a leaf. Leaf collapse would
+      // hide the marker genes, the dataset and the anatomical structure, which
+      // is the whole graph.
+      expect(collectionDefaults.BMC.collapseOnStart).toBe("off");
+    });
+  });
+
   describe("collection-defaults.json fixture", () => {
     it("contains no entry using the retired SELECTIVELY_EXPRESS predicate", () => {
       // Assert the fixture is non-empty first: a forEach over {} would make every
