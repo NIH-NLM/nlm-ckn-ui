@@ -47,11 +47,11 @@
   },
   "BMC": {
     "graphType": "phenotypes",
-    "depth": 1,
+    "depth": 2,
     "edgeDirection": "ANY",
-    "collapseOnStart": "standard",
-    "allowedCollections": ["CS", "CL", "GS"],
-    "preferredPredicates": []
+    "collapseOnStart": "off",
+    "allowedCollections": ["CS", "GS", "CSD", "UBERON"],
+    "preferredPredicates": ["HAS_CHARACTERIZING_MARKER_SET", "PART_OF", "IS_ABOUT", "DERIVES_FROM"]
   },
   "CS": {
     "graphType": "phenotypes",
