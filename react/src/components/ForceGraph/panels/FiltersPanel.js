@@ -13,7 +13,8 @@ import RangeSliderFilter from "../../RangeSliderFilter/RangeSliderFilter";
  * Filters panel for collection and edge filtering.
  * Controls which collections and edge types are visible in the graph.
  * Renders range sliders for numeric fields and dropdowns for categorical fields.
- * Only shows edge filters for fields present on the current graph's edges.
+ * Only shows edge filters for fields present on the current graph's edges, or
+ * holding a selection.
  */
 const FiltersPanel = ({
   settings,
@@ -35,9 +36,15 @@ const FiltersPanel = ({
     [dispatch],
   );
 
-  // Filter to only fields present on current graph edges, sorted alphabetically
+  // Show a field when the current graph has an edge carrying it, or when it
+  // holds a selection.
+  //
+  // The second half is what keeps the panel escapable. A selection matching no
+  // edges empties the graph, which empties graphLinks -- so sourcing the field
+  // list from graphLinks alone withdrew the very dropdown holding the selection
+  // that caused it, and the only way back was a page reload.
   const relevantEdgeFilters = useMemo(() => {
-    if (!availableEdgeFilters || graphLinks.length === 0) return [];
+    if (!availableEdgeFilters) return [];
 
     const fieldsInGraph = new Set();
     for (const link of graphLinks) {
@@ -46,8 +53,20 @@ const FiltersPanel = ({
       }
     }
 
-    return Object.entries(availableEdgeFilters).filter(([field]) => fieldsInGraph.has(field));
-  }, [availableEdgeFilters, graphLinks]);
+    // A categorical selection is a non-empty list. Numeric fields are seeded
+    // with their full {min, max} on load, so only a range narrowed off one of
+    // those bounds counts -- otherwise every numeric field would pin itself open.
+    const isSelected = (field, filterData) => {
+      const current = settings.edgeFilters?.[field];
+      if (!current) return false;
+      if (Array.isArray(current)) return current.length > 0;
+      return current.min !== filterData.min || current.max !== filterData.max;
+    };
+
+    return Object.entries(availableEdgeFilters).filter(
+      ([field, filterData]) => fieldsInGraph.has(field) || isSelected(field, filterData),
+    );
+  }, [availableEdgeFilters, graphLinks, settings.edgeFilters]);
 
   return (
     // biome-ignore lint/correctness/useUniqueElementIds: legacy id
