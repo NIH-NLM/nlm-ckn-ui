@@ -361,11 +361,23 @@ jobs:
 
   # Backend Docker build - verify the image builds successfully
   backend-docker-build:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
+    needs: [detect-changes, check-fork-permissions]
+    if: |
+      always() &&
+      (needs.detect-changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch') &&
+      (needs.check-fork-permissions.result == 'success' || needs.check-fork-permissions.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
+      # pull_request_target defaults to the base branch, so without an explicit
+      # ref this job builds main and passes regardless of what the PR did to the
+      # Dockerfile or requirements.txt. Building the head means the Dockerfile
+      # and requirements.txt run as PR-controlled code, so this job takes the
+      # same fork-permission gate as the other backend jobs and drops the
+      # checkout credentials the build would otherwise have access to.
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
 
       - name: Build Docker image
         run: docker build -t nlm-ckn-backend .
