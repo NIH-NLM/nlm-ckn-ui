@@ -1422,7 +1422,7 @@ describe("ForceGraph", () => {
   });
 
   describe("CS collection defaults reach a Cell set page's own predicates and PUB", () => {
-    it("sends IS_ABOUT and both wasAttributedTo spellings in edgeFilters.Label, and PUB in allowedCollections", async () => {
+    it("sends IS_ABOUT and WAS_ATTRIBUTED_TO in edgeFilters.Label, and PUB in allowedCollections", async () => {
       const csDefaults = collectionDefaults.CS;
       fetchGraphData.mockResolvedValue({ nodes: [], links: [] });
       const store = createTestStore();
@@ -1449,25 +1449,14 @@ describe("ForceGraph", () => {
       });
 
       const params = fetchGraphData.mock.calls[0][0];
-      // Both spellings of the wasAttributedTo predicate are pinned on purpose, and
-      // neither is redundant -- do not "tidy" one away.
-      //
-      // The ETL's OntologyGraphBuilder converts non-screaming-snake predicates
-      // (subClassOf -> SUB_CLASS_OF), but wasAttributedTo is not yet in that
-      // conversion list, so it lands in the graph uppercased-but-unsplit as
-      // WASATTRIBUTEDTO. That is the form the data carries today. Once the ETL
-      // adds it, the label becomes WAS_ATTRIBUTED_TO and the old value stops
-      // matching -- silently, with no error, which is how publications vanished
-      // from this page in the first place.
-      //
-      // Pinning both makes the page correct on either side of that ETL change,
-      // in either merge order. A predicate value that matches nothing is inert
-      // (the three retired predicates removed in this commit proved that), so
-      // the unused spelling costs nothing. Drop WASATTRIBUTEDTO once the ETL
-      // conversion has shipped and the data no longer contains it.
+      // WAS_ATTRIBUTED_TO is what brings a dataset's publications onto this
+      // page. The ETL once emitted it unsplit as WASATTRIBUTEDTO; that spelling
+      // is gone from the data, and a pinned value matching nothing still shows
+      // up as a selected filter, so it must not come back.
       expect(params.edgeFilters.Label).toEqual(
-        expect.arrayContaining(["IS_ABOUT", "WASATTRIBUTEDTO", "WAS_ATTRIBUTED_TO"]),
+        expect.arrayContaining(["IS_ABOUT", "WAS_ATTRIBUTED_TO"]),
       );
+      expect(params.edgeFilters.Label).not.toContain("WASATTRIBUTEDTO");
       expect(params.allowedCollections).toEqual(expect.arrayContaining(["PUB"]));
     });
   });
