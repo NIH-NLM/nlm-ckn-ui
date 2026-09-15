@@ -797,6 +797,10 @@ g.node.pinned .node-pin-marker path {
   letter-spacing: 0.4px;
   margin: 0;
 }
+.inspector-section-info {
+  color: var(--color-gray); /* #5B616B */
+  margin-left: 4px;
+}
 .inspector-section-description {
   color: var(--color-gray); /* #5B616B */
   font-size: 12px;

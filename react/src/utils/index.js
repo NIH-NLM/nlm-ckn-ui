@@ -6,6 +6,7 @@ export {
   collectionConfigMap,
   filterBrowsableCollections,
   getAllSearchableFields,
+  getCardTitle,
   getCollectionDisplayName,
   getCollectionFields,
   getDisplayFields,

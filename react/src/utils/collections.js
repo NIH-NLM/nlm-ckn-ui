@@ -1,7 +1,7 @@
 /**
  * Collection and label utilities for processing collection data and generating labels/URLs.
  */
-import { fieldSections } from "config/fieldSections";
+import { cardTitleFields, fieldSections, omittedFields } from "config/fieldSections";
 import collMaps from "../assets/nlm-ckn-collection-maps.json";
 import { capitalCase } from "./strings";
 
@@ -254,12 +254,13 @@ export const getSectionedFields = (item) => {
     const isPresent = (v) => v !== null && v !== undefined && v !== "";
     const placed = new Set();
 
-    const curated = sections.map(({ section, fields }) => {
+    const curated = sections.map(({ section, fields, description, info }) => {
       const resolved = fields
-        .map(({ key, label, variant, transform }) => {
+        .map(({ key, label, variant, transform, value: fixed }) => {
           placed.add(key);
           const configured = byKey.get(key);
-          const raw = configured ? configured.value : item[key];
+          // A field may declare a fixed value the data does not carry.
+          const raw = fixed ?? (configured ? configured.value : item[key]);
           return {
             key,
             label,
@@ -269,13 +270,14 @@ export const getSectionedFields = (item) => {
           };
         })
         .filter((f) => isPresent(f.value));
-      return { section, fields: resolved };
+      return { section, description, info, fields: resolved };
     });
 
     // Show-all: every configured attribute not placed in a curated section lands
-    // in a catch-all "Additional" section, so nothing is hidden.
+    // in a catch-all "Additional" section, except those deliberately omitted.
+    const omitted = new Set(omittedFields[itemCollection] ?? []);
     const extras = displayFields
-      .filter((f) => !placed.has(f.key) && isPresent(f.value))
+      .filter((f) => !placed.has(f.key) && !omitted.has(f.key) && isPresent(f.value))
       .map((f) => ({ key: f.key, label: f.label, value: f.value, url: f.url }));
     if (extras.length > 0) {
       // A collection may curate its own "Additional" section (CSD names the
@@ -289,11 +291,34 @@ export const getSectionedFields = (item) => {
       }
     }
 
-    return curated.filter((s) => s.fields.length > 0);
+    return curated.filter((s) => s.fields.length > 0 || s.description);
   } catch (error) {
     console.error(`getSectionedFields failed with exception: ${error}`);
     return null;
   }
+};
+
+/**
+ * Title for a document's node card. Collections with a `cardTitleFields`
+ * entry join the populated parts after the collection name; the rest, and a
+ * document carrying none of the parts, fall back to getTitle.
+ * @param {object} item - Data object. Must contain `_id`.
+ * @returns {string} The card title.
+ */
+export const getCardTitle = (item) => {
+  const itemCollection = item._id.split("/")[0];
+  const parts = cardTitleFields[itemCollection];
+  const displayName = collectionConfigMap.get(itemCollection)?.display_name;
+  if (!parts || !displayName) {
+    return getTitle(item);
+  }
+  const values = parts
+    .map(({ key, transform }) => (transform ? transform(item[key]) : item[key]))
+    .filter((v) => v !== null && v !== undefined && v !== "");
+  if (values.length === 0) {
+    return getTitle(item);
+  }
+  return `${capitalCase(displayName)}: ${values.join(" — ")}`;
 };
 
 /**

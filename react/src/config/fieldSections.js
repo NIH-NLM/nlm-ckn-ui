@@ -18,6 +18,22 @@ import { humanizeSlug } from "utils/strings";
  * the collection map resolve their plain value straight from the document; if a
  * key is absent in the data, that field simply does not render.
  */
+/**
+ * The filtering criteria section is static text: it describes how CKN selects
+ * cells rather than reporting anything the document carries, and reads the
+ * same on every card that shows it.
+ */
+const CKN_FILTERING_CRITERIA = {
+  section: "CKN Filtering Criteria",
+  info: "Criteria used in CKN to filter human normal adult cells",
+  description:
+    "Only human normal adult cells are included in CKN v1.0. Cells are filtered based on NCBI " +
+    "Taxonomy ID for species, UBERON IDs for tissues traced back to the parent term of the " +
+    "Anatomical Structure Collection, Human Developmental Stages (HSAPDV) Ontology for age, and " +
+    "the Phenotype And Trait Ontology PATO:0000461 for normal or healthy tissue.",
+  fields: [],
+};
+
 export const fieldSections = {
   // Cell sets carry three unrelated kinds of attribute — what the set *is*, how
   // well NS-Forest classifies it, and how tightly it clusters. Flat, they read
@@ -73,39 +89,22 @@ export const fieldSections = {
       ],
     },
   ],
-  // Section order and slot names follow the specification sheet attached to
-  // nlm-ckn#311. Slots the sheet asks for that no CSD document carries — PMID,
-  // age, sex, CKN inclusion criteria, F-beta standard deviation — are omitted
-  // rather than configured, so they cannot render as blank rows; they are
-  // tracked as data gaps on that issue. Labels are taken verbatim from the
-  // Figma panel (865:3768) so the rendered rows read as the design does.
+  // Section order and slot names follow the node card specification sheet
+  // attached to nlm-ckn#327. Slots the sheet asks for that no CSD document
+  // carries — PMID and sex — are omitted rather than configured, so they
+  // cannot render as blank rows; they are tracked as data gaps on that issue.
   CSD: [
     {
-      section: "Citation",
+      section: "Context",
       // Citation reads "Muto (2021) Nat Commun"; the collection map hangs the
       // DOI URL off the separate `publication` key.
       fields: [{ key: "Citation", label: "Publication" }],
     },
     {
-      section: "Dataset Metadata",
-      fields: [
-        { key: "species", label: "Species" },
-        // Still a bare EFO CURIE: no EFO collection exists in either graph, so
-        // the UI has nothing to resolve the term name against (nlm-ckn#311).
-        { key: "assay_summary", label: "Assay" },
-        {
-          key: "anatomical_structure",
-          label: "Anatomical Structure Collection",
-          transform: humanizeSlug,
-        },
-        { key: "tissue_annotation", label: "Tissue" },
-        { key: "disease_status", label: "Disease" },
-      ],
-    },
-    {
       section: "Provenance",
       fields: [
         { key: "cellxgene_collection", label: "CELLxGENE collection" },
+        { key: "dataset_name", label: "Dataset name" },
         // Not a page: this URL serves the raw .h5ad, hundreds of MB for a
         // typical dataset, so the label has to warn before the click does.
         { key: "cellxgene_dataset", label: "CELLxGENE data download (.h5ad)" },
@@ -114,20 +113,35 @@ export const fieldSections = {
     {
       section: "Analysis Metadata",
       fields: [
-        { key: "cluster_annotation", label: "Cluster Annotation" },
+        { key: "cluster_annotation", label: "Cluster annotation level" },
         { key: "embedding", label: "Embedding" },
       ],
     },
+    CKN_FILTERING_CRITERIA,
     {
-      // Every figure here is post-filtering except the explicit total, which is
-      // the cell count of the dataset as published.
-      section: "Analytical Summary Statistics",
+      section: "Post-filtering Dataset Metadata",
       fields: [
-        { key: "donor_id_count", label: "Donor Count" },
-        { key: "filtered_cell_count", label: "Cell Count" },
-        { key: "cell_count", label: "Total Cell Count" },
-        { key: "cluster_summary", label: "Cluster Count" },
-        { key: "median_of_median_silhouette", label: "Median of Median Silhouette score" },
+        { key: "species", label: "Species" },
+        {
+          key: "anatomical_structure",
+          label: "Anatomical Structure Collection",
+          transform: humanizeSlug,
+        },
+        { key: "tissue_annotation", label: "Tissue" },
+        { key: "disease_status", label: "Disease" },
+        { key: "donor_age", label: "Age" },
+        // Still a bare EFO CURIE: no EFO collection exists in either graph, so
+        // the UI has nothing to resolve the term name against (nlm-ckn#311).
+        { key: "assay_summary", label: "Assay" },
+      ],
+    },
+    {
+      section: "Post-filtering Dataset Statistics",
+      fields: [
+        { key: "donor_id_count", label: "Donor count" },
+        { key: "filtered_cell_count", label: "Cell count" },
+        { key: "cluster_summary", label: "Cluster count" },
+        { key: "median_of_median_silhouette", label: "Median of median silhouette score" },
         { key: "median_of_f_beta_scores", label: "Median F-beta score" },
       ],
     },
@@ -145,5 +159,27 @@ export const fieldSections = {
         { key: "mean_f_beta_score", label: "Mean F-beta score" },
       ],
     },
+  ],
+};
+
+/**
+ * Collection-map attributes the node card leaves out of the "Additional"
+ * catch-all, keyed by collection abbreviation.
+ */
+export const omittedFields = {
+  // The specification drops the pre-filtering total; every other figure on the
+  // card is post-filtering, so showing it in the catch-all invites a misread.
+  CSD: ["cell_count"],
+};
+
+/**
+ * Parts joined after the collection name to title a node card, in order.
+ * A collection with no entry falls back to getTitle.
+ */
+export const cardTitleFields = {
+  CSD: [
+    { key: "Citation" },
+    { key: "dataset_name" },
+    { key: "anatomical_structure", transform: humanizeSlug },
   ],
 };
