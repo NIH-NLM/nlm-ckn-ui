@@ -121,16 +121,23 @@ describe("DocumentCard", () => {
       dataset_identifier: "4cb45d80",
       dataset_name: "An integrated cell atlas of the human lung.",
       species: "Homo sapiens",
-      cell_count: 584944,
+      filtered_cell_count: 584944,
     };
     renderCard(document);
     // Section headings from the config
-    expect(screen.getByText("Citation")).toBeInTheDocument();
-    expect(screen.getByText("Dataset Metadata")).toBeInTheDocument();
+    expect(screen.getByText("Context")).toBeInTheDocument();
+    expect(screen.getByText("Post-filtering Dataset Metadata")).toBeInTheDocument();
     // Configured field resolved through getDisplayFields (formatFieldValue adds
     // thousands separators to large integers)
-    expect(screen.getByText("Total Cell Count")).toBeInTheDocument();
+    expect(screen.getByText("Cell count")).toBeInTheDocument();
     expect(screen.getByText("584,944")).toBeInTheDocument();
+  });
+
+  it("renders the CKN filtering criteria as text under an info icon", () => {
+    renderCard({ _id: "CSD/abc", species: "Homo sapiens" });
+    expect(screen.getByText("CKN Filtering Criteria")).toBeInTheDocument();
+    expect(screen.getByTitle(/criteria used in CKN/i)).toBeInTheDocument();
+    expect(screen.getByText(/only human normal adult cells/i)).toBeInTheDocument();
   });
 
   it("links every marker gene to its own gene page", () => {
