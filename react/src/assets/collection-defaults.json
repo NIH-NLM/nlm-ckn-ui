@@ -114,7 +114,7 @@
     "depth": 2,
     "edgeDirection": "ANY",
     "collapseOnStart": "off",
-    "allowedCollections": ["CS", "CSD", "CL", "PUB"],
+    "allowedCollections": ["CS", "CSD", "CL", "PUB", "UBERON"],
     "preferredPredicates": []
   },
   "NCBITaxon": {
