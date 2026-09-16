@@ -3,6 +3,7 @@ import {
   getDisplayFields,
   getLabel,
   getSectionedFields,
+  getTitle,
   getUrl,
 } from "./collections";
 
@@ -314,8 +315,9 @@ describe("outbound links from the shipped collection maps", () => {
 
 describe("getLabel for multi-organ cell set datasets", () => {
   // A multi-organ dataset yields one CSD document per organ, all sharing the
-  // same Name. The label appends the organ and the last six characters of the
-  // dataset UUID so the rows can be told apart (nlm-ckn#303).
+  // same Name. The label appends the organ so the rows can be told apart
+  // (nlm-ckn#303), and quotes the dataset title rather than chaining dashes
+  // (nlm-ckn#334).
   const multiOrgan = (organ) => ({
     _id: `CSD/78819b62-0699-4672-8dc8-d9317b04d255__${organ}`,
     _key: `78819b62-0699-4672-8dc8-d9317b04d255__${organ}`,
@@ -333,22 +335,36 @@ describe("getLabel for multi-organ cell set datasets", () => {
 
   it("distinguishes documents that share a Name", () => {
     expect(getLabel(multiOrgan("liver"))).toBe(
-      "Domínguez Conde (2022) Science - Global — liver (04d255)",
+      'Domínguez Conde (2022) Science - "Global" for liver',
     );
     expect(getLabel(multiOrgan("bone_marrow"))).toBe(
-      "Domínguez Conde (2022) Science - Global — bone marrow (04d255)",
+      'Domínguez Conde (2022) Science - "Global" for bone marrow',
     );
   });
 
-  it("falls back to the key prefix when the version field is absent", () => {
-    expect(getLabel(without(multiOrgan("kidney"), "version"))).toBe(
-      "Domínguez Conde (2022) Science - Global — kidney (04d255)",
-    );
-  });
-
-  it("appends only the parts the document actually carries", () => {
+  it("omits the organ when the document does not carry one", () => {
     expect(getLabel(without(multiOrgan("liver"), "anatomical_structure"))).toBe(
-      "Domínguez Conde (2022) Science - Global (04d255)",
+      'Domínguez Conde (2022) Science - "Global"',
+    );
+  });
+
+  it("leaves a Name that does not start with the Citation unquoted", () => {
+    expect(getLabel({ ...multiOrgan("liver"), Citation: "Other (2020) Cell" })).toBe(
+      "Domínguez Conde (2022) Science - Global for liver",
+    );
+  });
+
+  it("keeps the label's own casing in the page title", () => {
+    const han = {
+      _id: "CSD/74c3403a-451c-4a62-84e0-d8a8e45c7ea7__bone_marrow",
+      _key: "74c3403a-451c-4a62-84e0-d8a8e45c7ea7__bone_marrow",
+      Name: "Han (2020) Nature - Construction of a human cell landscape at single-cell level",
+      Citation: "Han (2020) Nature",
+      anatomical_structure: "bone_marrow",
+      version: "74c3403a-451c-4a62-84e0-d8a8e45c7ea7",
+    };
+    expect(getTitle(han)).toBe(
+      'Cell Set Dataset: Han (2020) Nature - "Construction of a human cell landscape at single-cell level" for bone marrow',
     );
   });
 

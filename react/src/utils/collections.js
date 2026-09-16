@@ -72,44 +72,34 @@ export const parseCollections = (collections, collectionMaps = null) => {
 };
 
 /**
- * Number of trailing UUID characters kept as a dataset differentiator. Six is
- * the convention agreed for the collection view (nlm-ckn#303); it is unique
- * across every dataset UUID in the graph.
- */
-const UUID_SUFFIX_LENGTH = 6;
-
-/**
  * Decorate a cell set dataset label so multi-organ datasets can be told apart.
  *
  * A dataset covering several organs yields one CSD document per organ, all
  * carrying the same Name — the collection list then shows a run of identical
- * rows. Appending the anatomical structure and the tail of the dataset UUID
- * disambiguates both cases: the same dataset split by organ, and different
- * datasets from the same author and organ.
+ * rows. Appending the anatomical structure tells them apart (nlm-ckn#303).
  *
- * Each part is appended only when the document carries it, so a document
- * missing either field degrades to the plain label rather than to a gap.
+ * A Name of the form "<Citation> - <title>" has its title quoted, so the label
+ * reads `Han (2020) Nature - "Construction of ..." for bone marrow` instead of
+ * chaining dashes (nlm-ckn#334).
  *
  * @param {object} item - The CSD document.
  * @param {string} label - The label chosen from the collection config.
  * @returns {string} The decorated label.
  */
 const decorateCellSetDatasetLabel = (item, label) => {
-  // The key is "<uuid>__<anatomical structure>", so it already carries both
-  // parts; decorating it would just repeat them.
+  // The key is "<uuid>__<anatomical structure>", so it already carries the
+  // organ; decorating it would just repeat it.
   if (label === item._key) {
     return label;
   }
 
-  const uuid = item.version ?? String(item._key ?? "").split("__")[0];
-  const organ = item.anatomical_structure;
-
   let decorated = label;
-  if (organ) {
-    decorated += ` — ${String(organ).replaceAll("_", " ")}`;
+  const citationPrefix = `${item.Citation} - `;
+  if (item.Citation && label.startsWith(citationPrefix) && label.length > citationPrefix.length) {
+    decorated = `${citationPrefix}"${label.slice(citationPrefix.length)}"`;
   }
-  if (uuid.length >= UUID_SUFFIX_LENGTH) {
-    decorated += ` (${uuid.slice(-UUID_SUFFIX_LENGTH)})`;
+  if (item.anatomical_structure) {
+    decorated += ` for ${String(item.anatomical_structure).replaceAll("_", " ")}`;
   }
   return decorated;
 };
@@ -328,14 +318,13 @@ export const getCardTitle = (item) => {
  */
 export const getTitle = (item) => {
   const itemCollection = item._id.split("/")[0];
-  const collectionMap = collectionConfigMap.get(itemCollection);
-
-  if (collectionMap) {
-    const title = `${collectionMap.display_name}: ${getLabel(item)}`;
-    return capitalCase(title);
+  const collectionName = collectionConfigMap.get(itemCollection)?.display_name;
+  // Only the collection name is capitalized; the label keeps its source casing
+  // so the title matches every other place the label appears (nlm-ckn#334).
+  if (collectionName) {
+    return `${capitalCase(collectionName)}: ${getLabel(item)}`;
   }
-  const title = `${itemCollection}: ${item.label ? item.label : item._id}`;
-  return capitalCase(title);
+  return `${itemCollection}: ${item.label ? item.label : item._id}`;
 };
 
 /**
