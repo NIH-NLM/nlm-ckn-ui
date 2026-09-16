@@ -327,14 +327,15 @@ describe("Utils Module", () => {
 
   // --- getTitle ---
   describe("getTitle", () => {
-    it("should generate title using display_name and capitalized label", () => {
+    it("should generate title using display_name and the label as getLabel returns it", () => {
       const item = { _id: "nodes_a/1", name: "item one", key: "key_1" };
-      expect(getTitle(item)).toBe("Nodes A: Item One");
+      expect(getTitle(item)).toBe(`Nodes A: ${getLabel(item)}`);
+      expect(getTitle(item)).toBe("Nodes A: item one");
     });
 
     it("should handle complex labels in title (arrays become comma-separated)", () => {
       const item = { _id: "nodes_b/3", title: ["part 1", "part 2"] };
-      expect(getTitle(item)).toBe("Nodes B: Part 1,part 2");
+      expect(getTitle(item)).toBe("Nodes B: part 1,part 2");
     });
   });
 
