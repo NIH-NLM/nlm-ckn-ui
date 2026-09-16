@@ -160,6 +160,22 @@ export const fieldSections = {
       ],
     },
   ],
+  // Slots follow the Publication sheet attached to nlm-ckn#330. PMID is left
+  // out because no PUB document carries it. The citation stays plain text: the
+  // card shows only what the node holds, and the collection map puts no URL on
+  // Citation.
+  PUB: [
+    {
+      section: "Overview",
+      fields: [
+        { key: "Citation", label: "Publication" },
+        { key: "author_list", label: "Authors" },
+        { key: "year", label: "Year" },
+        { key: "title", label: "Title" },
+        { key: "journal", label: "Journal" },
+      ],
+    },
+  ],
 };
 
 /**
@@ -170,6 +186,8 @@ export const omittedFields = {
   // The specification drops the pre-filtering total; every other figure on the
   // card is post-filtering, so showing it in the catch-all invites a misread.
   CSD: ["cell_count"],
+  // The specification removes the DOI row.
+  PUB: ["publication_doi"],
 };
 
 /**
