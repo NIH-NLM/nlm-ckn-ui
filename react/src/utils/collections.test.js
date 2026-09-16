@@ -146,7 +146,7 @@ describe("getSectionedFields", () => {
   });
 
   it("returns null for a collection without a section config", () => {
-    expect(getSectionedFields({ _id: "PUB/xyz", label: "Some paper" })).toBeNull();
+    expect(getSectionedFields({ _id: "GS/xyz", label: "Some gene" })).toBeNull();
   });
 
   it("applies a field's declared transform to the displayed value", () => {

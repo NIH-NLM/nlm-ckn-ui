@@ -49,6 +49,26 @@ jest.mock("../../assets/nlm-ckn-collection-maps.json", () => ({
         ],
       },
     ],
+    [
+      "PUB",
+      {
+        display_name: "Publication",
+        individual_labels: [{ field_to_use: "Citation" }],
+        individual_urls: [
+          { individual_url: "https://doi.org/<FIELD_TO_USE>", field_to_use: "publication_doi" },
+        ],
+        individual_fields: [
+          { field_to_display: "author_list", display_field_as: "Author" },
+          { field_to_display: "journal", display_field_as: "Journal" },
+          {
+            field_to_display: "publication_doi",
+            display_field_as: "DOI",
+            field_url: "https://doi.org/<FIELD_TO_USE>",
+            field_to_use: "publication_doi",
+          },
+        ],
+      },
+    ],
   ],
 }));
 
@@ -196,11 +216,32 @@ describe("DocumentCard", () => {
     expect(screen.getByText("Homo sapiens")).toBeInTheDocument();
   });
 
+  it("lays out a publication card with the citation as plain text and no DOI", () => {
+    renderCard({
+      _id: "PUB/10.7554-elife.62522",
+      Citation: "Wang (2020) eLife",
+      author_list: "Wang, Allen, Chiou, Joshua",
+      year: "2020",
+      title: "LungMAP — Human data from a broad age healthy donor group",
+      journal: "eLife",
+      publication_doi: "10.7554/elife.62522",
+    });
+    // The title is getTitle's; its label casing is covered in collections.test.js.
+    expect(screen.getByRole("heading", { level: 3 })).toHaveTextContent(/^Publication: Wang/);
+    expect(screen.getByText("Overview")).toBeInTheDocument();
+    expect(screen.getByText("Publication")).toBeInTheDocument();
+    expect(screen.getByText("Wang (2020) eLife")).toBeInTheDocument();
+    expect(screen.getByText("Authors")).toBeInTheDocument();
+    expect(screen.getByText("Journal")).toBeInTheDocument();
+    expect(screen.queryByText("DOI")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link")).toBeNull();
+  });
+
   it("falls back to the flat Overview card for a non-configured collection", () => {
-    const document = { _id: "PUB/xyz", label: "Some paper" };
+    const document = { _id: "GS/xyz", label: "Some gene" };
     renderCard(document);
     expect(screen.getByText("Overview")).toBeInTheDocument();
-    // No CSD section headings for a PUB document
+    // No CSD section headings for a GS document
     expect(screen.queryByText("Metadata")).not.toBeInTheDocument();
     expect(screen.queryByText("Provenance")).not.toBeInTheDocument();
   });
