@@ -3,13 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { isGeneField, parseGeneTokens } from "config/geneFields";
 import { Fragment } from "react";
 import { Link } from "react-router-dom";
-import {
-  formatFieldValue,
-  getCardTitle,
-  getDisplayFields,
-  getSectionedFields,
-  getUrl,
-} from "utils";
+import { formatFieldValue, getDisplayFields, getSectionedFields, getTitle, getUrl } from "utils";
 
 /**
  * Renders a structured inspector card for a single document.
@@ -67,7 +61,7 @@ const DocumentCard = ({ document }) => {
   if (sections && sections.length > 0) {
     return (
       <div className="document-item-list-wrapper inspector-card">
-        <h3 className="inspector-card-title">{getCardTitle(document)}</h3>
+        <h3 className="inspector-card-title">{getTitle(document)}</h3>
         {sections.map(({ section, fields, description, info }) => {
           const descriptions = fields.filter((f) => f.variant === "description");
           const rows = fields.filter((f) => f.variant !== "description");

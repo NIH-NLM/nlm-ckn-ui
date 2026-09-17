@@ -226,7 +226,8 @@ describe("DocumentCard", () => {
       journal: "eLife",
       publication_doi: "10.7554/elife.62522",
     });
-    // The title is getTitle's; its label casing is covered in collections.test.js.
+    // The card and landing graph share getTitle (nlm-ckn#338); its label casing
+    // is covered in collections.test.js.
     expect(screen.getByRole("heading", { level: 3 })).toHaveTextContent(/^Publication: Wang/);
     expect(screen.getByText("Overview")).toBeInTheDocument();
     expect(screen.getByText("Publication")).toBeInTheDocument();

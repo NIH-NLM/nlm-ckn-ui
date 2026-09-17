@@ -189,15 +189,3 @@ export const omittedFields = {
   // The specification removes the DOI row.
   PUB: ["publication_doi"],
 };
-
-/**
- * Parts joined after the collection name to title a node card, in order.
- * A collection with no entry falls back to getTitle.
- */
-export const cardTitleFields = {
-  CSD: [
-    { key: "Citation" },
-    { key: "dataset_name" },
-    { key: "anatomical_structure", transform: humanizeSlug },
-  ],
-};

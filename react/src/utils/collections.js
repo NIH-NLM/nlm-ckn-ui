@@ -1,7 +1,7 @@
 /**
  * Collection and label utilities for processing collection data and generating labels/URLs.
  */
-import { cardTitleFields, fieldSections, omittedFields } from "config/fieldSections";
+import { fieldSections, omittedFields } from "config/fieldSections";
 import collMaps from "../assets/nlm-ckn-collection-maps.json";
 import { capitalCase } from "./strings";
 
@@ -286,29 +286,6 @@ export const getSectionedFields = (item) => {
     console.error(`getSectionedFields failed with exception: ${error}`);
     return null;
   }
-};
-
-/**
- * Title for a document's node card. Collections with a `cardTitleFields`
- * entry join the populated parts after the collection name; the rest, and a
- * document carrying none of the parts, fall back to getTitle.
- * @param {object} item - Data object. Must contain `_id`.
- * @returns {string} The card title.
- */
-export const getCardTitle = (item) => {
-  const itemCollection = item._id.split("/")[0];
-  const parts = cardTitleFields[itemCollection];
-  const displayName = collectionConfigMap.get(itemCollection)?.display_name;
-  if (!parts || !displayName) {
-    return getTitle(item);
-  }
-  const values = parts
-    .map(({ key, transform }) => (transform ? transform(item[key]) : item[key]))
-    .filter((v) => v !== null && v !== undefined && v !== "");
-  if (values.length === 0) {
-    return getTitle(item);
-  }
-  return `${capitalCase(displayName)}: ${values.join(" — ")}`;
 };
 
 /**
