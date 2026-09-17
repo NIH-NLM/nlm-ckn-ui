@@ -299,7 +299,9 @@ def seed_phenotypes_db(client):
     db = client.db(TEST_DB_PHENOTYPES, username=ARANGO_USER, password=ARANGO_PASSWORD)
 
     # Create document collections
-    collections = ["NCBITaxon", "UBERON", "CL", "GS", "MONDO", "PR", "CHEMBL", "CSD"]
+    collections = [
+        "NCBITaxon", "UBERON", "CL", "GS", "MONDO", "PR", "CHEMBL", "CSD", "CS", "PUB"
+    ]
     for coll in collections:
         create_collection(db, coll)
 
@@ -343,6 +345,19 @@ def seed_phenotypes_db(client):
         {"_key": "test_csd_1", "label": "Test Cell Set Dataset"}, overwrite=True
     )
     print("    Inserted 1 document into CSD")
+
+    # CS and PUB - a cell set references its publication by DOI and its organ by
+    # CURIE; the second cell set's DOI has no publication document
+    db.collection("PUB").insert(
+        {"_key": "10.1038-s41591-023-02327-2", "Citation": "Sikkema (2023) Nat Med"},
+        overwrite=True,
+    )
+    for key, doi in (("test_cs_1", "10.1038/s41591-023-02327-2"), ("test_cs_2", "10.0/none")):
+        db.collection("CS").insert(
+            {"_key": key, "publication": doi, "anatomical_structure": "UBERON:0002048"},
+            overwrite=True,
+        )
+    print("    Inserted 1 document into PUB and 2 into CS")
 
     # Create edge collections with the exact names the sunburst service expects
     edge_collections = [
