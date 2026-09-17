@@ -22,6 +22,7 @@ from arango_api.services import (
     collection_service,
     document_service,
     graph_service,
+    label_service,
     search_service,
     sunburst_service,
     workflow_service,
@@ -113,6 +114,22 @@ class DocumentServiceTestCase(ArangoDBTestCase):
         self.assertEqual(
             sorted(result["Label"]["values"]),
             sorted(["SUB_CLASS_OF", "PARTICIPATES_IN", "PART_OF"]),
+        )
+
+
+class LabelServiceTestCase(ArangoDBTestCase):
+    """Tests for label_service functions."""
+
+    def test_get_cell_set_label_lookups(self):
+        self.assertEqual(
+            label_service.get_cell_set_label_lookups(),
+            {
+                "publications": {
+                    "10.1038/s41591-023-02327-2": "Sikkema (2023) Nat Med",
+                    "10.0/none": None,
+                },
+                "anatomical_structures": {"UBERON:0002048": "lung"},
+            },
         )
 
 

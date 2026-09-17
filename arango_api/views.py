@@ -36,7 +36,7 @@ from arango_api.serializers import (
 )
 from arango_api.services import collection_service, graph_service, search_service
 from arango_api.services import document_service, sunburst_service, workflow_service
-from arango_api.services import version_service
+from arango_api.services import label_service, version_service
 from arango_api.services.sunburst_service import SunburstServiceError
 
 logger = logging.getLogger(__name__)
@@ -405,6 +405,13 @@ class WorkflowPresetsView(APIView):
                 "sections": PRESET_SECTIONS,
             }
         )
+
+
+class CellSetLabelLookupsView(APIView):
+    """Return the citations and anatomical structure names cell set labels read."""
+
+    def get(self, request):
+        return Response(label_service.get_cell_set_label_lookups())
 
 
 class VersionView(APIView):

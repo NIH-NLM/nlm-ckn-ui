@@ -25,6 +25,7 @@ from arango_api.views import (
     DocumentsView,
     WorkflowExecuteView,
     WorkflowPresetsView,
+    CellSetLabelLookupsView,
     VersionView,
 )
 
@@ -78,6 +79,11 @@ urlpatterns = [
     path("sunburst/", SunburstView.as_view(), name="get_sunburst"),
     # Document endpoints
     path("document/details", DocumentsView.as_view(), name="document-details"),
+    path(
+        "cell_set_label_lookups/",
+        CellSetLabelLookupsView.as_view(),
+        name="cell_set_label_lookups",
+    ),
     path(
         "edge_filter_options/",
         EdgeFilterOptionsView.as_view(),
