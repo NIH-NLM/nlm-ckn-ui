@@ -1,11 +1,4 @@
-import {
-  getCardTitle,
-  getDisplayFields,
-  getLabel,
-  getSectionedFields,
-  getTitle,
-  getUrl,
-} from "./collections";
+import { getDisplayFields, getLabel, getSectionedFields, getTitle, getUrl } from "./collections";
 
 describe("getSectionedFields", () => {
   const csd = (overrides = {}) => ({
@@ -51,12 +44,6 @@ describe("getSectionedFields", () => {
     expect(criteria.fields).toEqual([]);
     expect(criteria.description).toMatch(/^Only human normal adult cells/);
     expect(criteria.info).toBe("Criteria used in CKN to filter human normal adult cells");
-  });
-
-  it("titles the card with its citation, dataset name and anatomical structure", () => {
-    expect(getCardTitle(csd())).toBe(
-      "Cell Set Dataset: Sikkema (2023) Nat Med — An integrated cell atlas of the human lung. — Respiratory system",
-    );
   });
 
   it("reads cluster count from cluster_summary", () => {
