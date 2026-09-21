@@ -22,7 +22,6 @@ from arango_api.serializers import (
     GraphTraversalSerializer,
     SearchRequestSerializer,
     ShortestPathsSerializer,
-    SunburstRequestSerializer,
 )
 
 
@@ -258,9 +257,7 @@ class AdvancedGraphTraversalSerializerTestCase(SimpleTestCase):
         s = AdvancedGraphTraversalSerializer(
             data={
                 "node_ids": ["CL/0000061"],
-                "advanced_settings": {
-                    "CL/0000061": {"excludeEdgeFilters": ["Label"]}
-                },
+                "advanced_settings": {"CL/0000061": {"excludeEdgeFilters": ["Label"]}},
             }
         )
         self.assertFalse(s.is_valid())
@@ -385,19 +382,6 @@ class SearchRequestSerializerTestCase(SimpleTestCase):
                 serializer.is_valid(),
                 f"term {term!r} rejected: {serializer.errors}",
             )
-
-
-class SunburstRequestSerializerTestCase(SimpleTestCase):
-    """Tests for sunburst request validation."""
-
-    def test_empty_request_accepted(self):
-        """Sunburst can be called with no parameters for root."""
-        serializer = SunburstRequestSerializer(data={})
-        self.assertTrue(serializer.is_valid())
-
-    def test_invalid_graph_rejected(self):
-        serializer = SunburstRequestSerializer(data={"graph": "invalid"})
-        self.assertFalse(serializer.is_valid())
 
 
 class EdgeFilterOptionsSerializerTestCase(SimpleTestCase):

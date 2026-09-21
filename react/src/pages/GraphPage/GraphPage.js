@@ -290,10 +290,8 @@ const GraphPage = () => {
                   <Link to="/">Search</Link> — find specific genes, cell types, or diseases by name
                 </li>
                 <li>
-                  <Link to="/sunburst">Browse</Link> — explore the collection hierarchy visually
-                </li>
-                <li>
-                  <Link to="/tree">Explore</Link> — navigate ontology trees to select terms
+                  <Link to="/browse">Browse</Link> — explore the collection hierarchy visually, as a
+                  sunburst or a tree
                 </li>
               </ul>
               <p className="graph-empty-state-hint">

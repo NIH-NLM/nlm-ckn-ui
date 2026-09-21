@@ -39,13 +39,15 @@ export { getDatasetFigures, getDatasetPlotKey } from "./datasetFigures";
 export { findFtuUrlById } from "./ftu";
 // Graph and tree utilities
 export {
-  findNodeById,
+  findAllNodesById,
   hasNodesInRawData,
   mergeChildren,
   parseId,
   resolvePresetLabelStates,
 } from "./graph";
 export { captureGraphThumbnail } from "./graphThumbnail";
+// Path-keying for DAG hierarchy positions (tree + sunburst)
+export { pathKey } from "./paths";
 // Platform utilities
 export { isMac } from "./platform";
 // Set operations for graphs

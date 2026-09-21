@@ -1,1 +1,1 @@
-export { default } from "./SunburstConstructor";
+export { default, findNodeByPath } from "./SunburstConstructor";

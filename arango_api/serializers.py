@@ -296,9 +296,13 @@ class AQLQuerySerializer(serializers.Serializer):
         return value
 
 
-class SunburstRequestSerializer(GraphRequestSerializer):
-    """Serializer for sunburst data requests."""
+class HierarchyRequestSerializer(serializers.Serializer):
+    """Serializer for CL hierarchy requests."""
 
+    label = serializers.CharField(
+        required=True,
+        help_text="Curated edge predicate the hierarchy follows",
+    )
     parent_id = serializers.CharField(
         required=False,
         allow_null=True,

@@ -1,21 +1,47 @@
 import AddToGraphButton from "components/AddToGraphButton";
 import DocumentPopup from "components/DocumentPopup";
-import SunburstConstructor from "components/SunburstConstructor";
+import SunburstConstructor, { findNodeByPath } from "components/SunburstConstructor";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchHierarchyData } from "services";
-import { getLabel, LoadingBar, mergeChildren } from "utils";
+import { getLabel, LoadingBar, mergeChildren, pathKey } from "utils";
 
-const PREFETCH_CONCURRENCY = 4;
-const PREFETCH_SKIP_PREFIXES = ["CL/", "GS/", "MONDO/", "PR/", "CHEMBL/"];
-
-const Sunburst = ({ addSelectedItem }) => {
-  const [graphData, setGraphData] = useState(null);
+/**
+ * Sunburst hierarchy view.
+ *
+ * @param {function} [addSelectedItem] - Adds the popup's clicked node as a graph origin.
+ * @param {string} [label] - The edge predicate the hierarchy follows.
+ * @param {object} [data] - Hierarchy data to render. When omitted, Sunburst fetches its own root.
+ * @param {function} [fetchChildren] - Async callback(nodeId) returning that node's children.
+ * @param {Array<string>} [focusPath] - Root-to-node id path naming the node to center on.
+ * @param {function} [onFocusChange] - Called with the new focus path when the user re-centers.
+ */
+const Sunburst = ({
+  addSelectedItem,
+  label = "SUB_CLASS_OF",
+  data,
+  fetchChildren,
+  focusPath,
+  onFocusChange,
+}) => {
+  const isControlledData = data !== undefined;
+  const [ownGraphData, setOwnGraphData] = useState(null);
+  const graphData = isControlledData ? data : ownGraphData;
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [clickedItem, setClickedItem] = useState(null);
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
-  const [zoomedNodeId, setZoomedNodeId] = useState(null);
+  // Lazily seeded from focusPath so the very first mount (e.g. after
+  // switching from the tree) centers on the right node without a re-render.
+  // Kept as the full root-to-node path, not just the final id: the
+  // hierarchy is a DAG, so one id can occur at more than one position, and
+  // only the full path picks out which occurrence is meant.
+  const [zoomedPath, setZoomedPath] = useState(() => {
+    if (focusPath === undefined || focusPath.length === 0) return null;
+    const focusedId = focusPath[focusPath.length - 1];
+    return focusedId && focusedId !== data?._id ? focusPath : null;
+  });
+  const prevControlledRootIdRef = useRef(data?._id);
 
   const svgContainerRef = useRef(null);
   const svgNodeRef = useRef(null);
@@ -35,275 +61,102 @@ const Sunburst = ({ addSelectedItem }) => {
   const mountedRef = useRef(false);
   const justMountedRef = useRef(false); // skip update effect on the mount render
 
-  // Drilldown: store overview data so center-click can return to it
-  const overviewDataRef = useRef(null);
-  const isDrilledDownRef = useRef(false);
   const shouldBloomRef = useRef(false);
 
-  // Prefetch state
-  const prefetchInFlightRef = useRef(new Set());
-  const prefetchFetchedRef = useRef(new Set());
-  const prefetchGenerationRef = useRef(0);
-
-  // Debounce queue: accumulate merges, flush once per rAF
-  const mergeQueueRef = useRef([]);
-  const rafIdRef = useRef(null);
-
-  const returnTimerRef = useRef(null);
-
-  const graphType = "phenotypes";
-
-  // --- Debounced merge: batches multiple prefetch results into one setState ---
-  const flushMergeQueue = useCallback(() => {
-    rafIdRef.current = null;
-    const queue = mergeQueueRef.current;
-    if (queue.length === 0) return;
-    mergeQueueRef.current = [];
-    setGraphData((prev) => {
-      if (!prev) return prev;
-      let result = prev;
-      for (const { parentId, data } of queue) {
-        result = mergeChildren(result, parentId, data);
-      }
-      return result;
-    });
-  }, []);
-
-  const scheduleMerge = useCallback(
-    (parentId, data) => {
-      mergeQueueRef.current.push({ parentId, data });
-      if (rafIdRef.current == null) {
-        rafIdRef.current = requestAnimationFrame(flushMergeQueue);
-      }
-    },
-    [flushMergeQueue],
-  );
-
-  // --- Primary data fetch (shows loading bar) ---
-  const fetchSunburstData = useCallback(async (parentId = null, isInitialLoad = false) => {
-    if (!isInitialLoad && isLoadingRef.current) return;
-    if (returnTimerRef.current != null) {
-      clearTimeout(returnTimerRef.current);
-      returnTimerRef.current = null;
-    }
+  // --- Fetch this component's own root (uncontrolled path only) ---
+  const fetchRootData = useCallback(async () => {
+    if (isLoadingRef.current) return;
     setIsLoading(true);
     isLoadingRef.current = true;
     setError(null);
     try {
-      const data = await fetchHierarchyData(parentId, graphType);
-      if (parentId) {
-        if (!Array.isArray(data)) throw new Error(`API error for parent ${parentId}`);
-        prefetchFetchedRef.current.add(parentId);
-        setGraphData((prevData) => {
-          if (!prevData) return null;
-          return mergeChildren(prevData, parentId, data);
-        });
-      } else {
-        if (typeof data !== "object" || data === null || Array.isArray(data))
-          throw new Error("API error for initial load/root");
-        prefetchGenerationRef.current += 1;
-        prefetchInFlightRef.current = new Set();
-        prefetchFetchedRef.current = new Set();
-        mergeQueueRef.current = [];
-        if (rafIdRef.current != null) {
-          cancelAnimationFrame(rafIdRef.current);
-          rafIdRef.current = null;
-        }
-        overviewDataRef.current = data;
-        isDrilledDownRef.current = false;
-        setGraphData(data);
-        setZoomedNodeId(null);
-        currentHierarchyRootRef.current = null;
-      }
+      const rootData = await fetchHierarchyData(label, null);
+      if (typeof rootData !== "object" || rootData === null || Array.isArray(rootData))
+        throw new Error("API error for initial load/root");
+      setOwnGraphData(rootData);
+      setZoomedPath(null);
+      currentHierarchyRootRef.current = null;
     } catch (err) {
       console.error("Fetch/Process Error:", err);
       setError(err.message);
-      setGraphData(null);
-      setZoomedNodeId(null);
+      setOwnGraphData(null);
+      setZoomedPath(null);
       currentHierarchyRootRef.current = null;
     } finally {
       setIsLoading(false);
       isLoadingRef.current = false;
     }
-  }, []);
+  }, [label]);
 
-  // --- Return to overview: full SVG rebuild ---
-  const returnToOverview = useCallback(() => {
-    if (!overviewDataRef.current) return;
+  // --- Fetch one node's children, via the caller's fetchChildren when the
+  // component is controlled, falling back to its own fetch otherwise. ---
+  const fetchNodeChildren = useCallback(
+    async (parentId) => {
+      const result = await fetchHierarchyData(label, parentId);
+      if (!Array.isArray(result)) throw new Error(`API error for parent ${parentId}`);
+      return result;
+    },
+    [label],
+  );
 
-    prefetchGenerationRef.current += 1;
-    isLoadingRef.current = false;
-
-    const oldSvg = svgNodeRef.current;
-    if (oldSvg) {
-      oldSvg.style.transition = "opacity 200ms ease-out";
-      oldSvg.style.opacity = "0";
-    }
-
-    if (returnTimerRef.current != null) {
-      clearTimeout(returnTimerRef.current);
-    }
-    returnTimerRef.current = setTimeout(() => {
-      returnTimerRef.current = null;
-      isDrilledDownRef.current = false;
-      mountedRef.current = false;
-      setGraphData({ ...overviewDataRef.current });
-      setZoomedNodeId(null);
-    }, 200);
-  }, []);
-
-  // --- Drilldown: zoom → fetch → full SVG rebuild ---
-  const drillIntoOrgan = useCallback(
-    async (organNode, d3Node, event) => {
+  const loadNodeChildren = useCallback(
+    async (parentId) => {
       if (isLoadingRef.current) return;
-
-      setError(null);
-      prefetchGenerationRef.current += 1;
-      mergeQueueRef.current = [];
-      if (rafIdRef.current != null) {
-        cancelAnimationFrame(rafIdRef.current);
-        rafIdRef.current = null;
-      }
-      if (returnTimerRef.current != null) {
-        clearTimeout(returnTimerRef.current);
-        returnTimerRef.current = null;
-      }
-
-      const drilldownGeneration = prefetchGenerationRef.current;
-
-      // 1. Zoom + fetch in parallel
-      if (d3ClickedRef.current && d3Node) {
-        d3ClickedRef.current(event, d3Node);
-      }
-      setZoomedNodeId(organNode._id);
-
+      setIsLoading(true);
       isLoadingRef.current = true;
+      setError(null);
       try {
-        const [clList] = await Promise.all([
-          fetchHierarchyData(organNode._id, graphType),
-          new Promise((resolve) => setTimeout(resolve, 800)),
-        ]);
-
-        if (drilldownGeneration !== prefetchGenerationRef.current) return;
-        if (!Array.isArray(clList)) throw new Error(`Drilldown error for ${organNode._id}`);
-
-        const drilldownRoot = {
-          _id: organNode._id,
-          _key: organNode._key,
-          label: organNode.label,
-          value: organNode.value,
-          subtree_size: organNode.subtree_size,
-          _hasChildren: clList.length > 0,
-          children: clList,
-        };
-
-        // 2. Fade out old SVG
-        const oldSvg = svgNodeRef.current;
-        if (oldSvg) {
-          oldSvg.style.transition = "opacity 200ms ease-out";
-          oldSvg.style.opacity = "0";
+        const loadChildren = fetchChildren ?? fetchNodeChildren;
+        const children = await loadChildren(parentId);
+        if (!Array.isArray(children)) throw new Error(`API error for parent ${parentId}`);
+        if (!isControlledData) {
+          setOwnGraphData((prev) => (prev ? mergeChildren(prev, parentId, children) : prev));
         }
-        await new Promise((resolve) => setTimeout(resolve, 200));
-        if (drilldownGeneration !== prefetchGenerationRef.current) return;
-
-        // 3. Full rebuild — clean slate, no stale d3 state
-        isDrilledDownRef.current = true;
-        mountedRef.current = false;
-        setGraphData(drilldownRoot);
-        setZoomedNodeId(null);
       } catch (err) {
-        console.error("Drilldown error:", err);
+        console.error("Fetch/Process Error:", err);
         setError(err.message);
-        returnToOverview();
       } finally {
+        setIsLoading(false);
         isLoadingRef.current = false;
       }
     },
-    [returnToOverview],
+    [fetchChildren, fetchNodeChildren, isControlledData],
   );
-
-  // --- Background prefetch (silent, no loading bar) ---
-  const prefetchNode = useCallback(
-    async (parentId, generation) => {
-      if (prefetchInFlightRef.current.has(parentId)) return;
-      prefetchInFlightRef.current.add(parentId);
-      try {
-        const data = await fetchHierarchyData(parentId, graphType);
-        if (generation !== prefetchGenerationRef.current) return;
-        if (!Array.isArray(data)) return;
-        prefetchFetchedRef.current.add(parentId);
-        scheduleMerge(parentId, data);
-      } catch (err) {
-        console.debug(`Prefetch failed for ${parentId}:`, err);
-      } finally {
-        prefetchInFlightRef.current.delete(parentId);
-      }
-    },
-    [scheduleMerge],
-  );
-
-  const collectUnfetchedIds = useCallback((node, ids) => {
-    if (!node) return;
-    const id = node._id;
-    if (id && PREFETCH_SKIP_PREFIXES.some((p) => id.startsWith(p))) return;
-    if (
-      node._hasChildren &&
-      !node.children &&
-      id &&
-      !prefetchFetchedRef.current.has(id) &&
-      !prefetchInFlightRef.current.has(id)
-    ) {
-      ids.push(id);
-    }
-    if (node.children) {
-      for (const child of node.children) collectUnfetchedIds(child, ids);
-    }
-  }, []);
-
-  // Drive prefetch on graphData changes
-  useEffect(() => {
-    if (!graphData) return;
-    const generation = prefetchGenerationRef.current;
-    const ids = [];
-    collectUnfetchedIds(graphData, ids);
-    const free = PREFETCH_CONCURRENCY - prefetchInFlightRef.current.size;
-    for (let i = 0; i < ids.length && i < free; i++) {
-      prefetchNode(ids[i], generation);
-    }
-  }, [graphData, collectUnfetchedIds, prefetchNode]);
 
   useEffect(() => {
     isLoadingRef.current = isLoading;
   }, [isLoading]);
 
-  useEffect(() => {
-    return () => {
-      if (returnTimerRef.current != null) {
-        clearTimeout(returnTimerRef.current);
-        returnTimerRef.current = null;
-      }
-      prefetchGenerationRef.current += 1;
-    };
-  }, []);
-
-  // Initial data fetch on mount
+  // Initial data fetch on mount (uncontrolled path only)
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional - only run on mount
   useEffect(() => {
-    if (!graphData && !isLoadingRef.current) fetchSunburstData(null, true);
+    if (!isControlledData && !graphData && !isLoadingRef.current) fetchRootData();
   }, []);
+
+  // Re-derive focus when a controlled root actually changes identity (a new
+  // label was picked upstream); same-label focus changes are already
+  // reflected by the click handlers below, so this only resets on that edge.
+  useEffect(() => {
+    if (!isControlledData) return;
+    if (prevControlledRootIdRef.current === data?._id) return;
+    prevControlledRootIdRef.current = data?._id;
+    setZoomedPath(null);
+    currentHierarchyRootRef.current = null;
+  }, [isControlledData, data?._id]);
 
   useEffect(() => {
     if (isInitialMountRef.current) {
       isInitialMountRef.current = false;
       return;
     }
-    setGraphData(null);
-    setZoomedNodeId(null);
+    if (isControlledData) return;
+    setOwnGraphData(null);
+    setZoomedPath(null);
     currentHierarchyRootRef.current = null;
     setClickedItem(null);
     setPopupVisible(false);
-    fetchSunburstData(null, false);
-  }, [fetchSunburstData]);
+    fetchRootData();
+  }, [fetchRootData, isControlledData]);
 
   // --- Needs-load check ---
   const checkNeedsLoad = useCallback((d) => {
@@ -317,68 +170,85 @@ const Sunburst = ({ addSelectedItem }) => {
     return false;
   }, []);
 
+  // --- Report the focused node up as a root-to-node id path; `null` means
+  // "back to the root". Ancestors come from the clicked d3 node itself, so
+  // the path names the exact DAG occurrence the user is looking at. ---
+  const reportFocus = useCallback(
+    (d3Node) => {
+      if (!onFocusChange) return;
+      if (!d3Node) {
+        onFocusChange(graphData?._id ? [graphData._id] : []);
+        return;
+      }
+      onFocusChange(
+        d3Node
+          .ancestors()
+          .reverse()
+          .map((ancestor) => ancestor.data._id),
+      );
+    },
+    [onFocusChange, graphData],
+  );
+
   // --- Click handlers ---
   const latestHandleNodeClick = useCallback(
-    (event, d3Node) => {
+    (_event, d3Node) => {
       if (!d3Node.data._hasChildren) return false;
       const currentIsLoading = isLoadingRef.current;
       if (currentIsLoading) return false;
 
-      // If we're at the overview level and clicking an organ, drilldown
-      if (!isDrilledDownRef.current && d3Node.data._id?.startsWith("UBERON/")) {
-        drillIntoOrgan(d3Node.data, d3Node, event);
-        return true; // Animate the zoom first, swap happens after
-      }
-
-      // Normal navigation within the drilled-down chart
+      // Normal navigation within the drilled-down chart. The clicked node's
+      // own ancestor chain is its exact position, so comparing paths (not
+      // just the bare id) tells a re-click on the same occurrence apart
+      // from a click on a different occurrence that happens to share an id.
+      const clickedPath = d3Node
+        .ancestors()
+        .reverse()
+        .map((ancestor) => ancestor.data._id);
       const needsLoad = checkNeedsLoad(d3Node);
-      if (d3Node.data._id === zoomedNodeId && !needsLoad) return false;
+      if (pathKey(clickedPath) === pathKey(zoomedPath) && !needsLoad) return false;
       if (needsLoad && !currentIsLoading) {
-        if (zoomedNodeId !== d3Node.data._id) setZoomedNodeId(d3Node.data._id);
-        fetchSunburstData(d3Node.data._id, false);
+        if (pathKey(zoomedPath) !== pathKey(clickedPath)) setZoomedPath(clickedPath);
+        reportFocus(d3Node);
+        loadNodeChildren(d3Node.data._id);
         return true;
       }
       if (!needsLoad && d3Node.children) {
-        if (zoomedNodeId !== d3Node.data._id) setZoomedNodeId(d3Node.data._id);
+        if (pathKey(zoomedPath) !== pathKey(clickedPath)) setZoomedPath(clickedPath);
+        reportFocus(d3Node);
         return true;
       }
       return false;
     },
-    [checkNeedsLoad, fetchSunburstData, zoomedNodeId, drillIntoOrgan],
+    [checkNeedsLoad, loadNodeChildren, reportFocus, zoomedPath],
   );
 
   const latestHandleCenterClick = useCallback(() => {
     const currentHierarchy = currentHierarchyRootRef.current;
-    const currentCenterId = zoomedNodeId;
     const currentIsLoading = isLoadingRef.current;
     if (!currentHierarchy) return;
 
-    // If we're drilled down and at the organ root (no zoom or depth-0 zoom),
-    // return to the overview instead of trying to go up further.
-    let centeredNode;
-    if (currentCenterId) {
-      centeredNode = currentHierarchy.find((node) => node.data._id === currentCenterId);
-    } else {
-      centeredNode = currentHierarchy.find((node) => node.depth === 0);
-    }
+    // Resolve the centered occurrence by walking its own path, not by
+    // searching the hierarchy for the first node with a matching id -- a
+    // DAG node's id can occur at more than one position.
+    const centeredNode = zoomedPath
+      ? findNodeByPath(currentHierarchy, zoomedPath)
+      : currentHierarchy;
 
-    if (isDrilledDownRef.current && centeredNode && !centeredNode.parent) {
-      returnToOverview();
-      return;
-    }
     if (!centeredNode) {
-      const absoluteRoot = currentHierarchy.find((d) => d.depth === 0);
-      if (absoluteRoot) {
-        if (zoomedNodeId !== null) setZoomedNodeId(null);
-        if (d3ClickedRef.current) d3ClickedRef.current(null, absoluteRoot);
-      }
+      if (zoomedPath !== null) setZoomedPath(null);
+      if (d3ClickedRef.current) d3ClickedRef.current(null, currentHierarchy);
+      reportFocus(null);
       return;
     }
     const parentNode = centeredNode.parent;
     if (parentNode) {
-      const newZoomTargetId = parentNode.depth === 0 ? null : parentNode.data._id;
-      if (zoomedNodeId !== newZoomTargetId) setZoomedNodeId(newZoomTargetId);
+      // The parent occurrence's own path is just the centered path minus
+      // its last id -- no lookup needed, and no ambiguity possible.
+      const newZoomTarget = parentNode.depth === 0 ? null : zoomedPath.slice(0, -1);
+      if (pathKey(zoomedPath) !== pathKey(newZoomTarget)) setZoomedPath(newZoomTarget);
       if (d3ClickedRef.current) d3ClickedRef.current(null, parentNode);
+      reportFocus(parentNode.depth === 0 ? null : parentNode);
       const needsLoadForParent = checkNeedsLoad(parentNode);
       if (
         needsLoadForParent &&
@@ -386,13 +256,14 @@ const Sunburst = ({ addSelectedItem }) => {
         parentNode.data?._id &&
         parentNode.depth !== 0
       ) {
-        fetchSunburstData(parentNode.data._id, false);
+        loadNodeChildren(parentNode.data._id);
       }
     } else {
-      if (zoomedNodeId !== null) setZoomedNodeId(null);
+      if (zoomedPath !== null) setZoomedPath(null);
       if (d3ClickedRef.current && centeredNode) d3ClickedRef.current(null, centeredNode);
+      reportFocus(null);
     }
-  }, [checkNeedsLoad, zoomedNodeId, fetchSunburstData, returnToOverview]);
+  }, [checkNeedsLoad, zoomedPath, loadNodeChildren, reportFocus]);
 
   const latestHandleSunburstClick = useCallback((e, dataNode) => {
     setClickedItem(dataNode.data);
@@ -418,7 +289,7 @@ const Sunburst = ({ addSelectedItem }) => {
       handleSunburstClickRef,
       handleNodeClickRef,
       handleCenterClickRef,
-      zoomedNodeId,
+      zoomedPath,
     );
 
     if (sunburstInstance.svgNode) {
@@ -447,10 +318,6 @@ const Sunburst = ({ addSelectedItem }) => {
       updateRef.current = null;
       bloomInRef.current = null;
       mountedRef.current = false;
-      if (rafIdRef.current != null) {
-        cancelAnimationFrame(rafIdRef.current);
-        rafIdRef.current = null;
-      }
     };
   }, [graphData]);
 
@@ -461,7 +328,7 @@ const Sunburst = ({ addSelectedItem }) => {
       return; // skip — mount effect already handled this render
     }
     if (!mountedRef.current || !updateRef.current || !graphData) return;
-    const newRoot = updateRef.current(graphData, zoomedNodeId);
+    const newRoot = updateRef.current(graphData, zoomedPath);
     // Re-expose the current hierarchy root after data-join rebuild.
     // update() now returns the rebuilt root directly so we don't have to
     // fish it out of DOM-bound data (which includes fading-out exit nodes

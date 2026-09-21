@@ -1,6 +1,11 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { configureStore } from "@reduxjs/toolkit";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { ActiveNavProvider, GraphContext } from "contexts";
-import { MemoryRouter } from "react-router-dom"; // Wrap with Router for routing context
+import { Provider } from "react-redux";
+import { MemoryRouter, useLocation } from "react-router-dom"; // Wrap with Router for routing context
+import AppRoutes from "../../AppRoutes";
+import nodesReducer from "../../store/nodesSlice";
+import { ToastProvider } from "../Toast";
 import Header from "./Header";
 
 // SearchBar pulls in the results table + search service; stub the table so the
@@ -40,7 +45,7 @@ describe("Header Component", () => {
     renderHeader();
 
     // Check if each navigation link is rendered
-    expect(screen.getByText(/Explore/i)).toBeInTheDocument();
+    expect(screen.getByText(/Browse/i)).toBeInTheDocument();
     expect(screen.getByText(/collections/i)).toBeInTheDocument();
     expect(screen.getByText(/Graph/i)).toBeInTheDocument();
     expect(screen.getByText(/About/i)).toBeInTheDocument();
@@ -48,9 +53,9 @@ describe("Header Component", () => {
 
   test("sets active class for correct link based on location", () => {
     // Simulate different routes and check if the active class is applied to the correct link
-    renderHeader(["/tree"]);
+    renderHeader(["/browse"]);
 
-    expect(screen.getByText(/Explore/i)).toHaveClass("active-nav"); // /tree should be active
+    expect(screen.getByText(/Browse/i)).toHaveClass("active-nav"); // /browse should be active
     expect(screen.getByText(/collections/i)).not.toHaveClass("active-nav");
   });
 
@@ -59,13 +64,91 @@ describe("Header Component", () => {
 
     // Check the initial active class
     expect(screen.getByText(/collections/i)).toHaveClass("active-nav");
-    expect(screen.getByText(/Explore/i)).not.toHaveClass("active-nav");
+    expect(screen.getByText(/Browse/i)).not.toHaveClass("active-nav");
 
-    // Simulate a click event on the "Explore" link to navigate to `/tree`
-    fireEvent.click(screen.getByText(/Explore/i));
+    // Simulate a click event on the "Browse" link to navigate to `/browse`
+    fireEvent.click(screen.getByText(/Browse/i));
 
-    // Check if the active class switches to the "Explore" link after the click
-    expect(screen.getByText(/Explore/i)).toHaveClass("active-nav");
+    // Check if the active class switches to the "Browse" link after the click
+    expect(screen.getByText(/Browse/i)).toHaveClass("active-nav");
     expect(screen.getByText(/collections/i)).not.toHaveClass("active-nav");
+  });
+});
+
+describe("Legacy sunburst/tree redirects", () => {
+  // Reads the router's live location so the assertion below reflects
+  // whatever AppRoutes actually resolved to, not a value the test hands it.
+  const LocationDisplay = () => {
+    const location = useLocation();
+    return <div data-testid="location-display">{location.pathname + location.search}</div>;
+  };
+
+  const testStore = () =>
+    configureStore({
+      reducer: { nodesSlice: nodesReducer },
+      preloadedState: { nodesSlice: { originNodeIds: [] } },
+    });
+
+  const renderAt = (initialEntries) =>
+    render(
+      <Provider store={testStore()}>
+        <MemoryRouter initialEntries={initialEntries}>
+          <ToastProvider>
+            <LocationDisplay />
+            <AppRoutes />
+          </ToastProvider>
+        </MemoryRouter>
+      </Provider>,
+    );
+
+  beforeEach(() => {
+    // AppRoutes lands on /browse, which fetches its own hierarchy data. The
+    // redirect target is all this test cares about, so answer with a
+    // minimal, well-formed root and label list rather than mocking every
+    // request shape Browse might otherwise send.
+    global.fetch = jest.fn((url) => {
+      if (url.includes("/hierarchy/labels/")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          json: () => Promise.resolve([{ label: "SUB_CLASS_OF", root: "CL/0000000" }]),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        json: () =>
+          Promise.resolve({
+            _id: "CL/0000000",
+            label: "cell",
+            descendant_count: 0,
+            weight: 1,
+            value: 1,
+            _hasChildren: false,
+            children: [],
+          }),
+      });
+    });
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  // This asserts against AppRoutes, the same route table App.js renders --
+  // not a redeclared copy of the two redirect routes, which would keep
+  // passing even if App.js dropped them.
+  it("redirects /sunburst to /browse with view=sunburst", async () => {
+    renderAt(["/sunburst"]);
+    expect(screen.getByTestId("location-display")).toHaveTextContent("/browse?view=sunburst");
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(2));
+  });
+
+  it("redirects /tree to /browse with view=tree", async () => {
+    renderAt(["/tree"]);
+    expect(screen.getByTestId("location-display")).toHaveTextContent("/browse?view=tree");
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(2));
   });
 });

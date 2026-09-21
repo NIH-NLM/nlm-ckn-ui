@@ -4,11 +4,17 @@ import {
   getCollectedErrors,
   installErrorInstrumentation,
 } from "./utils/errorInstrumentation";
-import { deepChildren, doc, sunburstRoot } from "./utils/testSeeds";
+import {
+  doc,
+  hierarchyDeepChildren,
+  hierarchyLabelsResponse,
+  hierarchyNode,
+  hierarchyRoot,
+} from "./utils/testSeeds";
 
 const COLL = "TEST_DOCUMENT_COLLECTION";
 const SEARCH_DOC = doc("S001", "Search Node");
-const TREE_DOC = doc("T001", "Tree Node");
+const TREE_DOC = hierarchyNode("T001", "Tree Node");
 
 test("Graph page shows two selected nodes and builds graph with both origins", async ({ page }) => {
   await installErrorInstrumentation(page);
@@ -25,9 +31,16 @@ test("Graph page shows two selected nodes and builds graph with both origins", a
     return route.continue();
   });
 
-  // Mock tree (includes TREE_DOC)
-  const mockTree = sunburstRoot({ children: [TREE_DOC, ...deepChildren()] });
-  await page.route("**/arango_api/sunburst/", async (route) => {
+  // Mock the CL hierarchy Browse's tree view reads (includes TREE_DOC).
+  const mockTree = hierarchyRoot({ children: [TREE_DOC, ...hierarchyDeepChildren()] });
+  await page.route("**/arango_api/hierarchy/labels/", async (route) => {
+    return route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(hierarchyLabelsResponse),
+    });
+  });
+  await page.route("**/arango_api/hierarchy/", async (route) => {
     if (route.request().method() === "POST") {
       // Single root object
       return route.fulfill({
@@ -109,9 +122,11 @@ test("Graph page shows two selected nodes and builds graph with both origins", a
     )
     .click();
 
-  // Add from Tree
-  await page.getByRole("link", { name: "Explore" }).click();
-  await expect(page).toHaveURL(/#\/tree$/);
+  // Add from Tree -- Browse hosts the tree view now (Explore merged into it).
+  await page.getByRole("link", { name: "Browse" }).click();
+  await expect(page).toHaveURL(/#\/browse$/);
+  await page.getByRole("button", { name: /tree/i }).click();
+  await expect(page).toHaveURL(/#\/browse\?view=tree$/);
   // Tree starts with all children collapsed. Expand the root so TREE_DOC and
   // its add-to-graph button portal render.
   const treeContainer = page.locator(".tree-constructor-container");

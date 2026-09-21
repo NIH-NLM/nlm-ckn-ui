@@ -26,7 +26,7 @@ export {
 } from "./graph";
 
 // Hierarchy operations (sunburst/tree)
-export { fetchHierarchyData } from "./hierarchy";
+export { fetchHierarchyData, fetchHierarchyLabels } from "./hierarchy";
 // Search operations
 export { searchDocuments } from "./search";
 // Version operations

@@ -4,7 +4,12 @@ import {
   getCollectedErrors,
   installErrorInstrumentation,
 } from "./utils/errorInstrumentation";
-import { deepChildren, smallGraphWithEdges, sunburstRoot } from "./utils/testSeeds";
+import {
+  hierarchyDeepChildren,
+  hierarchyLabelsResponse,
+  hierarchyRoot,
+  smallGraphWithEdges,
+} from "./utils/testSeeds";
 
 const COLL = "TEST_DOCUMENT_COLLECTION";
 // This color is defined in nlm-ckn-collection-maps.json for TEST_DOCUMENT_COLLECTION
@@ -125,10 +130,17 @@ test.describe("Collection colors consistency", () => {
   test("Sunburst segments use predefined collection color from config", async ({ page }) => {
     await installErrorInstrumentation(page);
 
-    const mockRoot = sunburstRoot({ children: deepChildren() });
+    const mockRoot = hierarchyRoot({ children: hierarchyDeepChildren(COLL), coll: COLL });
 
-    // Mock sunburst
-    await page.route("**/arango_api/sunburst/", async (route) => {
+    // Mock the CL hierarchy endpoints.
+    await page.route("**/arango_api/hierarchy/labels/", async (route) => {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(hierarchyLabelsResponse),
+      });
+    });
+    await page.route("**/arango_api/hierarchy/", async (route) => {
       if (route.request().method() === "POST") {
         return route.fulfill({
           status: 200,
@@ -139,8 +151,8 @@ test.describe("Collection colors consistency", () => {
       return route.continue();
     });
 
-    // Navigate to Browse (sunburst)
-    await page.goto("/#/sunburst");
+    // Browse defaults to the tree, so ask for the sunburst explicitly
+    await page.goto("/#/browse?view=sunburst");
 
     // Wait for SVG to be visible
     const svg = page.locator("#sunburst-container svg");
@@ -167,10 +179,21 @@ test.describe("Collection colors consistency", () => {
   test("Tree nodes use predefined collection color from config", async ({ page }) => {
     await installErrorInstrumentation(page);
 
-    const mockApiResponse = sunburstRoot({ label: "Root", children: deepChildren() });
+    const mockApiResponse = hierarchyRoot({
+      label: "Root",
+      children: hierarchyDeepChildren(COLL),
+      coll: COLL,
+    });
 
-    // Mock sunburst API (used by tree)
-    await page.route("**/arango_api/sunburst/", async (route) => {
+    // Mock the CL hierarchy endpoints (used by Browse's tree view)
+    await page.route("**/arango_api/hierarchy/labels/", async (route) => {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(hierarchyLabelsResponse),
+      });
+    });
+    await page.route("**/arango_api/hierarchy/", async (route) => {
       if (route.request().method() === "POST") {
         return route.fulfill({
           status: 200,
@@ -181,8 +204,8 @@ test.describe("Collection colors consistency", () => {
       return route.continue();
     });
 
-    // Navigate to Explore (tree)
-    await page.goto("/#/tree");
+    // Navigate to Browse's tree view (Explore merged into Browse)
+    await page.goto("/#/browse?view=tree");
 
     // Wait for SVG to be visible
     const container = page.locator(".tree-constructor-container");
@@ -210,8 +233,10 @@ test.describe("Collection colors consistency", () => {
     await installErrorInstrumentation(page);
 
     const originId = `${COLL}/ROOT`;
-    const mockSunburstRoot = sunburstRoot({ children: deepChildren() });
-    const mockTreeResponse = sunburstRoot({ label: "Root", children: deepChildren() });
+    // The sunburst view and the tree view share one fetched root (Browse's
+    // whole point is not refetching on toggle), so one mock response covers
+    // both.
+    const mockRoot = hierarchyRoot({ children: hierarchyDeepChildren(COLL), coll: COLL });
 
     // Mock all APIs
     await page.route("**/arango_api/collections/", async (route) => {
@@ -247,15 +272,22 @@ test.describe("Collection colors consistency", () => {
       return route.continue();
     });
 
-    await page.route("**/arango_api/sunburst/", async (route) => {
+    await page.route("**/arango_api/hierarchy/labels/", async (route) => {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(hierarchyLabelsResponse),
+      });
+    });
+    // Each page.goto below is a full reload, so Browse mounts fresh and
+    // fetches its own root every time -- the same mock response serves the
+    // sunburst view and the tree view since they share this one endpoint.
+    await page.route("**/arango_api/hierarchy/", async (route) => {
       if (route.request().method() === "POST") {
-        // Return tree format if tree collection param, else sunburst format
-        const body = await route.request().postDataJSON();
-        const response = body?.collection?.includes("tree") ? mockTreeResponse : mockSunburstRoot;
         return route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify(response),
+          body: JSON.stringify(mockRoot),
         });
       }
       return route.continue();
@@ -285,8 +317,8 @@ test.describe("Collection colors consistency", () => {
       localStorage.setItem("persist:root", JSON.stringify(persistedRoot));
     }, originId);
 
-    // 1. Start at Sunburst, capture color
-    await page.goto("/#/sunburst");
+    // 1. Start at Browse's sunburst view, capture color
+    await page.goto("/#/browse?view=sunburst");
     const sunburstSvg = page.locator("#sunburst-container svg");
     await expect(sunburstSvg).toBeVisible();
     const sunburstPaths = page.locator('#sunburst-container svg path[fill]:not([fill="none"])');
@@ -299,8 +331,9 @@ test.describe("Collection colors consistency", () => {
     );
     const sunburstHasExpectedColor = sunburstColors.some((c) => c === EXPECTED_COLOR.toLowerCase());
 
-    // 2. Navigate to Tree, verify same color
-    await page.goto("/#/tree");
+    // 2. Toggle to the tree view in place (Browse's whole point is not
+    // refetching or remounting on toggle), verify same color.
+    await page.getByRole("button", { name: /tree/i }).click();
     const treeContainer = page.locator(".tree-constructor-container");
     const treeSvg = treeContainer.locator("svg");
     await expect(treeSvg).toBeVisible();

@@ -38,6 +38,69 @@ export function deepChildren(): TestDoc[] {
   ];
 }
 
+// --- CL hierarchy shape, for /arango_api/hierarchy/ and hierarchy/labels/ ---
+// Real payloads carry descendant_count/weight/value/_hasChildren on every
+// node, not just id/label/children -- the sunburst and tree both read those
+// fields, so a mock missing them isn't representative of the real endpoint.
+export type HierarchyNode = {
+  _id: string;
+  label: string;
+  descendant_count: number;
+  weight: number;
+  value: number;
+  _hasChildren: boolean;
+  children: HierarchyNode[] | null;
+};
+
+const HIERARCHY_COLL = "CL";
+
+export function hierarchyNode(
+  key: string,
+  label: string,
+  opts: { children?: HierarchyNode[] | null; coll?: string } = {},
+): HierarchyNode {
+  const children = opts.children ?? null;
+  const coll = opts.coll ?? HIERARCHY_COLL;
+  const descendantCount = (children ?? []).reduce(
+    (sum, child) => sum + 1 + child.descendant_count,
+    0,
+  );
+  return {
+    _id: `${coll}/${key}`,
+    label,
+    descendant_count: descendantCount,
+    weight: Math.max(1, Math.sqrt(descendantCount)),
+    value: Math.max(1, Math.sqrt(descendantCount)),
+    _hasChildren: (children ?? []).length > 0,
+    children,
+  };
+}
+
+// Root -> A,B with each having two grandchildren, in the hierarchy shape.
+export function hierarchyDeepChildren(coll?: string): HierarchyNode[] {
+  return [
+    hierarchyNode("A", "A", {
+      coll,
+      children: [hierarchyNode("A1", "A1", { coll }), hierarchyNode("A2", "A2", { coll })],
+    }),
+    hierarchyNode("B", "B", {
+      coll,
+      children: [hierarchyNode("B1", "B1", { coll }), hierarchyNode("B2", "B2", { coll })],
+    }),
+  ];
+}
+
+export function hierarchyRoot(
+  opts: { label?: string; children?: HierarchyNode[]; coll?: string } = {},
+): HierarchyNode {
+  const { label = "cell", children = [], coll } = opts;
+  return hierarchyNode("0000000", label, { children, coll });
+}
+
+export const hierarchyLabelsResponse = [
+  { label: "SUB_CLASS_OF", root: "CL/0000000", edge_count: 4664 },
+];
+
 // Arango-style edge document
 export type TestEdge = {
   _id: string;

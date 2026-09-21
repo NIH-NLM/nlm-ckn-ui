@@ -26,8 +26,9 @@ export const EDGE_FILTER_OPTIONS_ENDPOINT = `${API_BASE}/edge_filter_options/`;
 // Search endpoint
 export const SEARCH_ENDPOINT = `${API_BASE}/search/`;
 
-// Hierarchy/Sunburst endpoint
-export const SUNBURST_ENDPOINT = `${API_BASE}/sunburst/`;
+// CL hierarchy endpoints
+export const HIERARCHY_ENDPOINT = `${API_BASE}/hierarchy/`;
+export const HIERARCHY_LABELS_ENDPOINT = `${API_BASE}/hierarchy/labels/`;
 
 // AQL query endpoint
 export const AQL_ENDPOINT = `${API_BASE}/aql/`;
