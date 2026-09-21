@@ -318,73 +318,79 @@ class SearchViewsTestCase(ArangoDBViewTestCase):
     #     self.assertEqual(response.status_code, 400)
 
 
-class SunburstViewsTestCase(ArangoDBViewTestCase):
-    """Tests for sunburst visualization API endpoints."""
+@tag("integration")
+class HierarchyViewsTestCase(ArangoDBViewTestCase):
+    """Tests for the CL hierarchy API endpoints.
 
-    def test_sunburst_ontologies(self):
+    Exercises the existing CL-CL SUB_CLASS_OF fixture (seed_test_db.py):
+    child -> parent edges 61->151, 61->62, 61->7002, 62->0, 151->0, 7002->0.
+    CL/0000061 has three parents, so it is the DAG case: reachable from the
+    root by three distinct paths, counted once.
+    """
+
+    def test_hierarchy_root_returns_two_levels(self):
         response = self.client.post(
-            reverse("get_sunburst"),
-            data={},
+            reverse("get_hierarchy"),
+            data={"label": "SUB_CLASS_OF"},
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertEqual(data["_id"], "root_nlm")
-        self.assertIn("children", data)
+        root = response.json()
+        self.assertEqual(root["_id"], "CL/0000000")
+        child_ids = sorted(child["_id"] for child in root["children"])
+        self.assertEqual(child_ids, ["CL/0000062", "CL/0000151", "CL/0007002"])
+        # Grandchildren arrive with the root, for the Browse page's prefetch
+        for child in root["children"]:
+            self.assertEqual(child["descendant_count"], 1)
+            self.assertEqual([g["_id"] for g in child["children"]], ["CL/0000061"])
 
-    def test_sunburst_with_parent(self):
+    def test_hierarchy_counts_a_node_reachable_by_three_paths_once(self):
         response = self.client.post(
-            reverse("get_sunburst"),
-            data={"parent_id": "CL/0000000"},
+            reverse("get_hierarchy"),
+            data={"label": "SUB_CLASS_OF"},
+            content_type="application/json",
+        )
+        root = response.json()
+        # root reaches 0000062, 0000151, 0007002 and 0000061 — 0000061 has
+        # three parents but must be counted once, not three times.
+        self.assertEqual(root["descendant_count"], 4)
+
+    def test_hierarchy_expansion_returns_a_leaf_with_no_children(self):
+        response = self.client.post(
+            reverse("get_hierarchy"),
+            data={"label": "SUB_CLASS_OF", "parent_id": "CL/0000062"},
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 200)
-        self.assertIsInstance(response.json(), list)
+        children = response.json()
+        self.assertEqual([c["_id"] for c in children], ["CL/0000061"])
+        self.assertFalse(children[0]["_hasChildren"])
+        self.assertEqual(children[0]["children"], [])
 
-    def test_sunburst_phenotypes(self):
+    def test_hierarchy_rejects_an_unknown_label(self):
         response = self.client.post(
-            reverse("get_sunburst"),
-            data={"graph": "phenotypes"},
+            reverse("get_hierarchy"),
+            data={"label": "NOT_A_PREDICATE"},
             content_type="application/json",
         )
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertEqual(data["_id"], "NCBITaxon/9606")
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("SUB_CLASS_OF", response.json()["error"])
 
-    def test_sunburst_phenotypes_drilldown_uberon(self):
-        # Expanding a seeded organ exercises the heavy aggregation path end to
-        # end through the view: UBERON/0002048 -> CL/0000066 (with GS chain).
+    def test_hierarchy_rejects_a_parent_from_another_collection(self):
         response = self.client.post(
-            reverse("get_sunburst"),
-            data={"graph": "phenotypes", "parent_id": "UBERON/0002048"},
+            reverse("get_hierarchy"),
+            data={"label": "SUB_CLASS_OF", "parent_id": "UBERON/0002048"},
             content_type="application/json",
         )
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertIsInstance(data, list)
-        self.assertIn("CL/0000066", [node["_id"] for node in data])
+        self.assertEqual(response.status_code, 400)
 
-    def test_sunburst_phenotypes_drilldown_cl(self):
-        response = self.client.post(
-            reverse("get_sunburst"),
-            data={"graph": "phenotypes", "parent_id": "CL/0000066"},
-            content_type="application/json",
-        )
+    def test_labels_lists_sub_class_of_with_its_edge_count(self):
+        response = self.client.get(reverse("get_hierarchy_labels"))
         self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertIsInstance(data, list)
-        self.assertIn("GS/test_gs_1", [node["_id"] for node in data])
-
-    def test_sunburst_phenotypes_drilldown_gs(self):
-        response = self.client.post(
-            reverse("get_sunburst"),
-            data={"graph": "phenotypes", "parent_id": "GS/test_gs_1"},
-            content_type="application/json",
-        )
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertIsInstance(data, list)
-        self.assertIn("MONDO/0000001", [node["_id"] for node in data])
+        labels = response.json()
+        self.assertEqual([entry["label"] for entry in labels], ["SUB_CLASS_OF"])
+        self.assertEqual(labels[0]["root"], "CL/0000000")
+        self.assertEqual(labels[0]["edge_count"], 6)
 
 
 class DocumentViewsTestCase(ArangoDBViewTestCase):

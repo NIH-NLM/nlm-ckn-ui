@@ -4,18 +4,25 @@ import {
   getCollectedErrors,
   installErrorInstrumentation,
 } from "./utils/errorInstrumentation";
-import { deepChildren, sunburstRoot } from "./utils/testSeeds";
+import { hierarchyDeepChildren, hierarchyLabelsResponse, hierarchyRoot } from "./utils/testSeeds";
 
 // Tree.js consumes the API response as the root directly (post lazy-load
 // refactor). Children are inlined so the click handler hits the cached-
 // children branch and never triggers a lazy fetch.
-const mockApiResponse = sunburstRoot({ label: "Root", children: deepChildren() });
+const mockApiResponse = hierarchyRoot({ label: "Root", children: hierarchyDeepChildren() });
 
-test("Explore shows Root then expands to children", async ({ page }) => {
+test("Browse's tree view shows Root then expands to children", async ({ page }) => {
   await installErrorInstrumentation(page);
 
-  // Mock sunburst for Tree
-  await page.route("**/arango_api/sunburst/", async (route) => {
+  // Mock the CL hierarchy endpoints for Browse's tree view.
+  await page.route("**/arango_api/hierarchy/labels/", async (route) => {
+    return route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(hierarchyLabelsResponse),
+    });
+  });
+  await page.route("**/arango_api/hierarchy/", async (route) => {
     const req = route.request();
     if (req.method() === "POST") {
       return route.fulfill({
@@ -27,12 +34,15 @@ test("Explore shows Root then expands to children", async ({ page }) => {
     return route.continue();
   });
 
-  // Navigate -> Explore
+  // Navigate -> Browse, then toggle to the tree view -- Explore no longer
+  // exists as a separate page; it merged into Browse (#245).
   await page.goto("/");
-  await page.getByRole("link", { name: "Explore" }).click();
+  await page.getByRole("link", { name: "Browse" }).click();
+  await expect(page).toHaveURL(/#\/browse$/);
+  await page.getByRole("button", { name: /tree/i }).click();
 
-  // URL
-  await expect(page).toHaveURL(/#\/tree$/);
+  // URL reflects the toggled view.
+  await expect(page).toHaveURL(/#\/browse\?view=tree$/);
 
   // SVG visible
   const container = page.locator(".tree-constructor-container");

@@ -178,10 +178,6 @@ EDGE_COLLECTIONS = {
     ],
 }
 
-# Note: The sunburst root is constructed programmatically by sunburst_service.py
-# using CL/0000000 as the initial root. No database document is needed.
-# The service builds the tree by traversing INBOUND SUB_CLASS_OF edges.
-
 
 # =============================================================================
 # Seeding Functions
@@ -281,15 +277,10 @@ def seed_ontologies_db(client):
 
 
 def seed_phenotypes_db(client):
-    """Seed the phenotypes database with test data for sunburst visualization.
+    """Seed the phenotypes database with test data.
 
-    The phenotypes sunburst expects this hierarchy:
-    NCBITaxon/9606 -> UBERON (lung/retina/brain) -> CL -> GS -> MONDO or PR -> CHEMBL
-
-    The base UBERON ring is derived from CSD-UBERON edges, so a CSD pointing at
-    lung is seeded too — without it the sunburst has no organs to render.
-
-    We seed a minimal path through this structure for testing.
+    We seed a minimal path through NCBITaxon -> UBERON for the graph
+    traversal tests, plus CS/PUB fixtures for the cell set label lookups.
     """
     print("\nSeeding phenotypes database...")
 
@@ -299,9 +290,7 @@ def seed_phenotypes_db(client):
     db = client.db(TEST_DB_PHENOTYPES, username=ARANGO_USER, password=ARANGO_PASSWORD)
 
     # Create document collections
-    collections = [
-        "NCBITaxon", "UBERON", "CL", "GS", "MONDO", "PR", "CHEMBL", "CSD", "CS", "PUB"
-    ]
+    collections = ["NCBITaxon", "UBERON", "GS", "MONDO", "PR", "CHEMBL", "CS", "PUB"]
     for coll in collections:
         create_collection(db, coll)
 
@@ -312,39 +301,10 @@ def seed_phenotypes_db(client):
     )
     print("    Inserted 1 document into NCBITaxon")
 
-    # UBERON - the sunburst expects specific terms (lung, retina, brain)
-    uberon_docs = [
-        {"_key": "0002048", "label": "lung"},
-        {"_key": "0000966", "label": "retina"},
-        {"_key": "0000955", "label": "brain"},
-    ]
-    for doc in uberon_docs:
-        db.collection("UBERON").insert(doc, overwrite=True)
-    print(f"    Inserted {len(uberon_docs)} documents into UBERON")
-
-    # CL - cell type linked to UBERON
-    db.collection("CL").insert(
-        {"_key": "0000066", "label": "epithelial cell"}, overwrite=True
-    )
-    print("    Inserted 1 document into CL")
-
-    # GS - gene set linked to CL
-    db.collection("GS").insert(
-        {"_key": "test_gs_1", "label": "Test Gene Set"}, overwrite=True
-    )
-    print("    Inserted 1 document into GS")
-
-    # MONDO - disease linked to GS
-    db.collection("MONDO").insert(
-        {"_key": "0000001", "label": "disease or disorder"}, overwrite=True
-    )
-    print("    Inserted 1 document into MONDO")
-
-    # CSD - the cell set dataset whose UBERON edge puts lung on the base ring
-    db.collection("CSD").insert(
-        {"_key": "test_csd_1", "label": "Test Cell Set Dataset"}, overwrite=True
-    )
-    print("    Inserted 1 document into CSD")
+    # UBERON - the cell set label lookup resolves anatomical_structure CURIEs
+    # against this collection
+    db.collection("UBERON").insert({"_key": "0002048", "label": "lung"}, overwrite=True)
+    print("    Inserted 1 document into UBERON")
 
     # CS and PUB - a cell set references its publication by DOI and its organ by
     # CURIE; the second cell set's DOI has no publication document
@@ -352,40 +312,23 @@ def seed_phenotypes_db(client):
         {"_key": "10.1038-s41591-023-02327-2", "Citation": "Sikkema (2023) Nat Med"},
         overwrite=True,
     )
-    for key, doi in (("test_cs_1", "10.1038/s41591-023-02327-2"), ("test_cs_2", "10.0/none")):
+    for key, doi in (
+        ("test_cs_1", "10.1038/s41591-023-02327-2"),
+        ("test_cs_2", "10.0/none"),
+    ):
         db.collection("CS").insert(
             {"_key": key, "publication": doi, "anatomical_structure": "UBERON:0002048"},
             overwrite=True,
         )
     print("    Inserted 1 document into PUB and 2 into CS")
 
-    # Create edge collections with the exact names the sunburst service expects
+    # Create edge collections
     edge_collections = [
-        "CSD-UBERON",  # CSD -> UBERON, the source of the base organ ring
         "UBERON-NCBITaxon",  # NCBITaxon -> UBERON (INBOUND from NCBITaxon perspective)
-        "UBERON-CL",  # UBERON -> CL
-        "CL-UBERON",  # CL -> UBERON (alternate direction)
-        "CL-GS",  # CL -> GS
-        "GS-MONDO",  # GS -> MONDO
-        "GS-PR",  # GS -> PR
-        "CHEMBL-PR",  # PR -> CHEMBL
     ]
     for edge_coll in edge_collections:
         create_collection(db, edge_coll, edge=True)
 
-    # CSD-UBERON: the dataset -> organ edge the base ring is derived from
-    db.collection("CSD-UBERON").insert(
-        {
-            "_key": "test_csd_1-0002048",
-            "_from": "CSD/test_csd_1",
-            "_to": "UBERON/0002048",
-            "Label": "IS_ABOUT",
-        },
-        overwrite=True,
-    )
-    print("    Inserted 1 edge into CSD-UBERON")
-
-    # Insert edges to create the path: NCBITaxon -> UBERON -> CL -> GS -> MONDO
     # UBERON-NCBITaxon: links UBERON to NCBITaxon (traversed INBOUND from NCBITaxon)
     db.collection("UBERON-NCBITaxon").insert(
         {
@@ -397,42 +340,6 @@ def seed_phenotypes_db(client):
         overwrite=True,
     )
     print("    Inserted 1 edge into UBERON-NCBITaxon")
-
-    # UBERON-CL: links CL to UBERON (traversed INBOUND from UBERON)
-    db.collection("UBERON-CL").insert(
-        {
-            "_key": "0000066-0002048",
-            "_from": "CL/0000066",
-            "_to": "UBERON/0002048",
-            "label": "part_of",
-        },
-        overwrite=True,
-    )
-    print("    Inserted 1 edge into UBERON-CL")
-
-    # CL-GS: links CL to GS (traversed OUTBOUND from CL)
-    db.collection("CL-GS").insert(
-        {
-            "_key": "0000066-test_gs_1",
-            "_from": "CL/0000066",
-            "_to": "GS/test_gs_1",
-            "label": "has_gene_set",
-        },
-        overwrite=True,
-    )
-    print("    Inserted 1 edge into CL-GS")
-
-    # GS-MONDO: links GS to MONDO (traversed OUTBOUND from GS)
-    db.collection("GS-MONDO").insert(
-        {
-            "_key": "test_gs_1-0000001",
-            "_from": "GS/test_gs_1",
-            "_to": "MONDO/0000001",
-            "label": "associated_with",
-        },
-        overwrite=True,
-    )
-    print("    Inserted 1 edge into GS-MONDO")
 
     # --- Broken Big Dipper (anti-edge) fixture --------------------------------
     # Three disease->gene->protein->drug dippers in one edge collection:
@@ -478,36 +385,6 @@ def seed_phenotypes_db(client):
             "edge_collection": "UBERON-NCBITaxon",
             "from_vertex_collections": ["UBERON"],
             "to_vertex_collections": ["NCBITaxon"],
-        },
-        {
-            "edge_collection": "UBERON-CL",
-            "from_vertex_collections": ["CL"],
-            "to_vertex_collections": ["UBERON"],
-        },
-        {
-            "edge_collection": "CL-UBERON",
-            "from_vertex_collections": ["CL"],
-            "to_vertex_collections": ["UBERON"],
-        },
-        {
-            "edge_collection": "CL-GS",
-            "from_vertex_collections": ["CL"],
-            "to_vertex_collections": ["GS"],
-        },
-        {
-            "edge_collection": "GS-MONDO",
-            "from_vertex_collections": ["GS"],
-            "to_vertex_collections": ["MONDO"],
-        },
-        {
-            "edge_collection": "GS-PR",
-            "from_vertex_collections": ["GS"],
-            "to_vertex_collections": ["PR"],
-        },
-        {
-            "edge_collection": "CHEMBL-PR",
-            "from_vertex_collections": ["CHEMBL"],
-            "to_vertex_collections": ["PR"],
         },
         {
             "edge_collection": "NAC_EDGES",

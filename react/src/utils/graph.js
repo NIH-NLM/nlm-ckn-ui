@@ -65,28 +65,32 @@ export const hasNodesInRawData = (data) => {
 };
 
 /**
- * Find a node by ID in a tree structure.
+ * Find every node by ID in a tree structure.
+ *
+ * A single ontology term can appear at more than one position in the tree:
+ * the Cell Ontology's SUB_CLASS_OF relation is a DAG, so a term with more
+ * than one parent shows up once under each parent once the DAG is flattened
+ * into a displayable tree. Callers that mutate a node found by ID (such as
+ * mergeChildren) need every occurrence, not just the first.
  * @param {object} node - Root node to search from.
  * @param {string} id - ID to find.
- * @returns {object|null} Found node or null.
+ * @param {Array} [acc] - Accumulator (internal use).
+ * @returns {Array} All nodes matching the ID.
  */
-export function findNodeById(node, id) {
+export function findAllNodesById(node, id, acc = []) {
   if (node._id === id) {
-    return node;
+    acc.push(node);
   }
   if (node.children) {
     for (const child of node.children) {
-      const found = findNodeById(child, id);
-      if (found) {
-        return found;
-      }
+      findAllNodesById(child, id, acc);
     }
   }
-  return null;
+  return acc;
 }
 
 /**
- * Merge children into a parent node in graph data.
+ * Merge children into every occurrence of a parent node in graph data.
  * @param {object} graphData - Graph data structure.
  * @param {string} parentId - Parent node ID.
  * @param {Array} childrenWithGrandchildren - Children to merge.
@@ -94,11 +98,13 @@ export function findNodeById(node, id) {
  */
 export function mergeChildren(graphData, parentId, childrenWithGrandchildren) {
   const newData = JSON.parse(JSON.stringify(graphData)); // Deep copy
-  const parentNode = findNodeById(newData, parentId);
+  const parentNodes = findAllNodesById(newData, parentId);
 
-  if (parentNode) {
-    parentNode.children = childrenWithGrandchildren;
-    parentNode._childrenLoaded = true;
+  if (parentNodes.length > 0) {
+    for (const parentNode of parentNodes) {
+      parentNode.children = JSON.parse(JSON.stringify(childrenWithGrandchildren));
+      parentNode._childrenLoaded = true;
+    }
   } else {
     console.warn(`Parent node ${parentId} not found for merging children.`);
   }

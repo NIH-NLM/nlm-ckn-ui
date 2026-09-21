@@ -9,8 +9,8 @@ Modules:
     collection_service: Operations on collections
     document_service: Fetching documents by ID, edge filter options
     graph_service: Graph traversal queries
+    hierarchy_service: The CL hierarchy rendered by the Browse page
     label_service: Names cell set labels read by reference
     search_service: Full-text search, AQL queries
-    sunburst_service: Hierarchical data for sunburst visualization
     workflow_service: Multi-phase workflow orchestration
 """

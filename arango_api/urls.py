@@ -20,7 +20,8 @@ from arango_api.views import (
     # (unused by the app; sensitive raw-query / bulk-dump surface).
     # GetAllView,
     # AQLQueryView,
-    SunburstView,
+    HierarchyView,
+    HierarchyLabelsView,
     EdgeFilterOptionsView,
     DocumentsView,
     WorkflowExecuteView,
@@ -76,7 +77,12 @@ urlpatterns = [
     # path("get_all/", GetAllView.as_view(), name="get_all"),
     # path("aql/", AQLQueryView.as_view(), name="run_aql_query"),
     # Visualization endpoints
-    path("sunburst/", SunburstView.as_view(), name="get_sunburst"),
+    path("hierarchy/", HierarchyView.as_view(), name="get_hierarchy"),
+    path(
+        "hierarchy/labels/",
+        HierarchyLabelsView.as_view(),
+        name="get_hierarchy_labels",
+    ),
     # Document endpoints
     path("document/details", DocumentsView.as_view(), name="document-details"),
     path(

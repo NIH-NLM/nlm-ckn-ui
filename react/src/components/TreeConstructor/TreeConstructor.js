@@ -1,57 +1,72 @@
 import * as d3 from "d3";
 import { useEffect, useRef } from "react";
-import { getColorForCollection, getLabel, truncateString } from "../../utils";
+import { getColorForCollection, getLabel, pathKey, truncateString } from "../../utils";
 
 /**
  * Tree Constructor Component.
  * A presentational component responsible for rendering a D3-based
  * collapsible tree visualization.
  *
+ * The SVG chrome (the <svg>/<g> scaffold) is built exactly once, on mount,
+ * and never torn down while this component stays mounted. Every later
+ * change -- a new `data` root (a lazy fetch merged in more children) or a
+ * new `expandedPaths` (a click) -- rebuilds the d3 hierarchy and hands it to
+ * the same persistent `update()`, which reconciles it against the live DOM
+ * via D3's own enter/exit selections, keyed by each node's root-to-node id
+ * path (stable across rebuilds, unlike a per-mount counter). That's what
+ * lets `onNodeEnter`/`onNodeExit` fire only for nodes actually
+ * entering/leaving -- wiping and rebuilding the whole SVG on every change
+ * (an earlier version of this component did exactly that) tears out
+ * foreignObjects that still hold a mounted React portal without ever
+ * calling `onNodeExit` for them, which crashes the moment React itself
+ * later tries to reconcile the now-orphaned portal target.
+ *
  * @param {object} data - The hierarchical data object for the tree.
- * @param {function} onNodeEnter - Callback invoked when a new node's DOM element is created.
- * @param {function} onNodeExit - Callback invoked when a node's DOM element is about to be removed.
- * @param {function} fetchChildren - Async callback(parentId) that returns an array of child data objects.
+ * @param {function} onNodeEnter - Callback(path, element) invoked with the node's
+ *   root-to-node id path when its DOM element is created. The path -- not the
+ *   bare node id -- identifies which DAG occurrence this is, since one id can
+ *   be visible at more than one position at once.
+ * @param {function} onNodeExit - Callback(path) invoked with the node's path when
+ *   its DOM element is about to be removed.
+ * @param {Array<Array<string>>} expandedPaths - Root-to-node id paths whose children should render.
+ * @param {function} onToggle - Callback(path) invoked when a node is clicked.
  */
-const TreeConstructor = ({ data, onNodeEnter, onNodeExit, fetchChildren }) => {
+const TreeConstructor = ({ data, onNodeEnter, onNodeExit, expandedPaths, onToggle }) => {
   // A ref to the container element where the D3 SVG will be mounted.
   const svgRef = useRef(null);
 
-  // The main effect hook that contains all D3 logic.
+  // Latest callbacks, read from inside D3 closures that outlive any single
+  // render -- so reconciling doesn't need these in its dependency array.
+  const onNodeEnterRef = useRef(onNodeEnter);
+  const onNodeExitRef = useRef(onNodeExit);
+  const onToggleRef = useRef(onToggle);
   useEffect(() => {
-    // Guard against running without necessary data or DOM element.
-    if (!data || !svgRef.current) {
-      return;
-    }
+    onNodeEnterRef.current = onNodeEnter;
+    onNodeExitRef.current = onNodeExit;
+    onToggleRef.current = onToggle;
+  }, [onNodeEnter, onNodeExit, onToggle]);
 
-    // --- D3 Setup and Configuration ---
-    // Clear any previous SVG to prevent duplicates on data change.
-    d3.select(svgRef.current).selectAll("*").remove();
+  // The persistent SVG chrome, built once, plus the key of the node most
+  // recently clicked (used as the next transition's animation anchor).
+  const chromeRef = useRef(null);
+  const lastToggledKeyRef = useRef(null);
+
+  // --- MOUNT: build the SVG chrome once. ---
+  useEffect(() => {
+    if (!svgRef.current) return;
 
     const marginTop = 10;
     const marginRight = 10;
     const marginBottom = 10;
     const marginLeft = 120;
-    const maxLabelLength = 24;
-
-    const root = d3.hierarchy(data);
     const dx = 28; // Vertical spacing between nodes
     const dy = 200; // Horizontal spacing between depth levels
-
-    const tree = d3.tree().nodeSize([dx, dy]);
-    tree(root);
 
     // Fixed width: enough for the deepest possible chain
     const maxDepthLevels = 7;
     const rightPadding = 220;
     const width = maxDepthLevels * dy + marginLeft + marginRight + rightPadding;
 
-    const diagonal = d3
-      .linkHorizontal()
-      .x((d) => d.y)
-      .y((d) => d.x);
-
-    // No viewBox — use actual pixel dimensions so the container scrolls.
-    // min-width/min-height prevent the SVG from being squished by flex/grid parents.
     const svg = d3
       .select(svgRef.current)
       .append("svg")
@@ -72,16 +87,74 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit, fetchChildren }) => {
 
     const gNode = g.append("g").attr("cursor", "pointer").attr("pointer-events", "all");
 
+    const diagonal = d3
+      .linkHorizontal()
+      .x((d) => d.y)
+      .y((d) => d.x);
+
+    chromeRef.current = {
+      svg,
+      g,
+      gLink,
+      gNode,
+      diagonal,
+      tree: d3.tree().nodeSize([dx, dy]),
+      marginTop,
+      marginBottom,
+      marginLeft,
+    };
+
+    return () => {
+      d3.select(svgRef.current).selectAll("*").remove();
+      chromeRef.current = null;
+    };
+  }, []);
+
+  // --- RECONCILE: rebuild the hierarchy and patch the live SVG whenever the
+  // data or the set of expanded paths changes. ---
+  useEffect(() => {
+    const chrome = chromeRef.current;
+    if (!data || !chrome) return;
+
+    const { svg, g, gLink, gNode, diagonal, tree, marginTop, marginBottom, marginLeft } = chrome;
+    const maxLabelLength = 24;
+
     /**
-     * The core D3 update function that handles the enter, update, and exit
-     * selections for nodes and links in the tree.
+     * Walk a hierarchy node's ancestors to build the root-to-node id path
+     * that identifies this exact DAG occurrence.
      */
+    function pathFor(d) {
+      const path = [];
+      for (let node = d; node; node = node.parent) {
+        path.unshift(node.data._id);
+      }
+      return path;
+    }
+    const keyFor = (d) => pathKey(pathFor(d));
+
+    // Build fresh from `data` every time, hiding a node's children right as
+    // each node is visited (breadth-first, per d3.hierarchy.each) so hidden
+    // subtrees are never even walked -- this is also what keeps
+    // `root.descendants()` below limited to exactly the currently-visible
+    // nodes.
+    const expandedKeys = new Set((expandedPaths ?? []).map(pathKey));
+    const root = d3.hierarchy(data);
+    root.each((d) => {
+      if (!expandedKeys.has(keyFor(d))) d.children = undefined;
+    });
+
     function update(event, source) {
       const duration = event?.altKey ? 2500 : 250;
       const nodes = root.descendants().reverse();
       const links = root.links();
 
       tree(root);
+
+      source = source ?? root;
+      if (source.x0 == null) {
+        source.x0 = source.x;
+        source.y0 = source.y;
+      }
 
       let left = root;
       let right = root;
@@ -107,7 +180,7 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit, fetchChildren }) => {
       g.transition().duration(duration).attr("transform", `translate(${marginLeft}, ${offsetY})`);
 
       // --- Node Selection ---
-      const node = gNode.selectAll("g.node-group").data(nodes, (d) => d.id);
+      const node = gNode.selectAll("g.node-group").data(nodes, keyFor);
 
       // Create new DOM elements for new data.
       const nodeEnter = node
@@ -117,62 +190,10 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit, fetchChildren }) => {
         .attr("transform", (_d) => `translate(${source.y0},${source.x0})`)
         .attr("fill-opacity", 0)
         .attr("stroke-opacity", 0)
-        .on("click", async (event, d) => {
+        .on("click", (event, d) => {
           if (event.target.closest(".add-to-graph-button")) return;
-
-          // If already expanded, collapse
-          if (d.children) {
-            d._children = d.children;
-            d.children = null;
-            update(event, d);
-            return;
-          }
-
-          // If collapsed with cached children, expand
-          if (d._children) {
-            d.children = d._children;
-            update(event, d);
-            return;
-          }
-
-          // Lazy load: has children on server but none loaded yet
-          if (d.data._hasChildren && fetchChildren && !d._loading) {
-            d._loading = true;
-            try {
-              const childrenData = await fetchChildren(d.data._id);
-              if (!Array.isArray(childrenData) || childrenData.length === 0) return;
-
-              // Attach fetched data and build hierarchy nodes
-              d.data.children = childrenData;
-              for (const childData of childrenData) {
-                const childNode = d3.hierarchy(childData);
-                childNode.parent = d;
-                childNode.depth = d.depth + 1;
-                const allNodes = childNode.descendants();
-                for (const n of allNodes) {
-                  n.id = root._nextId++;
-                  n.depth = n.parent ? n.parent.depth + 1 : d.depth + 1;
-                  n.x0 = d.x0;
-                  n.y0 = d.y0;
-                }
-                // Collapse loaded grandchildren by default
-                for (const n of allNodes) {
-                  if (n !== childNode && n.children) {
-                    n._children = n.children;
-                    n.children = null;
-                  }
-                }
-                if (!d.children) d.children = [];
-                d.children.push(childNode);
-              }
-              d._children = d.children;
-              update(event, d);
-            } catch (err) {
-              console.error(`Failed to fetch children for ${d.data._id}:`, err);
-            } finally {
-              d._loading = false;
-            }
-          }
+          lastToggledKeyRef.current = keyFor(d);
+          onToggleRef.current(pathFor(d));
         });
 
       // Append circle
@@ -186,8 +207,8 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit, fetchChildren }) => {
         .append("text")
         .attr("class", "node-text")
         .attr("dy", "0.31em")
-        .attr("x", (d) => (d._children ? -8 : 8))
-        .attr("text-anchor", (d) => (d._children ? "end" : "start"))
+        .attr("x", (d) => (d.data._hasChildren ? -8 : 8))
+        .attr("text-anchor", (d) => (d.data._hasChildren ? "end" : "start"))
         .text((d) => truncateString(getLabel(d.data) || d.data._key, maxLabelLength))
         .clone(true)
         .lower()
@@ -206,7 +227,7 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit, fetchChildren }) => {
           // Estimate label size
           const label = truncateString(getLabel(d.data) || d.data._key, maxLabelLength);
           const textWidthEstimate = label.length * 8; // Adjusted for 12px font size
-          if (d._children) {
+          if (d.data._hasChildren) {
             const textEndX = -6;
             return textEndX - textWidthEstimate - gap;
           }
@@ -217,7 +238,7 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit, fetchChildren }) => {
           // Create a div for React to mount into.
           const placeholder = document.createElement("div");
           this.appendChild(placeholder);
-          onNodeEnter(d.data._id, placeholder);
+          onNodeEnterRef.current(pathFor(d), placeholder);
         });
 
       // Transition existing nodes to their new positions.
@@ -233,7 +254,7 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit, fetchChildren }) => {
         .exit()
         .each((d) => {
           // Notify the parent component that this node is being removed.
-          onNodeExit(d.data._id);
+          onNodeExitRef.current(pathFor(d));
         })
         .transition(transition)
         .remove()
@@ -242,7 +263,7 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit, fetchChildren }) => {
         .attr("stroke-opacity", 0);
 
       // --- Link Selection ---
-      const link = gLink.selectAll("path").data(links, (d) => d.target.id);
+      const link = gLink.selectAll("path").data(links, (d) => keyFor(d.target));
 
       link
         .enter()
@@ -263,32 +284,18 @@ const TreeConstructor = ({ data, onNodeEnter, onNodeExit, fetchChildren }) => {
           const o = { x: source.x, y: source.y };
           return diagonal({ source: o, target: o });
         });
-
-      root.eachBefore((d) => {
-        d.x0 = d.x;
-        d.y0 = d.y;
-      });
     }
 
-    // --- Initial Tree Setup ---
-    // Position root at the vertical center of the container
     const containerHeight = svgRef.current?.clientHeight || 500;
     root.x0 = containerHeight / 2;
     root.y0 = 0;
-    let _idCounter = 0;
-    root.descendants().forEach((d) => {
-      d.id = _idCounter++;
-      d._children = d.children;
-      // Collapse all nodes by default on initial render.
-      if (d.children) {
-        d.children = null;
-      }
-    });
-    root._nextId = _idCounter;
 
-    // Start the initial render.
-    update(null, root);
-  }, [data, onNodeEnter, onNodeExit, fetchChildren]);
+    const source = lastToggledKeyRef.current
+      ? (root.descendants().find((d) => keyFor(d) === lastToggledKeyRef.current) ?? root)
+      : root;
+
+    update(null, source);
+  }, [data, expandedPaths]);
 
   // Return container.
   return <div ref={svgRef} className="tree-constructor-container" />;

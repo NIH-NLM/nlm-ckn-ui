@@ -4,6 +4,7 @@ import {
   getCollectedErrors,
   installErrorInstrumentation,
 } from "./utils/errorInstrumentation";
+import { hierarchyLabelsResponse, hierarchyRoot } from "./utils/testSeeds";
 
 test("Header navigation links work correctly", async ({ page }) => {
   await installErrorInstrumentation(page);
@@ -37,11 +38,18 @@ test("Header navigation links work correctly", async ({ page }) => {
       body: JSON.stringify([]),
     });
   });
-  await page.route("**/arango_api/sunburst/", async (route) => {
+  await page.route("**/arango_api/hierarchy/labels/", async (route) => {
     return route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ name: "Root", children: [], _id: "ROOT/1" }),
+      body: JSON.stringify(hierarchyLabelsResponse),
+    });
+  });
+  await page.route("**/arango_api/hierarchy/", async (route) => {
+    return route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(hierarchyRoot({ label: "cell" })),
     });
   });
 
@@ -50,15 +58,10 @@ test("Header navigation links work correctly", async ({ page }) => {
   // Check active state for Search
   await expect(page.locator('.navbar a[href="#/"] h4')).toHaveClass(/active-nav/);
 
-  // Navigate to Browse
+  // Navigate to Browse -- the merged sunburst/tree page.
   await page.getByRole("link", { name: "Browse" }).click();
-  await expect(page).toHaveURL(/#\/sunburst$/);
-  await expect(page.locator('.navbar a[href="#/sunburst"] h4')).toHaveClass(/active-nav/);
-
-  // Navigate to Explore
-  await page.getByRole("link", { name: "Explore" }).click();
-  await expect(page).toHaveURL(/#\/tree$/);
-  await expect(page.locator('.navbar a[href="#/tree"] h4')).toHaveClass(/active-nav/);
+  await expect(page).toHaveURL(/#\/browse$/);
+  await expect(page.locator('.navbar a[href="#/browse"] h4')).toHaveClass(/active-nav/);
 
   // Navigate to Collections
   await page.getByRole("link", { name: "Collections" }).click();
