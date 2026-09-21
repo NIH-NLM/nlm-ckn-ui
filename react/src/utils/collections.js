@@ -105,6 +105,55 @@ const decorateCellSetDatasetLabel = (item, label) => {
 };
 
 /**
+ * Citations keyed by DOI and anatomical structure names keyed by UBERON CURIE,
+ * loaded once at startup. Labels are built synchronously, so they read these
+ * rather than fetching the documents a cell set references.
+ */
+let cellSetLabelLookups = { publications: {}, anatomical_structures: {} };
+
+/**
+ * Install the lookups cell set labels read. A missing or failed load leaves
+ * them empty, and labels omit the parts they would have named.
+ * @param {{publications?: Object, anatomical_structures?: Object}|null} lookups
+ */
+export const setCellSetLabelLookups = (lookups) => {
+  cellSetLabelLookups = {
+    publications: lookups?.publications ?? {},
+    anatomical_structures: lookups?.anatomical_structures ?? {},
+  };
+};
+
+/**
+ * Decorate a cell set label to mirror the cell set dataset label (#266):
+ * `<term> in <Citation> - "<dataset>" for <anatomical structure>`. Each part
+ * the document or lookups do not carry is left out.
+ * @param {object} item - The CS document.
+ * @param {string} label - The label chosen from the collection config.
+ * @returns {string} The decorated label.
+ */
+const decorateCellSetLabel = (item, label) => {
+  // A label that fell back to the key has no term to decorate.
+  if (label === item._key) {
+    return label;
+  }
+
+  const citation = cellSetLabelLookups.publications[item.publication];
+  const organ = cellSetLabelLookups.anatomical_structures[item.anatomical_structure];
+
+  let decorated = label;
+  if (citation) {
+    decorated += ` in ${citation}`;
+  }
+  if (item.dataset_name) {
+    decorated += `${citation ? " -" : " in"} "${item.dataset_name}"`;
+  }
+  if (organ) {
+    decorated += ` for ${organ}`;
+  }
+  return decorated;
+};
+
+/**
  * Generates display label for data item based on dynamic configuration.
  * Finds first valid field from options, applies transformations, and returns result.
  * @param {object} item - Data object needing label. Must contain `_id` property.
@@ -133,6 +182,9 @@ export const getLabel = (item) => {
 
     if (label && itemCollection === "CSD") {
       return decorateCellSetDatasetLabel(item, label);
+    }
+    if (label && itemCollection === "CS") {
+      return decorateCellSetLabel(item, label);
     }
 
     return label || "NAME UNKNOWN";

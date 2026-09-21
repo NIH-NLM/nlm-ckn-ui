@@ -12,7 +12,7 @@ export {
   fetchCollections,
 } from "./collections";
 // Document/node operations
-export { fetchDocument, fetchNodeDetailsByIds } from "./documents";
+export { fetchCellSetLabelLookups, fetchDocument, fetchNodeDetailsByIds } from "./documents";
 // Fetch utilities
 export { ApiError, fetchWithErrorHandling, getJson, postJson } from "./fetchWrapper";
 // Graph operations
