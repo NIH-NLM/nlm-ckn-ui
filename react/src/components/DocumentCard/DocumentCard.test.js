@@ -79,6 +79,13 @@ describe("DocumentCard", () => {
     expect(screen.getByRole("heading", { name: /overview/i })).toBeInTheDocument();
   });
 
+  it("titles a card with no section config as the sectioned card is titled", () => {
+    renderCard({ _id: "CL/0", _key: "0", label: "Document Label", prop1: "value1" });
+    expect(screen.getByRole("heading", { level: 3 })).toHaveTextContent(
+      "Cell Types: Document Label",
+    );
+  });
+
   it("renders the component correctly with a string label", () => {
     const document = {
       _id: "CL/0",
@@ -184,7 +191,8 @@ describe("DocumentCard", () => {
     renderCard({ _id: "BMC/ens", markers: "ENSG00000277734,CD3D" });
 
     expect(screen.queryByRole("link", { name: "ENSG00000277734" })).toBeNull();
-    expect(screen.getByText(/ENSG00000277734/)).toBeInTheDocument();
+    // The card title names the document too, so match the attribute row itself.
+    expect(screen.getByRole("cell", { name: /ENSG00000277734/ })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "CD3D" })).toBeInTheDocument();
   });
 

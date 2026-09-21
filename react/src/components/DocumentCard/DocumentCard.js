@@ -108,7 +108,10 @@ const DocumentCard = ({ document }) => {
   const displayFields = getDisplayFields(document);
   return (
     <div className="document-item-list-wrapper inspector-overview">
-      <h3 className="inspector-overview-title">Overview</h3>
+      {/* A collection without a section config still names its document, so
+          every card reads the same way (#271). */}
+      <h3 className="inspector-card-title">{getTitle(document)}</h3>
+      <h4 className="inspector-overview-title">Overview</h4>
       <fieldset className="document-info-fieldset">
         <legend className="document-info-legend">
           {/* Render legend as link only if primary URL exists. */}
