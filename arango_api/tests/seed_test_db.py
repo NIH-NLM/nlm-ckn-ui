@@ -317,7 +317,13 @@ def seed_phenotypes_db(client):
         ("test_cs_2", "10.0/none"),
     ):
         db.collection("CS").insert(
-            {"_key": key, "publication": doi, "anatomical_structure": "UBERON:0002048"},
+            {
+                "_key": key,
+                "publication": doi,
+                "anatomical_structure": "UBERON:0002048",
+                "author_cell_term": "Test cell term",
+                "dataset_name": "Test dataset",
+            },
             overwrite=True,
         )
     print("    Inserted 1 document into PUB and 2 into CS")

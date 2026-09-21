@@ -5,6 +5,10 @@ references.
 A cell set carries its publication as a DOI and its anatomical structure as a
 UBERON CURIE. Its label reads the citation and the structure's name instead,
 matching the cell set dataset label, so the UI loads both lookups once.
+
+Biomarker combinations and binary gene sets are named after the cell set they
+belong to, and share its key, so the cell set fields those labels read are
+served alongside — as stored, leaving the label wording to the UI.
 """
 
 import logging
@@ -13,7 +17,7 @@ from arango_api.services.base import get_db_and_graph
 
 logger = logging.getLogger(__name__)
 
-EMPTY = {"publications": {}, "anatomical_structures": {}}
+EMPTY = {"publications": {}, "anatomical_structures": {}, "cell_sets": {}}
 
 QUERY = """
     LET dois = (FOR cs IN CS COLLECT doi = cs.publication FILTER doi != null RETURN doi)
@@ -31,6 +35,18 @@ QUERY = """
         anatomical_structures: ZIP(
             curies,
             curies[* RETURN DOCUMENT(CONCAT("UBERON/", SUBSTRING(CURRENT, 7))).label]
+        ),
+        cell_sets: MERGE(
+            FOR cs IN CS
+                RETURN {
+                    [cs._key]: KEEP(
+                        cs,
+                        "author_cell_term",
+                        "publication",
+                        "dataset_name",
+                        "anatomical_structure"
+                    )
+                }
         )
     }
 """
@@ -38,13 +54,16 @@ QUERY = """
 
 def get_cell_set_label_lookups():
     """
-    Map each cell set DOI to its publication's citation, and each anatomical
-    structure CURIE to its UBERON label. A reference with no matching document
-    maps to null.
+    Map each cell set DOI to its publication's citation, each anatomical
+    structure CURIE to its UBERON label, and each cell set key to the fields its
+    own label reads. A reference with no matching document maps to null.
 
     Returns:
-        dict: {"publications": {doi: citation}, "anatomical_structures": {curie: label}},
-        or empty maps when the phenotypes database lacks the collections.
+        dict: {"publications": {doi: citation},
+               "anatomical_structures": {curie: label},
+               "cell_sets": {key: {author_cell_term, publication, dataset_name,
+               anatomical_structure}}}, or empty maps when the phenotypes
+        database lacks the collections.
     """
     db, _ = get_db_and_graph("phenotypes")
     if not all(db.has_collection(c) for c in ("CS", "PUB", "UBERON")):

@@ -16,6 +16,8 @@ import logging
 
 from django.conf import settings
 from django.http import HttpResponseNotFound
+from django.utils.decorators import method_decorator
+from django.views.decorators.gzip import gzip_page
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -411,8 +413,14 @@ class WorkflowPresetsView(APIView):
         )
 
 
+@method_decorator(gzip_page, name="dispatch")
 class CellSetLabelLookupsView(APIView):
-    """Return the citations and anatomical structure names cell set labels read."""
+    """Return the references cell set, biomarker and gene set labels read.
+
+    The cell set map carries one entry per cell set, so the response is an order
+    of magnitude larger than the other endpoints' and is compressed here rather
+    than site-wide: it holds no secrets and reflects no user input.
+    """
 
     def get(self, request):
         return Response(label_service.get_cell_set_label_lookups())

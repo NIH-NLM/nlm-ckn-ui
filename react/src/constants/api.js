@@ -36,5 +36,8 @@ export const AQL_ENDPOINT = `${API_BASE}/aql/`;
 // Workflow presets endpoint
 export const WORKFLOW_PRESETS_ENDPOINT = `${API_BASE}/workflow_presets/`;
 
+// Citations and anatomical structure names that cell set labels read
+export const CELL_SET_LABEL_LOOKUPS_ENDPOINT = `${API_BASE}/cell_set_label_lookups/`;
+
 // Version endpoint
 export const VERSION_ENDPOINT = `${API_BASE}/version/`;

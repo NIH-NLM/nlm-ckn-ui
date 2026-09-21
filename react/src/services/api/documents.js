@@ -2,7 +2,11 @@
  * API functions for document/node operations.
  */
 
-import { COLLECTION_DOCUMENT_ENDPOINT, DOCUMENT_DETAILS_ENDPOINT } from "constants/index";
+import {
+  CELL_SET_LABEL_LOOKUPS_ENDPOINT,
+  COLLECTION_DOCUMENT_ENDPOINT,
+  DOCUMENT_DETAILS_ENDPOINT,
+} from "constants/index";
 import { getJson, postJson } from "./fetchWrapper";
 
 /**
@@ -26,4 +30,13 @@ export const fetchNodeDetailsByIds = async (ids, db) => {
   if (!ids || ids.length === 0) return [];
 
   return postJson(DOCUMENT_DETAILS_ENDPOINT, { document_ids: ids, db }, { fallback: [] });
+};
+
+/**
+ * Fetch the citation for each cell set DOI and the name for each anatomical
+ * structure CURIE, which cell set labels show in place of the references.
+ * @returns {Promise<{publications: Object, anatomical_structures: Object} | null>}
+ */
+export const fetchCellSetLabelLookups = async () => {
+  return getJson(CELL_SET_LABEL_LOOKUPS_ENDPOINT, { fallback: null, silent: true });
 };

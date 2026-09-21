@@ -1,4 +1,11 @@
-import { getDisplayFields, getLabel, getSectionedFields, getTitle, getUrl } from "./collections";
+import {
+  getDisplayFields,
+  getLabel,
+  getSectionedFields,
+  getTitle,
+  getUrl,
+  setCellSetLabelLookups,
+} from "./collections";
 
 describe("getSectionedFields", () => {
   const csd = (overrides = {}) => ({
@@ -364,6 +371,37 @@ describe("getLabel for multi-organ cell set datasets", () => {
   it("leaves other collections alone", () => {
     expect(getLabel({ _id: "CL/0000000", label: "cell", anatomical_structure: "liver" })).toBe(
       "cell",
+    );
+  });
+});
+
+describe("getLabel for cell sets", () => {
+  // A cell set label mirrors the cell set dataset label, reading the citation
+  // and anatomical structure name from lookups keyed by the references (#266).
+  const cs = {
+    _id: "CS/0kw5mi0nr49p",
+    _key: "0kw5mi0nr49p",
+    author_cell_term: "Stromal-2-(NPY+)",
+    publication: "10.1038/s41586-021-03852-1",
+    dataset_name: "Cells of the human intestinal tract mapped across space and time",
+    anatomical_structure: "UBERON:0001555",
+  };
+
+  afterEach(() => setCellSetLabelLookups(null));
+
+  it("reads term, citation, quoted dataset and anatomical structure", () => {
+    setCellSetLabelLookups({
+      publications: { "10.1038/s41586-021-03852-1": "Elmentaite (2021) Nature" },
+      anatomical_structures: { "UBERON:0001555": "digestive tract" },
+    });
+    expect(getLabel(cs)).toBe(
+      'Stromal-2-(NPY+) in Elmentaite (2021) Nature - "Cells of the human intestinal tract mapped across space and time" for digestive tract',
+    );
+  });
+
+  it("leaves out the parts the lookups do not name", () => {
+    expect(getLabel(cs)).toBe(
+      'Stromal-2-(NPY+) in "Cells of the human intestinal tract mapped across space and time"',
     );
   });
 });

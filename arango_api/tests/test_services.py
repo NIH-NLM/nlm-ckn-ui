@@ -119,6 +119,8 @@ class DocumentServiceTestCase(ArangoDBTestCase):
 class LabelServiceTestCase(ArangoDBTestCase):
     """Tests for label_service functions."""
 
+    maxDiff = None
+
     def test_get_cell_set_label_lookups(self):
         self.assertEqual(
             label_service.get_cell_set_label_lookups(),
@@ -128,6 +130,18 @@ class LabelServiceTestCase(ArangoDBTestCase):
                     "10.0/none": None,
                 },
                 "anatomical_structures": {"UBERON:0002048": "lung"},
+                "cell_sets": {
+                    key: {
+                        "author_cell_term": "Test cell term",
+                        "publication": doi,
+                        "dataset_name": "Test dataset",
+                        "anatomical_structure": "UBERON:0002048",
+                    }
+                    for key, doi in (
+                        ("test_cs_1", "10.1038/s41591-023-02327-2"),
+                        ("test_cs_2", "10.0/none"),
+                    )
+                },
             },
         )
 
