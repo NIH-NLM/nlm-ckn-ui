@@ -841,6 +841,112 @@ g.node.pinned .node-pin-marker path {
   border-bottom: none;
 }
 
+/* Cell set dataset figures (nlm-ckn#283)
+
+   Below the graph in the wide column, where they are big enough to read. Two up
+   on a roomy viewport, one up when that would squeeze them. Each is a button so
+   it is reachable by keyboard, styled back down to look like the image alone. */
+
+.dataset-figures {
+  border-top: 1px solid var(--color-gray-lighter);
+  padding: 16px;
+}
+/* Columns rather than a grid: these figures range from a wide, short box plot to
+   a tall dendrogram, and grid rows take the height of their tallest cell, which
+   leaves a ragged hole under every short one. Columns pack vertically instead.
+   The width, not a count, decides how many there are. */
+.dataset-figures-grid {
+  column-gap: 16px;
+  columns: 420px;
+}
+.dataset-figures-title {
+  margin-bottom: 12px;
+  color: var(--color-gray-dark); /* #323A45 */
+  font-weight: 500; /* Roboto Medium */
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.4px;
+}
+.dataset-figure {
+  break-inside: avoid;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0 0 16px;
+}
+.dataset-figure-open {
+  background: var(--color-white-bg); /* #fefefe */
+  border: 1px solid var(--color-cool-blue-lightest); /* #dce4ef */
+  border-radius: 4px;
+  cursor: zoom-in;
+  display: block;
+  padding: 4px;
+  width: 100%;
+}
+.dataset-figure-open:hover {
+  border-color: var(--color-gray); /* #5B616B */
+}
+/* Reserves height only while empty, so the three unloaded figures are far
+   enough apart for the observer to reach them one at a time. */
+.dataset-figure-slot {
+  display: block;
+}
+.dataset-figure-slot:empty {
+  min-height: 320px;
+}
+.dataset-figure-image {
+  display: block;
+  height: auto;
+  max-width: 100%;
+}
+.dataset-figure-caption {
+  color: var(--color-gray); /* #5B616B */
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.4px;
+  margin: 0;
+}
+
+/* Figure modal. Reuses .modal-overlay / .modal-close-button; .modal-content is
+   capped at 600px for the dialogs it was written for, which is narrower than any
+   of these figures, so the width is overridden here. */
+
+.modal-backdrop {
+  background: none;
+  border: none;
+  cursor: default;
+  inset: 0;
+  position: absolute;
+}
+.modal-content-figure {
+  display: flex;
+  position: relative;
+  z-index: 1;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 92vh;
+  max-width: 95vw;
+  overflow: auto;
+  width: auto;
+}
+.dataset-figure-modal-title {
+  font-size: 16px;
+  margin: 0 24px 0 0;
+}
+.dataset-figure-modal-image {
+  height: auto;
+  max-width: 100%;
+}
+/* The plotly pages are authored at a fixed 1800x900 and do not reflow, which is
+   why the interactive copy is worth showing only here. The frame is given that
+   full height rather than a scaled aspect ratio: anything shorter crops the
+   x-axis labels off the bottom. The modal scrolls when the viewport cannot. */
+.dataset-figure-modal-frame {
+  border: 1px solid var(--color-cool-blue-lightest); /* #dce4ef */
+  height: 900px;
+  width: min(88vw, 1800px);
+}
+
 /* Inspector FTU illustration */
 
 .inspector-ftu {
@@ -1013,7 +1119,9 @@ fieldset.collection-picker {
   background-color: var(--color-white);
   border: 1px solid var(--color-gray-lighter);
   border-radius: var(--radius-md);
-  overflow: hidden;
+  /* Scrolls when the figures section is present. Without figures the graph
+     still grows to fill the column, so this changes nothing for other hosts. */
+  overflow-y: auto;
 }
 
 .graph-workspace-canvas #chart-container-wrapper {
@@ -1022,12 +1130,25 @@ fieldset.collection-picker {
   padding: 0 var(--spacing-md) var(--spacing-md);
 }
 
+/* Graph plus history shelf, exactly one column-height. The figures follow it in
+   the scroll flow, so they start below the fold on any viewport. Measured: with
+   the figures section even a few pixels on screen, CSS columns put the expensive
+   violin plot level with the first figure and both fetch before the user has
+   scrolled — the whole cost the lazy loading exists to avoid. */
+.graph-workspace-pane {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
 /* position:relative anchors the OriginsSidebar overlay, which floats over the
    graph instead of taking a flex column of its own. */
 .graph-workspace-canvas-body {
   position: relative;
   display: flex;
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
 }
 

@@ -37,6 +37,11 @@ jest.mock("components/NodeInspector", () => ({ selectedNodeId, originDocument })
   </div>
 ));
 jest.mock("components/SavedGraphShelf", () => () => <div data-testid="shelf" />);
+// DatasetFigures resolves the committed plot manifest; stub it to report which
+// document it was handed.
+jest.mock("components/DatasetFigures", () => ({ document }) => (
+  <div data-testid="dataset-figures">{document?._id ?? "none"}</div>
+));
 jest.mock("hooks", () => ({
   useNodeDocument: (nodeId) => ({
     // "CS/pending" simulates a not-yet-resolved fetch so the originDocument-seed
@@ -242,5 +247,16 @@ describe("GraphWorkspace", () => {
     expect(screen.getByRole("complementary", { name: /current origins/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /close origins panel/i }));
     expect(screen.queryByRole("complementary", { name: /current origins/i })).toBeNull();
+  });
+
+  it("shows the figures for the inspected document, below the graph", () => {
+    renderWorkspace();
+    expect(screen.getByTestId("dataset-figures")).toHaveTextContent("CSD/origin");
+  });
+
+  it("follows the selected node once one is picked", () => {
+    renderWorkspace();
+    fireEvent.click(screen.getByRole("button", { name: "graph" }));
+    expect(screen.getByTestId("dataset-figures")).toHaveTextContent("CS/clicked");
   });
 });
