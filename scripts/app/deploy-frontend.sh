@@ -75,7 +75,8 @@ CDN_STACK_NAME="${PROJECT_NAME}-${ENVIRONMENT}-frontend-cdn"
 # Returns empty (and non-error) only when the stack genuinely doesn't exist.
 # Any other describe-stacks failure (permissions, credentials, throttling,
 # connectivity) is propagated so a caller can't silently treat it as "absent"
-# and skip CDN invalidation or the smoke test.
+# and skip CDN invalidation or the smoke test. When the smoke test does run, a
+# failing probe fails the deploy (see #207).
 fetch_stack_outputs() {
   local out
   if out=$(aws cloudformation describe-stacks \
@@ -203,8 +204,7 @@ fi
 # to hit, so skip rather than report a guaranteed failure.
 if [ -n "$CF_DIST_ID" ]; then
   echo -e "\n${GREEN}Running smoke test...${NC}"
-  "$SCRIPT_DIR/../ops/smoke-test.sh" "$ENVIRONMENT" --timeout 20 || \
-    echo -e "${YELLOW}Smoke test reported failures (non-blocking).${NC}"
+  "$SCRIPT_DIR/../ops/smoke-test.sh" "$ENVIRONMENT" --timeout 20
 else
   echo -e "\n${YELLOW}Skipping smoke test — no CloudFront URL yet (CDN stack $CDN_STACK_NAME not deployed).${NC}"
 fi
