@@ -55,10 +55,10 @@
   },
   "CS": {
     "graphType": "phenotypes",
-    "depth": 2,
+    "depth": 1,
     "edgeDirection": "ANY",
     "collapseOnStart": "standard",
-    "allowedCollections": ["UBERON", "BMC", "CSD", "CL", "GS", "PUB"],
+    "allowedCollections": ["BGS", "BMC", "CL", "CS", "CSD", "GS", "UBERON"],
     "preferredPredicates": [
       "DERIVES_FROM",
       "COMPOSED_PRIMARILY_OF",
@@ -66,7 +66,9 @@
       "SELECTIVELY_EXPRESSES",
       "PART_OF",
       "IS_ABOUT",
-      "WAS_ATTRIBUTED_TO"
+      "HAS_EXEMPLAR_DATA",
+      "HAS_BINARY_GENE_SET",
+      "INTERACTS_WITH"
     ]
   },
   "CSD": {

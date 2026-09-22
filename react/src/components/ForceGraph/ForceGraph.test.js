@@ -1421,14 +1421,14 @@ describe("ForceGraph", () => {
     });
   });
 
-  describe("CS collection defaults reach a Cell set page's own predicates and PUB", () => {
-    it("sends IS_ABOUT and WAS_ATTRIBUTED_TO in edgeFilters.Label, and PUB in allowedCollections", async () => {
+  describe("CS collection defaults reach a Cell set page's own predicates", () => {
+    it("sends a depth-1 query that reaches the binary gene set and leaves out publications", async () => {
       const csDefaults = collectionDefaults.CS;
       fetchGraphData.mockResolvedValue({ nodes: [], links: [] });
       const store = createTestStore();
       // The prop-defaults effect only intersects allowedCollections once
       // availableCollections is populated, so seed it with every collection
-      // the CS defaults name -- otherwise PUB (and everything else) would be
+      // the CS defaults name -- otherwise BGS (and everything else) would be
       // silently dropped and this test would pass for the wrong reason.
       store.dispatch(setAvailableCollections(csDefaults.allowedCollections));
 
@@ -1449,15 +1449,25 @@ describe("ForceGraph", () => {
       });
 
       const params = fetchGraphData.mock.calls[0][0];
-      // WAS_ATTRIBUTED_TO is what brings a dataset's publications onto this
-      // page. The ETL once emitted it unsplit as WASATTRIBUTEDTO; that spelling
-      // is gone from the data, and a pinned value matching nothing still shows
-      // up as a selected filter, so it must not come back.
+      // The landing graph is the cell set's immediate neighbourhood only. The
+      // dataset's publication is one hop past the CSD, so dropping PUB and
+      // WAS_ATTRIBUTED_TO keeps it off the page rather than as a dangling node.
+      // INTERACTS_WITH is schema-defined for the organ -> cell type edge but not
+      // yet in the data; it is pinned ahead of the ETL so the edge appears on
+      // load without another preset change.
+      expect(params.depth).toBe(1);
       expect(params.edgeFilters.Label).toEqual(
-        expect.arrayContaining(["IS_ABOUT", "WAS_ATTRIBUTED_TO"]),
+        expect.arrayContaining([
+          "IS_ABOUT",
+          "HAS_EXEMPLAR_DATA",
+          "HAS_BINARY_GENE_SET",
+          "INTERACTS_WITH",
+        ]),
       );
+      expect(params.edgeFilters.Label).not.toContain("WAS_ATTRIBUTED_TO");
       expect(params.edgeFilters.Label).not.toContain("WASATTRIBUTEDTO");
-      expect(params.allowedCollections).toEqual(expect.arrayContaining(["PUB"]));
+      expect(params.allowedCollections).toEqual(expect.arrayContaining(["BGS"]));
+      expect(params.allowedCollections).not.toContain("PUB");
     });
   });
 
