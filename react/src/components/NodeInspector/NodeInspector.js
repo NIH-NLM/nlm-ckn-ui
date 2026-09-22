@@ -1,6 +1,7 @@
 import DocumentCard from "components/DocumentCard";
 import FTUIllustration from "components/FTUIllustration";
 import LearnExplore from "components/LearnExplore";
+import RelatedCards from "components/RelatedCards";
 import { FTU_ILLUSTRATIONS_JSONLD_URL } from "constants/index";
 import { useFtuParts } from "contexts";
 import { useNodeDocument } from "hooks";
@@ -51,6 +52,7 @@ const NodeInspector = ({ selectedNodeId, originDocument = null, showLearnExplore
     return (
       <div className="node-inspector">
         <DocumentCard document={originDocument} />
+        <RelatedCards document={originDocument} />
         {ftuUrl && (
           <div className="inspector-ftu">
             <FTUIllustration
@@ -86,6 +88,7 @@ const NodeInspector = ({ selectedNodeId, originDocument = null, showLearnExplore
   return (
     <div className="node-inspector">
       <DocumentCard document={document} />
+      <RelatedCards document={document} />
       {ftuUrl && (
         <div className="inspector-ftu">
           <FTUIllustration

@@ -14,6 +14,11 @@ jest.mock("components/DocumentCard", () => ({ document }) => (
   <div data-testid="doc-card">{document?._id}</div>
 ));
 
+// RelatedCards fetches neighbors; stub it to a marker naming its document.
+jest.mock("components/RelatedCards", () => ({ document }) => (
+  <div data-testid="related-cards">{document?._id}</div>
+));
+
 // LearnExplore uses react-router Link; stub it so this test stays router-free.
 jest.mock("components/LearnExplore", () => () => <div data-testid="learn-explore" />);
 
@@ -33,6 +38,7 @@ describe("NodeInspector", () => {
     useNodeDocument.mockReturnValue({ document: null, loading: false, error: null });
     render(<NodeInspector selectedNodeId={null} originDocument={{ _id: "CSD/origin" }} />);
     expect(screen.getByTestId("doc-card")).toHaveTextContent("CSD/origin");
+    expect(screen.getByTestId("related-cards")).toHaveTextContent("CSD/origin");
     expect(screen.getByTestId("learn-explore")).toBeInTheDocument();
     expect(screen.queryByTestId("ftu-illustration")).not.toBeInTheDocument();
   });
@@ -54,6 +60,7 @@ describe("NodeInspector", () => {
     useNodeDocument.mockReturnValue({ document: { _id: "CS/abc" }, loading: false, error: null });
     render(<NodeInspector selectedNodeId="CS/abc" showLearnExplore={false} />);
     expect(screen.getByTestId("doc-card")).toHaveTextContent("CS/abc");
+    expect(screen.getByTestId("related-cards")).toHaveTextContent("CS/abc");
     expect(screen.queryByTestId("learn-explore")).not.toBeInTheDocument();
   });
 
