@@ -1,3 +1,4 @@
+import DatasetFigures from "components/DatasetFigures";
 import ForceGraph from "components/ForceGraph/ForceGraph";
 import NodeInspector from "components/NodeInspector";
 import OriginsSidebar from "components/OriginsSidebar";
@@ -10,7 +11,8 @@ import { getTitle } from "utils";
 
 /**
  * Host-agnostic graph workspace: left node-inspector, center force graph
- * with the saved-graph shelf beneath it.
+ * with the saved-graph shelf beneath it, and — for a cell set dataset — its
+ * published figures below that.
  *
  * The Collections host feeds it an explicit origin document. Hosts without a
  * single origin (Graph Builder, Workflow) omit `originDocument`; the inspector
@@ -82,6 +84,11 @@ const GraphWorkspace = ({
   // origin's title; otherwise the generic default.
   const graphTitle = title ?? (currentOriginDoc ? getTitle(currentOriginDoc) : "Graph");
 
+  // Figures follow whatever the inspector is showing. useNodeDocument is cached,
+  // so asking for the selected node here does not fetch it twice.
+  const { document: selectedDoc } = useNodeDocument(selectedNodeId);
+  const figuresDocument = selectedNodeId ? selectedDoc : currentOriginDoc;
+
   return (
     <div className="graph-workspace">
       <div className="graph-workspace-body">
@@ -93,24 +100,31 @@ const GraphWorkspace = ({
           />
         </aside>
         <section className="graph-workspace-canvas">
-          <div className="graph-workspace-canvas-body">
-            {/* The origins toggle lives among the canvas action icons (ForceGraph
+          {/* Graph and shelf fill the column exactly; the figures scroll in
+              beneath them. Grouping the two is what keeps the figures off the
+              first screen without reserving a guessed number of pixels for the
+              shelf, whose height changes when its history card renders. */}
+          <div className="graph-workspace-pane">
+            <div className="graph-workspace-canvas-body">
+              {/* The origins toggle lives among the canvas action icons (ForceGraph
                 renders it) so the panel is opened from the graph itself. */}
-            <ForceGraph
-              nodeIds={nodeIds}
-              settings={settings}
-              title={graphTitle}
-              onNodeSelect={setSelectedNodeId}
-              originsOpen={isOriginsOpen}
-              onToggleOrigins={() => setIsOriginsOpen((open) => !open)}
-            />
-            <OriginsSidebar isOpen={isOriginsOpen} onClose={() => setIsOriginsOpen(false)} />
+              <ForceGraph
+                nodeIds={nodeIds}
+                settings={settings}
+                title={graphTitle}
+                onNodeSelect={setSelectedNodeId}
+                originsOpen={isOriginsOpen}
+                onToggleOrigins={() => setIsOriginsOpen((open) => !open)}
+              />
+              <OriginsSidebar isOpen={isOriginsOpen} onClose={() => setIsOriginsOpen(false)} />
+            </div>
+            <div className="graph-workspace-shelf">
+              {/* History heading = the graph's origin node(s). */}
+              <h3 className="graph-history-title">{graphTitle}</h3>
+              <SavedGraphShelf />
+            </div>
           </div>
-          <div className="graph-workspace-shelf">
-            {/* History heading = the graph's origin node(s). */}
-            <h3 className="graph-history-title">{graphTitle}</h3>
-            <SavedGraphShelf />
-          </div>
+          <DatasetFigures document={figuresDocument} />
         </section>
       </div>
     </div>
