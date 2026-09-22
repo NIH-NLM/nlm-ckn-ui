@@ -751,11 +751,11 @@ while [ "$ELAPSED" -lt "$SSM_TIMEOUT_SECONDS" ]; do
         --query 'Parameter.Value' \
         --output text \
         --region "$AWS_REGION")${NC}"
-      # Smoke test the deployment (advisory — never fails the deploy).
+      # Smoke test the deployment. A failing probe fails the deploy: the restore
+      # succeeded but the environment is not serving the data (see #207).
       echo ""
       echo -e "${GREEN}==> Running smoke test...${NC}"
-      "$SCRIPT_DIR/../ops/smoke-test.sh" "$ENVIRONMENT" || \
-        echo -e "${YELLOW}==> Smoke test reported failures (non-blocking).${NC}"
+      "$SCRIPT_DIR/../ops/smoke-test.sh" "$ENVIRONMENT"
       exit 0
       ;;
     Failed|Cancelled|TimedOut|DeliveryTimedOut|ExecutionTimedOut)

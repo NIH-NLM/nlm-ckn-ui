@@ -327,7 +327,8 @@ echo -e "\n${GREEN}Backend URL:  $BACKEND_URL${NC}"
 echo -e "${GREEN}Image Tag:    $IMAGE_TAG${NC}"
 echo -e "${GREEN}Full Image:   $FULL_IMAGE_URI${NC}"
 
-# Smoke test the deployment through the public edge (advisory — never fails the deploy).
+# Smoke test the deployment through the public edge. A failing probe fails the
+# deploy: the environment is not serving, and a green check over a dead
+# environment is worse than no check (see #207).
 echo -e "\n${GREEN}Running smoke test...${NC}"
-"$SCRIPT_DIR/../ops/smoke-test.sh" "$ENVIRONMENT" || \
-  echo -e "${YELLOW}Smoke test reported failures (non-blocking).${NC}"
+"$SCRIPT_DIR/../ops/smoke-test.sh" "$ENVIRONMENT"
