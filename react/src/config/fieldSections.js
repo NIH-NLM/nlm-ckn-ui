@@ -189,3 +189,16 @@ export const omittedFields = {
   // The specification removes the DOI row.
   PUB: ["publication_doi"],
 };
+
+/**
+ * Collections whose documents a node card shows in full under "Related", keyed
+ * by the card's collection abbreviation, in display order. A card's own rows
+ * show only its own document; a neighbor's values appear only as its own card.
+ * Each pair is joined by exactly one edge, so each lists at most one document.
+ */
+export const relatedCollections = {
+  // The dataset leads: it is the best context for a cell set.
+  CS: ["CSD", "BMC", "BGS"],
+  BMC: ["CS"],
+  BGS: ["CS"],
+};
