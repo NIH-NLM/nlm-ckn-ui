@@ -6,8 +6,13 @@ on:
     paths:
       - 'ETL_VERSION'
   workflow_dispatch:
-    # Uncomment the inputs block below when sandbox/prod environments are ready.
-    # inputs:
+    inputs:
+      force:
+        description: 'Re-restore even if the environment is already on this version'
+        required: false
+        default: false
+        type: boolean
+    # Uncomment the environment input below when sandbox/prod are ready.
     #   environment:
     #     description: 'Target environment'
     #     required: true
@@ -77,8 +82,18 @@ jobs:
           role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/nlm-ckn-github-actions
           aws-region: us-east-1
 
+      # FORCE is read from the environment rather than interpolated into the
+      # command line: a workflow expression inside run: is substituted before
+      # the shell sees it.
       - name: Deploy dataset to dev
-        run: ./scripts/app/deploy-dataset.sh dev
+        env:
+          FORCE: ${{ inputs.force }}
+        run: |
+          if [ "$FORCE" = "true" ]; then
+            ./scripts/app/deploy-dataset.sh --force dev
+          else
+            ./scripts/app/deploy-dataset.sh dev
+          fi
       # Uncomment below (and comment out the step above) once sandbox/prod are deployed.
       # - name: Deploy dataset
       #   run: ./scripts/app/deploy-dataset.sh ${{ inputs.environment || 'dev' }}
