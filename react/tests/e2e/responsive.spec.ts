@@ -14,7 +14,12 @@ for (const width of [390, 1200]) {
   for (const [name, path] of ROUTES) {
     test(`no horizontal overflow at ${width}px on ${name}`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
-      await page.goto(path, { waitUntil: "networkidle" });
+      // Not "networkidle": with no backend every API call fails, and waiting for
+      // the network to fall quiet times out on CI while the page itself renders
+      // fine. The nav is the last part of the header to lay out, so its being
+      // visible is what this measurement actually needs.
+      await page.goto(path);
+      await expect(page.getByRole("link", { name: "About" })).toBeVisible();
       // Allow 1px for sub-pixel rounding.
       const overflow = await page.evaluate((w) => document.documentElement.scrollWidth - w, width);
       expect(overflow, `scrollWidth exceeds ${width}px by ${overflow}px`).toBeLessThanOrEqual(1);
