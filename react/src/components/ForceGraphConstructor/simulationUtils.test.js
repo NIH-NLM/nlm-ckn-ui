@@ -1,4 +1,4 @@
-import { computeBigDipperTargets } from "./simulationUtils";
+import { computeBigDipperTargets, computeFitTransform } from "./simulationUtils";
 
 /** The seven collections that occupy stars, in bowl-then-handle order. */
 const MOTIF = ["GS", "PR", "CHEMBL", "MONDO", "CS", "CL", "UBERON"];
@@ -94,5 +94,48 @@ describe("computeBigDipperTargets", () => {
     const square = computeBigDipperTargets(MOTIF, 600, 600);
 
     expect(wide).toEqual(square);
+  });
+});
+
+describe("computeFitTransform", () => {
+  it("scales a graph larger than the view down so every node fits inside the padding", () => {
+    const nodes = [
+      { x: -1000, y: -500 },
+      { x: 1000, y: 500 },
+    ];
+    const { k, x, y } = computeFitTransform(nodes, 1000, 800, 1, 50);
+    expect(k).toBeCloseTo(900 / 2000);
+    // Symmetric graph around the origin stays centred.
+    expect(x).toBeCloseTo(0);
+    expect(y).toBeCloseTo(0);
+  });
+
+  it("centres an off-centre graph", () => {
+    const nodes = [
+      { x: 100, y: 200 },
+      { x: 300, y: 400 },
+    ];
+    const { k, x, y } = computeFitTransform(nodes, 1000, 1000, 1, 0);
+    expect(k).toBe(1);
+    expect(x).toBeCloseTo(-200);
+    expect(y).toBeCloseTo(-300);
+  });
+
+  it("never zooms in past maxScale on a small graph", () => {
+    const { k } = computeFitTransform(
+      [
+        { x: 0, y: 0 },
+        { x: 10, y: 10 },
+      ],
+      1000,
+      800,
+      1,
+      48,
+    );
+    expect(k).toBe(1);
+  });
+
+  it("returns null for an empty graph", () => {
+    expect(computeFitTransform([], 1000, 800, 1, 48)).toBeNull();
   });
 });

@@ -598,6 +598,8 @@ const ForceGraph = ({
           nodes: graphData.nodes,
           links: graphData.links,
           labelStates: settings.labelStates,
+          // Frame a loaded or switched-to graph; an undo/redo keeps the view.
+          fitView: !isRestoring,
         });
         lastRenderedNodeIdsRef.current = new Set(graphData.nodes.map((n) => n._id || n.id));
         lastRenderedLinkIdsRef.current = new Set(

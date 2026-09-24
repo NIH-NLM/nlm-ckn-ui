@@ -618,6 +618,26 @@ export function applyLayoutMode(
 /**
  * Returns whether a layout phase transition is currently in progress.
  */
+/**
+ * The zoom transform that frames every node in a width x height view centred on
+ * the origin (the SVG viewBox is centred), keeping `padding` px clear at each
+ * edge and never zooming in past `maxScale`.
+ * @returns {{k: number, x: number, y: number} | null} null when there are no nodes.
+ */
+export function computeFitTransform(nodes, width, height, maxScale, padding) {
+  if (!nodes || nodes.length === 0) return null;
+  const xs = nodes.map((n) => n.x);
+  const ys = nodes.map((n) => n.y);
+  const [x0, x1] = [Math.min(...xs), Math.max(...xs)];
+  const [y0, y1] = [Math.min(...ys), Math.max(...ys)];
+  const k = Math.min(
+    maxScale,
+    (width - 2 * padding) / Math.max(x1 - x0, 1),
+    (height - 2 * padding) / Math.max(y1 - y0, 1),
+  );
+  return { k, x: (-k * (x0 + x1)) / 2, y: (-k * (y0 + y1)) / 2 };
+}
+
 export function isPhaseTransitionActive() {
   return phaseTimeout !== null;
 }
