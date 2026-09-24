@@ -16,6 +16,7 @@
 
 # playwright
 /playwright-report
+/playwright-report-design
 /test-results
 
 # misc

@@ -44,6 +44,7 @@
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:artifacts": "playwright test --config=playwright.artifacts.config.ts",
     "e2e:report": "playwright show-report",
+    "test:design": "playwright test --config=playwright.design.config.ts",
     "eject": "react-scripts eject",
     "watch": "npm-watch",
     "check": "biome ci .",
