@@ -1184,28 +1184,30 @@ fieldset.collection-picker {
   min-width: 0;
 }
 
+/* Figma frame V "Extended Thumnail Panel" (930:575), no top rule. */
 .graph-workspace-shelf {
   flex: 0 0 auto;
-  /* No design-token equivalent for the shelf strip's light-blue background; value taken directly from Figma */
-  background: #f7fbfd;
-  border-top: 1px solid var(--color-gray-lighter);
-  padding: var(--spacing-sm);
+  background: var(--color-bg-light-blue); /* #f7fbfd */
+  padding: 10px 20px;
 }
 
-/* History strip heading = the graph's origin (Figma Body Small 12px Medium).
-   Single-line box that ellipsis-truncates when too long, so long/multi-origin
-   titles don't wrap and disturb the strip spacing. */
+/* History strip heading (Figma Body Small 12px Medium) with a help icon. */
 .graph-history-title {
-  margin: 0 0 8px;
+  margin: 0 0 4px;
   max-width: 100%;
-  color: var(--color-gray-dark);
+  color: var(--color-gray); /* #5B616B */
   font-weight: 500;
   font-size: 12px;
-  line-height: 16px;
+  line-height: 1.125;
   letter-spacing: 0.4px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.graph-history-help {
+  margin-left: 4px;
+  color: var(--color-gray); /* #5B616B */
+  cursor: help;
 }
 
 @media (max-width: 768px) {
@@ -1240,12 +1242,29 @@ fieldset.collection-picker {
 
 /* Saved graph shelf */
 
+/* Rows of 180px cards 12px apart; one row shows and the rest scroll, with the
+   Figma "Scroll Bar - L" (930:577). The standard properties cover Chromium and
+   Firefox; Safari only honours the -webkit- pseudo-elements. */
 .saved-graph-shelf {
   display: flex;
-  flex-direction: row;
+  flex-flow: row wrap;
   align-items: flex-start;
-  gap: var(--spacing-sm);
-  overflow-x: auto;
+  gap: 12px;
+  max-height: 164px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-gray-lighter) var(--color-gray-lightest);
+}
+.saved-graph-shelf::-webkit-scrollbar {
+  width: 4px;
+}
+.saved-graph-shelf::-webkit-scrollbar-track {
+  background: var(--color-gray-lightest);
+  border-radius: 8px;
+}
+.saved-graph-shelf::-webkit-scrollbar-thumb {
+  background: var(--color-gray-lighter);
+  border-radius: 8px;
 }
 
 .saved-graph-shelf--empty {
@@ -1254,36 +1273,48 @@ fieldset.collection-picker {
   padding: var(--spacing-sm);
 }
 
+/* Figma "Vis Cards" (674:3149): 180x164, title above the thumbnail. */
 .saved-graph-card {
   flex: 0 0 auto;
   width: 180px;
+  height: 164px;
   display: flex;
   flex-direction: column;
-  background-color: var(--color-white);
-  border: 1px solid var(--color-gray-lighter);
+  gap: 4px;
+  background-color: var(--color-gray-lightest); /* #f1f1f1 */
+  border: 1px solid var(--color-cool-blue-lightest); /* #dce4ef */
   border-radius: var(--radius-md);
-  padding: var(--spacing-xs);
+  padding: 8px;
   box-sizing: border-box;
   position: relative;
+  overflow: hidden;
 }
 
 .saved-graph-card--active {
   /* 2px border in place of the 1px default; compensate padding by 1px so layout doesn't shift */
   border: 2px solid var(--color-primary);
-  padding: calc(var(--spacing-xs) - 1px);
+  padding: 7px;
   /* No design-token equivalent for the selection tint; value taken directly from Figma */
   background-color: #dce4ef;
 }
 
+/* One ellipsized line so nothing overflows the card (review pin 23); the right
+   padding keeps it clear of the delete control in the corner. */
 .saved-graph-card-title {
+  order: -1;
+  flex: 0 0 auto;
+  margin: 0;
   background: none;
   border: none;
   font: inherit;
   cursor: pointer;
   text-align: left;
-  font-size: var(--font-size-sm);
-  color: var(--color-base);
-  padding: var(--spacing-xs) 0;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.125;
+  letter-spacing: 0.4px;
+  color: var(--color-gray); /* #5B616B */
+  padding: 0 16px 0 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1291,15 +1322,14 @@ fieldset.collection-picker {
 }
 
 .saved-graph-card-thumb {
-  /* Thumbnail renders above the title. */
-  order: -1;
-  background: none;
-  border: none;
+  flex: 1 1 auto;
+  min-height: 0;
+  background: var(--color-white);
+  border: 0.2px solid var(--color-gray-lightest);
   padding: 0;
   margin: 0;
   cursor: pointer;
   width: 100%;
-  aspect-ratio: 3 / 2;
   display: block;
   overflow: hidden;
   border-radius: var(--radius-sm);
