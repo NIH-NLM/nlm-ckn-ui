@@ -4,7 +4,7 @@ import {
   getCollectedErrors,
   installErrorInstrumentation,
 } from "./utils/errorInstrumentation";
-import { openNodeContextMenu } from "./utils/graphInteractions";
+import { generateGraphAndSettle, openNodeContextMenu } from "./utils/graphInteractions";
 import { doc, edge } from "./utils/testSeeds";
 
 const COLL = "TEST_DOCUMENT_COLLECTION";
@@ -162,7 +162,7 @@ test("Removing an origin drops its unshared nodes and preserves shared node posi
 
   await page.goto("/#/graph");
   await page.locator(".selected-items-container").waitFor({ state: "visible" });
-  await page.getByRole("button", { name: /Generate Graph|Update Graph/i }).click();
+  await generateGraphAndSettle(page);
 
   const svg = page.locator("#chart-container-wrapper svg");
   await expect(svg).toBeVisible();
@@ -243,7 +243,7 @@ test("Undo after removing an origin restores it in both the graph and the Origin
 
   await page.goto("/#/graph");
   await page.locator(".selected-items-container").waitFor({ state: "visible" });
-  await page.getByRole("button", { name: /Generate Graph|Update Graph/i }).click();
+  await generateGraphAndSettle(page);
 
   const svg = page.locator("#chart-container-wrapper svg");
   await expect(svg).toBeVisible();
@@ -320,7 +320,7 @@ test("Expanding a node then adding a new origin drops the expand-introduced stra
 
   await page.goto("/#/graph");
   await page.locator(".selected-items-container").waitFor({ state: "visible" });
-  await page.getByRole("button", { name: /Generate Graph|Update Graph/i }).click();
+  await generateGraphAndSettle(page);
 
   const svg = page.locator("#chart-container-wrapper svg");
   await expect(svg).toBeVisible();
