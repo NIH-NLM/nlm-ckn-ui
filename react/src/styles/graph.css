@@ -765,6 +765,29 @@ g.node.pinned .node-pin-marker path {
   letter-spacing: 0.4px;
 }
 
+/* The inspected cards scroll inside the column, so Learn & Explore stays on
+   the bottom edge (frame V pins 22, 25). Scrollbar is Figma "Scroll Bar - L"
+   (931:696): 4px, #D6D7D9 thumb on a #F1F1F1 track. The standard properties
+   cover Chromium and Firefox; Safari only honours the -webkit- pseudo-elements. */
+.node-inspector-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-gray-lighter) var(--color-gray-lightest);
+}
+.node-inspector-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.node-inspector-scroll::-webkit-scrollbar-track {
+  background: var(--color-gray-lightest);
+  border-radius: 8px;
+}
+.node-inspector-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-gray-lighter);
+  border-radius: 8px;
+}
+
 /* Sectioned Inspector Card */
 
 .inspector-card {
@@ -817,6 +840,7 @@ g.node.pinned .node-pin-marker path {
   flex-direction: column;
   gap: 8px;
 }
+/* Divider under each heading (frame V pin 15, Line 11 in 930:506). */
 .inspector-section-title {
   color: var(--color-gray-dark); /* #323A45 */
   font-weight: 500; /* Roboto Medium */
@@ -824,6 +848,8 @@ g.node.pinned .node-pin-marker path {
   line-height: 16px;
   letter-spacing: 0.4px;
   margin: 0;
+  padding: 2px 0 8px;
+  border-bottom: 0.4px solid var(--color-cool-blue-lightest); /* #dce4ef */
 }
 .inspector-section-info {
   color: var(--color-gray); /* #5B616B */
@@ -840,6 +866,7 @@ g.node.pinned .node-pin-marker path {
 /* Field rows within a section: label #5B616B, value #212121, both 12px; hairline divider. */
 .inspector-section .document-attributes-table {
   width: 100%;
+  margin-top: 0; /* the section's 8px gap already separates it from the divider */
 }
 .inspector-section .attribute-key {
   color: var(--color-gray); /* #5B616B */

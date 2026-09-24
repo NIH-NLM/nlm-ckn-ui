@@ -25,6 +25,28 @@ const resolveFtuUrl = (inspectedDocument, ftuParts) => {
 };
 
 /**
+ * The inspected document's cards in a column that scrolls on its own, with
+ * Learn & Explore pinned beneath it (Figma frame V, 930:502).
+ */
+const InspectedDocument = ({ document, ftuUrl, showLearnExplore }) => (
+  <div className="node-inspector">
+    <div className="node-inspector-scroll">
+      <DocumentCard document={document} />
+      <RelatedCards document={document} />
+      {ftuUrl && (
+        <div className="inspector-ftu">
+          <FTUIllustration
+            selectedIllustration={ftuUrl}
+            illustrations={FTU_ILLUSTRATIONS_JSONLD_URL}
+          />
+        </div>
+      )}
+    </div>
+    {showLearnExplore && <LearnExplore />}
+  </div>
+);
+
+/**
  * Left-panel inspector. Shows the origin document until a node is selected,
  * then swaps to the selected node's document (fetched on demand).
  * @param {object} props
@@ -48,21 +70,12 @@ const NodeInspector = ({ selectedNodeId, originDocument = null, showLearnExplore
         </div>
       );
     }
-    const ftuUrl = resolveFtuUrl(originDocument, ftuParts);
     return (
-      <div className="node-inspector">
-        <DocumentCard document={originDocument} />
-        <RelatedCards document={originDocument} />
-        {ftuUrl && (
-          <div className="inspector-ftu">
-            <FTUIllustration
-              selectedIllustration={ftuUrl}
-              illustrations={FTU_ILLUSTRATIONS_JSONLD_URL}
-            />
-          </div>
-        )}
-        {showLearnExplore && <LearnExplore />}
-      </div>
+      <InspectedDocument
+        document={originDocument}
+        ftuUrl={resolveFtuUrl(originDocument, ftuParts)}
+        showLearnExplore={showLearnExplore}
+      />
     );
   }
   if (loading) {
@@ -84,21 +97,12 @@ const NodeInspector = ({ selectedNodeId, originDocument = null, showLearnExplore
       </div>
     );
   }
-  const ftuUrl = resolveFtuUrl(document, ftuParts);
   return (
-    <div className="node-inspector">
-      <DocumentCard document={document} />
-      <RelatedCards document={document} />
-      {ftuUrl && (
-        <div className="inspector-ftu">
-          <FTUIllustration
-            selectedIllustration={ftuUrl}
-            illustrations={FTU_ILLUSTRATIONS_JSONLD_URL}
-          />
-        </div>
-      )}
-      {showLearnExplore && <LearnExplore />}
-    </div>
+    <InspectedDocument
+      document={document}
+      ftuUrl={resolveFtuUrl(document, ftuParts)}
+      showLearnExplore={showLearnExplore}
+    />
   );
 };
 
