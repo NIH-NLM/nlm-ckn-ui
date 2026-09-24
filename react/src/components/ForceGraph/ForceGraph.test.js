@@ -473,6 +473,10 @@ describe("ForceGraph", () => {
 
       await waitFor(() => expect(mockGraphInstance.restoreGraph).toHaveBeenCalled());
       expect(mockGraphInstance.updateGraph).not.toHaveBeenCalled();
+      // A restored (switched-to) graph is framed to fit; undo/redo would pass false.
+      expect(mockGraphInstance.restoreGraph).toHaveBeenCalledWith(
+        expect.objectContaining({ fitView: true }),
+      );
     });
 
     it("auto-captures a history entry once when a new origin resolves, and not again on re-resolve or restore", async () => {

@@ -11,6 +11,7 @@ import { laneApex, renderGraph, toggleFocusNodeRendering } from "./graphRenderin
 import { attachLasso } from "./lassoSelection";
 import {
   applyLayoutMode,
+  computeFitTransform,
   DEFAULT_GRAPH_OPTIONS,
   isPhaseTransitionActive,
   runSimulation,
@@ -97,6 +98,7 @@ function ForceGraphConstructor(
       event.subject.fy = event.subject.y;
     })
     .on("drag", (event, _d) => {
+      viewMovedByUser = true;
       if (groupDragSnapshot && groupDragSnapshot.subjectId === event.subject.id) {
         const dx = event.x - groupDragSnapshot.subjectStartX;
         const dy = event.y - groupDragSnapshot.subjectStartY;
@@ -224,6 +226,11 @@ function ForceGraphConstructor(
   // alphaTarget(0.1) warmup.
   let activeDrags = 0;
 
+  // Whether the user has panned, zoomed or dragged a node since the current
+  // graph was built. While false, the view keeps the settled layout framed
+  // (fitToView), including after a resize reheats it.
+  let viewMovedByUser = false;
+
   // Create main simulation.
   const simulation = d3
     .forceSimulation()
@@ -236,6 +243,11 @@ function ForceGraphConstructor(
   // (e.g., after a drag-induced reheat). updateGraph's waitForAlpha callback
   // already does this for full rebuilds; this catches the cases that don't
   // route through there. Namespaced to coexist with other "end" handlers.
+  // Keep an untouched view framed when a reheat (resize, drag release) cools.
+  simulation.on("end.fitView", () => {
+    if (!viewMovedByUser && !isLiveSimulationRunning) fitToView();
+  });
+
   simulation.on("end.labelRestore", () => {
     // Skip during live-simulation mode — toggleSimulation(true) explicitly
     // hides labels for the duration; the natural cooldown after alpha decay
@@ -352,6 +364,9 @@ function ForceGraphConstructor(
       return (!event.ctrlKey || event.type === "wheel") && !event.button;
     })
     .on("zoom", (event) => {
+      // Only gestures carry a sourceEvent; programmatic transforms (fit,
+      // centre, resize) don't count as the user taking over the view.
+      if (event.sourceEvent) viewMovedByUser = true;
       g.attr("transform", event.transform);
       updateLabelVisibilityOnZoom(event.transform.k);
     })
@@ -463,14 +478,20 @@ function ForceGraphConstructor(
 
     placeLegend(newWidth, newHeight);
 
-    // Recalculate translation to keep view centered after resize.
+    // Recalculate translation to keep view centered after resize. An untouched
+    // view is refitted instead, since the container often settles its size
+    // (e.g. once the history card renders) after the first fit.
     const newTranslateX = newWidth / 2 - centerPoint[0] * currentTransform.k;
     const newTranslateY = newHeight / 2 - centerPoint[1] * currentTransform.k;
     const newTransform = d3.zoomIdentity
       .translate(newTranslateX, newTranslateY)
       .scale(currentTransform.k);
 
-    svg.call(zoomHandler.transform, newTransform);
+    if (viewMovedByUser) {
+      svg.call(zoomHandler.transform, newTransform);
+    } else {
+      fitToView();
+    }
     // Only restart simulation in force mode when no phase transition is active
     // and no drag is in flight. In clustered/radial modes the layout is already
     // settled or transitioning — restarting would disrupt it. During a drag, a
@@ -637,6 +658,23 @@ function ForceGraphConstructor(
     });
   }
 
+  // Frames every node in the view, leaving room for the legend and canvas
+  // controls, and never zooms in past the initial scale. Without it a large
+  // graph opened cropped and zoomed in, since only the initial scale is set.
+  // Instant rather than animated, so once data-sim-settled flips nothing on
+  // screen is still moving.
+  function fitToView() {
+    const fit = computeFitTransform(
+      simulation.nodes(),
+      mergedOptions.width,
+      mergedOptions.height,
+      mergedOptions.initialScale,
+      48,
+    );
+    if (!fit) return;
+    svg.call(zoomHandler.transform, d3.zoomIdentity.translate(fit.x, fit.y).scale(fit.k));
+  }
+
   // Pans and zooms view to center on specific node.
   function centerOnNode(nodeId, transitionDuration = 1000) {
     const node = simulation.nodes().find((node) => node._id === nodeId);
@@ -697,7 +735,9 @@ function ForceGraphConstructor(
 
   // Rebuilds graph from a saved state object.
   // Fixes node positions initially to prevent simulation drift on restore.
-  function restoreGraph({ nodes, links, labelStates }) {
+  // fitView frames the restored graph; undo/redo leave it off so the user's
+  // view stays where they put it.
+  function restoreGraph({ nodes, links, labelStates, fitView = false }) {
     svg.attr("data-sim-settled", "false");
     // Invalidate any in-flight waitForAlpha promises from prior updateGraph
     // calls — without this, a callback resolving after restoreGraph would
@@ -781,6 +821,10 @@ function ForceGraphConstructor(
 
     // Restore is a single-tick draw, so positions are stable immediately.
     svg.attr("data-sim-settled", "true");
+    if (fitView) {
+      viewMovedByUser = false;
+      fitToView();
+    }
   }
 
   // Restore force strengths and apply the current layout mode.
@@ -822,6 +866,7 @@ function ForceGraphConstructor(
     svg.attr("data-sim-settled", "false");
     if (resetData) {
       resetGraph();
+      viewMovedByUser = false;
     }
     // Sync internal label state with incoming state.
     currentLabelStates = { ...labelStates };
@@ -1008,6 +1053,8 @@ function ForceGraphConstructor(
       // Perform post-simulation actions.
       if (centerNodeId) {
         centerOnNode(centerNodeId);
+      } else if (!viewMovedByUser) {
+        fitToView();
       }
 
       // Use the zoom-aware function to set final label visibility.
