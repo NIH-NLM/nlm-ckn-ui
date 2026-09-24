@@ -4,6 +4,7 @@ import {
   getCollectedErrors,
   installErrorInstrumentation,
 } from "./utils/errorInstrumentation";
+import { generateGraphAndSettle } from "./utils/graphInteractions";
 
 // Graph save & load lifecycle: build a graph, save it, load via modal, then delete.
 test("Graph save/load lifecycle", async ({ page }) => {
@@ -324,7 +325,7 @@ test("Saved graph preserves pin state on load", async ({ page }) => {
   await page.waitForFunction(() => (window as any).__STORE__ != null);
   await expect(page.locator("#chart-container-wrapper svg")).toBeVisible();
 
-  await page.getByRole("button", { name: /Generate Graph|Update Graph/i }).click();
+  await generateGraphAndSettle(page);
 
   const svg = page.locator("#chart-container-wrapper svg");
   await expect(svg).toHaveAttribute("data-sim-settled", "true", { timeout: 10000 });

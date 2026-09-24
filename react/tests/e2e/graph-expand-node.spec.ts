@@ -4,7 +4,7 @@ import {
   getCollectedErrors,
   installErrorInstrumentation,
 } from "./utils/errorInstrumentation";
-import { openNodeContextMenu } from "./utils/graphInteractions";
+import { generateGraphAndSettle, openNodeContextMenu } from "./utils/graphInteractions";
 import { doc, edge, type TestDoc, type TestEdge } from "./utils/testSeeds";
 
 const COLL = "TEST_DOCUMENT_COLLECTION";
@@ -381,7 +381,7 @@ test("Expanding a node preserves the positions of pre-existing nodes", async ({ 
 
   await page.goto("/#/graph");
   await page.locator(".selected-items-container").waitFor({ state: "visible" });
-  await page.getByRole("button", { name: /Generate Graph|Update Graph/i }).click();
+  await generateGraphAndSettle(page);
 
   const svg = page.locator("#chart-container-wrapper svg");
   await expect(svg).toBeVisible();
@@ -487,7 +487,7 @@ test("Pin/Unpin action toggles the pin marker on a node", async ({ page }) => {
 
   await page.goto("/#/graph");
   await page.locator(".selected-items-container").waitFor({ state: "visible" });
-  await page.getByRole("button", { name: /Generate Graph|Update Graph/i }).click();
+  await generateGraphAndSettle(page);
 
   const svg = page.locator("#chart-container-wrapper svg");
   await expect(svg).toBeVisible();
