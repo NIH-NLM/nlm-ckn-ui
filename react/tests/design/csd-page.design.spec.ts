@@ -148,16 +148,18 @@ test("info panel", async ({ page }) => {
         el = el.parentElement;
       }
       if (!el || el === document.documentElement || el === document.body) return false;
-      el.scrollTop = el.scrollHeight;
+      // "instant": the app sets scroll-behavior: smooth, which would leave
+      // scrollTop at 0 when read back straight away.
+      el.scrollTo({ top: el.scrollHeight, behavior: "instant" });
       return section.getBoundingClientRect().bottom <= el.getBoundingClientRect().bottom + 1;
     });
   expect
     .soft(lastSectionReachable, "panel scrolls internally to its last section (pin 22)")
     .toBe(true);
-  const card = await box(page, ".inspector-card");
+  const panel = await box(page, ".node-inspector-scroll");
   const learn = await box(page, ".learn-explore");
   expect
-    .soft(px(card.y + card.height), "panel ends above Learn & Explore")
+    .soft(px(panel.y + panel.height), "panel ends above Learn & Explore")
     .toBeLessThanOrEqual(px(learn.y));
   expect
     .soft(px(learn.y + learn.height), "Learn & Explore pinned to the bottom (pin 25)")
