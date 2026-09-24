@@ -35,6 +35,12 @@ async function css(page: Page, selector: string, prop: string, pseudo?: string):
 // Rounds to the nearest px so sub-pixel layout doesn't read as a mismatch.
 const px = (n: number) => Math.round(n);
 
+// The workspace ends 16px above the site footer, which the team requires on
+// every page (frame V draws the page without one).
+async function workspaceBottom(page: Page): Promise<number> {
+  return px((await box(page, ".site-footer")).y) - 16;
+}
+
 test.beforeEach(async ({ page }) => {
   await page.goto(CSD_PATH);
   await expect(page.locator(".graph-title")).toBeVisible({ timeout: 30_000 });
@@ -155,10 +161,7 @@ test("info panel", async ({ page }) => {
     .toBeLessThanOrEqual(px(learn.y));
   expect
     .soft(px(learn.y + learn.height), "Learn & Explore pinned to the bottom (pin 25)")
-    .toBeGreaterThanOrEqual(1040);
-  expect
-    .soft(px(learn.y + learn.height), "Learn & Explore on screen (pin 25)")
-    .toBeLessThanOrEqual(1060);
+    .toBe(await workspaceBottom(page));
 });
 
 test("graph section", async ({ page }) => {
@@ -217,10 +220,9 @@ test("history strip", async ({ page }) => {
   const gap = px(shelf.y - (graph.y + graph.height));
   expect.soft(gap, "graph to strip gap (pin 19)").toBeGreaterThanOrEqual(16);
   expect.soft(gap, "graph to strip gap (pin 19)").toBeLessThanOrEqual(20);
-  expect.soft(px(shelf.y + shelf.height), "strip on screen").toBeLessThanOrEqual(1060);
   expect
     .soft(px(shelf.y + shelf.height), "strip pinned to the bottom")
-    .toBeGreaterThanOrEqual(1040);
+    .toBe(await workspaceBottom(page));
   expect
     .soft(await css(page, ".graph-workspace-shelf", "background-color"), "strip bg (pin 21)")
     .toBe(BG_LIGHT_BLUE);

@@ -141,15 +141,19 @@
 /* Footer */
 
 .site-footer {
+  display: flex;
+  align-items: center;
+  min-height: var(--app-footer-height);
   background-color: var(--color-dark);
   color: var(--color-light);
-  padding: 25px 20px;
+  padding: 4px var(--spacing-2xl);
   margin-top: 40px;
   border-top: 3px solid var(--color-main);
-  font-size: 0.9em;
+  font-size: 0.8em;
 }
 
 .footer-content-wrapper {
+  flex: 1;
   margin: 0 auto;
   display: flex;
   flex-wrap: wrap;
