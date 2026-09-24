@@ -7,21 +7,23 @@
   justify-content: start;
   flex-wrap: wrap;
   gap: 24px; /* Figma nav gap (682:3491) */
-  box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.1);
-  border-bottom: 1px solid var(--color-border);
-  padding: 0 40px; /* Figma nav horizontal padding; h4 min-height sets the bar height */
+  min-height: 46px; /* Figma "Menu Bar - Desktop L" (635:3326); no stroke or shadow */
+  padding: 0 40px;
 }
 
-/* Nav items: Figma Title Small — 14px Roboto Medium, gray-dark (682:3491). */
+/* Nav items: 80px wide, 40px tall, centred label — 14px Roboto Medium,
+   line-height 1.4, gray-dark (Menu Item 635:3327). */
 .navbar h4 {
-  min-height: 44px;
+  min-width: 80px;
+  min-height: 40px;
   display: flex;
   align-items: center;
+  justify-content: center;
   margin: 0;
+  padding: 0 4px;
   font-size: 14px;
   font-weight: 500;
-  line-height: 20px;
-  letter-spacing: 0.1px;
+  line-height: 1.4;
   color: var(--color-gray-dark);
 }
 
@@ -68,7 +70,8 @@
 .app-title-brand {
   display: flex;
   align-items: center;
-  gap: var(--spacing-lg); /* 24px */
+  /* 32px per the designer's 2026-09-22 review; the frame (930:490) still says 24. */
+  gap: var(--spacing-xl);
   min-width: 0;
 }
 
@@ -82,9 +85,9 @@
 .app-title-wordmark {
   color: var(--color-white);
   font-family: var(--font-family-base);
-  font-size: 22px; /* Figma Title Large (682:3480) */
+  font-size: 24px; /* Figma "title text" (930:492) */
   font-weight: 400;
-  line-height: 28px;
+  line-height: 1.125;
   white-space: nowrap;
 }
 
@@ -196,17 +199,6 @@
 .footer-copyright p {
   margin: 0;
   line-height: 1.5;
-}
-
-/* Tablet and up */
-@media (min-width: 640px) {
-  .navbar {
-    padding: 0;
-  }
-
-  .navbar h4 {
-    padding-left: var(--spacing-xl);
-  }
 }
 
 @media (max-width: 768px) {
