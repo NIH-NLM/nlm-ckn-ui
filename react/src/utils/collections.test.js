@@ -263,6 +263,39 @@ describe("getSectionedFields for cell sets", () => {
 // Exercises the shipped collection maps rather than a fixture, because these
 // URLs are only correct if the config names the field that actually holds a
 // resolvable identifier. Both cases below shipped broken.
+describe("getSectionedFields for marker sets", () => {
+  const layout = (doc) =>
+    getSectionedFields(doc).map(({ section, info, fields }) => ({
+      section,
+      info: Boolean(info),
+      rows: fields.map((f) => [f.label, f.value]),
+    }));
+
+  it("shows a biomarker combination's markers and the F-beta score that grades them", () => {
+    expect(layout({ _id: "BMC/k", markers: "GZMK,ENSG00000277734", f_beta_score: "0.63" })).toEqual(
+      [
+        {
+          section: "Markers & Selectively Expressed Genes",
+          info: true,
+          rows: [["Biomarker combination", "GZMK,ENSG00000277734"]],
+        },
+        { section: "Biomarker Combination Metrics", info: true, rows: [["F-beta score", "0.63"]] },
+      ],
+    );
+  });
+
+  it("shows a binary gene set's markers and its mean binary score", () => {
+    expect(layout({ _id: "BGS/k", markers: "GZMK,CD3E", mean_binary_score: "0.95" })).toEqual([
+      {
+        section: "Markers & Selectively Expressed Genes",
+        info: true,
+        rows: [["Binary gene set", "GZMK,CD3E"]],
+      },
+      { section: "Binary Score", info: true, rows: [["Mean binary score", "0.95"]] },
+    ]);
+  });
+});
+
 describe("outbound links from the shipped collection maps", () => {
   it("points a cell set dataset at the bare CELLxGENE dataset UUID", () => {
     // dataset_identifier carries a "__<tissue>" suffix that CELLxGENE 404s on;
