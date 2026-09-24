@@ -85,10 +85,65 @@ describe("DatasetFigures", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("closes on the backdrop, by keyboard as well as by click", () => {
+  it("closes on a click on the backdrop, which is out of the tab order", () => {
     render(<DatasetFigures document={datasetDocument} />);
     openFigure(/Cell set dendrogram/);
-    fireEvent.click(screen.getByRole("button", { name: "Close figure" }));
+    const backdrop = screen.getByRole("button", { name: "Close figure" });
+    expect(backdrop).toHaveAttribute("tabindex", "-1");
+    fireEvent.click(backdrop);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("closes on Escape pressed inside the interactive frame", () => {
+    render(<DatasetFigures document={datasetDocument} />);
+    openFigure(/Silhouette and F-beta scores/);
+    const frame = screen.getByTitle("Silhouette and F-beta scores");
+    fireEvent.load(frame);
+    fireEvent.keyDown(frame.contentWindow, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("focuses the close button on open and returns focus to the figure on close", () => {
+    render(<DatasetFigures document={datasetDocument} />);
+    const trigger = screen.getByRole("button", { name: /Cell set dendrogram/ });
+    trigger.focus();
+    fireEvent.click(trigger);
+    expect(screen.getByTitle("Close")).toHaveFocus();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(trigger).toHaveFocus();
+  });
+
+  it("keeps Tab within the modal", () => {
+    render(<DatasetFigures document={datasetDocument} />);
+    openFigure(/Cell set dendrogram/);
+    const close = screen.getByTitle("Close");
+    const link = screen.getByRole("link", { name: "Open the SVG in a new tab" });
+    fireEvent.keyDown(close, { key: "Tab", shiftKey: true });
+    expect(link).toHaveFocus();
+    fireEvent.keyDown(link, { key: "Tab" });
+    expect(close).toHaveFocus();
+  });
+
+  it("brings focus back when it lands outside the dialog", () => {
+    // Tab out of the interactive frame is handled by the frame, not trapTab.
+    render(
+      <>
+        <button type="button">Behind the modal</button>
+        <DatasetFigures document={datasetDocument} />
+      </>,
+    );
+    openFigure(/Silhouette and F-beta scores/);
+    screen.getByRole("button", { name: "Behind the modal" }).focus();
+    expect(screen.getByTitle("Close")).toHaveFocus();
+  });
+
+  it("moves Tab through the dialog itself, not only at its ends", () => {
+    // Safari skips links when tabbing, so its own Tab from the close button
+    // would leave the dialog; every Tab is handled here instead.
+    render(<DatasetFigures document={datasetDocument} />);
+    openFigure(/Cell set dendrogram/);
+    const close = screen.getByTitle("Close");
+    fireEvent.keyDown(close, { key: "Tab" });
+    expect(screen.getByRole("link", { name: "Open the SVG in a new tab" })).toHaveFocus();
   });
 });
