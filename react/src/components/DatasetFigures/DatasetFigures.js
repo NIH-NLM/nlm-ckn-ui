@@ -107,42 +107,117 @@ const LazyFigureImage = ({ figure }) => {
 
 /**
  * One figure at full size, over the page.
+ *
+ * Focus moves to the close button on open, Tab cycles within the dialog, and
+ * focus returns to whatever opened it on every way of closing.
  * @param {object} props
  * @param {object} props.figure - The figure to show, from getDatasetFigures.
  * @param {Function} props.onClose - Called to dismiss the modal.
  */
-const FigureModal = ({ figure, onClose }) => (
-  <div className="modal-overlay">
-    {/* The click-outside affordance is a real button rather than a handler on
-        the backdrop, so it is reachable by keyboard like the close button. */}
-    <button type="button" className="modal-backdrop" aria-label="Close figure" onClick={onClose} />
-    <div
-      className="modal-content modal-content-figure"
-      role="dialog"
-      aria-modal="true"
-      aria-label={figure.label}
-    >
-      <h2 className="dataset-figure-modal-title">{figure.label}</h2>
-      <button type="button" className="modal-close-button" onClick={onClose} title="Close">
-        ×
-      </button>
-      {figure.interactiveUrl ? (
-        // A self-contained plotly page that loads its own bundle by a path
-        // relative to itself, so it is framed at its own URL rather than inlined.
-        <iframe
-          className="dataset-figure-modal-frame"
-          src={figure.interactiveUrl}
-          title={figure.label}
-        />
-      ) : (
-        <img className="dataset-figure-modal-image" src={figure.src} alt={figure.caption} />
-      )}
-      <p className="dataset-figure-caption">{figure.caption}</p>
-      <a className="external-link" href={figure.src} target="_blank" rel="noopener noreferrer">
-        Open the SVG in a new tab
-      </a>
+const FigureModal = ({ figure, onClose }) => {
+  const dialogRef = useRef(null);
+  const closeRef = useRef(null);
+
+  useEffect(() => {
+    const opener = document.activeElement;
+    closeRef.current?.focus();
+    // Tab inside the interactive frame is handled by the frame's own document,
+    // so trapTab never sees it leave; bring back any focus that lands outside.
+    const keepFocusInside = (event) => {
+      if (dialogRef.current && !dialogRef.current.contains(event.target)) {
+        closeRef.current?.focus();
+      }
+    };
+    document.addEventListener("focusin", keepFocusInside);
+    return () => {
+      document.removeEventListener("focusin", keepFocusInside);
+      opener?.focus?.();
+    };
+  }, []);
+
+  // Every Tab is moved by hand rather than only at the ends: Safari skips links
+  // when tabbing by default, so from the close button its own Tab would pass
+  // the dialog's link and leave the dialog.
+  const trapTab = (event) => {
+    if (event.key !== "Tab") {
+      return;
+    }
+    const focusable = [...dialogRef.current.querySelectorAll("button, a[href], iframe")];
+    const current = focusable.indexOf(document.activeElement);
+    const count = focusable.length;
+    let next;
+    if (current === -1) {
+      next = event.shiftKey ? count - 1 : 0;
+    } else {
+      next = (current + (event.shiftKey ? -1 : 1) + count) % count;
+    }
+    event.preventDefault();
+    focusable[next].focus();
+  };
+
+  // Key events inside the frame never reach the parent window, so Escape is
+  // bound in the frame too. The plots are same-origin; were one not, reading
+  // its window throws and Escape works only outside the frame.
+  const bindFrameEscape = (event) => {
+    try {
+      event.target.contentWindow.addEventListener("keydown", (keyEvent) => {
+        if (keyEvent.key === "Escape") {
+          onClose();
+        }
+      });
+    } catch {
+      // Cross-origin frame: nothing to bind.
+    }
+  };
+
+  return (
+    <div className="modal-overlay">
+      {/* Out of the tab order: Escape and the close button already dismiss the
+          modal from the keyboard, and a focusable backdrop let Tab leave it. */}
+      <button
+        type="button"
+        className="modal-backdrop"
+        aria-label="Close figure"
+        tabIndex={-1}
+        onClick={onClose}
+      />
+      <div
+        ref={dialogRef}
+        className="modal-content modal-content-figure"
+        role="dialog"
+        aria-modal="true"
+        aria-label={figure.label}
+        onKeyDown={trapTab}
+      >
+        <h2 className="dataset-figure-modal-title">{figure.label}</h2>
+        <button
+          ref={closeRef}
+          type="button"
+          className="modal-close-button"
+          onClick={onClose}
+          title="Close"
+        >
+          ×
+        </button>
+        {figure.interactiveUrl ? (
+          // A self-contained plotly page that loads its own bundle by a path
+          // relative to itself, so it is framed at its own URL rather than inlined.
+          <iframe
+            className="dataset-figure-modal-frame"
+            src={figure.interactiveUrl}
+            title={figure.label}
+            onLoad={bindFrameEscape}
+          />
+        ) : (
+          <img className="dataset-figure-modal-image" src={figure.src} alt={figure.caption} />
+        )}
+        <p className="dataset-figure-caption">{figure.caption}</p>
+        <a className="external-link" href={figure.src} target="_blank" rel="noopener noreferrer">
+          Open the SVG in a new tab
+        </a>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default DatasetFigures;
