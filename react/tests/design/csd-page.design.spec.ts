@@ -228,17 +228,29 @@ test("history strip", async ({ page }) => {
     .toBe(BG_LIGHT_BLUE);
 
   await expect
-    .soft(page.locator(".graph-history-title"), "breadcrumb (pin 20)")
-    .toHaveText(/^Workflow Builder \/ /);
+    .soft(page.locator(".graph-history-title"), "heading (pin 20, agreed as History)")
+    .toHaveText(/^History/);
 
   // Vis card 674:3149 (pin 24).
   const card = ".saved-graph-card";
   const c = await box(page, card);
   expect.soft([px(c.width), px(c.height)], "card size (pin 24)").toEqual([180, 164]);
-  expect.soft(await css(page, card, "background-color"), "card bg (pin 24)").toBe(GRAY_LIGHTEST);
-  expect
-    .soft(await css(page, card, "border-top-color"), "card border (pin 24)")
-    .toBe(COOL_BLUE_LIGHTEST);
+  // The frame shows resting cards; the active card keeps its own highlight, and
+  // on load the only card is the active one. Measure a resting copy of it.
+  const resting = await page
+    .locator(card)
+    .first()
+    .evaluate((el) => {
+      const copy = el.cloneNode(true) as HTMLElement;
+      copy.classList.remove("saved-graph-card--active");
+      el.parentElement?.appendChild(copy);
+      const style = getComputedStyle(copy);
+      const colors = { bg: style.backgroundColor, border: style.borderTopColor };
+      copy.remove();
+      return colors;
+    });
+  expect.soft(resting.bg, "card bg (pin 24)").toBe(GRAY_LIGHTEST);
+  expect.soft(resting.border, "card border (pin 24)").toBe(COOL_BLUE_LIGHTEST);
   expect.soft(await css(page, card, "border-top-left-radius"), "card radius (pin 24)").toBe("4px");
   const title = await box(page, ".saved-graph-card-title");
   const thumb = await box(page, ".saved-graph-card-thumb");

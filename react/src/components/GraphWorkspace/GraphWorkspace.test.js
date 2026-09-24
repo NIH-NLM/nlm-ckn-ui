@@ -104,6 +104,14 @@ describe("GraphWorkspace", () => {
     expect(screen.getByTestId("inspector")).toHaveTextContent("empty");
   });
 
+  it("heads the history strip with History and explains it in a help icon", () => {
+    renderWorkspace({ title: "My Graph" });
+    expect(screen.getByRole("heading", { name: /^History/ })).toBeInTheDocument();
+    expect(
+      screen.getByTitle("Switch back and forth between your recent graphs."),
+    ).toBeInTheDocument();
+  });
+
   it("passes an explicit title through to the graph", () => {
     renderWorkspace({ title: "My Graph" });
     expect(screen.getByTestId("graph-title")).toHaveTextContent("My Graph");

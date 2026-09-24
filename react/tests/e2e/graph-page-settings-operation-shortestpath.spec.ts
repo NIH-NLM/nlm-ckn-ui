@@ -126,7 +126,9 @@ test("Graph settings: shortest path filters union graph correctly", async ({ pag
   });
   const graphArea = page.locator(".graph-display-area");
   await graphArea.waitFor({ state: "visible" });
-  await expect(graphArea.locator('svg[role="img"]')).toBeVisible();
+  await expect(
+    graphArea.getByRole("img", { name: "Force-directed graph visualization" }),
+  ).toBeVisible();
   // Wait for allowedCollections
   await page.waitForFunction(
     () => {

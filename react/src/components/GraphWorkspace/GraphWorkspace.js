@@ -1,3 +1,5 @@
+import { faCircleQuestion } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import DatasetFigures from "components/DatasetFigures";
 import ForceGraph from "components/ForceGraph/ForceGraph";
 import NodeInspector from "components/NodeInspector";
@@ -119,8 +121,14 @@ const GraphWorkspace = ({
               <OriginsSidebar isOpen={isOriginsOpen} onClose={() => setIsOriginsOpen(false)} />
             </div>
             <div className="graph-workspace-shelf">
-              {/* History heading = the graph's origin node(s). */}
-              <h3 className="graph-history-title">{graphTitle}</h3>
+              <h3 className="graph-history-title">
+                History
+                <FontAwesomeIcon
+                  icon={faCircleQuestion}
+                  title="Switch back and forth between your recent graphs."
+                  className="graph-history-help"
+                />
+              </h3>
               <SavedGraphShelf />
             </div>
           </div>
