@@ -896,64 +896,9 @@ g.node.pinned .node-pin-marker path {
   border-bottom: none;
 }
 
-/* Cell set dataset figures (nlm-ckn#283)
+/* Cell set dataset figures (nlm-ckn#283): the cards live with the shelf rules
+   below; the caption and modal rules here. */
 
-   Below the graph in the wide column, where they are big enough to read. Two up
-   on a roomy viewport, one up when that would squeeze them. Each is a button so
-   it is reachable by keyboard, styled back down to look like the image alone. */
-
-.dataset-figures {
-  border-top: 1px solid var(--color-gray-lighter);
-  padding: 16px;
-}
-/* Columns rather than a grid: these figures range from a wide, short box plot to
-   a tall dendrogram, and grid rows take the height of their tallest cell, which
-   leaves a ragged hole under every short one. Columns pack vertically instead.
-   The width, not a count, decides how many there are. */
-.dataset-figures-grid {
-  column-gap: 16px;
-  columns: 420px;
-}
-.dataset-figures-title {
-  margin-bottom: 12px;
-  color: var(--color-gray-dark); /* #323A45 */
-  font-weight: 500; /* Roboto Medium */
-  font-size: 12px;
-  line-height: 16px;
-  letter-spacing: 0.4px;
-}
-.dataset-figure {
-  break-inside: avoid;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin: 0 0 16px;
-}
-.dataset-figure-open {
-  background: var(--color-white-bg); /* #fefefe */
-  border: 1px solid var(--color-cool-blue-lightest); /* #dce4ef */
-  border-radius: 4px;
-  cursor: zoom-in;
-  display: block;
-  padding: 4px;
-  width: 100%;
-}
-.dataset-figure-open:hover {
-  border-color: var(--color-gray); /* #5B616B */
-}
-/* Reserves height only while empty, so the three unloaded figures are far
-   enough apart for the observer to reach them one at a time. */
-.dataset-figure-slot {
-  display: block;
-}
-.dataset-figure-slot:empty {
-  min-height: 320px;
-}
-.dataset-figure-image {
-  display: block;
-  height: auto;
-  max-width: 100%;
-}
 .dataset-figure-caption {
   color: var(--color-gray); /* #5B616B */
   font-size: 12px;
@@ -1168,8 +1113,6 @@ fieldset.collection-picker {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  /* Scrolls when the figures section is present. Without figures the graph
-     still grows to fill the column, so this changes nothing for other hosts. */
   overflow-y: auto;
 }
 
@@ -1179,11 +1122,7 @@ fieldset.collection-picker {
   padding: 0 var(--spacing-md) var(--spacing-md);
 }
 
-/* Graph plus history shelf, exactly one column-height. The figures follow it in
-   the scroll flow, so they start below the fold on any viewport. Measured: with
-   the figures section even a few pixels on screen, CSS columns put the expensive
-   violin plot level with the first figure and both fetch before the user has
-   scrolled — the whole cost the lazy loading exists to avoid. */
+/* Graph plus bottom strip, exactly one column-height. */
 .graph-workspace-pane {
   display: flex;
   flex: 0 0 auto;
@@ -1218,21 +1157,39 @@ fieldset.collection-picker {
   padding: 10px 20px;
 }
 
-/* History strip heading (Figma Body Small 12px Medium) with a help icon. */
+/* Strip heading (Figma Body Small 12px Medium): History / Figures as outlined
+   tabs set well apart so each reads as its own control, the chosen one in link
+   blue as the frame's breadcrumb was, then a help icon. */
 .graph-history-title {
-  margin: 0 0 4px;
-  max-width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 0 0 8px;
   color: var(--color-gray); /* #5B616B */
   font-weight: 500;
   font-size: 12px;
   line-height: 1.125;
   letter-spacing: 0.4px;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+}
+.graph-strip-toggle {
+  margin: 0;
+  padding: 4px 12px;
+  background: var(--color-white-bg);
+  border: 1px solid var(--color-cool-blue-lightest); /* #dce4ef */
+  border-radius: var(--radius-md);
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.graph-strip-toggle:hover {
+  background: var(--color-gray-lightest); /* #f1f1f1 */
+}
+.graph-strip-toggle[aria-pressed="true"] {
+  border-color: var(--color-primary);
+  color: var(--color-primary); /* #0071BC */
 }
 .graph-history-help {
-  margin-left: 4px;
   color: var(--color-gray); /* #5B616B */
   cursor: help;
 }
@@ -1272,7 +1229,8 @@ fieldset.collection-picker {
 /* Rows of 180px cards 12px apart; one row shows and the rest scroll, with the
    Figma "Scroll Bar - L" (930:577). The standard properties cover Chromium and
    Firefox; Safari only honours the -webkit- pseudo-elements. */
-.saved-graph-shelf {
+.saved-graph-shelf,
+.dataset-figure-strip {
   display: flex;
   flex-flow: row wrap;
   align-items: flex-start;
@@ -1282,14 +1240,17 @@ fieldset.collection-picker {
   scrollbar-width: thin;
   scrollbar-color: var(--color-gray-lighter) var(--color-gray-lightest);
 }
-.saved-graph-shelf::-webkit-scrollbar {
+.saved-graph-shelf::-webkit-scrollbar,
+.dataset-figure-strip::-webkit-scrollbar {
   width: 4px;
 }
-.saved-graph-shelf::-webkit-scrollbar-track {
+.saved-graph-shelf::-webkit-scrollbar-track,
+.dataset-figure-strip::-webkit-scrollbar-track {
   background: var(--color-gray-lightest);
   border-radius: 8px;
 }
-.saved-graph-shelf::-webkit-scrollbar-thumb {
+.saved-graph-shelf::-webkit-scrollbar-thumb,
+.dataset-figure-strip::-webkit-scrollbar-thumb {
   background: var(--color-gray-lighter);
   border-radius: 8px;
 }
@@ -1300,8 +1261,10 @@ fieldset.collection-picker {
   padding: var(--spacing-sm);
 }
 
-/* Figma "Vis Cards" (674:3149): 180x164, title above the thumbnail. */
-.saved-graph-card {
+/* Figma "Vis Cards" (674:3149): 180x164, title above the thumbnail. Figure
+   cards in the strip's Figures view share it. */
+.saved-graph-card,
+.dataset-figure-card {
   flex: 0 0 auto;
   width: 180px;
   height: 164px;
@@ -1327,7 +1290,8 @@ fieldset.collection-picker {
 
 /* One ellipsized line so nothing overflows the card (review pin 23); the right
    padding keeps it clear of the delete control in the corner. */
-.saved-graph-card-title {
+.saved-graph-card-title,
+.dataset-figure-card-title {
   order: -1;
   flex: 0 0 auto;
   margin: 0;
@@ -1367,6 +1331,35 @@ fieldset.collection-picker {
   height: 100%;
   object-fit: contain;
   display: block;
+}
+
+/* Figure cards are one button: no delete control to clear, and the image sits
+   in the same white thumbnail box as a history card's. */
+.dataset-figure-card {
+  cursor: zoom-in;
+  text-align: left;
+  margin: 0;
+}
+.dataset-figure-card:hover {
+  border-color: var(--color-gray); /* #5B616B */
+}
+.dataset-figure-card-title {
+  padding-right: 0;
+}
+.dataset-figure-card .dataset-figure-slot {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+  background: var(--color-white);
+  border: 0.2px solid var(--color-gray-lightest);
+  border-radius: var(--radius-sm);
+}
+.dataset-figure-card .dataset-figure-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .saved-graph-card-thumb .thumb-placeholder {

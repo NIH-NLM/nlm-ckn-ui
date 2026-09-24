@@ -31,7 +31,7 @@ const mockOptions = {
 
 const undoFromHistoryPanel = async (page: import("@playwright/test").Page) => {
   await page.locator(".toggle-options-button").click();
-  await page.getByRole("button", { name: "History" }).click();
+  await page.getByRole("button", { name: "History", exact: true }).click();
   const undoButton = page.locator("#tab-panel-history button", { hasText: "Undo" });
   await expect(undoButton).toBeEnabled();
   await undoButton.click();

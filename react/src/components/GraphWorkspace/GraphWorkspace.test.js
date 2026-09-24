@@ -56,6 +56,9 @@ jest.mock("hooks", () => ({
 jest.mock("utils", () => ({
   ...jest.requireActual("utils"),
   getTitle: (doc) => `Title:${doc?._id}`,
+  // Two figures for any document except one marked as having none.
+  getDatasetFigures: (doc) =>
+    doc?._id && doc._id !== "CSD/no-figures" ? [{ key: "a" }, { key: "b" }] : [],
 }));
 
 const renderWorkspace = (props = {}, preloadedGraph) => {
@@ -106,7 +109,7 @@ describe("GraphWorkspace", () => {
 
   it("heads the history strip with History and explains it in a help icon", () => {
     renderWorkspace({ title: "My Graph" });
-    expect(screen.getByRole("heading", { name: /^History/ })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 3 })).toHaveTextContent(/^History/);
     expect(
       screen.getByTitle("Switch back and forth between your recent graphs."),
     ).toBeInTheDocument();
@@ -257,14 +260,26 @@ describe("GraphWorkspace", () => {
     expect(screen.queryByRole("complementary", { name: /current origins/i })).toBeNull();
   });
 
-  it("shows the figures for the inspected document, below the graph", () => {
+  it("shows history in the strip until the Figures view is chosen", () => {
     renderWorkspace();
+    expect(screen.getByTestId("shelf")).toBeInTheDocument();
+    expect(screen.queryByTestId("dataset-figures")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Figures (2)" }));
     expect(screen.getByTestId("dataset-figures")).toHaveTextContent("CSD/origin");
+    expect(screen.queryByTestId("shelf")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Graph history" }));
+    expect(screen.getByTestId("shelf")).toBeInTheDocument();
   });
 
   it("follows the selected node once one is picked", () => {
     renderWorkspace();
+    fireEvent.click(screen.getByRole("button", { name: "Figures (2)" }));
     fireEvent.click(screen.getByRole("button", { name: "graph" }));
     expect(screen.getByTestId("dataset-figures")).toHaveTextContent("CS/clicked");
+  });
+
+  it("offers no Figures view for a document without figures", () => {
+    renderWorkspace({ originDocument: { _id: "CSD/no-figures" }, nodeIds: ["CSD/no-figures"] });
+    expect(screen.queryByRole("button", { name: /^Figures/ })).toBeNull();
   });
 });

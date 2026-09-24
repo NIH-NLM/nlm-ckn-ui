@@ -2,20 +2,20 @@ import { useEffect, useRef, useState } from "react";
 import { getDatasetFigures } from "utils";
 
 /**
- * Quality-control figures published for a cell set dataset (nlm-ckn#283).
+ * Quality-control figures published for a cell set dataset (nlm-ckn#283), as
+ * cards in the graph workspace's bottom strip (its Figures view).
  *
  * Renders nothing for any document with no published figures, which includes
  * every collection other than CSD and the cell set datasets that have no
  * NS-Forest QC output.
  *
- * All three figures are shown inline, scaled to the sidebar. That is enough to
- * read a figure's shape but not its labels, so each one opens full size in a
- * modal — which is also the only place the interactive silhouette page fits,
- * being authored at a fixed 1800x900.
+ * A card shows a thumbnail, enough to recognise the figure but not read it, so
+ * each one opens full size in a modal — which is also the only place the
+ * interactive silhouette page fits, being authored at a fixed 1800x900.
  *
- * The images load only once scrolled to. The dendrogram and silhouette summary
- * are a few kilobytes, but a stacked violin plot has a median of 1.2 MB and
- * reaches 10.7 MB, and this section sits below the graph, off the first screen.
+ * The strip mounts this only when its Figures view is chosen, and each image
+ * waits until its card is in view: a stacked violin plot has a median of 1.2 MB
+ * and reaches 10.7 MB.
  * @param {object} props
  * @param {object} props.document - The document being inspected.
  */
@@ -43,35 +43,29 @@ const DatasetFigures = ({ document }) => {
   }
 
   return (
-    <section className="dataset-figures">
-      <h3 className="dataset-figures-title">Figures</h3>
-      <div className="dataset-figures-grid">
-        {figures.map((figure) => (
-          <figure className="dataset-figure" key={figure.key}>
-            <button
-              type="button"
-              className="dataset-figure-open"
-              onClick={() => setOpenFigure(figure)}
-              title={`${figure.label} — click to enlarge`}
-            >
-              <LazyFigureImage figure={figure} />
-            </button>
-            <figcaption className="dataset-figure-caption">{figure.caption}</figcaption>
-          </figure>
-        ))}
-      </div>
+    <div className="dataset-figure-strip">
+      {figures.map((figure) => (
+        <button
+          type="button"
+          className="dataset-figure-card"
+          key={figure.key}
+          onClick={() => setOpenFigure(figure)}
+          title={`${figure.caption} Click to open full size.`}
+        >
+          <span className="dataset-figure-card-title">{figure.label}</span>
+          <LazyFigureImage figure={figure} />
+        </button>
+      ))}
       {openFigure && <FigureModal figure={openFigure} onClose={() => setOpenFigure(null)} />}
-    </section>
+    </div>
   );
 };
 
 /**
- * A figure's image, fetched only once it is scrolled near the viewport.
+ * A figure's image, fetched only once its card is scrolled into the strip.
  *
  * `loading="lazy"` is not enough on its own: measured here, Chromium fetched all
- * three immediately, the violin plot included. The observer watches an empty
- * slot that reserves a little height, so the three figures are far enough apart
- * to resolve separately rather than all becoming visible at once.
+ * three immediately, the violin plot included.
  * @param {object} props
  * @param {object} props.figure - The figure to show, from getDatasetFigures.
  */
@@ -104,7 +98,8 @@ const LazyFigureImage = ({ figure }) => {
   return (
     <span className="dataset-figure-slot" ref={slotRef}>
       {inView && (
-        <img className="dataset-figure-image" src={figure.src} alt={figure.label} loading="lazy" />
+        // Decorative: the card's title already names the figure.
+        <img className="dataset-figure-image" src={figure.src} alt="" loading="lazy" />
       )}
     </span>
   );
