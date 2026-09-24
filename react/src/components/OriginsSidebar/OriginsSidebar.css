@@ -1,13 +1,15 @@
 /* Overlay card floating above the graph canvas rather than a flex column that
    shrinks it — the toggle now lives on the canvas, so the graph shouldn't
-   reflow when the panel opens. `bottom` clears the canvas action icons so the
+   reflow when the panel opens. `right` clears the canvas action column so the
    origins toggle stays reachable to close the panel. Positioning context is
    .graph-workspace-canvas-body (see graph.css). */
 .origins-sidebar {
   position: absolute;
   top: 12px;
-  right: 12px;
-  bottom: 72px;
+  /* Beside the canvas action column (16px inset + 40px buttons + 12px gap),
+     which now stacks vertically and would otherwise sit over the panel. */
+  right: 68px;
+  bottom: 16px;
   z-index: 30;
   display: flex;
   flex-direction: column;

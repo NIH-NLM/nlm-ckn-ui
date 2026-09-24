@@ -315,18 +315,20 @@ g.node.pinned .node-pin-marker path {
   margin-right: 10px;
 }
 
+/* Figma frame V Graph Section (930:574): 12px/20px card padding, no rule under
+   the title (review pin 13), title in Roboto Medium 24px. */
 .graph-title-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-bottom: 1px solid var(--color-border);
+  padding: 12px 20px;
 }
 .graph-title {
   margin: 0;
-  font-size: var(--font-size-lg);
-  font-weight: 600;
-  color: var(--color-text);
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.125;
+  color: var(--color-base); /* #212121 */
 }
 .graph-title-actions {
   display: flex;
@@ -334,18 +336,19 @@ g.node.pinned .node-pin-marker path {
   gap: var(--spacing-sm);
 }
 
-/* Figma Button spec (639:3059 / 685:5797): transparent resting state, gray-lighter
-   hover fill, radius-md, 40px height. Used by the options toggle in the title bar. */
+/* Figma Button (651:3255): #F1F1F1 fill, no border, radius-md, 40px height,
+   gray-lighter on hover. Used by the options toggle in the title bar. */
 .toggle-options-button {
   height: 40px;
-  padding: 4px 12px;
+  min-width: 104px;
+  padding: 4px 12px 4px 4px;
   margin: 0;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background-color: transparent;
+  background-color: var(--color-gray-lightest);
   color: var(--color-gray-dark);
-  border: 1px solid var(--color-gray-light);
+  border: none;
   border-radius: var(--radius-md);
   cursor: pointer;
   font-size: var(--font-size-sm);
@@ -369,11 +372,10 @@ g.node.pinned .node-pin-marker path {
   color: var(--color-white);
 }
 
-/* Figma "Icon Button - filled" spec (639:3201 / 631:2950): filled primary-darkest
-   circular button. Every instance sits in the .graph-canvas-actions flex row,
-   which positions the group; position:relative here only anchors each button's
-   tooltip and the origins count badge. flex-shrink:0 keeps the circles from
-   deforming if the row ever runs short of space. */
+/* Figma frame V "Icon Button - filled" (930:574): a 40px square #F1F1F1 tile
+   with a #323A45 glyph (review pin 18). Every instance sits in the
+   .graph-canvas-actions column, which positions the group; position:relative
+   here only anchors each button's tooltip and the origins count badge. */
 .graph-canvas-icon-button {
   position: relative;
   display: inline-flex;
@@ -384,32 +386,31 @@ g.node.pinned .node-pin-marker path {
   height: 40px;
   padding: 0;
   margin: 0;
-  background-color: var(--color-primary-darkest);
-  color: var(--color-white);
+  background-color: var(--color-gray-lightest);
+  color: var(--color-gray-dark);
   border: none;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-md);
   cursor: pointer;
-  box-shadow: var(--shadow-md);
   transition: background-color var(--transition-fast);
 }
 
 .graph-canvas-icon-button:hover {
-  background-color: var(--color-primary-darker);
+  background-color: var(--color-gray-lighter);
 }
 
-/* Bottom-right canvas action group: origins (optional), full screen (disabled),
-   lasso, download. z-index sits above the OriginsSidebar overlay (30) so a
-   tooltip rising off these icons is never tucked underneath it. The icons
-   themselves don't overlap the panel — it stops at bottom:72px, clearing this
-   row. */
+/* Bottom-right canvas action column, 12px apart (review pin 18): origins
+   (optional), full screen (disabled), lasso, download. z-index sits above the
+   OriginsSidebar overlay (30) so a tooltip is never tucked underneath it; the
+   panel itself stops at right:68px, clear of this column. */
 .graph-canvas-actions {
   position: absolute;
   bottom: 16px;
   right: 16px;
   z-index: 35;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 
 /* Full screen isn't enabled yet — dim it, but keep it clickable for the notice. */
@@ -421,11 +422,13 @@ g.node.pinned .node-pin-marker path {
 /* Lasso armed — distinct focus accent (matches the old lasso-active treatment). */
 .graph-canvas-lasso.active {
   background-color: var(--color-focus);
+  color: var(--color-white);
 }
 
 /* Origins panel open — same armed treatment as the lasso. */
 .graph-canvas-origins.active {
   background-color: var(--color-focus);
+  color: var(--color-white);
 }
 
 /* Origin count badge, pinned to the button's top-right corner. */
@@ -439,8 +442,8 @@ g.node.pinned .node-pin-marker path {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--color-white);
-  color: var(--color-primary-darkest);
+  background-color: var(--color-primary-darkest);
+  color: var(--color-white);
   border-radius: var(--radius-full);
   font-size: 10px;
   font-weight: 700;
@@ -453,13 +456,14 @@ g.node.pinned .node-pin-marker path {
    Driven by a data-tooltip attribute; the accessible name still comes from
    aria-label, so the bubble is decorative (aria-hidden by virtue of being a
    pseudo-element) and no native `title` is set — two overlapping tooltips
-   otherwise. Anchored to each button's right edge and extending leftward so
-   the rightmost icon can't overflow the canvas. */
+   otherwise. Placed to the left of each button, so in the vertical stack a
+   note never covers the button above it and can't overflow the canvas. */
 .graph-canvas-actions [data-tooltip]::after {
   content: attr(data-tooltip);
   position: absolute;
-  bottom: calc(100% + 8px);
-  right: 0;
+  top: 50%;
+  right: calc(100% + 10px);
+  transform: translateY(-50%);
   z-index: 1;
   padding: 6px 10px;
   background-color: var(--color-primary-darkest);
@@ -475,15 +479,16 @@ g.node.pinned .node-pin-marker path {
   transition: opacity var(--transition-fast);
 }
 
-/* Arrow, roughly centered under the 40px button. */
+/* Arrow on the bubble's right edge, pointing at the button. */
 .graph-canvas-actions [data-tooltip]::before {
   content: "";
   position: absolute;
-  bottom: calc(100% + 3px);
-  right: 16px;
+  top: 50%;
+  right: 100%;
+  transform: translateY(-50%);
   z-index: 1;
   border: 5px solid transparent;
-  border-top-color: var(--color-primary-darkest);
+  border-left-color: var(--color-primary-darkest);
   opacity: 0;
   visibility: hidden;
   transition: opacity var(--transition-fast);
