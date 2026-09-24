@@ -9,7 +9,7 @@ import { useNodeDocument } from "hooks";
 import { useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { selectOriginHistory } from "store";
-import { getTitle } from "utils";
+import { getDatasetFigures, getTitle } from "utils";
 
 /**
  * Host-agnostic graph workspace: left node-inspector, center force graph
@@ -90,6 +90,12 @@ const GraphWorkspace = ({
   // so asking for the selected node here does not fetch it twice.
   const { document: selectedDoc } = useNodeDocument(selectedNodeId);
   const figuresDocument = selectedNodeId ? selectedDoc : currentOriginDoc;
+  const figureCount = getDatasetFigures(figuresDocument).length;
+
+  // The bottom strip shows either the graph history or the dataset's figures.
+  // Falls back to history when the inspected document has no figures.
+  const [stripView, setStripView] = useState("history");
+  const showingFigures = stripView === "figures" && figureCount > 0;
 
   return (
     <div className="graph-workspace">
@@ -102,10 +108,6 @@ const GraphWorkspace = ({
           />
         </aside>
         <section className="graph-workspace-canvas">
-          {/* Graph and shelf fill the column exactly; the figures scroll in
-              beneath them. Grouping the two is what keeps the figures off the
-              first screen without reserving a guessed number of pixels for the
-              shelf, whose height changes when its history card renders. */}
           <div className="graph-workspace-pane">
             <div className="graph-workspace-canvas-body">
               {/* The origins toggle lives among the canvas action icons (ForceGraph
@@ -122,17 +124,40 @@ const GraphWorkspace = ({
             </div>
             <div className="graph-workspace-shelf">
               <h3 className="graph-history-title">
-                History
+                {/* Named "Graph history" for assistive tech: the options panel
+                    already has a "History" tab, which is the undo history. */}
+                <button
+                  type="button"
+                  className="graph-strip-toggle"
+                  aria-label="Graph history"
+                  aria-pressed={!showingFigures}
+                  onClick={() => setStripView("history")}
+                >
+                  History
+                </button>
+                {figureCount > 0 && (
+                  <button
+                    type="button"
+                    className="graph-strip-toggle"
+                    aria-pressed={showingFigures}
+                    onClick={() => setStripView("figures")}
+                  >
+                    Figures ({figureCount})
+                  </button>
+                )}
                 <FontAwesomeIcon
                   icon={faCircleQuestion}
-                  title="Switch back and forth between your recent graphs."
+                  title={
+                    showingFigures
+                      ? "Quality-control figures for this dataset. Click one to open it full size."
+                      : "Switch back and forth between your recent graphs."
+                  }
                   className="graph-history-help"
                 />
               </h3>
-              <SavedGraphShelf />
+              {showingFigures ? <DatasetFigures document={figuresDocument} /> : <SavedGraphShelf />}
             </div>
           </div>
-          <DatasetFigures document={figuresDocument} />
         </section>
       </div>
     </div>

@@ -61,7 +61,7 @@ test("Expanding a node creates undo history and undo restores the previous graph
 
   // Open the History panel and verify the Undo button is enabled
   await page.locator(".toggle-options-button").click();
-  await page.getByRole("button", { name: "History" }).click();
+  await page.getByRole("button", { name: "History", exact: true }).click();
 
   const undoButton = page.locator("#tab-panel-history button", { hasText: "Undo" });
   await expect(undoButton).toBeVisible();
@@ -99,7 +99,7 @@ test("Undo after settings change restores the previous graph", async ({ page }) 
   }).toPass({ timeout: 5000 });
 
   // Undo via History panel button
-  await page.getByRole("button", { name: "History" }).click();
+  await page.getByRole("button", { name: "History", exact: true }).click();
   const undoButton = page.locator("#tab-panel-history button", { hasText: "Undo" });
   await expect(undoButton).toBeEnabled();
   await undoButton.click();
