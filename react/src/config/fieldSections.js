@@ -1,16 +1,20 @@
 import { humanizeSlug } from "utils/strings";
 
 /**
- * UI-local sidebar section structure, keyed by collection abbreviation.
+ * UI-local node card section structure, keyed by collection abbreviation.
  *
  * This is a presentation-only config owned by the UI. It is intentionally
  * separate from `assets/nlm-ckn-collection-maps.json`, which is kept
  * byte-identical with the ETL repo by a sync workflow and must not carry
  * UI section tags.
  *
+ * Each section may carry static `description` text (rendered even when the
+ * section has no rows) and `info`, a tooltip on an icon beside the heading.
+ *
  * Each field descriptor:
  *   - key:     the document property to read.
- *   - label:   the display label shown in the sidebar (authoritative).
+ *   - label:   the display label shown in the card (authoritative).
+ *   - value:   optional; a fixed value shown instead of the document's.
  *   - variant: optional; "description" renders as a lead paragraph, not a row.
  *
  * Values and URLs for keys that also appear in the collection map are resolved
@@ -35,57 +39,73 @@ const CKN_FILTERING_CRITERIA = {
 };
 
 export const fieldSections = {
-  // Cell sets carry three unrelated kinds of attribute — what the set *is*, how
-  // well NS-Forest classifies it, and how tightly it clusters. Flat, they read
-  // as one undifferentiated list of numbers.
+  // Section order and slot names follow the node card specification sheet
+  // (09/16) attached to nlm-ckn#335. Slots the sheet asks for that no CS
+  // document carries are omitted rather than configured, so they cannot render
+  // as blank rows: embedding, disease and the F-beta score appear on the
+  // related dataset and biomarker combination cards, the binary score on the
+  // related binary gene set card; PMID, SKOS mapping and per-gene binary scores
+  // are on no node.
   CS: [
     {
-      section: "Overview",
+      section: "Context",
       fields: [
-        { key: "author_cell_term", label: "Author cell term" },
-        // Only ~27% of cell sets carry an ontology_purl; the rest omit the row.
-        { key: "ontology_purl", label: "Cell Ontology term" },
-        { key: "species", label: "Species" },
-        { key: "anatomical_structure", label: "Anatomical structure" },
-        { key: "cell_count", label: "Cell count" },
-        { key: "cluster_cell_count", label: "Cluster cell count" },
-        { key: "dataset_name", label: "Dataset name" },
-        { key: "publication", label: "Publication (DOI)" },
-        { key: "cellxgene_collection", label: "CELLxGENE collection" },
-        // Not a page: every cell set's dataset URL is a raw .h5ad, so the label
-        // has to warn before the click does.
-        { key: "cellxgene_dataset", label: "CELLxGENE data file (.h5ad download)" },
+        { key: "author_cell_term", label: "Author cell set annotation" },
+        { key: "publication", label: "Publication" },
       ],
     },
     {
-      // The marker genes, then the NS-Forest metrics that score them. Kept
-      // adjacent because the scores are meaningless without the combination
-      // they grade. true_negative belongs here too but is absent from the data.
-      section: "Biomarker & classification metrics",
+      section: "Provenance",
+      fields: [
+        { key: "cellxgene_collection", label: "CELLxGENE collection" },
+        { key: "dataset_name", label: "Dataset name" },
+        // Not a page: every cell set's dataset URL is a raw .h5ad, so the label
+        // has to warn before the click does.
+        { key: "cellxgene_dataset", label: "CELLxGENE data download (.h5ad)" },
+      ],
+    },
+    {
+      section: "Analysis Metadata",
+      fields: [{ key: "cluster_annotation", label: "Annotation level" }],
+    },
+    CKN_FILTERING_CRITERIA,
+    {
+      section: "Post-filtering Cell Set Metadata",
+      fields: [
+        { key: "species", label: "Species" },
+        { key: "anatomical_structure", label: "Anatomical Structure Collection" },
+        // Only ~28% of cell sets carry a Cell Ontology term; the rest omit the row.
+        { key: "ontology_purl", label: "Cell Type" },
+      ],
+    },
+    {
+      section: "Post-filtering Cell Set Statistics",
+      fields: [
+        { key: "cell_count", label: "Cell count" },
+        { key: "median_silhouette", label: "Median silhouette score" },
+      ],
+    },
+    {
+      section: "Markers & Selectively Expressed Genes",
       fields: [
         { key: "biomarker_combination", label: "Biomarker combination" },
         { key: "binary_gene_set", label: "Binary gene set" },
-        { key: "expressed_genes", label: "Expressed genes" },
-        { key: "f_beta_score", label: "F-beta score" },
-        { key: "precision", label: "Precision" },
-        { key: "recall", label: "Recall" },
-        { key: "on_target", label: "On target" },
-        { key: "true_positive", label: "True positives" },
-        { key: "false_positive", label: "False positives" },
-        { key: "false_negative", label: "False negatives" },
       ],
     },
     {
-      // Silhouette summary statistics over the cells in the set. ~6% of cell
-      // sets have none, in which case the whole section drops out.
-      section: "Quality metrics",
+      // The NS-Forest metrics that score the biomarker combination. Kept
+      // adjacent because the scores are meaningless without the combination
+      // they grade.
+      section: "Biomarker Combination Metrics",
       fields: [
-        { key: "silhouette_score", label: "Silhouette score" },
-        { key: "mean_silhouette", label: "Mean silhouette" },
-        { key: "median_silhouette", label: "Median silhouette" },
-        { key: "first_quartile_silhouette", label: "First quartile silhouette" },
-        { key: "third_quartile_silhouette", label: "Third quartile silhouette" },
-        { key: "standard_deviation_of_silhouette", label: "Silhouette standard deviation" },
+        { key: "precision", label: "Precision: TP/(TP+FP)" },
+        { key: "recall", label: "Recall: TP/(TP+FN)" },
+        { key: "on_target", label: "On-target fraction" },
+        { key: "true_positive", label: "True positives (TP)" },
+        { key: "false_positive", label: "False positives (FP)" },
+        { key: "false_negative", label: "False negatives (FN)" },
+        // No document carries true_negative: NS-Forest does not use it.
+        { key: "true_negative", label: "True negatives (TN)", value: "Not used in calculation" },
       ],
     },
   ],
@@ -188,6 +208,10 @@ export const omittedFields = {
   CSD: ["cell_count"],
   // The specification removes the DOI row.
   PUB: ["publication_doi"],
+  // expressed_genes repeats binary_gene_set, cluster_cell_count repeats
+  // cell_count, and silhouette_score repeats median_silhouette, in every cell
+  // set.
+  CS: ["expressed_genes", "cluster_cell_count", "silhouette_score"],
 };
 
 /**
