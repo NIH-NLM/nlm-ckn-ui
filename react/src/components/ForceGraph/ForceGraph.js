@@ -57,6 +57,7 @@ import {
   HistoryPanel,
   MultiNodePanel,
 } from "./panels";
+import { shouldClearWorkflowData } from "./shouldClearWorkflowData";
 
 /**
  * Ids of nodes that were in the graph before a recompose but not after — the
@@ -99,6 +100,9 @@ const ForceGraph = ({
   // without one the canvas omits the origins action entirely.
   originsOpen = false,
   onToggleOrigins = null,
+  // Set by the workflow builder, whose canvas renders workflow results as its
+  // subject rather than as stale data to clear.
+  isWorkflowHost = false,
 }) => {
   const dispatch = useDispatch();
   const store = useStore();
@@ -326,8 +330,16 @@ const ForceGraph = ({
   // Triggers new data fetch when graph is explicitly initialized in the slice.
   useEffect(() => {
     // If the existing data came from a workflow, clear it so the graph page
-    // can perform a fresh initialization instead of showing stale data.
-    if (graphData?.nodes?.length > 0 && source === "workflow") {
+    // can perform a fresh initialization instead of showing stale data. The
+    // workflow builder's own canvas is exempt: there the workflow data is the
+    // subject, and clearing it drops the origins the Origins panel lists.
+    if (
+      shouldClearWorkflowData({
+        hasNodes: graphData?.nodes?.length > 0,
+        source,
+        isWorkflowHost,
+      })
+    ) {
       dispatch(clearGraphData());
       return;
     }
@@ -936,6 +948,10 @@ const ForceGraph = ({
             addHistoryEntry({
               id: uuidv4(),
               originId,
+              // The card is filed under the one origin that triggered it, but
+              // the snapshot is of the whole composition. Keep the full origin
+              // set so restoring it reinstates every origin, not just this one.
+              originNodeIds: [...originNodeIds],
               label: nodeNameMap?.get(originId) ?? originId,
               subgraph: { nodes: graphData.nodes, links: graphData.links },
               thumbnail,

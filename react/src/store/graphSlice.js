@@ -396,7 +396,7 @@ const graphSlice = createSlice({
         // Reset here so a later add/remove-origin recomposes over fresh data
         // instead of stale or partial subgraphs.
         state.originSubgraphs = {};
-        if (action.payload.originNodeIds) {
+        if (action.payload.originNodeIds && !action.payload.isRestore) {
           state.originNodeIds = action.payload.originNodeIds;
           state.lastAppliedOriginNodeIds = action.payload.originNodeIds;
           // Restore any saved display settings (filters, collapse-on-start, …)
@@ -406,11 +406,15 @@ const graphSlice = createSlice({
           }
           // Configure display settings for pre-fetched workflow results
           // and snapshot lastAppliedSettings so the "Apply Changes" banner
-          // appears when the user changes query-affecting settings. These
-          // override any restored values because the data is already resolved,
-          // so re-querying (depth/focus) must stay disabled.
+          // appears when the user changes query-affecting settings. Depth
+          // overrides any restored value because the data is already resolved,
+          // so re-querying must stay disabled.
           state.settings.depth = 0;
-          state.settings.useFocusNodes = false;
+          // useFocusNodes is display-only (see DISPLAY_ONLY_SETTINGS): it draws
+          // the donut marking origin nodes and never reaches a query. Forcing
+          // it off here bought no re-query protection and left the origins
+          // indistinguishable from every other node in the result.
+          state.settings.useFocusNodes = true;
           if (action.payload.collapseLeafNodes !== undefined) {
             state.settings.collapseOnStart = action.payload.collapseLeafNodes;
           }
@@ -422,11 +426,15 @@ const graphSlice = createSlice({
             state.lastAppliedSettings = { ...state.settings };
           }
         } else if (action.payload.isRestore) {
-          // A history restore replaces graphData without carrying origins;
-          // clear the live origins so the OriginsSidebar doesn't list phantom
-          // origins from the pre-restore composition (matches loadGraphFromJson).
-          state.originNodeIds = [];
-          state.lastAppliedOriginNodeIds = [];
+          // A history restore carries the origins its snapshot was captured
+          // from, so the panel keeps listing them and the graph keeps marking
+          // them. Only a restore with no origins at all (loadGraphFromJson)
+          // clears them, so the sidebar never shows phantom origins from the
+          // pre-restore composition. Display state is left untouched either
+          // way: a restore reinstates positions rather than re-rendering.
+          const restoredOrigins = action.payload.originNodeIds || [];
+          state.originNodeIds = restoredOrigins;
+          state.lastAppliedOriginNodeIds = restoredOrigins;
         }
       } else {
         const graphData = action.payload.nodes

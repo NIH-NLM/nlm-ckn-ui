@@ -38,6 +38,9 @@ const GraphWorkspace = ({
   settings,
   title,
   showLearnExplore = true,
+  // Forwarded to ForceGraph: the workflow builder hosts its own results and
+  // must not have them cleared as stale.
+  isWorkflowHost = false,
 }) => {
   const [selectedNodeId, setSelectedNodeId] = useState(null);
   const [isOriginsOpen, setIsOriginsOpen] = useState(false);
@@ -117,6 +120,7 @@ const GraphWorkspace = ({
                 settings={settings}
                 title={graphTitle}
                 onNodeSelect={setSelectedNodeId}
+                isWorkflowHost={isWorkflowHost}
                 originsOpen={isOriginsOpen}
                 onToggleOrigins={() => setIsOriginsOpen((open) => !open)}
               />
