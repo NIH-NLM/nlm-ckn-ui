@@ -113,7 +113,21 @@ export const selectOriginHistory = (state) => state.savedGraphs.originHistory ??
 export const restoreHistoryEntry = (id) => (dispatch, getState) => {
   const entry = selectOriginHistory(getState()).find((e) => e.id === id);
   if (!entry) return;
-  dispatch(setGraphData({ graphData: entry.subgraph, isRestore: true, skipUndo: true }));
+  // Carry the captured composition's origins back with the subgraph. Without
+  // them the reducer's isRestore branch cleared the live origins, so restoring
+  // a card emptied the Origins panel and unmarked the origin nodes in a graph
+  // that plainly still contained them. `originNodeIds` is the full set the
+  // entry was captured from; `originId` alone is the fallback for an entry
+  // recorded before the set was kept.
+  const originNodeIds = entry.originNodeIds ?? (entry.originId ? [entry.originId] : []);
+  dispatch(
+    setGraphData({
+      graphData: entry.subgraph,
+      originNodeIds,
+      isRestore: true,
+      skipUndo: true,
+    }),
+  );
   dispatch(setActiveHistory(id));
 };
 
