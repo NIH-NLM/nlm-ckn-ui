@@ -45,10 +45,10 @@ const nodeColorStyle = (color) => ({
  * Renders a labeled <select> dropdown. Used for depth, direction,
  * set operation, and origin filter selects throughout the editor.
  */
-const SettingsSelect = ({ id, label, value, options, onChange }) => (
+const SettingsSelect = ({ id, label, value, options, onChange, disabled, title }) => (
   <div className="setting-item">
     <label htmlFor={id}>{label}</label>
-    <select id={id} value={value} onChange={onChange}>
+    <select id={id} value={value} onChange={onChange} disabled={disabled} title={title}>
       {options.map((opt) => {
         const optValue = typeof opt === "object" ? opt.value : opt;
         const optLabel = typeof opt === "object" ? opt.label : opt;
@@ -266,6 +266,11 @@ const PhaseEditor = ({
 
   // Whether this is a combine phase or filter phase
   const isCombinePhase = phase.originSource === "multiplePhases";
+
+  // The connecting-paths query traverses ANY direction between origins, so the
+  // direction controls have no effect on this set operation.
+  const isConnectedPaths = phase.settings.setOperation === "Connected Paths";
+  const DIRECTION_NA_HINT = "Connected Paths searches in any direction between origins.";
   const isFilterPhase = phase.originSource === "filter";
 
   // Determine if phase can be executed
@@ -600,6 +605,8 @@ const PhaseEditor = ({
                   value={phase.settings.edgeDirection}
                   options={DIRECTION_OPTIONS}
                   onChange={(e) => onUpdateSettings("edgeDirection", e.target.value)}
+                  disabled={isConnectedPaths}
+                  title={isConnectedPaths ? DIRECTION_NA_HINT : undefined}
                 />
                 {(phase.originNodeIds.length > 1 || phase.originSource === "previousPhase") && (
                   <SettingsSelect
@@ -684,6 +691,8 @@ const PhaseEditor = ({
                           Direction:
                           <select
                             value={getNodeDirection(nodeId)}
+                            disabled={isConnectedPaths}
+                            title={isConnectedPaths ? DIRECTION_NA_HINT : undefined}
                             onChange={(e) =>
                               onUpdatePerNodeSetting(nodeId, "edgeDirection", e.target.value)
                             }
