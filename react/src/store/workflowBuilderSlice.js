@@ -391,6 +391,14 @@ export const executePhase = createAsyncThunk(
 
     let mergedResult;
 
+    // A path between two origins has one length, so the per-origin depths in
+    // advancedSettings collapse to a single budget for the path search. Take
+    // the largest: searching at less than an origin asked for would silently
+    // discard that node's setting.
+    const pathSearchDepth = Math.max(
+      ...originNodeIds.map((nodeId) => advancedSettings[nodeId]?.depth ?? phase.settings.depth),
+    );
+
     // "Connected Paths" uses a dedicated API to find shortest paths between origins
     if (phase.settings.setOperation === "Connected Paths") {
       const { include: pathIncludeEdges, exclude: pathExcludeEdges } = splitEdgeFiltersByMode(
@@ -403,7 +411,7 @@ export const executePhase = createAsyncThunk(
         allowedCollections: phase.settings.allowedCollections,
         edgeFilters: pathIncludeEdges,
         excludeEdgeFilters: pathExcludeEdges,
-        maxDepth: phase.settings.depth || undefined,
+        maxDepth: pathSearchDepth || undefined,
       });
     } else {
       // Standard flow: traverse from each origin, then merge with set operation
@@ -510,9 +518,8 @@ export const executePhase = createAsyncThunk(
     if (!finalResult.nodes || finalResult.nodes.length === 0) {
       const op = phase.settings.setOperation || "Union";
       if (op === "Connected Paths") {
-        const depth = phase.settings.depth;
         throw new Error(
-          `No connecting paths found at depth ${depth}. ` +
+          `No connecting paths found at depth ${pathSearchDepth}. ` +
             "Try increasing the depth to find longer paths between the origin nodes.",
         );
       }

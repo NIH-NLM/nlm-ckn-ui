@@ -86,3 +86,57 @@ describe("PhaseEditor edge filter include/exclude mode", () => {
     expect(onUpdateSettings).toHaveBeenCalledWith("edgeFilterModes", { Label: "include" });
   });
 });
+
+describe("PhaseEditor direction control on Connected Paths", () => {
+  const connectedPathsPhase = {
+    originNodeIds: ["UBERON/0001004", "CL/0000066"],
+    settings: { setOperation: "Connected Paths" },
+  };
+
+  it("disables the shared direction select, which the path search cannot honour", () => {
+    renderEditor({ phase: connectedPathsPhase });
+
+    expect(screen.getByLabelText("Direction")).toBeDisabled();
+  });
+
+  it("leaves the shared direction select enabled for a Union phase", () => {
+    renderEditor({
+      phase: {
+        originNodeIds: ["UBERON/0001004", "CL/0000066"],
+        settings: { setOperation: "Union" },
+      },
+    });
+
+    expect(screen.getByLabelText("Direction")).toBeEnabled();
+  });
+
+  it("disables every per-node direction select on Connected Paths", () => {
+    renderEditor({
+      phase: {
+        ...connectedPathsPhase,
+        showAdvancedSettings: true,
+        perNodeSettings: { "UBERON/0001004": { depth: 4 } },
+      },
+    });
+
+    const directionSelects = screen.getAllByLabelText(/Direction:/);
+    expect(directionSelects).toHaveLength(2);
+    for (const select of directionSelects) {
+      expect(select).toBeDisabled();
+    }
+  });
+
+  it("keeps per-node depth selects enabled on Connected Paths", () => {
+    renderEditor({
+      phase: {
+        ...connectedPathsPhase,
+        showAdvancedSettings: true,
+        perNodeSettings: { "UBERON/0001004": { depth: 4 } },
+      },
+    });
+
+    for (const select of screen.getAllByLabelText(/Depth:/)) {
+      expect(select).toBeEnabled();
+    }
+  });
+});

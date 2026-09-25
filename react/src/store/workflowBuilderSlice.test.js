@@ -626,3 +626,105 @@ describe("executePhase resolves the nonOriginNodes originFilter", () => {
     expect(await originsForPhaseTwo("all")).toEqual(["CL/1", "CL/2", "CL/3"]);
   });
 });
+
+describe("executePhase honours per-node depth on Connected Paths", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  const loadConnectedPathsPhase = (store, { depth, perNodeSettings }) =>
+    store.dispatch(
+      loadWorkflow({
+        phases: [
+          {
+            id: "p1",
+            originSource: "manual",
+            originNodeIds: ["UBERON/0001004", "CL/0000066"],
+            previousPhaseId: null,
+            showAdvancedSettings: true,
+            perNodeSettings,
+            settings: {
+              graphType: "phenotypes",
+              depth,
+              edgeDirection: "INBOUND",
+              allowedCollections: [],
+              setOperation: "Connected Paths",
+              includeInterNodeEdges: false,
+            },
+          },
+        ],
+      }),
+    );
+
+  it("searches at the largest per-node depth, not the shared depth", async () => {
+    services.fetchConnectingPaths.mockResolvedValue({
+      nodes: [{ _id: "UBERON/0001004" }, { _id: "CL/0000066" }],
+      links: [],
+    });
+
+    const store = makeStore();
+    loadConnectedPathsPhase(store, {
+      depth: 2,
+      perNodeSettings: {
+        "UBERON/0001004": { depth: 4 },
+        "CL/0000066": { depth: 4 },
+      },
+    });
+
+    await store.dispatch(executePhase({ phaseId: "p1" }));
+
+    expect(services.fetchConnectingPaths).toHaveBeenCalledTimes(1);
+    expect(services.fetchConnectingPaths.mock.calls[0][0].maxDepth).toBe(4);
+  });
+
+  it("takes the maximum when per-node depths differ", async () => {
+    services.fetchConnectingPaths.mockResolvedValue({
+      nodes: [{ _id: "UBERON/0001004" }, { _id: "CL/0000066" }],
+      links: [],
+    });
+
+    const store = makeStore();
+    loadConnectedPathsPhase(store, {
+      depth: 2,
+      perNodeSettings: {
+        "UBERON/0001004": { depth: 4 },
+        "CL/0000066": { depth: 3 },
+      },
+    });
+
+    await store.dispatch(executePhase({ phaseId: "p1" }));
+
+    expect(services.fetchConnectingPaths.mock.calls[0][0].maxDepth).toBe(4);
+  });
+
+  it("falls back to the shared depth when a node has no override", async () => {
+    services.fetchConnectingPaths.mockResolvedValue({
+      nodes: [{ _id: "UBERON/0001004" }, { _id: "CL/0000066" }],
+      links: [],
+    });
+
+    const store = makeStore();
+    loadConnectedPathsPhase(store, { depth: 2, perNodeSettings: {} });
+
+    await store.dispatch(executePhase({ phaseId: "p1" }));
+
+    expect(services.fetchConnectingPaths.mock.calls[0][0].maxDepth).toBe(2);
+  });
+
+  it("reports the depth actually searched when no paths are found", async () => {
+    services.fetchConnectingPaths.mockResolvedValue({ nodes: [], links: [] });
+
+    const store = makeStore();
+    loadConnectedPathsPhase(store, {
+      depth: 2,
+      perNodeSettings: {
+        "UBERON/0001004": { depth: 4 },
+        "CL/0000066": { depth: 4 },
+      },
+    });
+
+    const action = await store.dispatch(executePhase({ phaseId: "p1" }));
+
+    expect(action.error.message).toContain("depth 4");
+  });
+});
