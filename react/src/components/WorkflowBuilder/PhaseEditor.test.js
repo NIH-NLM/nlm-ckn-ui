@@ -140,3 +140,44 @@ describe("PhaseEditor direction control on Connected Paths", () => {
     }
   });
 });
+
+describe("PhaseEditor result summary counts", () => {
+  // origin -> hub -> leaf1 / leaf2: standard collapse drops the two leaves and
+  // the two edges holding them, leaving 2 nodes and 1 edge on display.
+  const result = {
+    nodes: [{ _id: "CL/origin" }, { _id: "CL/hub" }, { _id: "CL/leaf1" }, { _id: "CL/leaf2" }],
+    links: [
+      { _id: "e1", _from: "CL/origin", _to: "CL/hub" },
+      { _id: "e2", _from: "CL/hub", _to: "CL/leaf1" },
+      { _id: "e3", _from: "CL/hub", _to: "CL/leaf2" },
+    ],
+  };
+
+  it("counts what the results table shows, not the raw traversal", () => {
+    renderEditor({
+      phase: { result, settings: { collapseLeafNodes: "standard" } },
+    });
+
+    expect(screen.getByTestId("phase-result-summary")).toHaveTextContent("2 nodes, 1 edges");
+  });
+
+  it("surfaces the pre-collapse count so nothing disappears silently", () => {
+    renderEditor({
+      phase: { result, settings: { collapseLeafNodes: "standard" } },
+    });
+
+    expect(screen.getByTestId("phase-result-summary")).toHaveTextContent(
+      "4 nodes, 3 edges before collapse",
+    );
+  });
+
+  it("shows a single count when collapsing removes nothing", () => {
+    renderEditor({
+      phase: { result, settings: { collapseLeafNodes: "off" } },
+    });
+
+    const summary = screen.getByTestId("phase-result-summary");
+    expect(summary).toHaveTextContent("4 nodes, 3 edges");
+    expect(summary).not.toHaveTextContent("before collapse");
+  });
+});

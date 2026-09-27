@@ -6,7 +6,6 @@
  * Supports CSV download of results.
  */
 
-import { findLeafNodes } from "components/ForceGraphConstructor/graphDataProcessing";
 import React, { memo, useCallback, useMemo, useState } from "react";
 import {
   collectionConfigMap,
@@ -19,6 +18,7 @@ import {
   getNodeExternalUrl,
   getNodeLabel,
 } from "utils";
+import { applyCollapse } from "utils/collapseLeaves";
 
 /**
  * Format a field value for display (handles arrays, objects, etc.)
@@ -150,33 +150,10 @@ const ResultsTable = ({ graphData, collapseMode = "off", originNodeIds = [] }) =
   }, []);
 
   // Filter out collapsed leaf nodes from both nodes and links
-  const filteredData = useMemo(() => {
-    if (!graphData?.nodes?.length || !collapseMode || collapseMode === "off") {
-      return graphData;
-    }
-    const allNodeIds = graphData.nodes.map((n) => n._id);
-    const collapseNodeIds = allNodeIds.filter((id) => !originNodeIds.includes(id));
-    const leafIds = findLeafNodes(
-      graphData.nodes.map((n) => ({ id: n._id, ...n })),
-      graphData.links.map((l) => ({
-        source: l._from || (typeof l.source === "string" ? l.source : l.source?._id),
-        target: l._to || (typeof l.target === "string" ? l.target : l.target?._id),
-        ...l,
-      })),
-      collapseNodeIds,
-      originNodeIds,
-      collapseMode,
-    );
-    const leafSet = new Set(leafIds);
-    return {
-      nodes: graphData.nodes.filter((n) => !leafSet.has(n._id)),
-      links: graphData.links.filter((l) => {
-        const fromId = l._from || (typeof l.source === "string" ? l.source : l.source?._id);
-        const toId = l._to || (typeof l.target === "string" ? l.target : l.target?._id);
-        return !leafSet.has(fromId) && !leafSet.has(toId);
-      }),
-    };
-  }, [graphData, collapseMode, originNodeIds]);
+  const filteredData = useMemo(
+    () => applyCollapse(graphData, collapseMode, originNodeIds),
+    [graphData, collapseMode, originNodeIds],
+  );
 
   // Determine which additional columns to show based on what's in the data
   const { dynamicColumns, nodesByCollection } = useMemo(() => {
