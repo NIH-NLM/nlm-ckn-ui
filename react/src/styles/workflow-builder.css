@@ -836,6 +836,11 @@
   font-weight: 500;
 }
 
+.phase-result-precollapse {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
 .phase-result-summary.flash {
   animation: result-flash 1.5s ease-out;
 }

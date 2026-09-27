@@ -30,6 +30,7 @@ import {
   getCollectionDisplayName,
   getNodeLabel,
 } from "utils";
+import { applyCollapse } from "utils/collapseLeaves";
 import NodeSearchInput from "./NodeSearchInput";
 
 /**
@@ -271,6 +272,26 @@ const PhaseEditor = ({
   // direction controls have no effect on this set operation.
   const isConnectedPaths = phase.settings.setOperation === "Connected Paths";
   const DIRECTION_NA_HINT = "Connected Paths searches in any direction between origins.";
+
+  // The results table and graph render the phase result with leaf nodes
+  // collapsed, so summarising the raw result here reported a different size
+  // for the same execution. Count what is actually on display, and keep the
+  // pre-collapse figure visible so the collapsed nodes are not just missing.
+  const rawCounts = {
+    nodes: phase.result?.nodes?.length || 0,
+    links: phase.result?.links?.length || 0,
+  };
+  const collapsedResult = applyCollapse(
+    phase.result,
+    phase.settings.collapseLeafNodes ?? "standard",
+    phase._executedOriginNodeIds || phase.originNodeIds || [],
+  );
+  const displayedCounts = {
+    nodes: collapsedResult?.nodes?.length || 0,
+    links: collapsedResult?.links?.length || 0,
+  };
+  const collapseHidNodes =
+    displayedCounts.nodes !== rawCounts.nodes || displayedCounts.links !== rawCounts.links;
   const isFilterPhase = phase.originSource === "filter";
 
   // Determine if phase can be executed
@@ -852,8 +873,17 @@ const PhaseEditor = ({
 
         {/* Result Summary */}
         {phase.result && (
-          <div className={`phase-result-summary ${justCompleted ? "flash" : ""}`}>
-            {phase.result.nodes?.length || 0} nodes, {phase.result.links?.length || 0} edges
+          <div
+            className={`phase-result-summary ${justCompleted ? "flash" : ""}`}
+            data-testid="phase-result-summary"
+          >
+            {displayedCounts.nodes} nodes, {displayedCounts.links} edges
+            {collapseHidNodes && (
+              <span className="phase-result-precollapse">
+                {" "}
+                ({rawCounts.nodes} nodes, {rawCounts.links} edges before collapse)
+              </span>
+            )}
           </div>
         )}
       </div>
