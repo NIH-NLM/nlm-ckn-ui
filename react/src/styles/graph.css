@@ -770,6 +770,9 @@ g.node.pinned .node-pin-marker path {
    (931:696): 4px, #D6D7D9 thumb on a #F1F1F1 track. The standard properties
    cover Chromium and Firefox; Safari only honours the -webkit- pseudo-elements. */
 .node-inspector-scroll {
+  /* Positioned so absolutely placed descendants (visually-hidden link text)
+     are clipped here instead of extending the page. */
+  position: relative;
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
@@ -879,6 +882,31 @@ g.node.pinned .node-pin-marker path {
   font-size: 12px;
   line-height: 16px;
   letter-spacing: 0.4px;
+}
+
+/* Links in node cards: link blue with the design's outbound mark after them
+   (Figma "External Link", frames I and V). Scoped to the inspector; the site's
+   other external links keep their own colour. */
+.node-inspector .external-link,
+.node-inspector .external-link:visited,
+.node-inspector .external-link:hover {
+  color: var(--color-primary); /* #0071BC */
+  text-decoration-color: var(--color-primary);
+}
+.external-link-icon {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+}
+
+/* Field labels are Regular in the design. Out-specifies the base
+   .document-attributes-table .attribute-key rule in pages.css, which loads
+   later and sets 500. */
+.inspector-section .document-attributes-table .attribute-key {
+  font-weight: 400;
 }
 
 /* Flat rows to match Figma 683:5603: no zebra striping (overrides the global

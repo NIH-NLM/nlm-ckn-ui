@@ -6,6 +6,32 @@ import { Link } from "react-router-dom";
 import { formatFieldValue, getDisplayFields, getSectionedFields, getTitle, getUrl } from "utils";
 
 /**
+ * The design's outbound-link mark (Figma "External Link"), drawn in the link's
+ * own colour after its text, with the new-tab behaviour spelled out for screen
+ * readers.
+ */
+const ExternalLinkIcon = () => (
+  <>
+    <svg
+      className="external-link-icon"
+      aria-hidden="true"
+      focusable="false"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 16 16"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M6.667 3.333H5.467c-.747 0-1.12 0-1.406.146a1.333 1.333 0 0 0-.582.582c-.146.286-.146.659-.146 1.406v5.066c0 .747 0 1.12.146 1.406.128.25.332.455.582.583.285.145.658.145 1.403.145h5.07c.746 0 1.118 0 1.403-.145.251-.128.455-.332.583-.583.146-.285.146-.658.146-1.403V9.333M10 2.667h3.333V6m0-3.333L8.667 7.333" />
+    </svg>
+    <span className="visually-hidden"> (opens in a new tab)</span>
+  </>
+);
+
+/**
  * Renders a structured inspector card for a single document.
  * For collections with a UI section config, renders one titled section per the
  * config's sections plus an "Additional" catch-all for anything it does not
@@ -51,6 +77,7 @@ const DocumentCard = ({ document }) => {
     return field.url ? (
       <a href={field.url} target="_blank" rel="noopener noreferrer" className="external-link">
         {formatFieldValue(field.value)}
+        <ExternalLinkIcon />
       </a>
     ) : (
       formatFieldValue(field.value)
@@ -123,6 +150,7 @@ const DocumentCard = ({ document }) => {
               className="external-link document-id-link"
             >
               {legendContent}
+              <ExternalLinkIcon />
             </a>
           ) : (
             <span>{legendContent}</span>

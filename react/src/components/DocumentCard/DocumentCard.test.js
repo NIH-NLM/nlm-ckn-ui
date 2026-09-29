@@ -160,6 +160,13 @@ describe("DocumentCard", () => {
     expect(screen.getByText("584,944")).toBeInTheDocument();
   });
 
+  it("marks external links with the outbound icon and says they open a new tab", () => {
+    renderCard({ _id: "CL/0000001", _key: "0000001", label: "cell" });
+    const link = screen.getByRole("link", { name: /\(opens in a new tab\)$/ });
+    expect(link).toHaveAttribute("href", "http://purl.obolibrary.org/obo/0000001");
+    expect(link.querySelector("svg.external-link-icon")).not.toBeNull();
+  });
+
   it("renders the CKN filtering criteria as text under an info icon", () => {
     renderCard({ _id: "CSD/abc", species: "Homo sapiens" });
     expect(screen.getByText("CKN Filtering Criteria")).toBeInTheDocument();
