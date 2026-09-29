@@ -9,7 +9,7 @@
 
 import { GRAPH_STATUS } from "constants/index";
 import { useGraphDataInit } from "hooks";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   addFinalStage,
@@ -40,7 +40,6 @@ import PresetSelector from "./PresetSelector";
  */
 const WorkflowBuilder = ({ onGraphReady }) => {
   const dispatch = useDispatch();
-  const requestedNodeIdsRef = useRef(new Set());
 
   // Select workflow builder state
   const {
@@ -54,6 +53,8 @@ const WorkflowBuilder = ({ onGraphReady }) => {
     executingPhaseId,
     error,
     nodeDetails,
+    requestedNodeIds,
+    failedNodeIds,
     showPresetSelector,
     unknownLabels,
   } = useSelector((state) => state.workflowBuilder);
@@ -90,13 +91,14 @@ const WorkflowBuilder = ({ onGraphReady }) => {
   // Fetch node details when origin nodes change
   useEffect(() => {
     const allNodeIds = phases.flatMap((phase) => phase.originNodeIds || []);
-    const missingNodeIds = allNodeIds.filter((id) => !requestedNodeIdsRef.current.has(id));
+    // Failed ids wait for the next workflow rather than retrying on every render.
+    const skip = new Set([...requestedNodeIds, ...(failedNodeIds ?? [])]);
+    const missingNodeIds = allNodeIds.filter((id) => !skip.has(id));
 
     if (missingNodeIds.length > 0) {
-      for (const id of missingNodeIds) requestedNodeIdsRef.current.add(id);
       dispatch(fetchNodeDetails({ nodeIds: missingNodeIds }));
     }
-  }, [dispatch, phases]);
+  }, [dispatch, phases, requestedNodeIds, failedNodeIds]);
 
   // Notify parent when graph is ready
   useEffect(() => {
