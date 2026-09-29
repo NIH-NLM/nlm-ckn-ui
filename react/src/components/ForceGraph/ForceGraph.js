@@ -1551,6 +1551,7 @@ const ForceGraph = ({
             href={`/#/collections/${popup.nodeId}`}
             rel="noopener noreferrer"
             className="document-popup-button"
+            title={`Go To "${popup.nodeLabel}"`}
           >
             Go To "{popup.nodeLabel}"
           </a>
