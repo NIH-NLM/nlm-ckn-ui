@@ -119,18 +119,20 @@
   white-space: pre-wrap;
 }
 
+/* Node right-click menu, Figma frame II (683:3965): a compact light-blue card
+   with 12px items. Items carry 6px/4px padding so their text lands on the
+   frame's 16px/8px inset with 12px between items, while staying easy to hit. */
 .document-popup {
   position: absolute;
   z-index: 1000;
-  background-color: var(--color-white);
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  padding: 8px;
+  background-color: var(--color-bg-light-blue); /* #f7fbfd */
+  border: 1px solid #e9edf0; /* no token; the frame's panel border */
+  border-radius: var(--radius-md);
+  padding: 10px 4px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  min-width: 200px;
+  min-width: 155px;
+  max-width: 260px;
 }
 
 .document-popup-button,
@@ -138,16 +140,21 @@
   margin: 0;
   display: block;
   width: 100%;
-  padding: 10px 12px;
-  font-size: 0.95rem;
-  font-weight: 500;
+  padding: 6px 4px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
+  letter-spacing: 0.4px;
   text-align: left;
-  color: var(--color-text);
+  color: var(--color-base); /* #212121 */
+  /* One line each; the long "Go To" label ends in an ellipsis, full text in its title. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   background-color: transparent;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  line-height: inherit;
   transition:
     background-color 0.2s ease,
     color 0.2s ease;
@@ -163,21 +170,32 @@ a.document-popup-button {
   text-decoration: none;
 }
 
+/* Close control: a 20px white tile with the frame's 12px glyph, kept clear of
+   the first item's text by that item's right padding. */
 .document-popup-close-button {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  background: none;
+  top: 10px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-white);
   border: none;
-  font-size: 1.5rem;
-  color: var(--color-gray);
+  border-radius: var(--radius-md);
+  color: var(--color-gray); /* #5B616B */
   cursor: pointer;
-  padding: 4px;
-  line-height: 1;
 }
 
 .document-popup-close-button:hover {
   color: var(--color-dark);
+}
+
+.document-popup > :first-child {
+  padding-right: 28px;
 }
 
 .document-popup .add-to-graph-button {
@@ -186,10 +204,8 @@ a.document-popup-button {
   border-radius: 4px;
   border: none;
   background-color: transparent;
-  padding: 10px 12px;
+  padding: 6px 4px;
   justify-content: flex-start;
-  font-weight: 500;
-  font-size: 0.95rem;
 }
 
 .document-popup .add-to-graph-button .icon-container {
