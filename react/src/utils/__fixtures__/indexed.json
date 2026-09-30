@@ -1,6 +1,6 @@
 {
   "writebufferSizeMax": 33554432,
-  "id": "6627878",
+  "id": "837",
   "storedValues": [],
   "name": "indexed",
   "type": "arangosearch",
@@ -14,40 +14,13 @@
   },
   "writebufferActive": 0,
   "links": {
-    "PR": {
+    "BGS": {
       "analyzers": ["identity"],
       "fields": {
-        "label": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        "_search": {
+          "analyzers": ["norm-lower"]
         },
-        "species": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "hasOBONamespace": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "number_of_amino_acids": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "definition": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "hasExactSynonym": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "uniprot_id": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "gene_symbol": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "annotation_score": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "hasDbXref": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "protein_function": {
+        "markers": {
           "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
         }
       },
@@ -55,13 +28,54 @@
       "storeValues": "none",
       "trackListPositions": false
     },
-    "GO": {
+    "BMC": {
       "analyzers": ["identity"],
       "fields": {
+        "_search": {
+          "analyzers": ["norm-lower"]
+        },
+        "f_beta_score": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "markers": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        }
+      },
+      "includeAllFields": false,
+      "storeValues": "none",
+      "trackListPositions": false
+    },
+    "CHEMBL": {
+      "analyzers": ["identity"],
+      "fields": {
+        "label": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "drug_type": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "mechanism_of_action": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "protein": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "uniprot_id": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "approval_status": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "_search": {
+          "analyzers": ["norm-lower"]
+        },
         "definition": {
           "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
         },
-        "label": {
+        "trade_names": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "exact_synonym": {
           "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
         }
       },
@@ -72,10 +86,271 @@
     "CL": {
       "analyzers": ["identity"],
       "fields": {
+        "hasExactSynonym": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "hasDbXref": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
         "definition": {
           "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
         },
+        "label": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "_search": {
+          "analyzers": ["norm-lower"]
+        }
+      },
+      "includeAllFields": false,
+      "storeValues": "none",
+      "trackListPositions": false
+    },
+    "CS": {
+      "analyzers": ["identity"],
+      "fields": {
+        "expressed_genes": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "false_negative": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "binary_gene_set": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "first_quartile_silhouette": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "median_silhouette": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "_search": {
+          "analyzers": ["norm-lower"]
+        },
+        "on_target": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "publication": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "recall": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "silhouette_score": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "precision": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "species": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "cluster_cell_count": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "author_cell_term": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "true_positive": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "f_beta_score": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "cell_count": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "biomarker_combination": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "cellxgene_dataset": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "mean_silhouette": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "anatomical_structure": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "ontology_purl": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "standard_deviation_of_silhouette": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "third_quartile_silhouette": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "false_positive": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        }
+      },
+      "includeAllFields": false,
+      "storeValues": "none",
+      "trackListPositions": false
+    },
+    "CSD": {
+      "analyzers": ["identity"],
+      "fields": {
+        "publication": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "species": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "standard_deviation_of_silhouette": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "anatomical_structure": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "embedding": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "cellxgene_collection": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "cellxgene_dataset": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "cell_count": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "collection_id": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "assay_summary": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "disease_status": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "mean_f_beta_score": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "mean_silhouette": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "donor_id_count": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "tissue_annotation": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "median_of_f_beta_scores": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "dataset_name": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "_search": {
+          "analyzers": ["norm-lower"]
+        },
+        "cluster_annotation": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "dataset_identifier": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "filtered_cell_count": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "Citation": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        }
+      },
+      "includeAllFields": false,
+      "storeValues": "none",
+      "trackListPositions": false
+    },
+    "GO": {
+      "analyzers": ["identity"],
+      "fields": {
+        "_search": {
+          "analyzers": ["norm-lower"]
+        },
+        "definition": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "label": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        }
+      },
+      "includeAllFields": false,
+      "storeValues": "none",
+      "trackListPositions": false
+    },
+    "GS": {
+      "analyzers": ["identity"],
+      "fields": {
+        "label": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "species": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "gene_id": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "refseq_summary": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "reference_sequence_identifier": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "_search": {
+          "analyzers": ["norm-lower"]
+        },
+        "gene_type": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "mrna__nm__and_protein__np__sequences": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "gene_symbol": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "uniprot_name": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "exact_synonym": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        }
+      },
+      "includeAllFields": false,
+      "storeValues": "none",
+      "trackListPositions": false
+    },
+    "MONDO": {
+      "analyzers": ["identity"],
+      "fields": {
+        "_search": {
+          "analyzers": ["norm-lower"]
+        },
         "hasExactSynonym": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "label": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "definition": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "hasDbXref": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        }
+      },
+      "includeAllFields": false,
+      "storeValues": "none",
+      "trackListPositions": false
+    },
+    "NCBITaxon": {
+      "analyzers": ["identity"],
+      "fields": {
+        "_search": {
+          "analyzers": ["norm-lower"]
+        },
+        "hasOBONamespace": {
           "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
         },
         "hasDbXref": {
@@ -92,6 +367,9 @@
     "PATO": {
       "analyzers": ["identity"],
       "fields": {
+        "_search": {
+          "analyzers": ["norm-lower"]
+        },
         "definition": {
           "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
         },
@@ -106,212 +384,43 @@
       "storeValues": "none",
       "trackListPositions": false
     },
-    "GS": {
+    "PR": {
       "analyzers": ["identity"],
       "fields": {
-        "species": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "reference_sequence_identifier": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
         "label": {
           "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
         },
-        "exact_synonym": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "gene_symbol": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "mrna__nm__and_protein__np__sequences": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "gene_type": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "uniprot_name": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "refseq_summary": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "gene_id": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        }
-      },
-      "includeAllFields": false,
-      "storeValues": "none",
-      "trackListPositions": false
-    },
-    "NCBITaxon": {
-      "analyzers": ["identity"],
-      "fields": {
         "hasOBONamespace": {
           "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
         },
-        "label": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "hasDbXref": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        }
-      },
-      "includeAllFields": false,
-      "storeValues": "none",
-      "trackListPositions": false
-    },
-    "BGS": {
-      "analyzers": ["identity"],
-      "fields": {
-        "markers": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        }
-      },
-      "includeAllFields": false,
-      "storeValues": "none",
-      "trackListPositions": false
-    },
-    "CS": {
-      "analyzers": ["identity"],
-      "fields": {
-        "binary_gene_set": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "biomarker_combination": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "f_beta_score": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "author_cell_term": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "cell_count": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        }
-      },
-      "includeAllFields": false,
-      "storeValues": "none",
-      "trackListPositions": false
-    },
-    "MONDO": {
-      "analyzers": ["identity"],
-      "fields": {
-        "label": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "hasDbXref": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "definition": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "hasExactSynonym": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        }
-      },
-      "includeAllFields": false,
-      "storeValues": "none",
-      "trackListPositions": false
-    },
-    "CSD": {
-      "analyzers": ["identity"],
-      "fields": {
-        "cellxgene_dataset": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "cell_count": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
         "species": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "cellxgene_collection": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "Citation": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "dataset_identifier": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "collection_id": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "dataset_name": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "disease_status": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "anatomical_structure": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        }
-      },
-      "includeAllFields": false,
-      "storeValues": "none",
-      "trackListPositions": false
-    },
-    "UBERON": {
-      "analyzers": ["identity"],
-      "fields": {
-        "hasDbXref": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "hasExactSynonym": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "label": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "definition": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        }
-      },
-      "includeAllFields": false,
-      "storeValues": "none",
-      "trackListPositions": false
-    },
-    "BMC": {
-      "analyzers": ["identity"],
-      "fields": {
-        "f_beta_score": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "markers": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        }
-      },
-      "includeAllFields": false,
-      "storeValues": "none",
-      "trackListPositions": false
-    },
-    "CHEMBL": {
-      "analyzers": ["identity"],
-      "fields": {
-        "drug_type": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "approval_status": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "mechanism_of_action": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "protein": {
           "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
         },
         "uniprot_id": {
           "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
         },
+        "annotation_score": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "_search": {
+          "analyzers": ["norm-lower"]
+        },
+        "hasExactSynonym": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "number_of_amino_acids": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
         "definition": {
           "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
         },
-        "exact_synonym": {
+        "gene_symbol": {
           "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
         },
-        "label": {
+        "hasDbXref": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "protein_function": {
           "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
         }
       },
@@ -322,20 +431,46 @@
     "PUB": {
       "analyzers": ["identity"],
       "fields": {
+        "publication_doi": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "_search": {
+          "analyzers": ["norm-lower"]
+        },
         "author_list": {
           "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
         },
-        "year": {
-          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
-        },
-        "publication_doi": {
+        "title": {
           "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
         },
         "journal": {
           "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
         },
-        "title": {
+        "year": {
           "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        }
+      },
+      "includeAllFields": false,
+      "storeValues": "none",
+      "trackListPositions": false
+    },
+    "UBERON": {
+      "analyzers": ["identity"],
+      "fields": {
+        "hasExactSynonym": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "definition": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "hasDbXref": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "label": {
+          "analyzers": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+        },
+        "_search": {
+          "analyzers": ["norm-lower"]
         }
       },
       "includeAllFields": false,
