@@ -8,11 +8,9 @@ Run these tests quickly with:
     python manage.py test arango_api.tests.test_serializers
 """
 
-import json
-
-from django.conf import settings
 from django.test import SimpleTestCase
 
+from arango_api.search_tiers import all_map_fields
 from arango_api.serializers import (
     AQLQuerySerializer,
     AdvancedGraphTraversalSerializer,
@@ -352,24 +350,7 @@ class SearchRequestSerializerTestCase(SimpleTestCase):
         #
         # Drive the validator with the REAL field set and the search terms the
         # team reported ("K" broad match, "KCNK3" gene-symbol match).
-        maps_path = (
-            settings.BASE_DIR
-            / "react"
-            / "src"
-            / "assets"
-            / "nlm-ckn-collection-maps.json"
-        )
-        with open(maps_path) as fh:
-            collection_maps = dict(json.load(fh)["maps"])
-
-        # Mirror frontend getAllSearchableFields(): union of field_to_display.
-        search_fields = sorted(
-            {
-                field["field_to_display"]
-                for config in collection_maps.values()
-                for field in config.get("individual_fields", [])
-            }
-        )
+        search_fields = sorted(all_map_fields())
         self.assertIn("_from", search_fields)  # the field that caused the regression
 
         # Reported search terms; add more here to expand coverage.
