@@ -14,6 +14,7 @@
   "epithelial-cells-respiratory-system": 12,
   "epithelial-marker-gene-panel": 3,
   "epithelial-marker-genes-uc3": 19,
+  "hlca-dendritic-markers-uc4": 19,
   "hlca-lung-cell-types": 118,
   "leber-congenital-amaurosis-uc7": 28,
   "pah-kcnk3-uc9": 30,
@@ -22,6 +23,5 @@
   "ph-drugs": 30,
   "ph-subtypes": 10,
   "respiratory-marker-gene-panel": 3,
-  "respiratory-markers-to-diseases": 719,
-  "respiratory-spatial-panel-uc4": 923
+  "respiratory-markers-to-diseases": 719
 }
