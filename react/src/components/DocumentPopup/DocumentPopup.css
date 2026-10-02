@@ -6,16 +6,22 @@
   margin-bottom: 4px;
 }
 
+/* Same type as the menu's own items (12/16 Regular): inheriting picked up the
+   page's 16px, so the submenu read larger than the menu it opens from. */
 .document-popup-submenu-item {
   display: block;
   width: 100%;
-  padding: 4px 8px;
+  margin: 0;
+  padding: 6px 8px;
   background: none;
   border: none;
   cursor: pointer;
   text-align: left;
-  font-size: inherit;
-  color: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
+  letter-spacing: 0.4px;
+  color: var(--color-base); /* #212121 */
   border-radius: 3px;
 }
 
@@ -32,8 +38,9 @@
 .document-popup-submenu-status {
   font-style: italic;
   color: #888;
-  padding: 4px 8px;
-  font-size: 0.9em;
+  padding: 6px 8px;
+  font-size: 12px;
+  line-height: 16px;
 }
 
 .document-popup-submenu-error {
