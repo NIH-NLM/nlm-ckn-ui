@@ -16,6 +16,10 @@ export const DEFAULT_DEPTH = 2;
 // selector lets the user raise this in 500-node steps up to the full collection.
 export const DEFAULT_COLLECTION_ORIGIN_LIMIT = 500;
 export const COLLECTION_ORIGIN_LIMIT_STEP = 500;
+// Most origins sent in one /graph/ request. A scan of a whole collection (5,058
+// diseases) in one request outlasts the 30 s gateway timeout; the builder sends
+// larger origin sets in batches of this size.
+export const ORIGIN_BATCH_SIZE = 500;
 export const DEFAULT_EDGE_DIRECTION = "ANY";
 export const DEFAULT_SET_OPERATION = "Union";
 export const DEFAULT_GRAPH_TYPE = "phenotypes";

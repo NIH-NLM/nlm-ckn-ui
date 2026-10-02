@@ -18,6 +18,7 @@ import {
   DEFAULT_COLLECTION_ORIGIN_LIMIT,
   DEFAULT_GRAPH_TYPE,
   GRAPH_STATUS,
+  ORIGIN_BATCH_SIZE,
   UI_DEFAULTS,
 } from "../constants";
 import {
@@ -48,6 +49,27 @@ const createLinkedPhase = (existingPhases) => {
     newPhase.previousPhaseId = existingPhases[existingPhases.length - 1].id;
   }
   return newPhase;
+};
+
+/**
+ * /graph/ answers per origin and the phase's set operation runs on the merged
+ * answers afterwards, so sending the origins in batches changes only the size
+ * of each request, not the result. Sequential, to keep load on the database
+ * the same as one request.
+ */
+const fetchGraphDataInBatches = async (params) => {
+  const { nodeIds, advancedSettings } = params;
+  if (nodeIds.length <= ORIGIN_BATCH_SIZE) return fetchGraphData(params);
+  const merged = {};
+  for (let i = 0; i < nodeIds.length; i += ORIGIN_BATCH_SIZE) {
+    const batch = nodeIds.slice(i, i + ORIGIN_BATCH_SIZE);
+    const batchSettings = Object.fromEntries(batch.map((id) => [id, advancedSettings[id]]));
+    Object.assign(
+      merged,
+      await fetchGraphData({ ...params, nodeIds: batch, advancedSettings: batchSettings }),
+    );
+  }
+  return merged;
 };
 
 /**
@@ -422,7 +444,7 @@ export const executePhase = createAsyncThunk(
         includeInterNodeEdges: phase.settings.includeInterNodeEdges ?? true,
       };
 
-      const rawData = await fetchGraphData(params);
+      const rawData = await fetchGraphDataInBatches(params);
 
       // Drop nulls before anything downstream reads a property off a node.
       // A backend that still unions an unresolved DOCUMENT() lookup into its
