@@ -542,20 +542,16 @@ WORKFLOW_PRESETS = [
     },
     {
         "id": "alzheimers-disease-uc8",
-        "name": "Alzheimer's disease exploration (UC8)",
+        "name": "Alzheimer's disease genes and the compounds targeting them (UC8)",
         "description": (
-            "Alzheimer's disease: its causal genes and therapeutic "
-            "compounds, then the cell types that selectively express those "
-            "genes and where they sit anatomically."
+            "The genes strongly associated with Alzheimer's disease, the "
+            "proteins they produce, and the compounds that interact with "
+            "those proteins."
         ),
         "category": "Use Cases",
-        # NOT the big-dipper layout: this preset fans out to ~3,100 nodes
-        # (1,647 compounds, 1,052 diseases), and a single star holding 1,647
-        # nodes needs more room than the whole asterism. The dipper layout
-        # suits single-dipper results in the tens of nodes; this is a bulk
-        # scan, so it keeps the clustered layout it was built with.
+        # A gene -> protein -> compound fan-out (~130 nodes, ~80 of them
+        # compounds), not a dipper: there is no cell leg or closing edge.
         "layoutMode": "strict-cluster",
-        # Still worth suppressing edge labels at this density.
         "labelStates": {"link-label": False},
         "phases": [
             {
@@ -584,41 +580,24 @@ WORKFLOW_PRESETS = [
             },
             {
                 "id": "preset-uc8-phase-2",
-                "name": "Genes to cell types, drugs, and shared diseases",
+                "name": "Their proteins and the compounds targeting them",
                 "originSource": "previousPhase",
                 "originNodeIds": [],
                 "previousPhaseId": "preset-uc8-phase-1",
                 "originFilter": "all",
                 "settings": {
-                    "depth": 3,
+                    # GS -PRODUCES-> PR <-MOLECULARLY_INTERACTS_WITH- CHEMBL.
+                    "depth": 2,
                     "edgeDirection": "ANY",
-                    "allowedCollections": [
-                        "CL",
-                        "UBERON",
-                        "NCBITaxon",
-                        "PR",
-                        "CHEMBL",
-                        "MONDO",
-                        "CS",
-                    ],
+                    "allowedCollections": ["PR", "CHEMBL"],
                     "edgeFilters": {
-                        "Label": [
-                            "PART_OF",
-                            "PRESENT_IN_TAXON",
-                            "PRODUCES",
-                            "MOLECULARLY_INTERACTS_WITH",
-                            "IS_GENETIC_BASIS_FOR_CONDITION",
-                            "IS_SUBSTANCE_THAT_TREATS",
-                            "EXPRESSES",
-                            "SELECTIVELY_EXPRESSES",
-                            "COMPOSED_PRIMARILY_OF",
-                        ],
+                        "Label": ["PRODUCES", "MOLECULARLY_INTERACTS_WITH"],
                         "Source": [],
                     },
                     "setOperation": "Union",
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
-                    "collapseLeafNodes": "all",
+                    "collapseLeafNodes": "off",
                 },
                 "perNodeSettings": {},
             },
