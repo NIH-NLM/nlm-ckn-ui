@@ -154,8 +154,48 @@ WORKFLOW_PRESETS = [
     # Use Cases
     # -------------------------------------------------------------------------
     {
+        "id": "datasets-provenance-uc1",
+        "name": "Single-cell datasets and their provenance (UC1)",
+        "description": (
+            "Every single-cell dataset in NLM-CKN with the publication it is "
+            "attributed to and the organ it is about. Select a dataset to see "
+            "its provenance (CELLxGENE collection, assay, donors, cell counts) "
+            "and quality evidence (mean F-beta and silhouette scores)."
+        ),
+        "category": "Use Cases",
+        "layoutMode": "force",
+        "phases": [
+            {
+                "id": "preset-uc1-phase-1",
+                "name": "Datasets, publications, and organs",
+                "originSource": "collection",
+                "originCollection": "CSD",
+                "originNodeIds": [],
+                "previousPhaseId": None,
+                "originFilter": "all",
+                "settings": {
+                    # CSD -WAS_ATTRIBUTED_TO-> PUB and CSD -IS_ABOUT-> UBERON.
+                    # IS_ABOUT also reaches every cell set in the dataset;
+                    # allowedCollections keeps those out.
+                    "depth": 1,
+                    "edgeDirection": "OUTBOUND",
+                    "allowedCollections": ["PUB", "UBERON"],
+                    "edgeFilters": {
+                        "Label": ["WAS_ATTRIBUTED_TO", "IS_ABOUT"],
+                        "Source": [],
+                    },
+                    "setOperation": "Union",
+                    "graphType": "phenotypes",
+                    "includeInterNodeEdges": True,
+                    "collapseLeafNodes": "off",
+                },
+                "perNodeSettings": {},
+            },
+        ],
+    },
+    {
         "id": "hlca-lung-cell-types",
-        "name": "HLCA lung cell types (UC1)",
+        "name": "HLCA lung cell types (UC2)",
         "description": (
             "The HLCA respiratory dataset (Sikkema et al.) with its ~61 cell "
             "sets and the cell types they map to. The dataset sits at the "
@@ -185,96 +225,6 @@ WORKFLOW_PRESETS = [
                     "edgeDirection": "ANY",
                     "allowedCollections": ["CS", "CL"],
                     "edgeFilters": {"Label": [], "Source": []},
-                    "setOperation": "Union",
-                    "graphType": "phenotypes",
-                    "includeInterNodeEdges": True,
-                },
-                "perNodeSettings": {},
-            },
-        ],
-    },
-    {
-        "id": "datasets-epithelial-respiratory-uc2",
-        "name": "Epithelial cell sets in the respiratory system (UC2)",
-        "description": (
-            "The experimental cell sets that characterise epithelial cells in "
-            "the respiratory system, and the datasets they come from. Cell "
-            "sets are scoped by the anatomy they derive from and the cell "
-            "type they are composed of; the datasets follow from the cell "
-            "sets rather than the other way round."
-        ),
-        "category": "Use Cases",
-        "layoutMode": "force",
-        "phases": [
-            {
-                "id": "preset-uc2-phase-1",
-                "name": "Epithelial cell sets in respiratory anatomy",
-                "originSource": "manual",
-                "originNodeIds": ["CL/0000066", "UBERON/0001004"],
-                "previousPhaseId": None,
-                "originFilter": "all",
-                "settings": {
-                    "depth": 9,
-                    "edgeDirection": "INBOUND",
-                    "allowedCollections": ["CL", "CS", "UBERON"],
-                    "edgeFilters": {
-                        "Label": [
-                            "SUB_CLASS_OF",
-                            "COMPOSED_PRIMARILY_OF",
-                            "PART_OF",
-                            "DERIVES_FROM",
-                        ],
-                        "Source": [],
-                    },
-                    "setOperation": "Intersection",
-                    "graphType": "phenotypes",
-                    "includeInterNodeEdges": True,
-                },
-                # Each origin descends to cell sets by its own route, and the
-                # intersection keeps the cell sets both routes reach. Scoping
-                # the anatomy on the cell set (CS -DERIVES_FROM-> UBERON)
-                # rather than on the cell type matters: CL carries almost no
-                # PART_OF edges into respiratory anatomy, so requiring the
-                # cell type itself to be respiratory drops club cells, type II
-                # pneumocytes and lung goblet cells — the very cells the
-                # question is about.
-                "perNodeSettings": {
-                    "CL/0000066": {
-                        "depth": 9,
-                        "edgeDirection": "INBOUND",
-                        "allowedCollections": ["CL", "CS"],
-                        "edgeFilters": {
-                            "Label": ["SUB_CLASS_OF", "COMPOSED_PRIMARILY_OF"],
-                            "Source": [],
-                        },
-                    },
-                    "UBERON/0001004": {
-                        "depth": 9,
-                        "edgeDirection": "INBOUND",
-                        "allowedCollections": ["UBERON", "CS"],
-                        "edgeFilters": {
-                            "Label": ["PART_OF", "DERIVES_FROM"],
-                            "Source": [],
-                        },
-                    },
-                },
-            },
-            {
-                "id": "preset-uc2-phase-2",
-                "name": "Datasets those cell sets come from",
-                "originSource": "previousPhase",
-                "originNodeIds": [],
-                "previousPhaseId": "preset-uc2-phase-1",
-                "originFilter": "all",
-                "settings": {
-                    # CSD -IS_ABOUT-> CS, so the datasets sit inbound of the
-                    # cell sets. Depth 1 keeps the answer to the datasets that
-                    # contain these cell sets; the cell sets stay in the result
-                    # as the origins, so the table lists both.
-                    "depth": 1,
-                    "edgeDirection": "INBOUND",
-                    "allowedCollections": ["CSD"],
-                    "edgeFilters": {"Label": ["IS_ABOUT"], "Source": []},
                     "setOperation": "Union",
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
@@ -827,7 +777,7 @@ WORKFLOW_PRESETS = [
             "phase 1 for the cell type you care about; the rest of the "
             "workflow follows from it."
         ),
-        "category": "Use Cases",
+        "category": "Cell Type Discovery",
         "layoutMode": "force",
         "phases": [
             {
