@@ -895,6 +895,30 @@ class AntiEdgeTraversalTestCase(ArangoDBTestCase):
         self.assertIn("GS/nac_g3", genes)
         self.assertNotIn("GS/nac_g2", genes)
 
+    def test_closing_query_prunes_and_looks_up_closers_once_per_origin(self):
+        # A scan over thousands of diseases spends most of its time expanding
+        # paths through edges the filter rejects anyway, and re-querying the
+        # endpoint's edges for every surviving path. The query must prune
+        # off-filter edges during the walk and find each origin's closing
+        # neighbours once, before the path loop.
+        db, graph_name = graph_service.get_db_and_graph("phenotypes")
+        queries = []
+
+        def record(query, **kwargs):
+            queries.append(query)
+            return db.aql.execute(query, **kwargs)
+
+        spy = mock.MagicMock()
+        spy.aql.execute.side_effect = record
+        with mock.patch.object(
+            graph_service, "get_db_and_graph", return_value=(spy, graph_name)
+        ):
+            self._genes_from_diseases(exclude={"Label": ["IS_SUBSTANCE_THAT_TREATS"]})
+
+        query = queries[0]
+        self.assertIn("PRUNE", query)
+        self.assertLess(query.index("@closing_labels"), query.index("@depth..@depth"))
+
 
 class ConnectingPathsTestCase(ArangoDBTestCase):
     """Tests for find_connecting_paths edge filtering.
@@ -1416,8 +1440,8 @@ class TerminalCollectionsQueryTestCase(TestCase):
         self.assertEqual(bind_vars.get("terminal_collections"), ["UBERON"])
 
     def test_terminal_collections_rejected_with_closing_edge_filters(self):
-        # The closing-edge branch deliberately avoids PRUNE (it needs complete
-        # fixed-depth paths for its endpoint check), so the two cannot compose.
+        # The closing-edge branch needs complete fixed-depth paths for its
+        # endpoint check, so it cannot stop at a terminal vertex.
         with self.assertRaises(ValueError):
             self._run(
                 terminal_collections=["UBERON"],
