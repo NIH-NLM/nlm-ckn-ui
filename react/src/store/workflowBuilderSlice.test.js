@@ -417,6 +417,55 @@ describe("executePhase caps collection origins at originLimit", () => {
   });
 });
 
+describe("executePhase batches large origin sets", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  // A scan of the whole disease collection is thousands of origins, and one
+  // /graph/ request for all of them outlasts the gateway timeout.
+  it("splits origins into batches and merges every batch's results", async () => {
+    const ids = Array.from({ length: 1200 }, (_, i) => `MONDO/${i}`);
+    services.fetchGraphData.mockImplementation(async ({ nodeIds }) =>
+      Object.fromEntries(nodeIds.map((id) => [id, { nodes: [{ _id: id }], links: [] }])),
+    );
+
+    const store = makeStore();
+    store.dispatch(
+      loadWorkflow({
+        phases: [
+          {
+            id: "p1",
+            originSource: "manual",
+            originNodeIds: ids,
+            previousPhaseId: null,
+            settings: {
+              graphType: "phenotypes",
+              depth: 1,
+              edgeDirection: "ANY",
+              allowedCollections: ["GS"],
+              setOperation: "Union",
+              includeInterNodeEdges: false,
+            },
+          },
+        ],
+      }),
+    );
+
+    await store.dispatch(executePhase({ phaseId: "p1" }));
+
+    const calls = services.fetchGraphData.mock.calls.map(([params]) => params);
+    expect(calls).toHaveLength(3);
+    for (const params of calls) {
+      expect(params.nodeIds.length).toBeLessThanOrEqual(500);
+      expect(Object.keys(params.advancedSettings)).toEqual(params.nodeIds);
+    }
+    expect(calls.flatMap((params) => params.nodeIds)).toEqual(ids);
+    const result = store.getState().workflowBuilder.phaseResults.p1;
+    expect(result.nodes).toHaveLength(1200);
+  });
+});
+
 describe("executePhase drops null nodes from server responses", () => {
   beforeEach(() => {
     jest.clearAllMocks();
