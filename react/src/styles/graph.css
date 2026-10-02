@@ -1221,6 +1221,29 @@ fieldset.collection-picker {
   color: var(--color-gray); /* #5B616B */
   cursor: help;
 }
+/* Collapse control at the heading row's right end: the Show Options chevron,
+   pointing down to collapse and up to expand. */
+.graph-strip-collapse {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 0 0 auto;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--color-gray-dark); /* #323A45 */
+  cursor: pointer;
+}
+.graph-strip-collapse:hover {
+  background: var(--color-gray-lightest); /* #f1f1f1 */
+}
+.graph-strip-collapse-icon {
+  transform: rotate(-90deg);
+}
+.graph-strip-collapse[aria-expanded="false"] .graph-strip-collapse-icon {
+  transform: rotate(90deg);
+}
 
 @media (max-width: 768px) {
   .graph-workspace-body {
