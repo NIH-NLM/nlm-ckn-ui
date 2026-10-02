@@ -236,77 +236,57 @@ WORKFLOW_PRESETS = [
         ],
     },
     {
-        "id": "epithelial-marker-genes-uc3",
-        "name": "Marker genes for epithelial cells in the respiratory system (UC3)",
+        "id": "hlca-cell-type-markers-uc3",
+        "name": "HLCA cell types with marker genes and evidence (UC3)",
         "description": (
-            "Marker genes for epithelial cell types in the respiratory "
-            "system. Narrows to epithelial cells in respiratory anatomy, "
-            "then follows them to their cell sets, biomarker combinations, "
-            "and marker genes. Coverage grows as the ETL fills in "
-            "cell-type-to-cell-set mappings."
+            "The cell types the HLCA dataset (Sikkema et al.) detects, each "
+            "through the cell set that defines it, with that cell set's "
+            "marker gene combination and marker genes. Select a cell set for "
+            "its silhouette score, or a marker gene combination for its "
+            "F-beta score."
         ),
         "category": "Use Cases",
         "layoutMode": "force",
         "phases": [
             {
                 "id": "preset-uc3-phase-1",
-                "name": "Epithelial cell types in respiratory anatomy",
+                "name": "HLCA cell sets",
                 "originSource": "manual",
-                "originNodeIds": ["CL/0000066", "UBERON/0001004"],
+                "originNodeIds": [
+                    "CSD/4cb45d80-499a-48ae-a056-c71ac3552c94__respiratory_system",
+                ],
                 "previousPhaseId": None,
                 "originFilter": "all",
                 "settings": {
-                    "depth": 9,
-                    "edgeDirection": "INBOUND",
-                    "allowedCollections": ["CL", "UBERON"],
-                    "edgeFilters": {
-                        "Label": ["PART_OF", "SUB_CLASS_OF"],
-                        "Source": [],
-                    },
-                    "setOperation": "Intersection",
+                    "depth": 1,
+                    "edgeDirection": "OUTBOUND",
+                    "allowedCollections": ["CS"],
+                    "edgeFilters": {"Label": ["IS_ABOUT"], "Source": []},
+                    "setOperation": "Union",
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
                 },
-                "perNodeSettings": {
-                    "CL/0000066": {
-                        "depth": 9,
-                        "edgeDirection": "INBOUND",
-                        "allowedCollections": ["CL"],
-                        "edgeFilters": {
-                            "Label": ["SUB_CLASS_OF"],
-                            "Source": [],
-                        },
-                    },
-                    "UBERON/0001004": {
-                        "depth": 9,
-                        "edgeDirection": "INBOUND",
-                        "allowedCollections": ["CL", "UBERON"],
-                        "edgeFilters": {"Label": ["PART_OF"], "Source": []},
-                    },
-                },
+                "perNodeSettings": {},
             },
             {
                 "id": "preset-uc3-phase-2",
-                "name": "Cell sets, biomarker combinations, marker genes",
+                "name": "Cell types, marker gene combinations, marker genes",
                 "originSource": "previousPhase",
                 "originNodeIds": [],
                 "previousPhaseId": "preset-uc3-phase-1",
                 "originFilter": "all",
                 "settings": {
-                    # CL -> CS (COMPOSED_PRIMARILY_OF) -> the cell set's
-                    # biomarker combination (HAS_CHARACTERIZING_MARKER_SET)
-                    # and marker genes (EXPRESSES). Depth 2 keeps it to the
-                    # cell types' own cell sets — deeper would hop
-                    # GS -> other cell sets via shared genes.
+                    # CS -COMPOSED_PRIMARILY_OF-> CL, and
+                    # CS -HAS_CHARACTERIZING_MARKER_SET-> BMC <-PART_OF- GS.
+                    # CS is left out of allowedCollections so the walk cannot
+                    # leave HLCA through a cell type other datasets share.
                     "depth": 2,
                     "edgeDirection": "ANY",
-                    "allowedCollections": ["CS", "BMC", "GS"],
+                    "allowedCollections": ["CL", "BMC", "GS"],
                     "edgeFilters": {
                         "Label": [
                             "COMPOSED_PRIMARILY_OF",
                             "HAS_CHARACTERIZING_MARKER_SET",
-                            "EXPRESSES",
-                            "SELECTIVELY_EXPRESSES",
                             "PART_OF",
                         ],
                         "Source": [],
@@ -314,9 +294,6 @@ WORKFLOW_PRESETS = [
                     "setOperation": "Union",
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
-                    # Marker genes are the deliverable; the default "standard"
-                    # leaf collapse hides the single-cell-set ones, so disable
-                    # it to keep every marker gene visible.
                     "collapseLeafNodes": "off",
                 },
                 "perNodeSettings": {},
