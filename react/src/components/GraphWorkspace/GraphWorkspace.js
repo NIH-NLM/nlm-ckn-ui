@@ -6,10 +6,29 @@ import NodeInspector from "components/NodeInspector";
 import OriginsSidebar from "components/OriginsSidebar";
 import SavedGraphShelf from "components/SavedGraphShelf";
 import { useNodeDocument } from "hooks";
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { selectOriginHistory } from "store";
 import { getDatasetFigures, getTitle } from "utils";
+
+const STRIP_COLLAPSED_KEY = "cellkn_graphStripCollapsed";
+
+/** Whether the user last left the history/figures strip collapsed. */
+const readStripCollapsed = () => {
+  try {
+    return localStorage.getItem(STRIP_COLLAPSED_KEY) === "true";
+  } catch {
+    return false;
+  }
+};
+
+const writeStripCollapsed = (collapsed) => {
+  try {
+    localStorage.setItem(STRIP_COLLAPSED_KEY, String(collapsed));
+  } catch {
+    // Storage unavailable (private mode, quota): the choice lasts this visit only.
+  }
+};
 
 /**
  * Host-agnostic graph workspace: left node-inspector, center force graph
@@ -98,6 +117,18 @@ const GraphWorkspace = ({
   // The bottom strip shows either the graph history or the dataset's figures.
   // Falls back to history when the inspected document has no figures.
   const [stripView, setStripView] = useState("history");
+
+  // Collapsing the strip gives the graph its height; remembered per browser.
+  const [stripCollapsed, setStripCollapsed] = useState(readStripCollapsed);
+  const stripContentId = useId();
+  const collapseStrip = (collapsed) => {
+    setStripCollapsed(collapsed);
+    writeStripCollapsed(collapsed);
+  };
+  const showStripView = (view) => {
+    setStripView(view);
+    if (stripCollapsed) collapseStrip(false);
+  };
   const showingFigures = stripView === "figures" && figureCount > 0;
 
   return (
@@ -134,8 +165,8 @@ const GraphWorkspace = ({
                   type="button"
                   className="graph-strip-toggle"
                   aria-label="Graph history"
-                  aria-pressed={!showingFigures}
-                  onClick={() => setStripView("history")}
+                  aria-pressed={!stripCollapsed && !showingFigures}
+                  onClick={() => showStripView("history")}
                 >
                   History
                 </button>
@@ -143,8 +174,8 @@ const GraphWorkspace = ({
                   <button
                     type="button"
                     className="graph-strip-toggle"
-                    aria-pressed={showingFigures}
-                    onClick={() => setStripView("figures")}
+                    aria-pressed={!stripCollapsed && showingFigures}
+                    onClick={() => showStripView("figures")}
                   >
                     Figures ({figureCount})
                   </button>
@@ -158,8 +189,43 @@ const GraphWorkspace = ({
                   }
                   className="graph-history-help"
                 />
+                <button
+                  type="button"
+                  className="graph-strip-collapse"
+                  aria-expanded={!stripCollapsed}
+                  aria-controls={stripContentId}
+                  aria-label={
+                    stripCollapsed ? "Expand history and figures" : "Collapse history and figures"
+                  }
+                  title={stripCollapsed ? "Expand" : "Collapse"}
+                  onClick={() => collapseStrip(!stripCollapsed)}
+                >
+                  <svg
+                    className="graph-strip-collapse-icon"
+                    aria-hidden="true"
+                    focusable="false"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    width="24"
+                    height="24"
+                    fill="currentColor"
+                  >
+                    {/* The Show Options chevron (Figma 651:3255), turned by CSS. */}
+                    <path d="M14.199 19.605 7.878 13.005a1.52 1.52 0 0 1-.291-.467A1.62 1.62 0 0 1 7.5 12c0-.191.029-.371.087-.538.057-.168.154-.323.291-.467l6.321-6.6c.252-.263.572-.395.962-.395.389 0 .71.132.961.395.252.263.378.598.378 1.004 0 .407-.126.742-.378 1.005L10.763 12l5.359 5.596c.252.264.378.598.378 1.005 0 .407-.126.741-.378 1.004-.251.263-.572.395-.961.395-.39 0-.71-.132-.962-.395Z" />
+                  </svg>
+                </button>
               </h3>
-              {showingFigures ? <DatasetFigures document={figuresDocument} /> : <SavedGraphShelf />}
+              {/* The container stays mounted so the toggle's aria-controls always
+                  names an element; only its content goes when collapsed, which
+                  also keeps the figures from loading while hidden. */}
+              <div id={stripContentId} hidden={stripCollapsed}>
+                {!stripCollapsed &&
+                  (showingFigures ? (
+                    <DatasetFigures document={figuresDocument} />
+                  ) : (
+                    <SavedGraphShelf />
+                  ))}
+              </div>
             </div>
           </div>
         </section>
