@@ -860,89 +860,6 @@ WORKFLOW_PRESETS = [
         "phases": _UC10_PHASES,
     },
     {
-        "id": "pah-kcnk3-uc9",
-        "name": "Pulmonary arterial hypertension / KCNK3",
-        "description": (
-            "KCNK3-related pulmonary arterial hypertension as a Big "
-            "Dipper: the causal gene, its protein targets and interacting "
-            "compounds, and the cell types that selectively express it "
-            "(lung pericyte)."
-        ),
-        "category": "Use Cases",
-        "layoutMode": "big-dipper",
-        # A dipper is edge-dense (the FLT1 explorer draws ~150 edges).
-        # Labeling every one of them buries the shape, so start with
-        # edge labels off; the Labels panel can turn them back on.
-        "labelStates": {"link-label": False},
-        "phases": [
-            {
-                "id": "preset-uc9-phase-1",
-                "name": "Disease-associated genes",
-                "originSource": "manual",
-                "originNodeIds": ["MONDO/0014136"],
-                "previousPhaseId": None,
-                "originFilter": "all",
-                "settings": {
-                    "depth": 1,
-                    "edgeDirection": "ANY",
-                    "allowedCollections": ["GS"],
-                    "edgeFilters": {
-                        "Label": [
-                            "IS_GENETIC_BASIS_FOR_CONDITION",
-                        ],
-                        "Source": [],
-                    },
-                    "setOperation": "Union",
-                    "graphType": "phenotypes",
-                    "includeInterNodeEdges": True,
-                    "collapseLeafNodes": "off",
-                },
-                "perNodeSettings": {},
-            },
-            {
-                "id": "preset-uc9-phase-2",
-                "name": "Gene to cell types, protein, drugs, and variants",
-                "originSource": "previousPhase",
-                "originNodeIds": [],
-                "previousPhaseId": "preset-uc9-phase-1",
-                "originFilter": "all",
-                "settings": {
-                    "depth": 3,
-                    "edgeDirection": "ANY",
-                    "allowedCollections": [
-                        "CL",
-                        "UBERON",
-                        "NCBITaxon",
-                        "PR",
-                        "CHEMBL",
-                        "BMC",
-                        "MONDO",
-                        "CS",
-                    ],
-                    "edgeFilters": {
-                        "Label": [
-                            "PART_OF",
-                            "PRESENT_IN_TAXON",
-                            "PRODUCES",
-                            "MOLECULARLY_INTERACTS_WITH",
-                            "HAS_QUALITY",
-                            "IS_GENETIC_BASIS_FOR_CONDITION",
-                            "EXPRESSES",
-                            "SELECTIVELY_EXPRESSES",
-                            "COMPOSED_PRIMARILY_OF",
-                        ],
-                        "Source": [],
-                    },
-                    "setOperation": "Union",
-                    "graphType": "phenotypes",
-                    "includeInterNodeEdges": True,
-                    "collapseLeafNodes": "off",
-                },
-                "perNodeSettings": {},
-            },
-        ],
-    },
-    {
         "id": "leber-congenital-amaurosis-uc11",
         "name": "RPE65-related Leber congenital amaurosis (UC11)",
         "description": (
@@ -1029,6 +946,95 @@ WORKFLOW_PRESETS = [
                 "originNodeIds": [],
                 "previousPhaseId": None,
                 "previousPhaseIds": ["preset-uc11-phase-1", "preset-uc11-phase-2"],
+                "phaseCombineOperation": "Union",
+                "originFilter": "all",
+                # A traversal phase keeps only edges matching its own labels,
+                # so the cell-leg phase drops the disease, gene, protein and
+                # compound edges. The union restores them.
+                "settings": {
+                    "graphType": "phenotypes",
+                    "includeInterNodeEdges": True,
+                    "collapseLeafNodes": "off",
+                },
+                "perNodeSettings": {},
+            },
+        ],
+    },
+    {
+        "id": "cftr-acute-lung-injury-uc12",
+        "name": "CFTR-targeted therapy for acute lung injury (UC12)",
+        "description": (
+            "Acute lung injury as a complete Big Dipper through CFTR: the "
+            "CFTR-targeted compounds that treat it, and the cell sets that "
+            "selectively express CFTR with their cell types and the anatomy "
+            "they come from, as the cellular context for that therapy."
+        ),
+        "category": "Use Cases",
+        "layoutMode": "big-dipper",
+        "labelStates": {"link-label": False},
+        "phases": [
+            {
+                "id": "preset-uc12-phase-1",
+                "name": "Disease gene, its protein, and compounds that treat the disease",
+                "originSource": "manual",
+                "originNodeIds": ["MONDO/0015796"],
+                "previousPhaseId": None,
+                "originFilter": "all",
+                "settings": {
+                    # CFTR is acute lung injury's only genetic basis in the
+                    # data. Requiring the closing edge keeps the compounds
+                    # that both target CFTR and treat the disease.
+                    "depth": 3,
+                    "edgeDirection": "ANY",
+                    "allowedCollections": ["GS", "PR", "CHEMBL"],
+                    "edgeFilters": {
+                        "Label": [
+                            "IS_GENETIC_BASIS_FOR_CONDITION",
+                            "PRODUCES",
+                            "MOLECULARLY_INTERACTS_WITH",
+                        ],
+                        "Source": [],
+                    },
+                    "requireClosingEdges": {"Label": ["IS_SUBSTANCE_THAT_TREATS"]},
+                    "setOperation": "Union",
+                    "graphType": "phenotypes",
+                    "includeInterNodeEdges": True,
+                },
+                "perNodeSettings": {},
+            },
+            {
+                "id": "preset-uc12-phase-2",
+                "name": "Cell sets selectively expressing CFTR, cell types, anatomy",
+                "originSource": "previousPhase",
+                "originNodeIds": [],
+                "previousPhaseId": "preset-uc12-phase-1",
+                "originFilter": "all",
+                "settings": {
+                    "depth": 2,
+                    "edgeDirection": "ANY",
+                    "allowedCollections": ["CS", "CL", "UBERON"],
+                    "edgeFilters": {
+                        "Label": [
+                            "SELECTIVELY_EXPRESSES",
+                            "COMPOSED_PRIMARILY_OF",
+                            "DERIVES_FROM",
+                        ],
+                        "Source": [],
+                    },
+                    "setOperation": "Union",
+                    "graphType": "phenotypes",
+                    "includeInterNodeEdges": True,
+                    "collapseLeafNodes": "off",
+                },
+                "perNodeSettings": {},
+            },
+            {
+                "id": "preset-uc12-phase-3",
+                "name": "The dipper with its cell leg",
+                "originSource": "multiplePhases",
+                "originNodeIds": [],
+                "previousPhaseId": None,
+                "previousPhaseIds": ["preset-uc12-phase-1", "preset-uc12-phase-2"],
                 "phaseCombineOperation": "Union",
                 "originFilter": "all",
                 # A traversal phase keeps only edges matching its own labels,
