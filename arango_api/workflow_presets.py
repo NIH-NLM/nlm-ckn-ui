@@ -11,12 +11,14 @@ making them discoverable by non-browser clients (MCP tools, agents, etc.).
 
 PRESET_SECTIONS = [
     {"id": "graph-results", "label": "Graph Result Examples"},
+    {"id": "big-dipper", "label": "Big Dipper"},
     {"id": "list-results", "label": "List Result Examples"},
 ]
 
 PRESET_CATEGORIES = [
     # Graph result examples
     {"id": "Use Cases", "label": "Use Cases", "section": "graph-results"},
+    {"id": "Big Dipper", "label": "Big Dipper", "section": "big-dipper"},
     # List result examples
     {
         "id": "Ontology Exploration",
@@ -1495,7 +1497,7 @@ WORKFLOW_PRESETS = [
             "the disease collection by default — raise its origin count to "
             "scan more."
         ),
-        "category": "Disease Analysis",
+        "category": "Big Dipper",
         "layoutMode": "force",
         "phases": [
             {
@@ -1540,7 +1542,7 @@ WORKFLOW_PRESETS = [
             "Phase 1 samples the disease collection by default — raise its "
             "origin count to scan more."
         ),
-        "category": "Disease Analysis",
+        "category": "Big Dipper",
         "layoutMode": "force",
         "phases": [
             {
@@ -1586,7 +1588,7 @@ WORKFLOW_PRESETS = [
             "to those diseases. A closing edge means a complete dipper; its "
             "absence is a repurposing candidate."
         ),
-        "category": "Disease Analysis",
+        "category": "Big Dipper",
         "layoutMode": "big-dipper",
         # A dipper is edge-dense (the FLT1 explorer draws ~150 edges).
         # Labeling every one of them buries the shape, so start with
