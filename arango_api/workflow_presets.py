@@ -151,6 +151,132 @@ def _build_ph_phases(id_prefix, count):
     return phases
 
 
+def _scan_phase(phase_id, name, settings, prev=None, **extra):
+    """One phase of the UC9/UC10 gene scans; returns only gene or cell set lists."""
+    return {
+        "id": phase_id,
+        "name": name,
+        "originSource": "previousPhase" if prev else "collection",
+        "originNodeIds": [],
+        "previousPhaseId": prev,
+        "originFilter": "all",
+        "settings": {
+            "setOperation": "Union",
+            "graphType": "phenotypes",
+            "includeInterNodeEdges": False,
+            **settings,
+        },
+        "perNodeSettings": {},
+        **extra,
+    }
+
+
+def _hop(depth, direction, collection, *labels):
+    """Settings for a hop that keeps only the nodes it reaches in *collection*."""
+    return {
+        "depth": depth,
+        "edgeDirection": direction,
+        "allowedCollections": ["PR", collection] if depth == 2 else [collection],
+        "edgeFilters": {"Label": list(labels), "Source": []},
+        "returnCollections": [collection],
+    }
+
+
+def _intersect(phase_id, name, sources):
+    return _scan_phase(
+        phase_id,
+        name,
+        {"returnCollections": ["GS"]},
+        originSource="multiplePhases",
+        previousPhaseIds=sources,
+        phaseCombineOperation="Intersection",
+    )
+
+
+# Genes a cell set selectively expresses, found from the genes of phase *src*:
+# out to those cell sets, then back to every gene they selectively express.
+def _selectively_expressed(prefix, src, first):
+    cs, gs = f"{prefix}-phase-{first}", f"{prefix}-phase-{first + 1}"
+    return [
+        _scan_phase(
+            cs,
+            "Cell sets selectively expressing them",
+            _hop(1, "INBOUND", "CS", "SELECTIVELY_EXPRESSES"),
+            prev=src,
+        ),
+        _scan_phase(
+            gs,
+            "Genes those cell sets selectively express",
+            _hop(1, "OUTBOUND", "GS", "SELECTIVELY_EXPRESSES"),
+            prev=cs,
+        ),
+    ]
+
+
+_UC9 = "preset-uc9-genes"
+_UC9_PHASES = [
+    _scan_phase(
+        f"{_UC9}-phase-1",
+        "Genes on a complete dipper (sampled diseases)",
+        {
+            "depth": 3,
+            "edgeDirection": "ANY",
+            "allowedCollections": ["GS", "PR", "CHEMBL"],
+            "edgeFilters": {
+                "Label": [
+                    "IS_GENETIC_BASIS_FOR_CONDITION",
+                    "PRODUCES",
+                    "MOLECULARLY_INTERACTS_WITH",
+                ],
+                "Source": [],
+            },
+            # The compound must treat the path's own disease.
+            "requireClosingEdges": {"Label": ["IS_SUBSTANCE_THAT_TREATS"]},
+            "returnCollections": ["GS"],
+        },
+        originCollection="MONDO",
+    ),
+    *_selectively_expressed(_UC9, f"{_UC9}-phase-1", 2),
+    _intersect(
+        f"{_UC9}-phase-4",
+        "Dipper genes a cell set selectively expresses",
+        [f"{_UC9}-phase-1", f"{_UC9}-phase-3"],
+    ),
+]
+
+# No closing edge, so no path query: disease genes, intersected with the genes
+# whose protein some compound interacts with and the genes a cell set
+# selectively expresses. Equal to the broken plus complete dipper genes.
+_UC10 = "preset-uc10-genes"
+_UC10_LABELS = ("PRODUCES", "MOLECULARLY_INTERACTS_WITH")
+_UC10_PHASES = [
+    _scan_phase(
+        f"{_UC10}-phase-1",
+        "Disease genes (sampled diseases)",
+        _hop(1, "INBOUND", "GS", "IS_GENETIC_BASIS_FOR_CONDITION"),
+        originCollection="MONDO",
+    ),
+    _scan_phase(
+        f"{_UC10}-phase-2",
+        "Compounds interacting with their proteins",
+        _hop(2, "ANY", "CHEMBL", *_UC10_LABELS),
+        prev=f"{_UC10}-phase-1",
+    ),
+    _scan_phase(
+        f"{_UC10}-phase-3",
+        "Genes whose proteins those compounds interact with",
+        _hop(2, "ANY", "GS", *_UC10_LABELS),
+        prev=f"{_UC10}-phase-2",
+    ),
+    *_selectively_expressed(_UC10, f"{_UC10}-phase-1", 4),
+    _intersect(
+        f"{_UC10}-phase-6",
+        "Disease genes with a compound, selectively expressed in a cell set",
+        [f"{_UC10}-phase-1", f"{_UC10}-phase-3", f"{_UC10}-phase-5"],
+    ),
+]
+
+
 WORKFLOW_PRESETS = [
     # -------------------------------------------------------------------------
     # Use Cases
@@ -707,8 +833,35 @@ WORKFLOW_PRESETS = [
         ],
     },
     {
+        "id": "complete-dipper-genes-uc9",
+        "name": "Genes on a complete Big Dipper (UC9)",
+        "description": (
+            "Genes selectively expressed in a cell set, strongly associated "
+            "with a disease, and encoding a protein that a compound used to "
+            "treat that disease interacts with. Phase 1 samples the disease "
+            "collection; raise its origin count to scan more."
+        ),
+        "category": "Use Cases",
+        "layoutMode": "force",
+        "phases": _UC9_PHASES,
+    },
+    {
+        "id": "disease-drug-genes-uc10",
+        "name": "Selectively expressed disease genes with interacting compounds (UC10)",
+        "description": (
+            "Genes selectively expressed in a cell set, strongly associated "
+            "with a disease, and encoding a protein that a compound interacts "
+            "with. Unlike UC9 the compound need not treat that disease. "
+            "Phase 1 samples the disease collection; raise its origin count "
+            "to scan more."
+        ),
+        "category": "Use Cases",
+        "layoutMode": "force",
+        "phases": _UC10_PHASES,
+    },
+    {
         "id": "pah-kcnk3-uc9",
-        "name": "Pulmonary arterial hypertension / KCNK3 (UC9)",
+        "name": "Pulmonary arterial hypertension / KCNK3",
         "description": (
             "KCNK3-related pulmonary arterial hypertension as a Big "
             "Dipper: the causal gene, its protein targets and interacting "
