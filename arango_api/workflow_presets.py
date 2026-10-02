@@ -403,12 +403,12 @@ WORKFLOW_PRESETS = [
     },
     {
         "id": "dataset-comparison-uc5",
-        "name": "Compare datasets: HLCA vs CellRef (UC5)",
+        "name": "CellRef cell types not found in HLCA (UC5)",
         "description": (
-            "Cell types shared and unique between the HLCA (Sikkema et al.) "
-            "and CellRef (Guo et al.) lung datasets. Shared cell types sit "
-            "between the two dataset hubs; dataset-specific ones stay on "
-            "their own side."
+            "The cell types in the CellRef dataset (Guo et al.) that the HLCA "
+            "dataset (Sikkema et al.) does not detect. Both datasets are "
+            "shown side by side: shared cell types sit between the two "
+            "dataset hubs, and the ones only CellRef finds stay on its side."
         ),
         "category": "Use Cases",
         "layoutMode": "force",
@@ -446,7 +446,7 @@ WORKFLOW_PRESETS = [
     },
     {
         "id": "cystic-fibrosis-uc6",
-        "name": "Cystic fibrosis pathogenesis (UC6)",
+        "name": "Cystic fibrosis: genetic and cellular factors, treatments (UC6)",
         "description": (
             "Cystic fibrosis as a Big Dipper: its causal genes and "
             "treatments, then the cell types that express those genes and "
@@ -519,81 +519,19 @@ WORKFLOW_PRESETS = [
                 },
                 "perNodeSettings": {},
             },
-        ],
-    },
-    {
-        "id": "leber-congenital-amaurosis-uc7",
-        "name": "Leber congenital amaurosis (UC7)",
-        "description": (
-            "Leber congenital amaurosis as a Big Dipper: causal genes "
-            "(ABCA4, AIPL1, LRAT, KCNJ13), treating compounds, expressing "
-            "cell types, and anatomy. Anchored on the parent disease term "
-            "because the RPE65-specific subtype is not in the current data "
-            "release."
-        ),
-        "category": "Use Cases",
-        "layoutMode": "big-dipper",
-        # A dipper is edge-dense (the FLT1 explorer draws ~150 edges).
-        # Labeling every one of them buries the shape, so start with
-        # edge labels off; the Labels panel can turn them back on.
-        "labelStates": {"link-label": False},
-        "phases": [
             {
-                "id": "preset-uc7-phase-1",
-                "name": "Disease genes and treatments",
-                "originSource": "manual",
-                "originNodeIds": ["MONDO/0018998"],
-                "previousPhaseId": None,
-                "originFilter": "all",
-                "settings": {
-                    "depth": 1,
-                    "edgeDirection": "ANY",
-                    "allowedCollections": ["GS", "CHEMBL"],
-                    "edgeFilters": {
-                        "Label": [
-                            "IS_GENETIC_BASIS_FOR_CONDITION",
-                            "IS_SUBSTANCE_THAT_TREATS",
-                        ],
-                        "Source": [],
-                    },
-                    "setOperation": "Union",
-                    "graphType": "phenotypes",
-                    "includeInterNodeEdges": True,
-                    "collapseLeafNodes": "off",
-                },
-                "perNodeSettings": {},
-            },
-            {
-                "id": "preset-uc7-phase-2",
-                "name": "Gene to cell types, protein, and drugs",
-                "originSource": "previousPhase",
+                "id": "preset-uc6-phase-3",
+                "name": "The dipper with its cell leg",
+                "originSource": "multiplePhases",
                 "originNodeIds": [],
-                "previousPhaseId": "preset-uc7-phase-1",
+                "previousPhaseId": None,
+                "previousPhaseIds": ["preset-uc6-phase-1", "preset-uc6-phase-2"],
+                "phaseCombineOperation": "Union",
                 "originFilter": "all",
+                # A traversal phase keeps only edges matching its own labels,
+                # so the cell-leg phase drops the disease, gene, protein and
+                # compound edges. The union restores them.
                 "settings": {
-                    "depth": 3,
-                    "edgeDirection": "ANY",
-                    "allowedCollections": [
-                        "CL",
-                        "UBERON",
-                        "NCBITaxon",
-                        "PR",
-                        "CHEMBL",
-                        "CS",
-                    ],
-                    "edgeFilters": {
-                        "Label": [
-                            "PART_OF",
-                            "PRESENT_IN_TAXON",
-                            "PRODUCES",
-                            "MOLECULARLY_INTERACTS_WITH",
-                            "EXPRESSES",
-                            "SELECTIVELY_EXPRESSES",
-                            "COMPOSED_PRIMARILY_OF",
-                        ],
-                        "Source": [],
-                    },
-                    "setOperation": "Union",
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
                     "collapseLeafNodes": "off",
@@ -761,6 +699,107 @@ WORKFLOW_PRESETS = [
                         "Source": [],
                     },
                     "setOperation": "Union",
+                    "graphType": "phenotypes",
+                    "includeInterNodeEdges": True,
+                    "collapseLeafNodes": "off",
+                },
+                "perNodeSettings": {},
+            },
+        ],
+    },
+    {
+        "id": "leber-congenital-amaurosis-uc11",
+        "name": "RPE65-related Leber congenital amaurosis (UC11)",
+        "description": (
+            "Leber congenital amaurosis as a Big Dipper: causal genes "
+            "(ABCA4, AIPL1, LRAT, KCNJ13), treating compounds, expressing "
+            "cell types, and anatomy. Anchored on the parent disease term: "
+            "the current data release has no RPE65 gene, no edges on the "
+            "RPE65-related subtype (LCA2), and no cell sets for retinal "
+            "pigment epithelial cells."
+        ),
+        "category": "Use Cases",
+        "layoutMode": "big-dipper",
+        # A dipper is edge-dense (the FLT1 explorer draws ~150 edges).
+        # Labeling every one of them buries the shape, so start with
+        # edge labels off; the Labels panel can turn them back on.
+        "labelStates": {"link-label": False},
+        "phases": [
+            {
+                "id": "preset-uc11-phase-1",
+                "name": "Disease genes and treatments",
+                "originSource": "manual",
+                "originNodeIds": ["MONDO/0018998"],
+                "previousPhaseId": None,
+                "originFilter": "all",
+                "settings": {
+                    "depth": 1,
+                    "edgeDirection": "ANY",
+                    "allowedCollections": ["GS", "CHEMBL"],
+                    "edgeFilters": {
+                        "Label": [
+                            "IS_GENETIC_BASIS_FOR_CONDITION",
+                            "IS_SUBSTANCE_THAT_TREATS",
+                        ],
+                        "Source": [],
+                    },
+                    "setOperation": "Union",
+                    "graphType": "phenotypes",
+                    "includeInterNodeEdges": True,
+                    "collapseLeafNodes": "off",
+                },
+                "perNodeSettings": {},
+            },
+            {
+                "id": "preset-uc11-phase-2",
+                "name": "Gene to cell types, protein, and drugs",
+                "originSource": "previousPhase",
+                "originNodeIds": [],
+                "previousPhaseId": "preset-uc11-phase-1",
+                "originFilter": "all",
+                "settings": {
+                    "depth": 3,
+                    "edgeDirection": "ANY",
+                    "allowedCollections": [
+                        "CL",
+                        "UBERON",
+                        "NCBITaxon",
+                        "PR",
+                        "CHEMBL",
+                        "CS",
+                    ],
+                    "edgeFilters": {
+                        "Label": [
+                            "PART_OF",
+                            "PRESENT_IN_TAXON",
+                            "PRODUCES",
+                            "MOLECULARLY_INTERACTS_WITH",
+                            "EXPRESSES",
+                            "SELECTIVELY_EXPRESSES",
+                            "COMPOSED_PRIMARILY_OF",
+                        ],
+                        "Source": [],
+                    },
+                    "setOperation": "Union",
+                    "graphType": "phenotypes",
+                    "includeInterNodeEdges": True,
+                    "collapseLeafNodes": "off",
+                },
+                "perNodeSettings": {},
+            },
+            {
+                "id": "preset-uc11-phase-3",
+                "name": "The dipper with its cell leg",
+                "originSource": "multiplePhases",
+                "originNodeIds": [],
+                "previousPhaseId": None,
+                "previousPhaseIds": ["preset-uc11-phase-1", "preset-uc11-phase-2"],
+                "phaseCombineOperation": "Union",
+                "originFilter": "all",
+                # A traversal phase keeps only edges matching its own labels,
+                # so the cell-leg phase drops the disease, gene, protein and
+                # compound edges. The union restores them.
+                "settings": {
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
                     "collapseLeafNodes": "off",
