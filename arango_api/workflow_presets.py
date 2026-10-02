@@ -322,78 +322,79 @@ WORKFLOW_PRESETS = [
         ],
     },
     {
-        "id": "respiratory-spatial-panel-uc4",
-        "name": "Respiratory system spatial transcriptomics panel (UC4)",
+        "id": "hlca-dendritic-markers-uc4",
+        "name": "HLCA marker gene combinations for dendritic cells (UC4)",
         "description": (
-            "A respiratory-system marker gene panel for targeted spatial "
-            "transcriptomics. Starts from respiratory anatomy to anchor on "
-            "respiratory experiments, then fans out to their cell sets, "
-            "biomarker combinations, marker genes, and cell types."
+            "The marker gene combinations that differentiate dendritic cells "
+            "in the healthy human respiratory system, from the HLCA core "
+            "dataset (Sikkema et al.). Each dendritic cell set carries its "
+            "own combination; select one for its F-beta score."
         ),
         "category": "Use Cases",
-        "layoutMode": "strict-cluster",
+        "layoutMode": "force",
         "phases": [
             {
                 "id": "preset-uc4-phase-1",
-                "name": "Respiratory system cell set datasets",
+                "name": "HLCA cell sets composed of dendritic cells",
                 "originSource": "manual",
-                "originNodeIds": ["UBERON/0001004"],
+                "originNodeIds": [
+                    "CSD/4cb45d80-499a-48ae-a056-c71ac3552c94__respiratory_system",
+                    "CL/0000451",
+                ],
                 "previousPhaseId": None,
                 "originFilter": "all",
                 "settings": {
-                    "depth": 2,
-                    "edgeDirection": "ANY",
-                    "allowedCollections": ["CS", "CSD"],
-                    "edgeFilters": {
-                        "Label": [],
-                        "Source": [],
-                    },
-                    "setOperation": "Union",
+                    "depth": 9,
+                    "edgeDirection": "INBOUND",
+                    "allowedCollections": ["CS", "CL"],
+                    "edgeFilters": {"Label": [], "Source": []},
+                    "setOperation": "Intersection",
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
-                    "returnCollections": ["CSD"],
-                    "collapseLeafNodes": "off",
                 },
-                "perNodeSettings": {},
+                # The intersection keeps the cell sets both origins reach:
+                # the ones in HLCA, and the ones composed of dendritic cells
+                # or any of their subtypes.
+                "perNodeSettings": {
+                    "CSD/4cb45d80-499a-48ae-a056-c71ac3552c94__respiratory_system": {
+                        "depth": 1,
+                        "edgeDirection": "OUTBOUND",
+                        "allowedCollections": ["CS"],
+                        "edgeFilters": {"Label": ["IS_ABOUT"], "Source": []},
+                    },
+                    "CL/0000451": {
+                        "depth": 9,
+                        "edgeDirection": "INBOUND",
+                        "allowedCollections": ["CL", "CS"],
+                        "edgeFilters": {
+                            "Label": ["SUB_CLASS_OF", "COMPOSED_PRIMARILY_OF"],
+                            "Source": [],
+                        },
+                    },
+                },
             },
             {
                 "id": "preset-uc4-phase-2",
-                "name": "Cell types and marker genes",
+                "name": "Cell types, marker gene combinations, marker genes",
                 "originSource": "previousPhase",
                 "originNodeIds": [],
                 "previousPhaseId": "preset-uc4-phase-1",
                 "originFilter": "all",
                 "settings": {
-                    "depth": 3,
+                    "depth": 2,
                     "edgeDirection": "ANY",
-                    "allowedCollections": ["CS", "BMC", "GS", "CL"],
+                    "allowedCollections": ["CL", "BMC", "GS"],
                     "edgeFilters": {
                         "Label": [
-                            "IS_ABOUT",
-                            "PART_OF",
-                            "HAS_CHARACTERIZING_MARKER_SET",
                             "COMPOSED_PRIMARILY_OF",
-                            "EXPRESSES",
-                            "SELECTIVELY_EXPRESSES",
+                            "HAS_CHARACTERIZING_MARKER_SET",
+                            "PART_OF",
                         ],
                         "Source": [],
                     },
                     "setOperation": "Union",
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
-                    "collapseLeafNodes": "off",
-                },
-                "perNodeSettings": {},
-            },
-            {
-                "id": "preset-uc4-phase-3",
-                "name": "Marker gene panel",
-                "originSource": "filter",
-                "originNodeIds": [],
-                "previousPhaseId": "preset-uc4-phase-2",
-                "originFilter": "all",
-                "settings": {
-                    "returnCollections": ["GS"],
                     "collapseLeafNodes": "off",
                 },
                 "perNodeSettings": {},
