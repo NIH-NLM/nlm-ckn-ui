@@ -1301,6 +1301,54 @@ class SearchByTermQueryTestCase(TestCase):
         self.assertIn('MERGE({"_id": doc._id}', query)
 
 
+class SearchByTermErrorTestCase(SimpleTestCase):
+    """search_by_term must tell a failed query apart from no matches."""
+
+    def _search(self, side_effect):
+        db_connection = mock.Mock()
+        db_connection.aql.execute.side_effect = side_effect
+        with mock.patch.object(
+            search_service, "get_db_and_graph", return_value=(db_connection, None)
+        ):
+            return search_service.search_by_term("cell", ["label"], "ontologies")
+
+    def _assert_raises(self, error, unavailable):
+        with self.assertLogs(search_service.logger, "ERROR"):
+            with self.assertRaises(search_service.SearchServiceError) as ctx:
+                self._search(error)
+        self.assertIs(ctx.exception.unavailable, unavailable)
+        self.assertIs(ctx.exception.__cause__, error)
+
+    def test_no_matches_returns_empty_list(self):
+        cursor = mock.Mock()
+        cursor.next.side_effect = StopIteration
+        self.assertEqual(self._search([cursor]), [])
+
+    def test_unreachable_database_is_unavailable(self):
+        import requests
+
+        from arango_api.circuit_breaker import CircuitBreakerOpen
+
+        for error in (
+            CircuitBreakerOpen("open"),
+            requests.exceptions.ConnectionError("refused"),
+            requests.exceptions.Timeout("slow"),
+            ConnectionAbortedError("aborted"),
+        ):
+            with self.subTest(type(error).__name__):
+                self._assert_raises(error, unavailable=True)
+
+    def test_failed_query_is_not_unavailable(self):
+        from arango.exceptions import AQLQueryExecuteError
+
+        for error in (
+            AQLQueryExecuteError(mock.Mock(), mock.Mock()),
+            ValueError("bad"),
+        ):
+            with self.subTest(type(error).__name__):
+                self._assert_raises(error, unavailable=False)
+
+
 class TerminalCollectionsQueryTestCase(TestCase):
     """Unit tests for terminal-collection pruning (no DB required)."""
 

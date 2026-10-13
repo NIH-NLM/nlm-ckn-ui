@@ -13,6 +13,7 @@ See: https://www.django-rest-framework.org/api-guide/views/
 """
 
 import logging
+import math
 
 from django.conf import settings
 from django.http import HttpResponseNotFound
@@ -41,6 +42,11 @@ from arango_api.services import document_service, workflow_service
 from arango_api.services import label_service, version_service, hierarchy_service
 
 logger = logging.getLogger(__name__)
+
+# Seconds a client should wait before retrying a search that failed because the
+# database was unreachable. Never shorter than the circuit breaker's cooldown,
+# so a retry does not land while the breaker is still failing fast.
+SEARCH_RETRY_AFTER_SECONDS = math.ceil(settings.ARANGO_CB_RESET_TIMEOUT)
 
 
 class CollectionListView(APIView):
@@ -227,11 +233,23 @@ class SearchView(APIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        results = search_service.search_by_term(
-            search_term=data["search_term"],
-            search_fields=data["search_fields"],
-            graph=data.get("db", "ontologies"),
-        )
+        try:
+            results = search_service.search_by_term(
+                search_term=data["search_term"],
+                search_fields=data["search_fields"],
+                graph=data.get("db", "ontologies"),
+            )
+        except search_service.SearchServiceError as e:
+            if e.unavailable:
+                return Response(
+                    {"error": "Search is temporarily unavailable."},
+                    status=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    headers={"Retry-After": str(SEARCH_RETRY_AFTER_SECONDS)},
+                )
+            return Response(
+                {"error": "An internal server error occurred."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
         return Response(results)
 
 

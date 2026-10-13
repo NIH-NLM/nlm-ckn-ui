@@ -19,11 +19,13 @@ import tempfile
 from pathlib import Path
 from unittest import mock
 
+from django.conf import settings
 from django.test import SimpleTestCase, TestCase, override_settings, tag
 from django.urls import reverse
 
+from arango_api import views
 from arango_api.serializers import GraphTraversalSerializer
-from arango_api.services import document_service, version_service
+from arango_api.services import document_service, search_service, version_service
 from arango_api.tests.seed_test_db import seed_test_databases
 
 
@@ -550,6 +552,54 @@ class CircuitBreakerOpenResponseTestCase(SimpleTestCase):
     #     # The view's `except Exception` maps it to a 500 with an error body.
     #     self.assertEqual(response.status_code, 500)
     #     self.assertIn("error", response.json())
+
+
+class SearchViewErrorTestCase(SimpleTestCase):
+    """Search failures surface as HTTP errors, not as an empty result list.
+
+    The service is patched, so no live DB is needed.
+    """
+
+    payload = {"search_term": "cell", "search_fields": ["label"]}
+
+    def _post(self, payload=None, **patch_kwargs):
+        with mock.patch.object(search_service, "search_by_term", **patch_kwargs):
+            return self.client.post(
+                reverse("get_search_items"),
+                data=payload or self.payload,
+                content_type="application/json",
+            )
+
+    def test_unavailable_database_returns_503_with_retry_after(self):
+        error = search_service.SearchServiceError(unavailable=True)
+        response = self._post(side_effect=error)
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response["Retry-After"], str(views.SEARCH_RETRY_AFTER_SECONDS))
+        self.assertEqual(
+            response.json(), {"error": "Search is temporarily unavailable."}
+        )
+
+    def test_retry_after_outlasts_circuit_breaker_cooldown(self):
+        self.assertGreaterEqual(
+            views.SEARCH_RETRY_AFTER_SECONDS, settings.ARANGO_CB_RESET_TIMEOUT
+        )
+
+    def test_failed_query_returns_500(self):
+        error = search_service.SearchServiceError(unavailable=False)
+        response = self._post(side_effect=error)
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(
+            response.json(), {"error": "An internal server error occurred."}
+        )
+
+    def test_invalid_request_still_returns_400(self):
+        response = self._post(payload={"search_term": "cell"}, return_value=[])
+        self.assertEqual(response.status_code, 400)
+
+    def test_success_returns_results(self):
+        response = self._post(return_value=[{"_id": "CL/0000000"}])
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), [{"_id": "CL/0000000"}])
 
 
 class TerminalCollectionsSerializerTestCase(TestCase):
