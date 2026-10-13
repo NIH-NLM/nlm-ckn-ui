@@ -5,6 +5,9 @@ Service for search operations.
 import logging
 from itertools import chain
 
+import requests
+
+from arango_api.circuit_breaker import CircuitBreakerOpen
 from arango_api.db import db_ontologies
 from arango_api.services.base import get_db_and_graph
 from arango_api.services.collection_service import get_collections
@@ -40,6 +43,27 @@ LABEL_FIELDS = [
     "uniprot_id",
 ]
 
+# Failures meaning the database could not be reached, as opposed to a query
+# that ran and failed. Callers answer these with 503 and invite a retry.
+UNAVAILABLE_ERRORS = (
+    CircuitBreakerOpen,
+    requests.exceptions.ConnectionError,
+    requests.exceptions.Timeout,
+    ConnectionAbortedError,
+)
+
+
+class SearchServiceError(Exception):
+    """Raised when a search fails, so callers can tell failure from no matches.
+
+    Attributes:
+        unavailable (bool): True when the database could not be reached.
+    """
+
+    def __init__(self, message="Search failed", unavailable=False):
+        super().__init__(message)
+        self.unavailable = unavailable
+
 
 def search_by_term(search_term, search_fields, graph):
     """
@@ -54,7 +78,10 @@ def search_by_term(search_term, search_fields, graph):
         graph (str): The graph type ("ontologies" or "phenotypes").
 
     Returns:
-        list: Sorted list of matching documents.
+        list: Sorted list of matching documents (empty when nothing matches).
+
+    Raises:
+        SearchServiceError: If the query could not be executed.
     """
     db_connection, _ = get_db_and_graph(graph)
 
@@ -126,10 +153,10 @@ def search_by_term(search_term, search_fields, graph):
 
     except StopIteration:
         logger.debug("Search query returned no results for term: %s", search_term)
-        results = {}
-    except Exception:
+        results = []
+    except Exception as e:
         logger.exception("Error executing search query")
-        results = {}
+        raise SearchServiceError(unavailable=isinstance(e, UNAVAILABLE_ERRORS)) from e
 
     return results
 
