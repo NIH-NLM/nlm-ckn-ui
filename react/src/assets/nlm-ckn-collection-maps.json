@@ -1,4 +1,17 @@
 {
+  "search_tiers": {
+    "label": ["text_en", "text_en_no_stem", "n-gram", "identity", "norm-lower", "wildcard-lower"],
+    "synonym": ["text_en", "text_en_no_stem", "n-gram", "identity", "norm-lower"],
+    "identifier": [
+      "text_en",
+      "text_en_no_stem",
+      "n-gram",
+      "identity",
+      "norm-lower",
+      "wildcard-lower"
+    ],
+    "text": ["text_en", "text_en_no_stem", "n-gram", "identity"]
+  },
   "maps": [
     [
       "TEST_DOCUMENT_COLLECTION",
@@ -31,6 +44,7 @@
         ],
         "individual_fields": [
           {
+            "search_tier": null,
             "field_to_display": "label",
             "display_field_as": "Label",
             "field_url": "",
@@ -62,18 +76,21 @@
         ],
         "individual_fields": [
           {
+            "search_tier": null,
             "field_to_display": "label",
             "display_field_as": "Label",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "_from",
             "display_field_as": "From",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "_to",
             "display_field_as": "To",
             "field_url": "",
@@ -114,6 +131,7 @@
         ],
         "individual_fields": [
           {
+            "search_tier": "label",
             "field_to_display": "markers",
             "display_field_as": "Marker(s)",
             "field_url": "",
@@ -154,12 +172,14 @@
         ],
         "individual_fields": [
           {
+            "search_tier": "label",
             "field_to_display": "markers",
             "display_field_as": "Marker(s)",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "f_beta_score",
             "display_field_as": "F-beta score",
             "field_url": "",
@@ -206,54 +226,63 @@
         ],
         "individual_fields": [
           {
+            "search_tier": "label",
             "field_to_display": "label",
             "display_field_as": "Label",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "text",
             "field_to_display": "protein",
             "display_field_as": "Protein",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "identifier",
             "field_to_display": "uniprot_id",
             "display_field_as": "UniProt ID",
             "field_url": "https://www.uniprot.org/uniprotkb/<FIELD_TO_USE>/entry",
             "field_to_use": "uniprot_id"
           },
           {
+            "search_tier": "text",
             "field_to_display": "drug_type",
             "display_field_as": "Drug type",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "text",
             "field_to_display": "definition",
             "display_field_as": "Definition",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "text",
             "field_to_display": "mechanism_of_action",
             "display_field_as": "Mechanism of action",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "text",
             "field_to_display": "trade_names",
             "display_field_as": "Trade names",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "synonym",
             "field_to_display": "exact_synonym",
             "display_field_as": "Exact synonym(s)",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "text",
             "field_to_display": "approval_status",
             "display_field_as": "Approval status",
             "field_url": "",
@@ -294,24 +323,28 @@
         ],
         "individual_fields": [
           {
+            "search_tier": "label",
             "field_to_display": "label",
             "display_field_as": "Label",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "text",
             "field_to_display": "definition",
             "display_field_as": "Definition",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "synonym",
             "field_to_display": "hasExactSynonym",
             "display_field_as": "Exact synonym(s)",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "identifier",
             "field_to_display": "hasDbXref",
             "display_field_as": "DB cross reference(s)",
             "field_url": "",
@@ -352,12 +385,14 @@
         ],
         "individual_fields": [
           {
+            "search_tier": "label",
             "field_to_display": "author_cell_term",
             "display_field_as": "Author cell term",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "identifier",
             "field_to_display": "ontology_purl",
             "display_field_as": "Cell Ontology term",
             "field_url": "http://purl.obolibrary.org/obo/<FIELD_TO_USE>",
@@ -366,12 +401,14 @@
             "replace_with": "_"
           },
           {
+            "search_tier": "text",
             "field_to_display": "species",
             "display_field_as": "Species",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "text",
             "field_to_display": "anatomical_structure",
             "display_field_as": "Anatomical structure",
             "field_url": "http://purl.obolibrary.org/obo/<FIELD_TO_USE>",
@@ -380,132 +417,154 @@
             "replace_with": "_"
           },
           {
+            "search_tier": "text",
             "field_to_display": "biomarker_combination",
             "display_field_as": "Biomarker combination",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "text",
             "field_to_display": "binary_gene_set",
             "display_field_as": "Binary gene set",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "text",
             "field_to_display": "expressed_genes",
             "display_field_as": "Expressed genes",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "cell_count",
             "display_field_as": "Cell count",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "cluster_cell_count",
             "display_field_as": "Cluster cell count",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "f_beta_score",
             "display_field_as": "F-beta score",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "precision",
             "display_field_as": "Precision",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "recall",
             "display_field_as": "Recall",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "on_target",
             "display_field_as": "On target",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "true_positive",
             "display_field_as": "True positives",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "false_positive",
             "display_field_as": "False positives",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "false_negative",
             "display_field_as": "False negatives",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "silhouette_score",
             "display_field_as": "Silhouette score",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "mean_silhouette",
             "display_field_as": "Mean silhouette",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "median_silhouette",
             "display_field_as": "Median silhouette",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "first_quartile_silhouette",
             "display_field_as": "First quartile silhouette",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "third_quartile_silhouette",
             "display_field_as": "Third quartile silhouette",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "standard_deviation_of_silhouette",
             "display_field_as": "Silhouette standard deviation",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "dataset_name",
             "display_field_as": "Dataset name",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "identifier",
             "field_to_display": "cellxgene_dataset",
             "display_field_as": "CELLxGENE dataset",
             "field_url": "https://<FIELD_TO_USE>",
             "field_to_use": "cellxgene_dataset"
           },
           {
+            "search_tier": "identifier",
             "field_to_display": "cellxgene_collection",
             "display_field_as": "CELLxGENE collection",
             "field_url": "https://<FIELD_TO_USE>",
             "field_to_use": "cellxgene_collection"
           },
           {
+            "search_tier": "text",
             "field_to_display": "publication",
             "display_field_as": "Publication (DOI)",
             "field_url": "https://doi.org/<FIELD_TO_USE>",
@@ -552,126 +611,147 @@
         ],
         "individual_fields": [
           {
+            "search_tier": "label",
             "field_to_display": "Citation",
             "display_field_as": "Citation",
             "field_url": "https://doi.org/<FIELD_TO_USE>",
             "field_to_use": "publication"
           },
           {
+            "search_tier": "label",
             "field_to_display": "dataset_name",
             "display_field_as": "Dataset name",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "text",
             "field_to_display": "species",
             "display_field_as": "Species",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "text",
             "field_to_display": "anatomical_structure",
             "display_field_as": "Anatomical structure",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "text",
             "field_to_display": "disease_status",
             "display_field_as": "Disease status",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "text",
             "field_to_display": "tissue_annotation",
             "display_field_as": "Tissue annotation",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "text",
             "field_to_display": "assay_summary",
             "display_field_as": "Assay summary",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "text",
             "field_to_display": "cluster_annotation",
             "display_field_as": "Cluster annotation",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "embedding",
             "display_field_as": "Embedding",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "cell_count",
             "display_field_as": "Cell count",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "filtered_cell_count",
             "display_field_as": "Filtered cell count",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "donor_id_count",
             "display_field_as": "Donor count",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "mean_f_beta_score",
             "display_field_as": "Mean F-beta score",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "median_of_f_beta_scores",
             "display_field_as": "Median F-beta score",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "mean_silhouette",
             "display_field_as": "Mean silhouette",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "standard_deviation_of_silhouette",
             "display_field_as": "Silhouette standard deviation",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "identifier",
             "field_to_display": "dataset_identifier",
             "display_field_as": "Dataset identifier",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "identifier",
             "field_to_display": "collection_id",
             "display_field_as": "Collection ID",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "identifier",
             "field_to_display": "cellxgene_dataset",
             "display_field_as": "CELLxGENE dataset",
             "field_url": "https://<FIELD_TO_USE>",
             "field_to_use": "cellxgene_dataset"
           },
           {
+            "search_tier": "identifier",
             "field_to_display": "cellxgene_collection",
             "display_field_as": "CELLxGENE collection",
             "field_url": "https://<FIELD_TO_USE>",
             "field_to_use": "cellxgene_collection"
           },
           {
+            "search_tier": "text",
             "field_to_display": "publication",
             "display_field_as": "Publication (DOI)",
             "field_url": "https://doi.org/<FIELD_TO_USE>",
@@ -712,12 +792,14 @@
         ],
         "individual_fields": [
           {
+            "search_tier": "label",
             "field_to_display": "label",
             "display_field_as": "Label",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "text",
             "field_to_display": "definition",
             "display_field_as": "Definition",
             "field_url": "",
@@ -752,60 +834,70 @@
         ],
         "individual_fields": [
           {
+            "search_tier": "label",
             "field_to_display": "gene_symbol",
             "display_field_as": "Gene symbol",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "identifier",
             "field_to_display": "gene_id",
             "display_field_as": "Gene id",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "synonym",
             "field_to_display": "exact_synonym",
             "display_field_as": "Exact synonym(s)",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "text",
             "field_to_display": "gene_type",
             "display_field_as": "Gene type",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "label",
             "field_to_display": "label",
             "display_field_as": "Label",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "text",
             "field_to_display": "refseq_summary",
             "display_field_as": "RefSeq summary",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "identifier",
             "field_to_display": "reference_sequence_identifier",
             "display_field_as": "Reference sequence identifier",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "identifier",
             "field_to_display": "uniprot_name",
             "display_field_as": "UniProt name",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "identifier",
             "field_to_display": "mrna__nm__and_protein__np__sequences",
             "display_field_as": "mRNA (NM) and protein (NP) sequences",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "text",
             "field_to_display": "species",
             "display_field_as": "Species",
             "field_url": "",
@@ -846,30 +938,35 @@
         ],
         "individual_fields": [
           {
+            "search_tier": "label",
             "field_to_display": "label",
             "display_field_as": "Label",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "text",
             "field_to_display": "definition",
             "display_field_as": "Definition",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "text",
             "field_to_display": "hasOBONamespace",
             "display_field_as": "OBO namespace",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "start_ypb",
             "display_field_as": "Start ypb",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "end_ypb",
             "display_field_as": "End ypb",
             "field_url": "",
@@ -910,12 +1007,14 @@
         ],
         "individual_fields": [
           {
+            "search_tier": "label",
             "field_to_display": "label",
             "display_field_as": "Label",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "text",
             "field_to_display": "definition",
             "display_field_as": "Definition",
             "field_url": "",
@@ -956,24 +1055,28 @@
         ],
         "individual_fields": [
           {
+            "search_tier": "label",
             "field_to_display": "label",
             "display_field_as": "Label",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "text",
             "field_to_display": "definition",
             "display_field_as": "Definition",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "synonym",
             "field_to_display": "hasExactSynonym",
             "display_field_as": "Exact synonym(s)",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "identifier",
             "field_to_display": "hasDbXref",
             "display_field_as": "DB cross reference(s)",
             "field_url": "",
@@ -1008,18 +1111,21 @@
         ],
         "individual_fields": [
           {
+            "search_tier": "identifier",
             "field_to_display": "_key",
             "display_field_as": "NCBI Taxonomy ID",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "label",
             "field_to_display": "label",
             "display_field_as": "Current scientific name",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "synonym",
             "field_to_display": "hasExactSynonym",
             "display_field_as": "Common names",
             "field_url": "",
@@ -1087,18 +1193,21 @@
         ],
         "individual_fields": [
           {
+            "search_tier": "label",
             "field_to_display": "label",
             "display_field_as": "Label",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "text",
             "field_to_display": "definition",
             "display_field_as": "Definition",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "text",
             "field_to_display": "hasOBONamespace",
             "display_field_as": "OBO namespace",
             "field_url": "",
@@ -1151,72 +1260,84 @@
         ],
         "individual_fields": [
           {
+            "search_tier": "label",
             "field_to_display": "label",
             "display_field_as": "Protein name",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "identifier",
             "field_to_display": "uniprot_id",
             "display_field_as": "UniProt ID",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "number_of_amino_acids",
             "display_field_as": "Number of amino acids",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "text",
             "field_to_display": "protein_function",
             "display_field_as": "Protein function",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "text",
             "field_to_display": "species",
             "display_field_as": "Species",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "label",
             "field_to_display": "gene_symbol",
             "display_field_as": "Gene symbol",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "annotation_score",
             "display_field_as": "Annotation score",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "label",
             "field_to_display": "label",
             "display_field_as": "Label",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "text",
             "field_to_display": "definition",
             "display_field_as": "Definition",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "text",
             "field_to_display": "hasOBONamespace",
             "display_field_as": "OBO namespace",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "synonym",
             "field_to_display": "hasExactSynonym",
             "display_field_as": "Exact synonym(s)",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "identifier",
             "field_to_display": "hasDbXref",
             "display_field_as": "DB cross reference(s)",
             "field_url": "",
@@ -1251,30 +1372,35 @@
         ],
         "individual_fields": [
           {
+            "search_tier": "text",
             "field_to_display": "author_list",
             "display_field_as": "Author",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "year",
             "display_field_as": "Year",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "label",
             "field_to_display": "title",
             "display_field_as": "Title",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "text",
             "field_to_display": "journal",
             "display_field_as": "Journal",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "identifier",
             "field_to_display": "publication_doi",
             "display_field_as": "DOI",
             "field_url": "https://doi.org/<FIELD_TO_USE>",
@@ -1309,24 +1435,28 @@
         ],
         "individual_fields": [
           {
+            "search_tier": "label",
             "field_to_display": "label",
             "display_field_as": "Label",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "text",
             "field_to_display": "definition",
             "display_field_as": "Definition",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "synonym",
             "field_to_display": "hasExactSynonym",
             "display_field_as": "Exact synonym(s)",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": "identifier",
             "field_to_display": "hasDbXref",
             "display_field_as": "DB cross reference(s)",
             "field_url": "",
@@ -1352,12 +1482,14 @@
         ],
         "individual_fields": [
           {
+            "search_tier": null,
             "field_to_display": "Label",
             "display_field_as": "Label",
             "field_url": "",
             "field_to_use": ""
           },
           {
+            "search_tier": null,
             "field_to_display": "Source",
             "display_field_as": "Source",
             "field_url": "",
