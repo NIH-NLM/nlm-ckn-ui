@@ -1565,6 +1565,42 @@ describe("ForceGraph", () => {
     });
   });
 
+  describe("CL collection defaults reach the cell sets, datasets and anatomy", () => {
+    it("sends depth 1 over CL, CS, CSD and UBERON with no predicate filter", async () => {
+      // A cell type page shows the cell sets composed of it
+      // (CS -COMPOSED_PRIMARILY_OF-> CL), its exemplar datasets
+      // (CL -HAS_EXEMPLAR_DATA-> CSD), the structures it is part of, and its
+      // direct parent and children. One hop only: a second hop reaches the
+      // cell sets of every parent and child type, which are not this type's
+      // (lung pericyte: 2 cell sets at one hop, 7 at two, dev v1.8.0-rc.1).
+      const clDefaults = collectionDefaults.CL;
+      fetchGraphData.mockResolvedValue({ nodes: [], links: [] });
+      const store = createTestStore();
+      store.dispatch(setAvailableCollections(clDefaults.allowedCollections));
+
+      await act(async () => {
+        render(
+          <Provider store={store}>
+            <MemoryRouter>
+              <ToastProvider>
+                <ForceGraph settings={clDefaults} />
+              </ToastProvider>
+            </MemoryRouter>
+          </Provider>,
+        );
+      });
+
+      await waitFor(() => {
+        expect(fetchGraphData).toHaveBeenCalled();
+      });
+
+      const params = fetchGraphData.mock.calls[0][0];
+      expect(params.depth).toBe(1);
+      expect(params.allowedCollections).toEqual(["CL", "CS", "CSD", "UBERON"]);
+      expect(params.edgeFilters.Label).toEqual([]);
+    });
+  });
+
   describe("collection-defaults.json fixture", () => {
     it("contains no entry using the retired SELECTIVELY_EXPRESS predicate", () => {
       // Assert the fixture is non-empty first: a forEach over {} would make every

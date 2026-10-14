@@ -30,12 +30,12 @@
     ]
   },
   "CL": {
-    "graphType": "ontologies",
-    "depth": 2,
+    "graphType": "phenotypes",
+    "depth": 1,
     "edgeDirection": "ANY",
     "collapseOnStart": "off",
-    "allowedCollections": ["CL"],
-    "preferredPredicates": ["SUB_CLASS_OF"]
+    "allowedCollections": ["CL", "CS", "CSD", "UBERON"],
+    "preferredPredicates": []
   },
   "BGS": {
     "graphType": "phenotypes",
