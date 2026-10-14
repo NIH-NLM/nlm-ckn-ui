@@ -33,7 +33,10 @@ jobs:
         id: filter
         with:
           filters: |
+            # ci.yml defines the jobs these filters gate, so an edit to it
+            # runs them; otherwise a CI-only change cannot test itself.
             frontend:
+              - '.github/workflows/ci.yml'
               - 'react/src/**'
               - 'react/public/**'
               - 'react/package.json'
@@ -41,6 +44,7 @@ jobs:
               - 'react/biome.json'
               - 'react/jsconfig.json'
             backend:
+              - '.github/workflows/ci.yml'
               - 'api/**'
               - 'core/**'
               - 'arango_api/**'
@@ -54,8 +58,13 @@ jobs:
               # dataset while serving the new one.
               - 'ETL_VERSION'
             e2e:
+              - '.github/workflows/ci.yml'
               - 'react/src/**'
               - 'react/public/**'
+              # A dependency bump is the change most likely to break at
+              # runtime, which only e2e catches.
+              - 'react/package.json'
+              - 'react/package-lock.json'
               - 'react/tests/e2e/**'
               - 'react/playwright.config.ts'
               - 'api/**'

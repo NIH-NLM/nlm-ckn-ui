@@ -713,7 +713,7 @@ g.node.pinned .node-pin-marker path {
   margin-bottom: var(--spacing-md);
   background-color: var(--color-focus);
   color: var(--color-text-on-dark);
-  border-radius: var(--border-radius);
+  border-radius: var(--radius-md);
   text-align: center;
   font-weight: 500;
   box-shadow: var(--shadow-sm);
