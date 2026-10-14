@@ -729,7 +729,7 @@ a.document-popup-button {
   max-width: 560px;
   margin: 0 auto;
   text-align: center;
-  color: var(--color-text-secondary);
+  color: var(--color-text-muted);
 }
 
 .graph-empty-state p {
@@ -754,7 +754,7 @@ a.document-popup-button {
 
 .graph-empty-state-hint {
   font-size: 0.875rem;
-  color: var(--color-text-secondary);
+  color: var(--color-text-muted);
   margin-top: var(--spacing-md);
 }
 
