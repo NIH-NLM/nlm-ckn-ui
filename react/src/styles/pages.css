@@ -665,10 +665,13 @@ a.document-popup-button {
     max-width: none;
   }
 
-  /* Collections page: Side-by-side layout */
+  /* Collections page: Side-by-side layout. The row sets one height for both
+     panels and each scrolls inside it; separate caps left blank space under
+     the shorter panel in windows under ~875px tall (nlm-ckn#347). */
   .browse-box-content {
     flex-direction: row;
     gap: var(--spacing-lg);
+    height: calc(80vh - 100px);
   }
 
   .collections-list-panel {
@@ -678,11 +681,13 @@ a.document-popup-button {
     padding-bottom: 0;
     border-right: 1px solid var(--color-light);
     border-bottom: none;
-    max-height: 600px;
+    max-height: none;
   }
 
   .document-list-panel {
     width: auto;
+    max-height: none;
+    min-height: 0;
   }
 }
 
