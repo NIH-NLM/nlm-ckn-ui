@@ -1371,8 +1371,8 @@ describe("ForceGraph", () => {
     });
 
     it("resets terminalCollections when the next page's defaults omit the key", async () => {
-      // Redux settings are not reset between document pages, and GS is the only
-      // entry in collection-defaults.json that carries terminalCollections. An
+      // Redux settings are not reset between document pages, and only GS and
+      // UBERON in collection-defaults.json carry terminalCollections. An
       // absent key must therefore mean "none", not "keep the previous page's".
       const store = createTestStore();
       store.dispatch(setAvailableCollections(["BGS", "CS", "UBERON", "CSD"]));
@@ -1598,6 +1598,42 @@ describe("ForceGraph", () => {
       expect(params.depth).toBe(1);
       expect(params.allowedCollections).toEqual(["CL", "CS", "CSD", "UBERON"]);
       expect(params.edgeFilters.Label).toEqual([]);
+    });
+  });
+
+  describe("UBERON collection defaults reach the cell types in a structure", () => {
+    it("sends the anatomy predicates over UBERON and CL, with CL terminal", async () => {
+      // An anatomical structure page shows its PART_OF / HAS_PART neighbourhood
+      // two levels out, plus the cell types linked to it by PART_OF, HAS_PART or
+      // COMPOSED_PRIMARILY_OF. CL is terminal so each cell type is a leaf rather
+      // than a route to the other structures that type is part of (lung: 18
+      // structures and 11 cell types, dev v1.8.0-rc.1).
+      const uberonDefaults = collectionDefaults.UBERON;
+      fetchGraphData.mockResolvedValue({ nodes: [], links: [] });
+      const store = createTestStore();
+      store.dispatch(setAvailableCollections(uberonDefaults.allowedCollections));
+
+      await act(async () => {
+        render(
+          <Provider store={store}>
+            <MemoryRouter>
+              <ToastProvider>
+                <ForceGraph settings={uberonDefaults} />
+              </ToastProvider>
+            </MemoryRouter>
+          </Provider>,
+        );
+      });
+
+      await waitFor(() => {
+        expect(fetchGraphData).toHaveBeenCalled();
+      });
+
+      const params = fetchGraphData.mock.calls[0][0];
+      expect(params.depth).toBe(2);
+      expect(params.allowedCollections).toEqual(["UBERON", "CL"]);
+      expect(params.terminalCollections).toEqual(["CL"]);
+      expect(params.edgeFilters.Label).toEqual(["PART_OF", "HAS_PART", "COMPOSED_PRIMARILY_OF"]);
     });
   });
 

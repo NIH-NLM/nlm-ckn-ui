@@ -277,9 +277,9 @@ const ForceGraph = ({
     // intersecting would silently drop the marker if a dataset lacked it.
     //
     // Absent means "no terminal collections", not "leave whatever is there".
-    // Redux settings survive unmount, and only the GS entry in
-    // collection-defaults.json carries this key, so treating absence as a
-    // no-op leaks the gene page's terminal list onto every page navigated to
+    // Redux settings survive unmount, and only the GS and UBERON entries in
+    // collection-defaults.json carry this key, so treating absence as a
+    // no-op leaks one page's terminal list onto every page navigated to
     // afterwards. Reset explicitly, the way depth and edgeDirection are always
     // specified.
     const incomingTerminal = Array.isArray(settingsFromProps.terminalCollections)
