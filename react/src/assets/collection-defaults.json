@@ -8,12 +8,13 @@
     "preferredPredicates": []
   },
   "UBERON": {
-    "graphType": "ontologies",
+    "graphType": "phenotypes",
     "depth": 2,
     "edgeDirection": "ANY",
     "collapseOnStart": "off",
-    "allowedCollections": ["UBERON"],
-    "preferredPredicates": ["PART_OF"]
+    "allowedCollections": ["UBERON", "CL"],
+    "terminalCollections": ["CL"],
+    "preferredPredicates": ["PART_OF", "HAS_PART", "COMPOSED_PRIMARILY_OF"]
   },
   "CHEBI": {
     "graphType": "ontologies",
