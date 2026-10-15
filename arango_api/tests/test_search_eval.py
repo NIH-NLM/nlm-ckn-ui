@@ -225,3 +225,51 @@ class AggregateToleranceTestCase(SimpleTestCase):
             },
             drops,
         )
+
+
+class FormatReportTestCase(SimpleTestCase):
+    BASELINE = {"r1": 1, "r2": 4, "i1": 7, "p1": 1}
+
+    def _lines(self, baseline, **changes):
+        current = {**self.BASELINE, **changes}
+        comparison = ev.compare_to_baseline(current, baseline, GOLDEN)
+        return ev.format_report(ev.score_groups(current, GOLDEN), comparison).split(
+            "\n"
+        )
+
+    def test_report_lists_scores_and_regressions(self):
+        lines = self._lines(self.BASELINE, r1=3)
+        self.assertEqual(
+            lines[0].split(), ["group", "n", "success@1", "success@5", "MRR"]
+        )
+        self.assertEqual(
+            [line.split() for line in lines[1:4]],
+            [
+                ["ranking", "2", "0.00", "1.00", "0.29"],
+                ["identifier", "1", "0.00", "0.00", "0.14"],
+                ["known_gap", "1", "1.00", "1.00", "1.00"],
+            ],
+        )
+        self.assertEqual(
+            lines[4:],
+            [
+                "REGRESSION 'r1': 1 -> 3",
+                "REGRESSION ranking success@1: 0.50 -> 0.00",
+                "REGRESSION ranking MRR: 0.62 -> 0.29",
+            ],
+        )
+
+    def test_report_lists_improvements_and_new_queries(self):
+        baseline = {k: v for k, v in self.BASELINE.items() if k != "p1"}
+        baseline["p1"] = None
+        lines = self._lines(baseline, r2=2)
+        self.assertIn("IMPROVED 'r2': 4 -> 2", lines)
+        self.assertIn("IMPROVED 'p1': not found -> 1", lines)
+        lines = self._lines({"r1": 1, "r2": 4, "i1": 7})
+        self.assertIn("NEW 'p1': 1", lines)
+
+    def test_report_without_comparison_is_only_the_table(self):
+        report = ev.format_report(
+            ev.score_groups({"r1": 1, "r2": 1, "i1": 1, "p1": 1}, GOLDEN)
+        )
+        self.assertEqual(len(report.split("\n")), 4)

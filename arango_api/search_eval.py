@@ -21,7 +21,8 @@ compared with it, and the change is rejected if a ranking or identifier query
 that was in the top five now ranks lower, or if a group's success@1, success@5
 or MRR falls by more than AGGREGATE_TOLERANCE. Group scores are compared only
 on queries present in both runs, so adding queries cannot hide a drop. A query
-missing from the baseline is reported as new.
+missing from the baseline is reported as new. format_report renders the group
+scores and the comparison as a readable text report.
 """
 
 import json
@@ -33,6 +34,8 @@ GROUPS = REQUIRED_GROUPS + ("known_gap",)
 # ranking queries one query is worth about 0.032, so losing even one query from
 # first place or the top five is flagged; smaller MRR moves are not.
 AGGREGATE_TOLERANCE = 0.03
+
+METRIC_LABELS = {"success_at_1": "success@1", "success_at_5": "success@5", "mrr": "MRR"}
 
 
 def rank_of(result_ids, expected_ids):
@@ -116,7 +119,7 @@ def compare_to_baseline(current_ranks, baseline_ranks, golden):
     for name in REQUIRED_GROUPS:
         if name not in now_scores:
             continue
-        for metric in ("success_at_1", "success_at_5", "mrr"):
+        for metric in METRIC_LABELS:
             before, now = before_scores[name][metric], now_scores[name][metric]
             # Rounding keeps a drop of exactly the tolerance from being flagged
             # by floating-point noise.
@@ -135,6 +138,43 @@ def compare_to_baseline(current_ranks, baseline_ranks, golden):
         "improvements": improvements,
         "new": new,
     }
+
+
+def _rank_text(rank):
+    """A rank as report text: the number, or "not found"."""
+    return "not found" if rank is None else str(rank)
+
+
+def format_report(scores, comparison=None):
+    """Text table of the per-group scores, for people to read.
+
+    When a comparison is given, its regressions, aggregate drops, improvements
+    (including known_gap progress) and new queries are listed below the table.
+    """
+    comparison = comparison or {}
+    labels = list(METRIC_LABELS.values())
+    lines = [f"{'group':<12}{'n':>4}" + "".join(f"{label:>11}" for label in labels)]
+    for name, s in scores.items():
+        values = (s[metric] for metric in METRIC_LABELS)
+        lines.append(f"{name:<12}{s['n']:>4}" + "".join(f"{v:>11.2f}" for v in values))
+    for r in comparison.get("regressions", []):
+        lines.append(
+            f"REGRESSION {r['query']!r}: "
+            f"{_rank_text(r['baseline'])} -> {_rank_text(r['current'])}"
+        )
+    for d in comparison.get("aggregate_drops", []):
+        lines.append(
+            f"REGRESSION {d['group']} {METRIC_LABELS[d['metric']]}: "
+            f"{d['baseline']:.2f} -> {d['current']:.2f}"
+        )
+    for i in comparison.get("improvements", []):
+        lines.append(
+            f"IMPROVED {i['query']!r}: "
+            f"{_rank_text(i['baseline'])} -> {_rank_text(i['current'])}"
+        )
+    for n in comparison.get("new", []):
+        lines.append(f"NEW {n['query']!r}: {_rank_text(n['current'])}")
+    return "\n".join(lines)
 
 
 def load_golden(path):
