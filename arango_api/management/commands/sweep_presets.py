@@ -17,14 +17,20 @@ rename dropped one preset from 104 nodes to 9 while still "passing".
 import json
 import os
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 
 from django.core.management.base import BaseCommand, CommandError
 
-from arango_api.services import workflow_service
+from arango_api.db import db_ontologies
+from arango_api.services import version_service, workflow_service
 from arango_api.workflow_presets import WORKFLOW_PRESETS
 
 BASELINE_PATH = Path(__file__).resolve().parents[2] / "preset_baselines.json"
+
+# Baseline entry naming the dataset the counts came from, so drift can be told
+# apart from comparing against a different release (#193).
+PROVENANCE_KEY = "_provenance"
 
 # Fraction a preset's terminal node count may fall below baseline before it is
 # reported. Node counts move a little between dataset releases; a quarter of the
@@ -50,6 +56,25 @@ def _write_baseline(counts, path=None):
         raise
 
 
+def _dataset_stamp():
+    """Return the loaded dataset's etl_version and restored_at from ckn_meta.
+
+    Either is "unknown" when the restore did not stamp it or ArangoDB cannot be
+    read; the sweep reports that rather than failing on it.
+    """
+    try:
+        document = db_ontologies.collection(version_service.META_COLLECTION).get(
+            version_service.META_KEY
+        )
+    except Exception:  # noqa: BLE001 - provenance is informational
+        document = None
+    document = document or {}
+    return {
+        key: document.get(key) or version_service.UNKNOWN
+        for key in ("etl_version", "restored_at")
+    }
+
+
 class Command(BaseCommand):
     help = "Run every workflow preset against the loaded dataset and check for regressions."
 
@@ -69,6 +94,15 @@ class Command(BaseCommand):
             "--preset",
             help="Sweep only this preset id.",
         )
+        parser.add_argument(
+            "--allow-mixed",
+            action="store_true",
+            help=(
+                "With --preset --update-baseline, merge into a baseline from another "
+                "or unrecorded restore. The provenance is marked mixed until a full "
+                "--update-baseline replaces it."
+            ),
+        )
 
     def handle(self, *args, **options):
         tolerance = options["tolerance"]
@@ -86,6 +120,34 @@ class Command(BaseCommand):
         baseline = {}
         if BASELINE_PATH.exists():
             baseline = json.loads(BASELINE_PATH.read_text())
+        recorded = baseline.pop(PROVENANCE_KEY, None) or {}
+        stamp = _dataset_stamp()
+        recorded_version = recorded.get("etl_version", version_service.UNKNOWN)
+        generated = recorded.get("generated_at")
+        self.stdout.write(
+            f"Loaded dataset {stamp['etl_version']}; baseline from {recorded_version}"
+            + (f" (generated {generated})" if generated else "")
+            + (" (mixed restores)" if recorded.get("mixed") else "")
+        )
+        # One version string can name two different restores, so a dataset is
+        # the same only when the restore time matches too. An unrecorded value
+        # identifies nothing, and a mixed baseline matches no single restore.
+        known = version_service.UNKNOWN not in stamp.values()
+        same_dataset = (
+            known
+            and not recorded.get("mixed")
+            and recorded_version == stamp["etl_version"]
+            and recorded.get("restored_at") == stamp["restored_at"]
+        )
+        if not same_dataset:
+            # Warn, not fail: a developer on an older dump should be told the
+            # comparison crosses datasets, not blocked from sweeping.
+            self.stderr.write(
+                self.style.WARNING(
+                    "Baseline and loaded dataset differ; drops may reflect the "
+                    "dataset change rather than a regression."
+                )
+            )
 
         results = {}
         failures = []
@@ -150,10 +212,24 @@ class Command(BaseCommand):
                     "Refusing to update the baseline while "
                     f"{len(failures)} preset(s) need attention"
                 )
-            # Merge rather than replace: --preset sweeps one id, and writing
-            # only that entry would drop every other preset's baseline.
-            merged = {**baseline, **results}
-            _write_baseline(merged)
+            # A targeted update merges: --preset sweeps one id, and writing only
+            # that entry would drop every other preset's baseline. The merge is
+            # only sound within one restore, or the file would record counts
+            # from two datasets under one provenance, unless --allow-mixed says
+            # so and the provenance records it. A full update writes only what
+            # it swept, so a removed preset's old count is not restamped.
+            mixed = bool(options["preset"]) and not same_dataset
+            if mixed and not options["allow_mixed"]:
+                raise CommandError(
+                    "Baseline is not from the loaded restore; run --update-baseline "
+                    "without --preset, or pass --allow-mixed"
+                )
+            merged = {**baseline, **results} if options["preset"] else results
+            now = datetime.now(timezone.utc)
+            provenance = {**stamp, "generated_at": now.strftime("%Y-%m-%dT%H:%M:%SZ")}
+            if mixed:
+                provenance["mixed"] = True
+            _write_baseline({PROVENANCE_KEY: provenance, **merged})
             self.stdout.write(
                 self.style.SUCCESS(
                     f"\nRecorded {len(results)} preset(s) in {BASELINE_PATH.name} "
