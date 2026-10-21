@@ -17,7 +17,7 @@ import { getAllSearchableFields } from "./collections";
  *
  * This test asserts every field indexed by the view, except the names in
  * BACKEND_ONLY_FIELDS, is covered by the frontend searchable set. `_search` is the
- * documented exception (see #195): it is indexed but not yet searched.
+ * documented exception: the backend searches it itself (see BACKEND_ONLY_FIELDS).
  *
  * NOTE: This is the real coverage gate. It does NOT involve LABEL_FIELDS in the
  * backend -- those only shape the RETURN projection, not what is searched.
@@ -38,8 +38,8 @@ import { getAllSearchableFields } from "./collections";
  */
 // Known gap: fields the view indexes but the frontend never sends as search_fields.
 // `_search` holds each node's identifier forms (CURIE, underscore form, PURL). The
-// backend must add it to the search itself, which is tracked in #195 ("Resolve typed
-// ontology identifiers to nodes in search"). Until #195 lands it is indexed but not searched.
+// backend matches it with its own norm-lower clause in search_service.search_by_term
+// (#195), so the frontend never sends it as a search field.
 const BACKEND_ONLY_FIELDS = ["_search"];
 
 describe("search field coverage", () => {
