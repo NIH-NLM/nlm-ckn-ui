@@ -9,6 +9,8 @@ const manifest = {
       figures: {
         silhouette_fscore_summary: { html: "silhouette.html", svg: "silhouette.svg" },
         dendrogram: { svg: "dendrogram.svg" },
+        dotplot: { svg: "dotplot__scaled.svg" },
+        matrixplot: { svg: "matrixplot__scaled.svg" },
         stacked_violin: { svg: "violin.svg" },
       },
     },
@@ -23,6 +25,9 @@ const manifest = {
 };
 
 const csd = { _id: "CSD/ba0fb2d9-28c9-4149-8591-694e0b7d9c31__skin_of_body" };
+
+const figureByKey = (document, key) =>
+  getDatasetFigures(document, manifest).find((figure) => figure.key === key);
 
 describe("getDatasetPlotKey", () => {
   it("takes the anatomical structure and the last six characters of the UUID", () => {
@@ -41,16 +46,18 @@ describe("getDatasetPlotKey", () => {
 });
 
 describe("getDatasetFigures", () => {
-  it("returns the three figures in display order", () => {
+  it("returns the five figures in display order", () => {
     expect(getDatasetFigures(csd, manifest).map((figure) => figure.key)).toEqual([
-      "silhouette_fscore_summary",
       "dendrogram",
+      "dotplot",
+      "matrixplot",
+      "silhouette_fscore_summary",
       "stacked_violin",
     ]);
   });
 
   it("percent-encodes the spaces in a published directory name", () => {
-    const [silhouette] = getDatasetFigures(csd, manifest);
+    const silhouette = figureByKey(csd, "silhouette_fscore_summary");
     expect(silhouette.src).toBe(
       "/plots/v1.0.0-rc.10/skin_of_body/sc-nsforest-qc-nf/results/skin_of_body-Sole-Boldo-Commun%20Biol-2020-7d9c31/silhouette.svg",
     );
@@ -58,13 +65,16 @@ describe("getDatasetFigures", () => {
   });
 
   it("shows the SVG and offers the interactive page alongside it", () => {
-    const [silhouette] = getDatasetFigures(csd, manifest);
+    const silhouette = figureByKey(csd, "silhouette_fscore_summary");
     expect(silhouette.src).toMatch(/\.svg$/);
     expect(silhouette.interactiveUrl).toMatch(/\.html$/);
   });
 
   it("has no interactive page for a dataset that was published without one", () => {
-    const [silhouette] = getDatasetFigures({ _id: "CSD/0000-0000-0000-cbd4aa__retina" }, manifest);
+    const silhouette = figureByKey(
+      { _id: "CSD/0000-0000-0000-cbd4aa__retina" },
+      "silhouette_fscore_summary",
+    );
     expect(silhouette.src).toMatch(/\.svg$/);
     expect(silhouette.interactiveUrl).toBeNull();
   });
@@ -99,6 +109,16 @@ describe("the committed plot manifest", () => {
       expect(key).toMatch(/^[^/]+\/[0-9a-f]{6}$/);
       expect(entry.dir).toContain("/results/");
       expect(Object.keys(entry.figures).length).toBeGreaterThan(0);
+    }
+  });
+
+  it("uses the scaled variant of every figure the pipeline scales", () => {
+    for (const entry of Object.values(plotManifest.datasets)) {
+      for (const key of ["dotplot", "matrixplot", "stacked_violin"]) {
+        if (entry.figures[key]) {
+          expect(entry.figures[key].svg).toMatch(new RegExp(`^${key}__scaled`));
+        }
+      }
     }
   });
 

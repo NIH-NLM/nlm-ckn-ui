@@ -7,12 +7,18 @@
         "dendrogram": {
           "svg": "dendrogram_bone_marrow_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledbone_marrow_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledbone_marrow_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_bone_marrow_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.html",
           "svg": "silhouette_fscore_summary_bone_marrow_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_bone_marrow_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.svg"
+          "svg": "stacked_violin__scaledbone_marrow_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.svg"
         }
       }
     },
@@ -22,12 +28,18 @@
         "dendrogram": {
           "svg": "dendrogram_bone_marrow_Xu_Cell_2023_Curated_annotation_X_umap_5188c1.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledbone_marrow_Xu_Cell_2023_Curated_annotation_X_umap_5188c1.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledbone_marrow_Xu_Cell_2023_Curated_annotation_X_umap_5188c1.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_bone_marrow_Xu_Cell_2023_Curated_annotation_X_umap_5188c1.html",
           "svg": "silhouette_fscore_summary_bone_marrow_Xu_Cell_2023_Curated_annotation_X_umap_5188c1.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_bone_marrow_Xu_Cell_2023_Curated_annotation_X_umap_5188c1.svg"
+          "svg": "stacked_violin__scaledbone_marrow_Xu_Cell_2023_Curated_annotation_X_umap_5188c1.svg"
         }
       }
     },
@@ -37,12 +49,18 @@
         "dendrogram": {
           "svg": "dendrogram_bone_marrow_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledbone_marrow_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledbone_marrow_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_bone_marrow_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.html",
           "svg": "silhouette_fscore_summary_bone_marrow_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_bone_marrow_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+          "svg": "stacked_violin__scaledbone_marrow_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
         }
       }
     },
@@ -52,12 +70,18 @@
         "dendrogram": {
           "svg": "dendrogram_bone_marrow_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledbone_marrow_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledbone_marrow_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_bone_marrow_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.html",
           "svg": "silhouette_fscore_summary_bone_marrow_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_bone_marrow_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
+          "svg": "stacked_violin__scaledbone_marrow_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
         }
       }
     },
@@ -67,12 +91,18 @@
         "dendrogram": {
           "svg": "dendrogram_bone_marrow_Triana_Nat_Immunol_2021_Cell_label_X_umap_77f3db.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledbone_marrow_Triana_Nat_Immunol_2021_Cell_label_X_umap_77f3db.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledbone_marrow_Triana_Nat_Immunol_2021_Cell_label_X_umap_77f3db.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_bone_marrow_Triana_Nat_Immunol_2021_Cell_label_X_umap_77f3db.html",
           "svg": "silhouette_fscore_summary_bone_marrow_Triana_Nat_Immunol_2021_Cell_label_X_umap_77f3db.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_bone_marrow_Triana_Nat_Immunol_2021_Cell_label_X_umap_77f3db.svg"
+          "svg": "stacked_violin__scaledbone_marrow_Triana_Nat_Immunol_2021_Cell_label_X_umap_77f3db.svg"
         }
       }
     },
@@ -82,12 +112,18 @@
         "dendrogram": {
           "svg": "dendrogram_bone_marrow_Zeng_Blood_Cancer_Discovery_2025_AuthorCellType_X_umap_bba832.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledbone_marrow_Zeng_Blood_Cancer_Discovery_2025_AuthorCellType_X_umap_bba832.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledbone_marrow_Zeng_Blood_Cancer_Discovery_2025_AuthorCellType_X_umap_bba832.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_bone_marrow_Zeng_Blood_Cancer_Discovery_2025_AuthorCellType_X_umap_bba832.html",
           "svg": "silhouette_fscore_summary_bone_marrow_Zeng_Blood_Cancer_Discovery_2025_AuthorCellType_X_umap_bba832.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_bone_marrow_Zeng_Blood_Cancer_Discovery_2025_AuthorCellType_X_umap_bba832.svg"
+          "svg": "stacked_violin__scaledbone_marrow_Zeng_Blood_Cancer_Discovery_2025_AuthorCellType_X_umap_bba832.svg"
         }
       }
     },
@@ -97,12 +133,18 @@
         "dendrogram": {
           "svg": "dendrogram_digestive_tract_Xu_Cell_2023_Curated_annotation_X_umap_30933d.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaleddigestive_tract_Xu_Cell_2023_Curated_annotation_X_umap_30933d.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaleddigestive_tract_Xu_Cell_2023_Curated_annotation_X_umap_30933d.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_digestive_tract_Xu_Cell_2023_Curated_annotation_X_umap_30933d.html",
           "svg": "silhouette_fscore_summary_digestive_tract_Xu_Cell_2023_Curated_annotation_X_umap_30933d.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_digestive_tract_Xu_Cell_2023_Curated_annotation_X_umap_30933d.svg"
+          "svg": "stacked_violin__scaleddigestive_tract_Xu_Cell_2023_Curated_annotation_X_umap_30933d.svg"
         }
       }
     },
@@ -112,12 +154,18 @@
         "dendrogram": {
           "svg": "dendrogram_digestive_tract_Burclaff_Cellular_and_Molecular_Gastroenterology_and_Hepatology_2022_lineage_X_umap_5247a6.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaleddigestive_tract_Burclaff_Cellular_and_Molecular_Gastroenterology_and_Hepatology_2022_lineage_X_umap_5247a6.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaleddigestive_tract_Burclaff_Cellular_and_Molecular_Gastroenterology_and_Hepatology_2022_lineage_X_umap_5247a6.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_digestive_tract_Burclaff_Cellular_and_Molecular_Gastroenterology_and_Hepatology_2022_lineage_X_umap_5247a6.html",
           "svg": "silhouette_fscore_summary_digestive_tract_Burclaff_Cellular_and_Molecular_Gastroenterology_and_Hepatology_2022_lineage_X_umap_5247a6.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_digestive_tract_Burclaff_Cellular_and_Molecular_Gastroenterology_and_Hepatology_2022_lineage_X_umap_5247a6.svg"
+          "svg": "stacked_violin__scaleddigestive_tract_Burclaff_Cellular_and_Molecular_Gastroenterology_and_Hepatology_2022_lineage_X_umap_5247a6.svg"
         }
       }
     },
@@ -127,12 +175,18 @@
         "dendrogram": {
           "svg": "dendrogram_digestive_tract_Martin_Cell_2019_author_cell_type1_X_umap_hm_59ef00.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaleddigestive_tract_Martin_Cell_2019_author_cell_type1_X_umap_hm_59ef00.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaleddigestive_tract_Martin_Cell_2019_author_cell_type1_X_umap_hm_59ef00.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_digestive_tract_Martin_Cell_2019_author_cell_type1_X_umap_hm_59ef00.html",
           "svg": "silhouette_fscore_summary_digestive_tract_Martin_Cell_2019_author_cell_type1_X_umap_hm_59ef00.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_digestive_tract_Martin_Cell_2019_author_cell_type1_X_umap_hm_59ef00.svg"
+          "svg": "stacked_violin__scaleddigestive_tract_Martin_Cell_2019_author_cell_type1_X_umap_hm_59ef00.svg"
         }
       }
     },
@@ -142,12 +196,18 @@
         "dendrogram": {
           "svg": "dendrogram_digestive_tract_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaleddigestive_tract_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaleddigestive_tract_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_digestive_tract_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.html",
           "svg": "silhouette_fscore_summary_digestive_tract_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_digestive_tract_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+          "svg": "stacked_violin__scaleddigestive_tract_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
         }
       }
     },
@@ -157,12 +217,18 @@
         "dendrogram": {
           "svg": "dendrogram_digestive_tract_Garrido-Trigo_Nat_Commun_2023_cell_type_X_umap_7e7800.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaleddigestive_tract_Garrido-Trigo_Nat_Commun_2023_cell_type_X_umap_7e7800.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaleddigestive_tract_Garrido-Trigo_Nat_Commun_2023_cell_type_X_umap_7e7800.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_digestive_tract_Garrido-Trigo_Nat_Commun_2023_cell_type_X_umap_7e7800.html",
           "svg": "silhouette_fscore_summary_digestive_tract_Garrido-Trigo_Nat_Commun_2023_cell_type_X_umap_7e7800.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_digestive_tract_Garrido-Trigo_Nat_Commun_2023_cell_type_X_umap_7e7800.svg"
+          "svg": "stacked_violin__scaleddigestive_tract_Garrido-Trigo_Nat_Commun_2023_cell_type_X_umap_7e7800.svg"
         }
       }
     },
@@ -171,6 +237,12 @@
       "figures": {
         "dendrogram": {
           "svg": "dendrogram_digestive_tract_Oliver_Nature_2024_level_3_annot_X_umap_a60caa.svg"
+        },
+        "dotplot": {
+          "svg": "dotplot__scaleddigestive_tract_Oliver_Nature_2024_level_3_annot_X_umap_a60caa.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaleddigestive_tract_Oliver_Nature_2024_level_3_annot_X_umap_a60caa.svg"
         },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_digestive_tract_Oliver_Nature_2024_level_3_annot_X_umap_a60caa.html",
@@ -184,12 +256,18 @@
         "dendrogram": {
           "svg": "dendrogram_digestive_tract_Horeth_J_Dent_Res_2023_author_cell_type_X_umap_ae6cbe.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaleddigestive_tract_Horeth_J_Dent_Res_2023_author_cell_type_X_umap_ae6cbe.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaleddigestive_tract_Horeth_J_Dent_Res_2023_author_cell_type_X_umap_ae6cbe.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_digestive_tract_Horeth_J_Dent_Res_2023_author_cell_type_X_umap_ae6cbe.html",
           "svg": "silhouette_fscore_summary_digestive_tract_Horeth_J_Dent_Res_2023_author_cell_type_X_umap_ae6cbe.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_digestive_tract_Horeth_J_Dent_Res_2023_author_cell_type_X_umap_ae6cbe.svg"
+          "svg": "stacked_violin__scaleddigestive_tract_Horeth_J_Dent_Res_2023_author_cell_type_X_umap_ae6cbe.svg"
         }
       }
     },
@@ -199,12 +277,18 @@
         "dendrogram": {
           "svg": "dendrogram_digestive_tract_Smillie_Cell_2019_CellType_X_umap_hm_bbedd2.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaleddigestive_tract_Smillie_Cell_2019_CellType_X_umap_hm_bbedd2.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaleddigestive_tract_Smillie_Cell_2019_CellType_X_umap_hm_bbedd2.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_digestive_tract_Smillie_Cell_2019_CellType_X_umap_hm_bbedd2.html",
           "svg": "silhouette_fscore_summary_digestive_tract_Smillie_Cell_2019_CellType_X_umap_hm_bbedd2.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_digestive_tract_Smillie_Cell_2019_CellType_X_umap_hm_bbedd2.svg"
+          "svg": "stacked_violin__scaleddigestive_tract_Smillie_Cell_2019_CellType_X_umap_hm_bbedd2.svg"
         }
       }
     },
@@ -214,12 +298,18 @@
         "dendrogram": {
           "svg": "dendrogram_digestive_tract_Elmentaite_Nature_2021_author_cell_type_X_umap_bf2a8d.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaleddigestive_tract_Elmentaite_Nature_2021_author_cell_type_X_umap_bf2a8d.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaleddigestive_tract_Elmentaite_Nature_2021_author_cell_type_X_umap_bf2a8d.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_digestive_tract_Elmentaite_Nature_2021_author_cell_type_X_umap_bf2a8d.html",
           "svg": "silhouette_fscore_summary_digestive_tract_Elmentaite_Nature_2021_author_cell_type_X_umap_bf2a8d.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_digestive_tract_Elmentaite_Nature_2021_author_cell_type_X_umap_bf2a8d.svg"
+          "svg": "stacked_violin__scaleddigestive_tract_Elmentaite_Nature_2021_author_cell_type_X_umap_bf2a8d.svg"
         }
       }
     },
@@ -229,12 +319,18 @@
         "dendrogram": {
           "svg": "dendrogram_digestive_tract_Nowicki-Osuch_Cancer_Discovery_2023_Detailed_Cell_Type_umap_MinDist_0.5_N_Neighbors_15_e72b7b.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaleddigestive_tract_Nowicki-Osuch_Cancer_Discovery_2023_Detailed_Cell_Type_umap_MinDist_0.5_N_Neighbors_15_e72b7b.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaleddigestive_tract_Nowicki-Osuch_Cancer_Discovery_2023_Detailed_Cell_Type_umap_MinDist_0.5_N_Neighbors_15_e72b7b.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_digestive_tract_Nowicki-Osuch_Cancer_Discovery_2023_Detailed_Cell_Type_umap_MinDist_0.5_N_Neighbors_15_e72b7b.html",
           "svg": "silhouette_fscore_summary_digestive_tract_Nowicki-Osuch_Cancer_Discovery_2023_Detailed_Cell_Type_umap_MinDist_0.5_N_Neighbors_15_e72b7b.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_digestive_tract_Nowicki-Osuch_Cancer_Discovery_2023_Detailed_Cell_Type_umap_MinDist_0.5_N_Neighbors_15_e72b7b.svg"
+          "svg": "stacked_violin__scaleddigestive_tract_Nowicki-Osuch_Cancer_Discovery_2023_Detailed_Cell_Type_umap_MinDist_0.5_N_Neighbors_15_e72b7b.svg"
         }
       }
     },
@@ -244,12 +340,18 @@
         "dendrogram": {
           "svg": "dendrogram_digestive_tract_Madissoon_Genome_Biol_2020_author_cell_type_X_umap_f35993.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaleddigestive_tract_Madissoon_Genome_Biol_2020_author_cell_type_X_umap_f35993.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaleddigestive_tract_Madissoon_Genome_Biol_2020_author_cell_type_X_umap_f35993.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_digestive_tract_Madissoon_Genome_Biol_2020_author_cell_type_X_umap_f35993.html",
           "svg": "silhouette_fscore_summary_digestive_tract_Madissoon_Genome_Biol_2020_author_cell_type_X_umap_f35993.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_digestive_tract_Madissoon_Genome_Biol_2020_author_cell_type_X_umap_f35993.svg"
+          "svg": "stacked_violin__scaleddigestive_tract_Madissoon_Genome_Biol_2020_author_cell_type_X_umap_f35993.svg"
         }
       }
     },
@@ -259,12 +361,18 @@
         "dendrogram": {
           "svg": "dendrogram_digestive_tract_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaleddigestive_tract_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaleddigestive_tract_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_digestive_tract_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.html",
           "svg": "silhouette_fscore_summary_digestive_tract_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_digestive_tract_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
+          "svg": "stacked_violin__scaleddigestive_tract_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
         }
       }
     },
@@ -274,12 +382,18 @@
         "dendrogram": {
           "svg": "dendrogram_digestive_tract_Zwick_Nat_Cell_Biol_2024_cell.type_X_umap_f5803a.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaleddigestive_tract_Zwick_Nat_Cell_Biol_2024_cell.type_X_umap_f5803a.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaleddigestive_tract_Zwick_Nat_Cell_Biol_2024_cell.type_X_umap_f5803a.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_digestive_tract_Zwick_Nat_Cell_Biol_2024_cell.type_X_umap_f5803a.html",
           "svg": "silhouette_fscore_summary_digestive_tract_Zwick_Nat_Cell_Biol_2024_cell.type_X_umap_f5803a.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_digestive_tract_Zwick_Nat_Cell_Biol_2024_cell.type_X_umap_f5803a.svg"
+          "svg": "stacked_violin__scaleddigestive_tract_Zwick_Nat_Cell_Biol_2024_cell.type_X_umap_f5803a.svg"
         }
       }
     },
@@ -289,12 +403,18 @@
         "dendrogram": {
           "svg": "dendrogram_heart_plus_pericardium_Litvinukova_Nature_2020_cell_type_X_umap_2fcb9b.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledheart_plus_pericardium_Litvinukova_Nature_2020_cell_type_X_umap_2fcb9b.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledheart_plus_pericardium_Litvinukova_Nature_2020_cell_type_X_umap_2fcb9b.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_heart_plus_pericardium_Litvinukova_Nature_2020_cell_type_X_umap_2fcb9b.html",
           "svg": "silhouette_fscore_summary_heart_plus_pericardium_Litvinukova_Nature_2020_cell_type_X_umap_2fcb9b.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_heart_plus_pericardium_Litvinukova_Nature_2020_cell_type_X_umap_2fcb9b.svg"
+          "svg": "stacked_violin__scaledheart_plus_pericardium_Litvinukova_Nature_2020_cell_type_X_umap_2fcb9b.svg"
         }
       }
     },
@@ -304,12 +424,18 @@
         "dendrogram": {
           "svg": "dendrogram_heart_plus_pericardium_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledheart_plus_pericardium_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledheart_plus_pericardium_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_heart_plus_pericardium_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.html",
           "svg": "silhouette_fscore_summary_heart_plus_pericardium_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_heart_plus_pericardium_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+          "svg": "stacked_violin__scaledheart_plus_pericardium_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
         }
       }
     },
@@ -319,12 +445,18 @@
         "dendrogram": {
           "svg": "dendrogram_heart_plus_pericardium_Hulsmans_Science_2023_celltype_X_umap_626931.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledheart_plus_pericardium_Hulsmans_Science_2023_celltype_X_umap_626931.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledheart_plus_pericardium_Hulsmans_Science_2023_celltype_X_umap_626931.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_heart_plus_pericardium_Hulsmans_Science_2023_celltype_X_umap_626931.html",
           "svg": "silhouette_fscore_summary_heart_plus_pericardium_Hulsmans_Science_2023_celltype_X_umap_626931.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_heart_plus_pericardium_Hulsmans_Science_2023_celltype_X_umap_626931.svg"
+          "svg": "stacked_violin__scaledheart_plus_pericardium_Hulsmans_Science_2023_celltype_X_umap_626931.svg"
         }
       }
     },
@@ -334,12 +466,18 @@
         "dendrogram": {
           "svg": "dendrogram_heart_plus_pericardium_Xu_Cell_2023_Curated_annotation_X_umap_7d4811.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledheart_plus_pericardium_Xu_Cell_2023_Curated_annotation_X_umap_7d4811.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledheart_plus_pericardium_Xu_Cell_2023_Curated_annotation_X_umap_7d4811.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_heart_plus_pericardium_Xu_Cell_2023_Curated_annotation_X_umap_7d4811.html",
           "svg": "silhouette_fscore_summary_heart_plus_pericardium_Xu_Cell_2023_Curated_annotation_X_umap_7d4811.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_heart_plus_pericardium_Xu_Cell_2023_Curated_annotation_X_umap_7d4811.svg"
+          "svg": "stacked_violin__scaledheart_plus_pericardium_Xu_Cell_2023_Curated_annotation_X_umap_7d4811.svg"
         }
       }
     },
@@ -349,12 +487,18 @@
         "dendrogram": {
           "svg": "dendrogram_heart_plus_pericardium_Zhao_Cell_Genomics_2025_author_cell_type_X_umap_9b5568.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledheart_plus_pericardium_Zhao_Cell_Genomics_2025_author_cell_type_X_umap_9b5568.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledheart_plus_pericardium_Zhao_Cell_Genomics_2025_author_cell_type_X_umap_9b5568.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_heart_plus_pericardium_Zhao_Cell_Genomics_2025_author_cell_type_X_umap_9b5568.html",
           "svg": "silhouette_fscore_summary_heart_plus_pericardium_Zhao_Cell_Genomics_2025_author_cell_type_X_umap_9b5568.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_heart_plus_pericardium_Zhao_Cell_Genomics_2025_author_cell_type_X_umap_9b5568.svg"
+          "svg": "stacked_violin__scaledheart_plus_pericardium_Zhao_Cell_Genomics_2025_author_cell_type_X_umap_9b5568.svg"
         }
       }
     },
@@ -364,12 +508,18 @@
         "dendrogram": {
           "svg": "dendrogram_heart_plus_pericardium_Selewa_Nat_Commun_2023_author_cell_type_X_umap_a8bcce.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledheart_plus_pericardium_Selewa_Nat_Commun_2023_author_cell_type_X_umap_a8bcce.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledheart_plus_pericardium_Selewa_Nat_Commun_2023_author_cell_type_X_umap_a8bcce.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_heart_plus_pericardium_Selewa_Nat_Commun_2023_author_cell_type_X_umap_a8bcce.html",
           "svg": "silhouette_fscore_summary_heart_plus_pericardium_Selewa_Nat_Commun_2023_author_cell_type_X_umap_a8bcce.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_heart_plus_pericardium_Selewa_Nat_Commun_2023_author_cell_type_X_umap_a8bcce.svg"
+          "svg": "stacked_violin__scaledheart_plus_pericardium_Selewa_Nat_Commun_2023_author_cell_type_X_umap_a8bcce.svg"
         }
       }
     },
@@ -379,12 +529,18 @@
         "dendrogram": {
           "svg": "dendrogram_heart_plus_pericardium_Maatz_Nat_Cardiovasc_Res_2025_author_cell_type_X_umap_b6d046.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledheart_plus_pericardium_Maatz_Nat_Cardiovasc_Res_2025_author_cell_type_X_umap_b6d046.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledheart_plus_pericardium_Maatz_Nat_Cardiovasc_Res_2025_author_cell_type_X_umap_b6d046.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_heart_plus_pericardium_Maatz_Nat_Cardiovasc_Res_2025_author_cell_type_X_umap_b6d046.html",
           "svg": "silhouette_fscore_summary_heart_plus_pericardium_Maatz_Nat_Cardiovasc_Res_2025_author_cell_type_X_umap_b6d046.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_heart_plus_pericardium_Maatz_Nat_Cardiovasc_Res_2025_author_cell_type_X_umap_b6d046.svg"
+          "svg": "stacked_violin__scaledheart_plus_pericardium_Maatz_Nat_Cardiovasc_Res_2025_author_cell_type_X_umap_b6d046.svg"
         }
       }
     },
@@ -394,12 +550,18 @@
         "dendrogram": {
           "svg": "dendrogram_heart_plus_pericardium_Sim_Circulation_2021_cell_type_X_umap_d94be2.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledheart_plus_pericardium_Sim_Circulation_2021_cell_type_X_umap_d94be2.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledheart_plus_pericardium_Sim_Circulation_2021_cell_type_X_umap_d94be2.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_heart_plus_pericardium_Sim_Circulation_2021_cell_type_X_umap_d94be2.html",
           "svg": "silhouette_fscore_summary_heart_plus_pericardium_Sim_Circulation_2021_cell_type_X_umap_d94be2.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_heart_plus_pericardium_Sim_Circulation_2021_cell_type_X_umap_d94be2.svg"
+          "svg": "stacked_violin__scaledheart_plus_pericardium_Sim_Circulation_2021_cell_type_X_umap_d94be2.svg"
         }
       }
     },
@@ -409,12 +571,18 @@
         "dendrogram": {
           "svg": "dendrogram_heart_plus_pericardium_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledheart_plus_pericardium_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledheart_plus_pericardium_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_heart_plus_pericardium_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.html",
           "svg": "silhouette_fscore_summary_heart_plus_pericardium_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_heart_plus_pericardium_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
+          "svg": "stacked_violin__scaledheart_plus_pericardium_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
         }
       }
     },
@@ -424,12 +592,18 @@
         "dendrogram": {
           "svg": "dendrogram_kidney_McEvoy_Nat_Commun_2022_author_cell_type_X_umap_01cfaa.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledkidney_McEvoy_Nat_Commun_2022_author_cell_type_X_umap_01cfaa.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledkidney_McEvoy_Nat_Commun_2022_author_cell_type_X_umap_01cfaa.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_kidney_McEvoy_Nat_Commun_2022_author_cell_type_X_umap_01cfaa.html",
           "svg": "silhouette_fscore_summary_kidney_McEvoy_Nat_Commun_2022_author_cell_type_X_umap_01cfaa.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_kidney_McEvoy_Nat_Commun_2022_author_cell_type_X_umap_01cfaa.svg"
+          "svg": "stacked_violin__scaledkidney_McEvoy_Nat_Commun_2022_author_cell_type_X_umap_01cfaa.svg"
         }
       }
     },
@@ -438,6 +612,12 @@
       "figures": {
         "dendrogram": {
           "svg": "dendrogram_kidney_Lake_Nature_2023_subclass.full_X_umap_4af23f.svg"
+        },
+        "dotplot": {
+          "svg": "dotplot__scaledkidney_Lake_Nature_2023_subclass.full_X_umap_4af23f.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledkidney_Lake_Nature_2023_subclass.full_X_umap_4af23f.svg"
         },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_kidney_Lake_Nature_2023_subclass.full_X_umap_4af23f.html",
@@ -451,12 +631,18 @@
         "dendrogram": {
           "svg": "dendrogram_kidney_Young_Science_2018_author_cell_type_X_umap_57f337.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledkidney_Young_Science_2018_author_cell_type_X_umap_57f337.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledkidney_Young_Science_2018_author_cell_type_X_umap_57f337.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_kidney_Young_Science_2018_author_cell_type_X_umap_57f337.html",
           "svg": "silhouette_fscore_summary_kidney_Young_Science_2018_author_cell_type_X_umap_57f337.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_kidney_Young_Science_2018_author_cell_type_X_umap_57f337.svg"
+          "svg": "stacked_violin__scaledkidney_Young_Science_2018_author_cell_type_X_umap_57f337.svg"
         }
       }
     },
@@ -466,12 +652,18 @@
         "dendrogram": {
           "svg": "dendrogram_kidney_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledkidney_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledkidney_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_kidney_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.html",
           "svg": "silhouette_fscore_summary_kidney_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_kidney_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+          "svg": "stacked_violin__scaledkidney_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
         }
       }
     },
@@ -481,12 +673,18 @@
         "dendrogram": {
           "svg": "dendrogram_kidney_Xu_Cell_2023_Curated_annotation_X_umap_71ffd1.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledkidney_Xu_Cell_2023_Curated_annotation_X_umap_71ffd1.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledkidney_Xu_Cell_2023_Curated_annotation_X_umap_71ffd1.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_kidney_Xu_Cell_2023_Curated_annotation_X_umap_71ffd1.html",
           "svg": "silhouette_fscore_summary_kidney_Xu_Cell_2023_Curated_annotation_X_umap_71ffd1.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_kidney_Xu_Cell_2023_Curated_annotation_X_umap_71ffd1.svg"
+          "svg": "stacked_violin__scaledkidney_Xu_Cell_2023_Curated_annotation_X_umap_71ffd1.svg"
         }
       }
     },
@@ -496,12 +694,18 @@
         "dendrogram": {
           "svg": "dendrogram_kidney_Wilson_Nat_Commun_2022_author_cell_type_X_umap_9c7fc3.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledkidney_Wilson_Nat_Commun_2022_author_cell_type_X_umap_9c7fc3.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledkidney_Wilson_Nat_Commun_2022_author_cell_type_X_umap_9c7fc3.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_kidney_Wilson_Nat_Commun_2022_author_cell_type_X_umap_9c7fc3.html",
           "svg": "silhouette_fscore_summary_kidney_Wilson_Nat_Commun_2022_author_cell_type_X_umap_9c7fc3.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_kidney_Wilson_Nat_Commun_2022_author_cell_type_X_umap_9c7fc3.svg"
+          "svg": "stacked_violin__scaledkidney_Wilson_Nat_Commun_2022_author_cell_type_X_umap_9c7fc3.svg"
         }
       }
     },
@@ -511,12 +715,18 @@
         "dendrogram": {
           "svg": "dendrogram_kidney_Stewart_Science_2019_author_cell_type_X_umap_de3575.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledkidney_Stewart_Science_2019_author_cell_type_X_umap_de3575.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledkidney_Stewart_Science_2019_author_cell_type_X_umap_de3575.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_kidney_Stewart_Science_2019_author_cell_type_X_umap_de3575.html",
           "svg": "silhouette_fscore_summary_kidney_Stewart_Science_2019_author_cell_type_X_umap_de3575.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_kidney_Stewart_Science_2019_author_cell_type_X_umap_de3575.svg"
+          "svg": "stacked_violin__scaledkidney_Stewart_Science_2019_author_cell_type_X_umap_de3575.svg"
         }
       }
     },
@@ -526,12 +736,18 @@
         "dendrogram": {
           "svg": "dendrogram_kidney_Muto_Nat_Commun_2021_author_cell_type_X_umap_ec4b39.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledkidney_Muto_Nat_Commun_2021_author_cell_type_X_umap_ec4b39.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledkidney_Muto_Nat_Commun_2021_author_cell_type_X_umap_ec4b39.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_kidney_Muto_Nat_Commun_2021_author_cell_type_X_umap_ec4b39.html",
           "svg": "silhouette_fscore_summary_kidney_Muto_Nat_Commun_2021_author_cell_type_X_umap_ec4b39.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_kidney_Muto_Nat_Commun_2021_author_cell_type_X_umap_ec4b39.svg"
+          "svg": "stacked_violin__scaledkidney_Muto_Nat_Commun_2021_author_cell_type_X_umap_ec4b39.svg"
         }
       }
     },
@@ -541,12 +757,18 @@
         "dendrogram": {
           "svg": "dendrogram_kidney_Reck_Nat_Commun_2025_celltype_l2_X_umap_ffd4ba.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledkidney_Reck_Nat_Commun_2025_celltype_l2_X_umap_ffd4ba.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledkidney_Reck_Nat_Commun_2025_celltype_l2_X_umap_ffd4ba.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_kidney_Reck_Nat_Commun_2025_celltype_l2_X_umap_ffd4ba.html",
           "svg": "silhouette_fscore_summary_kidney_Reck_Nat_Commun_2025_celltype_l2_X_umap_ffd4ba.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_kidney_Reck_Nat_Commun_2025_celltype_l2_X_umap_ffd4ba.svg"
+          "svg": "stacked_violin__scaledkidney_Reck_Nat_Commun_2025_celltype_l2_X_umap_ffd4ba.svg"
         }
       }
     },
@@ -556,12 +778,18 @@
         "dendrogram": {
           "svg": "dendrogram_liver_Andrews_Journal_of_Hepatology_2024_author_cell_type_X_umap_00ddc4.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledliver_Andrews_Journal_of_Hepatology_2024_author_cell_type_X_umap_00ddc4.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledliver_Andrews_Journal_of_Hepatology_2024_author_cell_type_X_umap_00ddc4.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_liver_Andrews_Journal_of_Hepatology_2024_author_cell_type_X_umap_00ddc4.html",
           "svg": "silhouette_fscore_summary_liver_Andrews_Journal_of_Hepatology_2024_author_cell_type_X_umap_00ddc4.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_liver_Andrews_Journal_of_Hepatology_2024_author_cell_type_X_umap_00ddc4.svg"
+          "svg": "stacked_violin__scaledliver_Andrews_Journal_of_Hepatology_2024_author_cell_type_X_umap_00ddc4.svg"
         }
       }
     },
@@ -571,12 +799,18 @@
         "dendrogram": {
           "svg": "dendrogram_liver_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledliver_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledliver_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_liver_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.html",
           "svg": "silhouette_fscore_summary_liver_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_liver_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.svg"
+          "svg": "stacked_violin__scaledliver_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.svg"
         }
       }
     },
@@ -586,12 +820,18 @@
         "dendrogram": {
           "svg": "dendrogram_liver_Andrews_Journal_of_Hepatology_2024_author_cell_type_X_umap_2b80fc.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledliver_Andrews_Journal_of_Hepatology_2024_author_cell_type_X_umap_2b80fc.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledliver_Andrews_Journal_of_Hepatology_2024_author_cell_type_X_umap_2b80fc.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_liver_Andrews_Journal_of_Hepatology_2024_author_cell_type_X_umap_2b80fc.html",
           "svg": "silhouette_fscore_summary_liver_Andrews_Journal_of_Hepatology_2024_author_cell_type_X_umap_2b80fc.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_liver_Andrews_Journal_of_Hepatology_2024_author_cell_type_X_umap_2b80fc.svg"
+          "svg": "stacked_violin__scaledliver_Andrews_Journal_of_Hepatology_2024_author_cell_type_X_umap_2b80fc.svg"
         }
       }
     },
@@ -601,12 +841,18 @@
         "dendrogram": {
           "svg": "dendrogram_liver_Andrews_Hepatol_Commun_2022_author_cell_type_X_umap_3d10a5.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledliver_Andrews_Hepatol_Commun_2022_author_cell_type_X_umap_3d10a5.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledliver_Andrews_Hepatol_Commun_2022_author_cell_type_X_umap_3d10a5.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_liver_Andrews_Hepatol_Commun_2022_author_cell_type_X_umap_3d10a5.html",
           "svg": "silhouette_fscore_summary_liver_Andrews_Hepatol_Commun_2022_author_cell_type_X_umap_3d10a5.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_liver_Andrews_Hepatol_Commun_2022_author_cell_type_X_umap_3d10a5.svg"
+          "svg": "stacked_violin__scaledliver_Andrews_Hepatol_Commun_2022_author_cell_type_X_umap_3d10a5.svg"
         }
       }
     },
@@ -616,12 +862,18 @@
         "dendrogram": {
           "svg": "dendrogram_liver_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledliver_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledliver_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_liver_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.html",
           "svg": "silhouette_fscore_summary_liver_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_liver_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+          "svg": "stacked_violin__scaledliver_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
         }
       }
     },
@@ -631,12 +883,18 @@
         "dendrogram": {
           "svg": "dendrogram_liver_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledliver_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledliver_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_liver_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.html",
           "svg": "silhouette_fscore_summary_liver_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_liver_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
+          "svg": "stacked_violin__scaledliver_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
         }
       }
     },
@@ -646,12 +904,18 @@
         "dendrogram": {
           "svg": "dendrogram_liver_Edgar_Hepatology_Communications_2025_author_cell_type_X_umap_90971d.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledliver_Edgar_Hepatology_Communications_2025_author_cell_type_X_umap_90971d.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledliver_Edgar_Hepatology_Communications_2025_author_cell_type_X_umap_90971d.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_liver_Edgar_Hepatology_Communications_2025_author_cell_type_X_umap_90971d.html",
           "svg": "silhouette_fscore_summary_liver_Edgar_Hepatology_Communications_2025_author_cell_type_X_umap_90971d.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_liver_Edgar_Hepatology_Communications_2025_author_cell_type_X_umap_90971d.svg"
+          "svg": "stacked_violin__scaledliver_Edgar_Hepatology_Communications_2025_author_cell_type_X_umap_90971d.svg"
         }
       }
     },
@@ -661,12 +925,18 @@
         "dendrogram": {
           "svg": "dendrogram_liver_MacParland_Nat_Commun_2018_CellType_X_umap_hm_9f00be.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledliver_MacParland_Nat_Commun_2018_CellType_X_umap_hm_9f00be.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledliver_MacParland_Nat_Commun_2018_CellType_X_umap_hm_9f00be.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_liver_MacParland_Nat_Commun_2018_CellType_X_umap_hm_9f00be.html",
           "svg": "silhouette_fscore_summary_liver_MacParland_Nat_Commun_2018_CellType_X_umap_hm_9f00be.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_liver_MacParland_Nat_Commun_2018_CellType_X_umap_hm_9f00be.svg"
+          "svg": "stacked_violin__scaledliver_MacParland_Nat_Commun_2018_CellType_X_umap_hm_9f00be.svg"
         }
       }
     },
@@ -676,12 +946,18 @@
         "dendrogram": {
           "svg": "dendrogram_liver_Xu_Cell_2023_Curated_annotation_X_umap_a72286.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledliver_Xu_Cell_2023_Curated_annotation_X_umap_a72286.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledliver_Xu_Cell_2023_Curated_annotation_X_umap_a72286.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_liver_Xu_Cell_2023_Curated_annotation_X_umap_a72286.html",
           "svg": "silhouette_fscore_summary_liver_Xu_Cell_2023_Curated_annotation_X_umap_a72286.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_liver_Xu_Cell_2023_Curated_annotation_X_umap_a72286.svg"
+          "svg": "stacked_violin__scaledliver_Xu_Cell_2023_Curated_annotation_X_umap_a72286.svg"
         }
       }
     },
@@ -691,12 +967,18 @@
         "dendrogram": {
           "svg": "dendrogram_liver_Edgar_Hepatology_Communications_2025_author_cell_type_X_umap_c0113a.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledliver_Edgar_Hepatology_Communications_2025_author_cell_type_X_umap_c0113a.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledliver_Edgar_Hepatology_Communications_2025_author_cell_type_X_umap_c0113a.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_liver_Edgar_Hepatology_Communications_2025_author_cell_type_X_umap_c0113a.html",
           "svg": "silhouette_fscore_summary_liver_Edgar_Hepatology_Communications_2025_author_cell_type_X_umap_c0113a.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_liver_Edgar_Hepatology_Communications_2025_author_cell_type_X_umap_c0113a.svg"
+          "svg": "stacked_violin__scaledliver_Edgar_Hepatology_Communications_2025_author_cell_type_X_umap_c0113a.svg"
         }
       }
     },
@@ -706,12 +988,18 @@
         "dendrogram": {
           "svg": "dendrogram_liver_Guilliams_Cell_2022_author_cell_type_X_umap_ec5dd4.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledliver_Guilliams_Cell_2022_author_cell_type_X_umap_ec5dd4.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledliver_Guilliams_Cell_2022_author_cell_type_X_umap_ec5dd4.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_liver_Guilliams_Cell_2022_author_cell_type_X_umap_ec5dd4.html",
           "svg": "silhouette_fscore_summary_liver_Guilliams_Cell_2022_author_cell_type_X_umap_ec5dd4.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_liver_Guilliams_Cell_2022_author_cell_type_X_umap_ec5dd4.svg"
+          "svg": "stacked_violin__scaledliver_Guilliams_Cell_2022_author_cell_type_X_umap_ec5dd4.svg"
         }
       }
     },
@@ -721,12 +1009,18 @@
         "dendrogram": {
           "svg": "dendrogram_pancreas_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledpancreas_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledpancreas_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_pancreas_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.html",
           "svg": "silhouette_fscore_summary_pancreas_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_pancreas_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+          "svg": "stacked_violin__scaledpancreas_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
         }
       }
     },
@@ -736,12 +1030,18 @@
         "dendrogram": {
           "svg": "dendrogram_pancreas_Muraro_Cell_Systems_2016_cellular_classification_X_tsne_652149.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledpancreas_Muraro_Cell_Systems_2016_cellular_classification_X_tsne_652149.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledpancreas_Muraro_Cell_Systems_2016_cellular_classification_X_tsne_652149.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_pancreas_Muraro_Cell_Systems_2016_cellular_classification_X_tsne_652149.html",
           "svg": "silhouette_fscore_summary_pancreas_Muraro_Cell_Systems_2016_cellular_classification_X_tsne_652149.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_pancreas_Muraro_Cell_Systems_2016_cellular_classification_X_tsne_652149.svg"
+          "svg": "stacked_violin__scaledpancreas_Muraro_Cell_Systems_2016_cellular_classification_X_tsne_652149.svg"
         }
       }
     },
@@ -751,12 +1051,18 @@
         "dendrogram": {
           "svg": "dendrogram_pancreas_Fasolino_Nat_Metab_2022_cell_label_X_umap_77ee93.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledpancreas_Fasolino_Nat_Metab_2022_cell_label_X_umap_77ee93.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledpancreas_Fasolino_Nat_Metab_2022_cell_label_X_umap_77ee93.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_pancreas_Fasolino_Nat_Metab_2022_cell_label_X_umap_77ee93.html",
           "svg": "silhouette_fscore_summary_pancreas_Fasolino_Nat_Metab_2022_cell_label_X_umap_77ee93.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_pancreas_Fasolino_Nat_Metab_2022_cell_label_X_umap_77ee93.svg"
+          "svg": "stacked_violin__scaledpancreas_Fasolino_Nat_Metab_2022_cell_label_X_umap_77ee93.svg"
         }
       }
     },
@@ -766,12 +1072,18 @@
         "dendrogram": {
           "svg": "dendrogram_pancreas_Tritschler_Molecular_Metabolism_2022_louvain_anno_fine_X_umap_98d050.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledpancreas_Tritschler_Molecular_Metabolism_2022_louvain_anno_fine_X_umap_98d050.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledpancreas_Tritschler_Molecular_Metabolism_2022_louvain_anno_fine_X_umap_98d050.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_pancreas_Tritschler_Molecular_Metabolism_2022_louvain_anno_fine_X_umap_98d050.html",
           "svg": "silhouette_fscore_summary_pancreas_Tritschler_Molecular_Metabolism_2022_louvain_anno_fine_X_umap_98d050.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_pancreas_Tritschler_Molecular_Metabolism_2022_louvain_anno_fine_X_umap_98d050.svg"
+          "svg": "stacked_violin__scaledpancreas_Tritschler_Molecular_Metabolism_2022_louvain_anno_fine_X_umap_98d050.svg"
         }
       }
     },
@@ -781,12 +1093,18 @@
         "dendrogram": {
           "svg": "dendrogram_pancreas_Xu_Cell_2023_Curated_annotation_X_umap_f2ac0d.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledpancreas_Xu_Cell_2023_Curated_annotation_X_umap_f2ac0d.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledpancreas_Xu_Cell_2023_Curated_annotation_X_umap_f2ac0d.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_pancreas_Xu_Cell_2023_Curated_annotation_X_umap_f2ac0d.html",
           "svg": "silhouette_fscore_summary_pancreas_Xu_Cell_2023_Curated_annotation_X_umap_f2ac0d.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_pancreas_Xu_Cell_2023_Curated_annotation_X_umap_f2ac0d.svg"
+          "svg": "stacked_violin__scaledpancreas_Xu_Cell_2023_Curated_annotation_X_umap_f2ac0d.svg"
         }
       }
     },
@@ -796,12 +1114,18 @@
         "dendrogram": {
           "svg": "dendrogram_respiratory_system_Ziegler_Cell_2021_Detailed_Cell_Annotations_X_umap_045011.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledrespiratory_system_Ziegler_Cell_2021_Detailed_Cell_Annotations_X_umap_045011.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledrespiratory_system_Ziegler_Cell_2021_Detailed_Cell_Annotations_X_umap_045011.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_respiratory_system_Ziegler_Cell_2021_Detailed_Cell_Annotations_X_umap_045011.html",
           "svg": "silhouette_fscore_summary_respiratory_system_Ziegler_Cell_2021_Detailed_Cell_Annotations_X_umap_045011.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_respiratory_system_Ziegler_Cell_2021_Detailed_Cell_Annotations_X_umap_045011.svg"
+          "svg": "stacked_violin__scaledrespiratory_system_Ziegler_Cell_2021_Detailed_Cell_Annotations_X_umap_045011.svg"
         }
       }
     },
@@ -811,12 +1135,18 @@
         "dendrogram": {
           "svg": "dendrogram_respiratory_system_Travaglini_Nature_2020_free_annotation_X_tSNE_04a4fd.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledrespiratory_system_Travaglini_Nature_2020_free_annotation_X_tSNE_04a4fd.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledrespiratory_system_Travaglini_Nature_2020_free_annotation_X_tSNE_04a4fd.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_respiratory_system_Travaglini_Nature_2020_free_annotation_X_tSNE_04a4fd.html",
           "svg": "silhouette_fscore_summary_respiratory_system_Travaglini_Nature_2020_free_annotation_X_tSNE_04a4fd.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_respiratory_system_Travaglini_Nature_2020_free_annotation_X_tSNE_04a4fd.svg"
+          "svg": "stacked_violin__scaledrespiratory_system_Travaglini_Nature_2020_free_annotation_X_tSNE_04a4fd.svg"
         }
       }
     },
@@ -826,12 +1156,18 @@
         "dendrogram": {
           "svg": "dendrogram_respiratory_system_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledrespiratory_system_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledrespiratory_system_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_respiratory_system_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.html",
           "svg": "silhouette_fscore_summary_respiratory_system_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_respiratory_system_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.svg"
+          "svg": "stacked_violin__scaledrespiratory_system_Dominguez_Conde_Science_2022_Manually_curated_celltype_X_umap_04d255.svg"
         }
       }
     },
@@ -841,12 +1177,18 @@
         "dendrogram": {
           "svg": "dendrogram_respiratory_system_Berg_Journal_of_Cystic_Fibrosis_2025_Level_5_X_umap_17763a.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledrespiratory_system_Berg_Journal_of_Cystic_Fibrosis_2025_Level_5_X_umap_17763a.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledrespiratory_system_Berg_Journal_of_Cystic_Fibrosis_2025_Level_5_X_umap_17763a.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_respiratory_system_Berg_Journal_of_Cystic_Fibrosis_2025_Level_5_X_umap_17763a.html",
           "svg": "silhouette_fscore_summary_respiratory_system_Berg_Journal_of_Cystic_Fibrosis_2025_Level_5_X_umap_17763a.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_respiratory_system_Berg_Journal_of_Cystic_Fibrosis_2025_Level_5_X_umap_17763a.svg"
+          "svg": "stacked_violin__scaledrespiratory_system_Berg_Journal_of_Cystic_Fibrosis_2025_Level_5_X_umap_17763a.svg"
         }
       }
     },
@@ -856,12 +1198,18 @@
         "dendrogram": {
           "svg": "dendrogram_respiratory_system_Madissoon_Genome_Biol_2020_author_cell_type_X_umap_2ee7d6.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledrespiratory_system_Madissoon_Genome_Biol_2020_author_cell_type_X_umap_2ee7d6.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledrespiratory_system_Madissoon_Genome_Biol_2020_author_cell_type_X_umap_2ee7d6.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_respiratory_system_Madissoon_Genome_Biol_2020_author_cell_type_X_umap_2ee7d6.html",
           "svg": "silhouette_fscore_summary_respiratory_system_Madissoon_Genome_Biol_2020_author_cell_type_X_umap_2ee7d6.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_respiratory_system_Madissoon_Genome_Biol_2020_author_cell_type_X_umap_2ee7d6.svg"
+          "svg": "stacked_violin__scaledrespiratory_system_Madissoon_Genome_Biol_2020_author_cell_type_X_umap_2ee7d6.svg"
         }
       }
     },
@@ -871,12 +1219,18 @@
         "dendrogram": {
           "svg": "dendrogram_respiratory_system_Guo_Nat_Commun_2023.0_celltype_level3_X_umap_3058a2.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledrespiratory_system_Guo_Nat_Commun_2023.0_celltype_level3_X_umap_3058a2.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledrespiratory_system_Guo_Nat_Commun_2023.0_celltype_level3_X_umap_3058a2.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_respiratory_system_Guo_Nat_Commun_2023.0_celltype_level3_X_umap_3058a2.html",
           "svg": "silhouette_fscore_summary_respiratory_system_Guo_Nat_Commun_2023.0_celltype_level3_X_umap_3058a2.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_respiratory_system_Guo_Nat_Commun_2023.0_celltype_level3_X_umap_3058a2.svg"
+          "svg": "stacked_violin__scaledrespiratory_system_Guo_Nat_Commun_2023.0_celltype_level3_X_umap_3058a2.svg"
         }
       }
     },
@@ -886,12 +1240,18 @@
         "dendrogram": {
           "svg": "dendrogram_respiratory_system_Wong_American_Journal_of_Transplantation_2024_GSVA_anno_labels_lowcluster_X_umap_3db111.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledrespiratory_system_Wong_American_Journal_of_Transplantation_2024_GSVA_anno_labels_lowcluster_X_umap_3db111.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledrespiratory_system_Wong_American_Journal_of_Transplantation_2024_GSVA_anno_labels_lowcluster_X_umap_3db111.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_respiratory_system_Wong_American_Journal_of_Transplantation_2024_GSVA_anno_labels_lowcluster_X_umap_3db111.html",
           "svg": "silhouette_fscore_summary_respiratory_system_Wong_American_Journal_of_Transplantation_2024_GSVA_anno_labels_lowcluster_X_umap_3db111.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_respiratory_system_Wong_American_Journal_of_Transplantation_2024_GSVA_anno_labels_lowcluster_X_umap_3db111.svg"
+          "svg": "stacked_violin__scaledrespiratory_system_Wong_American_Journal_of_Transplantation_2024_GSVA_anno_labels_lowcluster_X_umap_3db111.svg"
         }
       }
     },
@@ -901,12 +1261,18 @@
         "dendrogram": {
           "svg": "dendrogram_respiratory_system_Sikkema_Nat_Med_2023_ann_finest_level_X_umap_552c94.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledrespiratory_system_Sikkema_Nat_Med_2023_ann_finest_level_X_umap_552c94.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledrespiratory_system_Sikkema_Nat_Med_2023_ann_finest_level_X_umap_552c94.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_respiratory_system_Sikkema_Nat_Med_2023_ann_finest_level_X_umap_552c94.html",
           "svg": "silhouette_fscore_summary_respiratory_system_Sikkema_Nat_Med_2023_ann_finest_level_X_umap_552c94.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_respiratory_system_Sikkema_Nat_Med_2023_ann_finest_level_X_umap_552c94.svg"
+          "svg": "stacked_violin__scaledrespiratory_system_Sikkema_Nat_Med_2023_ann_finest_level_X_umap_552c94.svg"
         }
       }
     },
@@ -916,12 +1282,18 @@
         "dendrogram": {
           "svg": "dendrogram_respiratory_system_Rustam_Am_J_Respir_Crit_Care_Med_2023_author_cell_type_X_umap_56ce23.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledrespiratory_system_Rustam_Am_J_Respir_Crit_Care_Med_2023_author_cell_type_X_umap_56ce23.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledrespiratory_system_Rustam_Am_J_Respir_Crit_Care_Med_2023_author_cell_type_X_umap_56ce23.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_respiratory_system_Rustam_Am_J_Respir_Crit_Care_Med_2023_author_cell_type_X_umap_56ce23.html",
           "svg": "silhouette_fscore_summary_respiratory_system_Rustam_Am_J_Respir_Crit_Care_Med_2023_author_cell_type_X_umap_56ce23.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_respiratory_system_Rustam_Am_J_Respir_Crit_Care_Med_2023_author_cell_type_X_umap_56ce23.svg"
+          "svg": "stacked_violin__scaledrespiratory_system_Rustam_Am_J_Respir_Crit_Care_Med_2023_author_cell_type_X_umap_56ce23.svg"
         }
       }
     },
@@ -931,12 +1303,18 @@
         "dendrogram": {
           "svg": "dendrogram_respiratory_system_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledrespiratory_system_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledrespiratory_system_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_respiratory_system_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.html",
           "svg": "silhouette_fscore_summary_respiratory_system_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_respiratory_system_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
+          "svg": "stacked_violin__scaledrespiratory_system_Han_Nature_2020_author_cell_type_X_umap_5c7ea7.svg"
         }
       }
     },
@@ -946,12 +1324,18 @@
         "dendrogram": {
           "svg": "dendrogram_respiratory_system_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledrespiratory_system_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledrespiratory_system_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_respiratory_system_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.html",
           "svg": "silhouette_fscore_summary_respiratory_system_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_respiratory_system_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
+          "svg": "stacked_violin__scaledrespiratory_system_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
         }
       }
     },
@@ -960,6 +1344,12 @@
       "figures": {
         "dendrogram": {
           "svg": "dendrogram_respiratory_system_Xu_Cell_2023_Original_annotation_X_umap_78cea8.svg"
+        },
+        "dotplot": {
+          "svg": "dotplot__scaledrespiratory_system_Xu_Cell_2023_Original_annotation_X_umap_78cea8.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledrespiratory_system_Xu_Cell_2023_Original_annotation_X_umap_78cea8.svg"
         },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_respiratory_system_Xu_Cell_2023_Original_annotation_X_umap_78cea8.html",
@@ -973,12 +1363,18 @@
         "dendrogram": {
           "svg": "dendrogram_respiratory_system_Travaglini_Nature_2020_free_annotation_X_tSNE_81a82c.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledrespiratory_system_Travaglini_Nature_2020_free_annotation_X_tSNE_81a82c.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledrespiratory_system_Travaglini_Nature_2020_free_annotation_X_tSNE_81a82c.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_respiratory_system_Travaglini_Nature_2020_free_annotation_X_tSNE_81a82c.html",
           "svg": "silhouette_fscore_summary_respiratory_system_Travaglini_Nature_2020_free_annotation_X_tSNE_81a82c.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_respiratory_system_Travaglini_Nature_2020_free_annotation_X_tSNE_81a82c.svg"
+          "svg": "stacked_violin__scaledrespiratory_system_Travaglini_Nature_2020_free_annotation_X_tSNE_81a82c.svg"
         }
       }
     },
@@ -988,12 +1384,18 @@
         "dendrogram": {
           "svg": "dendrogram_respiratory_system_Xu_Sci_Rep_2022_cell_type_X_umap_81ecd6.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledrespiratory_system_Xu_Sci_Rep_2022_cell_type_X_umap_81ecd6.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledrespiratory_system_Xu_Sci_Rep_2022_cell_type_X_umap_81ecd6.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_respiratory_system_Xu_Sci_Rep_2022_cell_type_X_umap_81ecd6.html",
           "svg": "silhouette_fscore_summary_respiratory_system_Xu_Sci_Rep_2022_cell_type_X_umap_81ecd6.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_respiratory_system_Xu_Sci_Rep_2022_cell_type_X_umap_81ecd6.svg"
+          "svg": "stacked_violin__scaledrespiratory_system_Xu_Sci_Rep_2022_cell_type_X_umap_81ecd6.svg"
         }
       }
     },
@@ -1003,12 +1405,18 @@
         "dendrogram": {
           "svg": "dendrogram_respiratory_system_Yoshida_Nature_2022_Cell_type_annotation_level3_X_umap_8dc8be.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledrespiratory_system_Yoshida_Nature_2022_Cell_type_annotation_level3_X_umap_8dc8be.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledrespiratory_system_Yoshida_Nature_2022_Cell_type_annotation_level3_X_umap_8dc8be.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_respiratory_system_Yoshida_Nature_2022_Cell_type_annotation_level3_X_umap_8dc8be.html",
           "svg": "silhouette_fscore_summary_respiratory_system_Yoshida_Nature_2022_Cell_type_annotation_level3_X_umap_8dc8be.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_respiratory_system_Yoshida_Nature_2022_Cell_type_annotation_level3_X_umap_8dc8be.svg"
+          "svg": "stacked_violin__scaledrespiratory_system_Yoshida_Nature_2022_Cell_type_annotation_level3_X_umap_8dc8be.svg"
         }
       }
     },
@@ -1018,12 +1426,18 @@
         "dendrogram": {
           "svg": "dendrogram_respiratory_system_Natri_Nat_Genet_2024_manual_annotation_1_X_umap_9a27e4.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledrespiratory_system_Natri_Nat_Genet_2024_manual_annotation_1_X_umap_9a27e4.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledrespiratory_system_Natri_Nat_Genet_2024_manual_annotation_1_X_umap_9a27e4.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_respiratory_system_Natri_Nat_Genet_2024_manual_annotation_1_X_umap_9a27e4.html",
           "svg": "silhouette_fscore_summary_respiratory_system_Natri_Nat_Genet_2024_manual_annotation_1_X_umap_9a27e4.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_respiratory_system_Natri_Nat_Genet_2024_manual_annotation_1_X_umap_9a27e4.svg"
+          "svg": "stacked_violin__scaledrespiratory_system_Natri_Nat_Genet_2024_manual_annotation_1_X_umap_9a27e4.svg"
         }
       }
     },
@@ -1033,12 +1447,18 @@
         "dendrogram": {
           "svg": "dendrogram_respiratory_system_Szabo_Nat_Commun_2019_status_X_umap_bb4707.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledrespiratory_system_Szabo_Nat_Commun_2019_status_X_umap_bb4707.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledrespiratory_system_Szabo_Nat_Commun_2019_status_X_umap_bb4707.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_respiratory_system_Szabo_Nat_Commun_2019_status_X_umap_bb4707.html",
           "svg": "silhouette_fscore_summary_respiratory_system_Szabo_Nat_Commun_2019_status_X_umap_bb4707.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_respiratory_system_Szabo_Nat_Commun_2019_status_X_umap_bb4707.svg"
+          "svg": "stacked_violin__scaledrespiratory_system_Szabo_Nat_Commun_2019_status_X_umap_bb4707.svg"
         }
       }
     },
@@ -1048,12 +1468,18 @@
         "dendrogram": {
           "svg": "dendrogram_respiratory_system_Wang_eLife_2020_author_cell_type_X_umap_c3bd89.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledrespiratory_system_Wang_eLife_2020_author_cell_type_X_umap_c3bd89.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledrespiratory_system_Wang_eLife_2020_author_cell_type_X_umap_c3bd89.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_respiratory_system_Wang_eLife_2020_author_cell_type_X_umap_c3bd89.html",
           "svg": "silhouette_fscore_summary_respiratory_system_Wang_eLife_2020_author_cell_type_X_umap_c3bd89.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_respiratory_system_Wang_eLife_2020_author_cell_type_X_umap_c3bd89.svg"
+          "svg": "stacked_violin__scaledrespiratory_system_Wang_eLife_2020_author_cell_type_X_umap_c3bd89.svg"
         }
       }
     },
@@ -1063,12 +1489,18 @@
         "dendrogram": {
           "svg": "dendrogram_respiratory_system_Melms_Nature_2021_cell_type_fine_X_UMAP_c42060.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledrespiratory_system_Melms_Nature_2021_cell_type_fine_X_UMAP_c42060.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledrespiratory_system_Melms_Nature_2021_cell_type_fine_X_UMAP_c42060.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_respiratory_system_Melms_Nature_2021_cell_type_fine_X_UMAP_c42060.html",
           "svg": "silhouette_fscore_summary_respiratory_system_Melms_Nature_2021_cell_type_fine_X_UMAP_c42060.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_respiratory_system_Melms_Nature_2021_cell_type_fine_X_UMAP_c42060.svg"
+          "svg": "stacked_violin__scaledrespiratory_system_Melms_Nature_2021_cell_type_fine_X_UMAP_c42060.svg"
         }
       }
     },
@@ -1078,12 +1510,18 @@
         "dendrogram": {
           "svg": "dendrogram_respiratory_system_Watanabe_Am_J_Respir_Cell_Mol_Biol_2022_author_cell_type_X_umap_c7b336.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledrespiratory_system_Watanabe_Am_J_Respir_Cell_Mol_Biol_2022_author_cell_type_X_umap_c7b336.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledrespiratory_system_Watanabe_Am_J_Respir_Cell_Mol_Biol_2022_author_cell_type_X_umap_c7b336.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_respiratory_system_Watanabe_Am_J_Respir_Cell_Mol_Biol_2022_author_cell_type_X_umap_c7b336.html",
           "svg": "silhouette_fscore_summary_respiratory_system_Watanabe_Am_J_Respir_Cell_Mol_Biol_2022_author_cell_type_X_umap_c7b336.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_respiratory_system_Watanabe_Am_J_Respir_Cell_Mol_Biol_2022_author_cell_type_X_umap_c7b336.svg"
+          "svg": "stacked_violin__scaledrespiratory_system_Watanabe_Am_J_Respir_Cell_Mol_Biol_2022_author_cell_type_X_umap_c7b336.svg"
         }
       }
     },
@@ -1093,12 +1531,18 @@
         "dendrogram": {
           "svg": "dendrogram_respiratory_system_Xu_Sci_Rep_2022_author_cell_type_final_X_umap_dc2012.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledrespiratory_system_Xu_Sci_Rep_2022_author_cell_type_final_X_umap_dc2012.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledrespiratory_system_Xu_Sci_Rep_2022_author_cell_type_final_X_umap_dc2012.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_respiratory_system_Xu_Sci_Rep_2022_author_cell_type_final_X_umap_dc2012.html",
           "svg": "silhouette_fscore_summary_respiratory_system_Xu_Sci_Rep_2022_author_cell_type_final_X_umap_dc2012.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_respiratory_system_Xu_Sci_Rep_2022_author_cell_type_final_X_umap_dc2012.svg"
+          "svg": "stacked_violin__scaledrespiratory_system_Xu_Sci_Rep_2022_author_cell_type_final_X_umap_dc2012.svg"
         }
       }
     },
@@ -1107,6 +1551,12 @@
       "figures": {
         "dendrogram": {
           "svg": "dendrogram_respiratory_system_Madissoon_Nat_Genet_2023_Celltypes_X_umap_ee858a.svg"
+        },
+        "dotplot": {
+          "svg": "dotplot__scaledrespiratory_system_Madissoon_Nat_Genet_2023_Celltypes_X_umap_ee858a.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledrespiratory_system_Madissoon_Nat_Genet_2023_Celltypes_X_umap_ee858a.svg"
         },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_respiratory_system_Madissoon_Nat_Genet_2023_Celltypes_X_umap_ee858a.html",
@@ -1120,12 +1570,18 @@
         "dendrogram": {
           "svg": "dendrogram_respiratory_system_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledrespiratory_system_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledrespiratory_system_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_respiratory_system_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.html",
           "svg": "silhouette_fscore_summary_respiratory_system_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_respiratory_system_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
+          "svg": "stacked_violin__scaledrespiratory_system_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
         }
       }
     },
@@ -1134,6 +1590,12 @@
       "figures": {
         "dendrogram": {
           "svg": "dendrogram_retina_Li_Nat_Genet_2026_author_cell_type_X_umap_cbd4aa.svg"
+        },
+        "dotplot": {
+          "svg": "dotplot__scaledretina_Li_Nat_Genet_2026_author_cell_type_X_umap_cbd4aa.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledretina_Li_Nat_Genet_2026_author_cell_type_X_umap_cbd4aa.svg"
         },
         "silhouette_fscore_summary": {
           "svg": "silhouette_fscore_summary_retina_Li_Nat_Genet_2026_author_cell_type_X_umap_cbd4aa.svg"
@@ -1146,12 +1608,18 @@
         "dendrogram": {
           "svg": "dendrogram_skin_of_body_Reynolds_Science_2021_full_clustering_X_umap_05d19d.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledskin_of_body_Reynolds_Science_2021_full_clustering_X_umap_05d19d.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledskin_of_body_Reynolds_Science_2021_full_clustering_X_umap_05d19d.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_skin_of_body_Reynolds_Science_2021_full_clustering_X_umap_05d19d.html",
           "svg": "silhouette_fscore_summary_skin_of_body_Reynolds_Science_2021_full_clustering_X_umap_05d19d.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_skin_of_body_Reynolds_Science_2021_full_clustering_X_umap_05d19d.svg"
+          "svg": "stacked_violin__scaledskin_of_body_Reynolds_Science_2021_full_clustering_X_umap_05d19d.svg"
         }
       }
     },
@@ -1161,12 +1629,18 @@
         "dendrogram": {
           "svg": "dendrogram_skin_of_body_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledskin_of_body_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledskin_of_body_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_skin_of_body_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.html",
           "svg": "silhouette_fscore_summary_skin_of_body_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_skin_of_body_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
+          "svg": "stacked_violin__scaledskin_of_body_Wells_Nat_Immunol_2025_author_cell_type_X_umap_74e9e1.svg"
         }
       }
     },
@@ -1176,12 +1650,18 @@
         "dendrogram": {
           "svg": "dendrogram_skin_of_body_Sole-Boldo_Commun_Biol_2020_Celltype_X_umap_7d9c31.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledskin_of_body_Sole-Boldo_Commun_Biol_2020_Celltype_X_umap_7d9c31.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledskin_of_body_Sole-Boldo_Commun_Biol_2020_Celltype_X_umap_7d9c31.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_skin_of_body_Sole-Boldo_Commun_Biol_2020_Celltype_X_umap_7d9c31.html",
           "svg": "silhouette_fscore_summary_skin_of_body_Sole-Boldo_Commun_Biol_2020_Celltype_X_umap_7d9c31.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_skin_of_body_Sole-Boldo_Commun_Biol_2020_Celltype_X_umap_7d9c31.svg"
+          "svg": "stacked_violin__scaledskin_of_body_Sole-Boldo_Commun_Biol_2020_Celltype_X_umap_7d9c31.svg"
         }
       }
     },
@@ -1191,12 +1671,18 @@
         "dendrogram": {
           "svg": "dendrogram_skin_of_body_Gao_Cell_Death_Dis_2021_CellTypes_X_umap_892850.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledskin_of_body_Gao_Cell_Death_Dis_2021_CellTypes_X_umap_892850.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledskin_of_body_Gao_Cell_Death_Dis_2021_CellTypes_X_umap_892850.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_skin_of_body_Gao_Cell_Death_Dis_2021_CellTypes_X_umap_892850.html",
           "svg": "silhouette_fscore_summary_skin_of_body_Gao_Cell_Death_Dis_2021_CellTypes_X_umap_892850.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_skin_of_body_Gao_Cell_Death_Dis_2021_CellTypes_X_umap_892850.svg"
+          "svg": "stacked_violin__scaledskin_of_body_Gao_Cell_Death_Dis_2021_CellTypes_X_umap_892850.svg"
         }
       }
     },
@@ -1206,12 +1692,18 @@
         "dendrogram": {
           "svg": "dendrogram_skin_of_body_Cheng_Cell_Reports_2018_Re-annotation_X_umap_hm_adafa7.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledskin_of_body_Cheng_Cell_Reports_2018_Re-annotation_X_umap_hm_adafa7.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledskin_of_body_Cheng_Cell_Reports_2018_Re-annotation_X_umap_hm_adafa7.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_skin_of_body_Cheng_Cell_Reports_2018_Re-annotation_X_umap_hm_adafa7.html",
           "svg": "silhouette_fscore_summary_skin_of_body_Cheng_Cell_Reports_2018_Re-annotation_X_umap_hm_adafa7.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_skin_of_body_Cheng_Cell_Reports_2018_Re-annotation_X_umap_hm_adafa7.svg"
+          "svg": "stacked_violin__scaledskin_of_body_Cheng_Cell_Reports_2018_Re-annotation_X_umap_hm_adafa7.svg"
         }
       }
     },
@@ -1221,12 +1713,18 @@
         "dendrogram": {
           "svg": "dendrogram_skin_of_body_Wiedemann_Cell_Reports_2023_author_cell_type_X_tsne_e60c65.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledskin_of_body_Wiedemann_Cell_Reports_2023_author_cell_type_X_tsne_e60c65.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledskin_of_body_Wiedemann_Cell_Reports_2023_author_cell_type_X_tsne_e60c65.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_skin_of_body_Wiedemann_Cell_Reports_2023_author_cell_type_X_tsne_e60c65.html",
           "svg": "silhouette_fscore_summary_skin_of_body_Wiedemann_Cell_Reports_2023_author_cell_type_X_tsne_e60c65.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_skin_of_body_Wiedemann_Cell_Reports_2023_author_cell_type_X_tsne_e60c65.svg"
+          "svg": "stacked_violin__scaledskin_of_body_Wiedemann_Cell_Reports_2023_author_cell_type_X_tsne_e60c65.svg"
         }
       }
     },
@@ -1236,12 +1734,18 @@
         "dendrogram": {
           "svg": "dendrogram_skin_of_body_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
         },
+        "dotplot": {
+          "svg": "dotplot__scaledskin_of_body_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
+        },
+        "matrixplot": {
+          "svg": "matrixplot__scaledskin_of_body_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
+        },
         "silhouette_fscore_summary": {
           "html": "silhouette_fscore_summary_skin_of_body_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.html",
           "svg": "silhouette_fscore_summary_skin_of_body_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
         },
         "stacked_violin": {
-          "svg": "stacked_violin_skin_of_body_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
+          "svg": "stacked_violin__scaledskin_of_body_Eraslan_Science_2022_Broad_cell_type_X_umap_f44b0f.svg"
         }
       }
     }
