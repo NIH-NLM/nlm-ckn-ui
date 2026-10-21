@@ -1,8 +1,9 @@
 import collMaps from "assets/nlm-ckn-collection-maps.json";
 import AddToGraphButton from "components/AddToGraphButton";
+import NodeLabel from "components/NodeLabel";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { getColorForCollection, getLabel } from "utils";
+import { getColorForCollection } from "utils";
 
 /**
  * SearchResultsTable component.
@@ -82,7 +83,9 @@ const SearchResultsTable = ({ searchResults }) => {
             className="result-item-row-link"
             onClick={() => navigate(`/collections/${item._id}`)}
           >
-            <div className="item-label-area">{getLabel(item)}</div>
+            <div className="item-label-area">
+              <NodeLabel item={item} />
+            </div>
             <div className="item-meta-actions">
               <Link
                 to={`/collections/${collectionKey}`}

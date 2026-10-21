@@ -1,4 +1,5 @@
 import {
+  getBadges,
   getDisplayFields,
   getLabel,
   getSectionedFields,
@@ -419,5 +420,43 @@ describe("getLabel for cell sets", () => {
     expect(getLabel(cs)).toBe(
       'Stromal-2-(NPY+) in "Cells of the human intestinal tract mapped across space and time"',
     );
+  });
+});
+
+describe("getBadges", () => {
+  // The ETL stores is_reference_dataset as the string "True"/"False" although
+  // the schema declares a boolean, so both spellings must be read.
+  const csd = (overrides = {}) => ({
+    _id: "CSD/25b62707__kidney",
+    anatomical_structure: "kidney",
+    ...overrides,
+  });
+
+  it("marks a reference dataset, naming its anatomical structure", () => {
+    expect(getBadges(csd({ is_reference_dataset: "True" }))).toEqual([
+      {
+        key: "reference",
+        text: "Reference",
+        tooltip: "Reference dataset for kidney, used to classify other cell set data",
+      },
+    ]);
+  });
+
+  it("accepts a real boolean and replaces underscores in the structure name", () => {
+    const [badge] = getBadges(
+      csd({ is_reference_dataset: true, anatomical_structure: "skin_of_body" }),
+    );
+    expect(badge.tooltip).toBe(
+      "Reference dataset for skin of body, used to classify other cell set data",
+    );
+  });
+
+  it("drops the structure from the tooltip when the document has none", () => {
+    const [badge] = getBadges(csd({ is_reference_dataset: "True", anatomical_structure: "" }));
+    expect(badge.tooltip).toBe("Reference dataset, used to classify other cell set data");
+  });
+
+  it.each([["False"], [false], [undefined], [null]])("returns no badges for %p", (value) => {
+    expect(getBadges(csd({ is_reference_dataset: value }))).toEqual([]);
   });
 });

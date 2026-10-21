@@ -1,9 +1,10 @@
 import { faCircleInfo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import NodeLabel from "components/NodeLabel";
 import { isGeneField, parseGeneTokens } from "config/geneFields";
 import { Fragment } from "react";
 import { Link } from "react-router-dom";
-import { formatFieldValue, getDisplayFields, getSectionedFields, getTitle, getUrl } from "utils";
+import { formatFieldValue, getDisplayFields, getSectionedFields, getUrl } from "utils";
 
 /**
  * The design's outbound-link mark (Figma "External Link"), drawn in the link's
@@ -88,7 +89,9 @@ const DocumentCard = ({ document }) => {
   if (sections && sections.length > 0) {
     return (
       <div className="document-item-list-wrapper inspector-card">
-        <h3 className="inspector-card-title">{getTitle(document)}</h3>
+        <h3 className="inspector-card-title">
+          <NodeLabel item={document} asTitle />
+        </h3>
         {sections.map(({ section, fields, description, info }) => {
           const descriptions = fields.filter((f) => f.variant === "description");
           const rows = fields.filter((f) => f.variant !== "description");
@@ -137,7 +140,9 @@ const DocumentCard = ({ document }) => {
     <div className="document-item-list-wrapper inspector-overview">
       {/* A collection without a section config still names its document, so
           every card reads the same way (#271). */}
-      <h3 className="inspector-card-title">{getTitle(document)}</h3>
+      <h3 className="inspector-card-title">
+        <NodeLabel item={document} asTitle />
+      </h3>
       <h4 className="inspector-overview-title">Overview</h4>
       <fieldset className="document-info-fieldset">
         <legend className="document-info-legend">

@@ -27,6 +27,7 @@ jest.mock("../../utils", () => {
   return {
     __esModule: true,
     getLabel: (item) => item.label || item._id,
+    getBadges: () => [],
     getColorForCollection: jest.fn(() => "#336699"),
   };
 });

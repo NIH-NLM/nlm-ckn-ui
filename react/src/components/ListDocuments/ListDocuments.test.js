@@ -6,6 +6,7 @@ import ListDocuments from "./ListDocuments";
 jest.mock("../../utils", () => {
   return {
     __esModule: true,
+    getBadges: () => [],
     getLabel: (item) => {
       if (Array.isArray(item.label)) {
         return item.label.join(",");

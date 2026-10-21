@@ -3,13 +3,14 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import DatasetFigures from "components/DatasetFigures";
 import ForceGraph from "components/ForceGraph/ForceGraph";
 import NodeInspector from "components/NodeInspector";
+import NodeLabel from "components/NodeLabel";
 import OriginsSidebar from "components/OriginsSidebar";
 import SavedGraphShelf from "components/SavedGraphShelf";
 import { useNodeDocument } from "hooks";
 import { useId, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { selectOriginHistory } from "store";
-import { getDatasetFigures, getTitle } from "utils";
+import { getDatasetFigures } from "utils";
 
 const STRIP_COLLAPSED_KEY = "cellkn_graphStripCollapsed";
 
@@ -106,7 +107,8 @@ const GraphWorkspace = ({
 
   // Title: explicit prop wins (Graph/Workflow hosts); otherwise the current
   // origin's title; otherwise the generic default.
-  const graphTitle = title ?? (currentOriginDoc ? getTitle(currentOriginDoc) : "Graph");
+  const graphTitle =
+    title ?? (currentOriginDoc ? <NodeLabel item={currentOriginDoc} asTitle /> : "Graph");
 
   // Figures follow whatever the inspector is showing. useNodeDocument is cached,
   // so asking for the selected node here does not fetch it twice.

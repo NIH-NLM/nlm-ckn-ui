@@ -195,6 +195,30 @@ export const getLabel = (item) => {
 };
 
 /**
+ * Lists the badges shown beside an item's label, such as "Reference" on a
+ * curated reference cell set dataset (nlm-ckn#301). Kept apart from getLabel,
+ * which returns plain text for graph and screen-reader labels.
+ * @param {object} item - Data object.
+ * @returns {Array<{key: string, text: string, tooltip: string}>} Badges, or [].
+ */
+export const getBadges = (item) => {
+  // The ETL writes the flag as the string "True"; the schema declares a boolean.
+  if (String(item?.is_reference_dataset).toLowerCase() !== "true") {
+    return [];
+  }
+  const structure = item.anatomical_structure
+    ? ` for ${String(item.anatomical_structure).replaceAll("_", " ")}`
+    : "";
+  return [
+    {
+      key: "reference",
+      text: "Reference",
+      tooltip: `Reference dataset${structure}, used to classify other cell set data`,
+    },
+  ];
+};
+
+/**
  * Generates dynamic URL for data item based on configuration.
  * Finds first valid URL rule, applies transformations, and returns result.
  * @param {object} item - Data object needing URL. Must contain `_id` property.
