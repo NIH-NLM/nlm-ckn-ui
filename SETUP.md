@@ -121,6 +121,21 @@ loads the predefined queries the app depends on — don't skip it on a fresh clo
 
 The site is now available at **http://127.0.0.1:8000/**.
 
+### 7. Check presets and search against the loaded dataset
+
+CI has no real dataset, so these run locally after loading a dump:
+
+```bash
+python manage.py sweep_presets   # every workflow preset still returns data
+python manage.py eval_search     # search ranks the golden queries no worse
+```
+
+Each compares against a committed baseline (`arango_api/preset_baselines.json`,
+`arango_api/search_baselines.json`) and warns when the baseline came from another
+restore. After an intentional dataset or ranking change, record a new baseline
+with `--update-baseline` and commit it with the change. The golden queries are in
+`arango_api/search_golden_queries.json`.
+
 ## Frontend Development
 
 There are two ways to work on the frontend. They are different tools, not

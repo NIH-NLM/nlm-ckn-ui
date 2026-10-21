@@ -1455,7 +1455,7 @@ describe("ForceGraph", () => {
       const params = fetchGraphData.mock.calls[0][0];
       // The landing graph is the cell set's immediate neighbourhood only. The
       // dataset's publication is one hop past the CSD, so dropping PUB and
-      // WAS_ATTRIBUTED_TO keeps it off the page rather than as a dangling node.
+      // DESCRIBED_IN keeps it off the page rather than as a dangling node.
       // INTERACTS_WITH is schema-defined for the organ -> cell type edge but not
       // yet in the data; it is pinned ahead of the ETL so the edge appears on
       // load without another preset change.
@@ -1468,7 +1468,7 @@ describe("ForceGraph", () => {
           "INTERACTS_WITH",
         ]),
       );
-      expect(params.edgeFilters.Label).not.toContain("WAS_ATTRIBUTED_TO");
+      expect(params.edgeFilters.Label).not.toContain("DESCRIBED_IN");
       expect(params.edgeFilters.Label).not.toContain("WASATTRIBUTEDTO");
       expect(params.allowedCollections).toEqual(expect.arrayContaining(["BGS"]));
       expect(params.allowedCollections).not.toContain("PUB");

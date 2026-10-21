@@ -22,6 +22,8 @@ MAX_DEPTH = 9
 RETIRED_LABELS = {
     # ETL v1: reversed and relabelled to CSD -IS_ABOUT-> CS.
     "MEMBER_OF",
+    # ETL v1.8.0-rc.2: CSD -WAS_ATTRIBUTED_TO-> PUB relabelled to DESCRIBED_IN.
+    "WAS_ATTRIBUTED_TO",
 }
 
 # ETL v1 renamed the cell-set-to-gene-set hop CS -EXPRESSES-> GS to
