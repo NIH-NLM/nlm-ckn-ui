@@ -302,14 +302,14 @@ WORKFLOW_PRESETS = [
                 "previousPhaseId": None,
                 "originFilter": "all",
                 "settings": {
-                    # CSD -WAS_ATTRIBUTED_TO-> PUB and CSD -IS_ABOUT-> UBERON.
+                    # CSD -DESCRIBED_IN-> PUB and CSD -IS_ABOUT-> UBERON.
                     # IS_ABOUT also reaches every cell set in the dataset;
                     # allowedCollections keeps those out.
                     "depth": 1,
                     "edgeDirection": "OUTBOUND",
                     "allowedCollections": ["PUB", "UBERON"],
                     "edgeFilters": {
-                        "Label": ["WAS_ATTRIBUTED_TO", "IS_ABOUT"],
+                        "Label": ["DESCRIBED_IN", "IS_ABOUT"],
                         "Source": [],
                     },
                     "setOperation": "Union",
