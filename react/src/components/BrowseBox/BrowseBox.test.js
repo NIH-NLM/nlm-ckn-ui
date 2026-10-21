@@ -14,6 +14,7 @@ jest.mock("../../utils", () => ({
   parseCollections: jest.fn(),
   filterBrowsableCollections: jest.fn(),
   getLabel: jest.fn((item) => item.label || item._id),
+  getBadges: () => [],
 }));
 
 // Helper to render with router at a specific collection path

@@ -51,6 +51,11 @@ LABEL_FIELDS = [
     "uniprot_id",
 ]
 
+# Fields the frontend's getBadges() reads to mark a row, e.g. the "Reference"
+# badge on a reference cell set dataset (nlm-ckn#301), whose tooltip names the
+# dataset's anatomical structure.
+BADGE_FIELDS = ["anatomical_structure", "is_reference_dataset"]
+
 # Failures meaning the database could not be reached, as opposed to a query
 # that ran and failed. Callers answer these with 503 and invite a retry.
 UNAVAILABLE_ERRORS = (
@@ -157,9 +162,9 @@ def search_by_term(search_term, search_fields, graph):
     query = query_beginning + per_field_clauses + query_end
 
     # Project only the fields the dropdown needs: _id (always), the searched
-    # fields, and any label fields getLabel() may read. _id is merged in
+    # fields, and any label or badge fields the row reads. _id is merged in
     # explicitly because KEEP does not retain system attributes.
-    projection_fields = sorted(set(search_fields) | set(LABEL_FIELDS))
+    projection_fields = sorted(set(search_fields) | set(LABEL_FIELDS) | set(BADGE_FIELDS))
 
     bind_vars = {
         "search_term": search_term,
