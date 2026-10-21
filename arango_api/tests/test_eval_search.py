@@ -9,6 +9,8 @@ from unittest import TestCase, mock
 from django.core.management import call_command
 from django.core.management.base import CommandError
 
+from arango_api import search_eval
+from arango_api.management.commands import eval_search
 from arango_api.services.search_service import SearchServiceError
 
 MODULE = "arango_api.management.commands.eval_search"
@@ -100,3 +102,16 @@ class EvalSearchTests(TestCase):
         self.assertEqual(recorded["ranks"], {"T cell": 1, "CL:0000236": 2})
         self.assertEqual(recorded["_provenance"]["etl_version"], STAMP["etl_version"])
         self.assertIn("generated_at", recorded["_provenance"])
+
+
+class CommittedGoldenSetTests(TestCase):
+    """The golden list and baseline shipped in the repo, not test fixtures."""
+
+    def test_golden_list_is_valid_and_every_query_has_a_baseline_rank(self):
+        golden = search_eval.load_golden(eval_search.GOLDEN_PATH)
+        baseline = json.loads(eval_search.BASELINE_PATH.read_text())
+
+        self.assertEqual(
+            {g["query"] for g in golden}, set(baseline["ranks"]), "re-record the baseline"
+        )
+        self.assertIn("etl_version", baseline["_provenance"])
