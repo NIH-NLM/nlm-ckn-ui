@@ -1,7 +1,7 @@
 {
   "_provenance": {
     "etl_version": "v1.8.0-rc.2",
-    "generated_at": "2026-10-20T19:06:22Z",
+    "generated_at": "2026-10-21T13:04:47Z",
     "restored_at": "2026-10-17T11:55:16Z"
   },
   "ranks": {
@@ -10,8 +10,8 @@
     "B cell": 1,
     "CD8+ T cell": null,
     "CD8A": 1,
-    "CL:0000084": null,
-    "CL_0000084": null,
+    "CL:0000084": 1,
+    "CL_0000084": 1,
     "COPD": 1,
     "FMA:62870": 1,
     "Insulin, human": 1,
@@ -23,7 +23,7 @@
     "T cell": 1,
     "T lymphocyte": 8,
     "T-cell": null,
-    "UBERON:0002048": null,
+    "UBERON:0002048": 1,
     "UniProtKB:P01732": 1,
     "alpha-beta T cell": 1,
     "aspirin": 1,
@@ -33,7 +33,7 @@
     "heart": 1,
     "hepat": null,
     "hepatocyte": 1,
-    "http://purl.obolibrary.org/obo/CL_0000084": null,
+    "http://purl.obolibrary.org/obo/CL_0000084": 1,
     "human": 1,
     "insulin": 1,
     "kidney": 8,

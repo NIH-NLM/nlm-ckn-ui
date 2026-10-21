@@ -1301,6 +1301,39 @@ class SearchByTermQueryTestCase(TestCase):
         self.assertIn('MERGE({"_id": doc._id}', query)
 
 
+class SearchByTermIdentifierTestCase(TestCase):
+    """The `_search` identifier clause (#195)."""
+
+    _run = SearchByTermQueryTestCase._run
+
+    def test_identifier_clause_matches_whole_value_with_norm_lower(self):
+        query, _ = self._run(["label"])
+        self.assertIn('FIRST(TOKENS(TRIM(@search_term), "norm-lower"))', query)
+        self.assertIn(
+            'BOOST(ANALYZER(doc.`_search` == identifier_term, "norm-lower"), 1000.0)',
+            query,
+        )
+        # An own-identifier match counts as exact, so the node outranks cell
+        # sets that store the same CURIE in ontology_purl.
+        self.assertIn("identifier_term IN (FOR s IN doc.`_search`", query)
+
+    def test_identifier_only_request_builds_a_valid_search(self):
+        query, bind_vars = self._run(["_search"])
+        search = query[query.index("SEARCH") : query.index("LET is_exact_match")]
+        self.assertNotIn("LEVENSHTEIN_MATCH", search)
+        self.assertNotIn("n-gram", search)
+        self.assertNotRegex(search, r"\bOR\s*$")
+        self.assertIn("LET is_exact_match = (identifier_term IN", query)
+        self.assertNotIn("_search", bind_vars["projection_fields"])
+
+    def test_client_supplied_search_field_gets_no_per_field_clause(self):
+        query, bind_vars = self._run(["label", "_search"])
+        self.assertNotIn("LEVENSHTEIN_MATCH(doc.`_search`", query)
+        self.assertNotIn("doc.`_search` LIKE", query)
+        self.assertNotIn("LOWER(doc.`_search`)", query)
+        self.assertNotIn("_search", bind_vars["projection_fields"])
+
+
 class SearchByTermErrorTestCase(SimpleTestCase):
     """search_by_term must tell a failed query apart from no matches."""
 
