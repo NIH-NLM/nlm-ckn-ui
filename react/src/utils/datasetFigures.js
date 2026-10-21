@@ -14,9 +14,28 @@ import plotManifest from "assets/plot-manifest.json";
 
 const PLOTS_BASE = "/plots";
 
-// Display order and labels for the three figures the issue asks for. Captions
-// say what the reader is looking at, since the figures carry only terse titles.
+// Display order and labels for the figures. Captions say what the reader is
+// looking at, since the figures carry only terse titles. The dotplot, matrixplot
+// and stacked violin are the pipeline's scaled variants (see
+// scripts/dev/build-plot-manifest.py).
 const FIGURE_DEFINITIONS = [
+  {
+    key: "dendrogram",
+    label: "Cell set dendrogram",
+    caption: "Hierarchical clustering of the dataset's cell sets.",
+  },
+  {
+    key: "dotplot",
+    label: "Marker gene dotplot",
+    caption:
+      "Scaled mean expression of each cell set's NS-Forest marker genes, with dot size showing the fraction of cells expressing each gene.",
+  },
+  {
+    key: "matrixplot",
+    label: "Marker gene matrixplot",
+    caption:
+      "Scaled mean expression of each cell set's NS-Forest marker genes across all cell sets.",
+  },
   {
     key: "silhouette_fscore_summary",
     label: "Silhouette and F-beta scores",
@@ -24,14 +43,9 @@ const FIGURE_DEFINITIONS = [
       "Box-and-whisker plots of silhouette scores with NS-Forest F-beta scores for each cell set in the dataset.",
   },
   {
-    key: "dendrogram",
-    label: "Cell set dendrogram",
-    caption: "Hierarchical clustering of the dataset's cell sets.",
-  },
-  {
     key: "stacked_violin",
-    label: "Marker gene expression",
-    caption: "Expression of each cell set's NS-Forest marker genes across all cell sets.",
+    label: "Marker gene violins",
+    caption: "Scaled expression of each cell set's NS-Forest marker genes across all cell sets.",
   },
 ];
 

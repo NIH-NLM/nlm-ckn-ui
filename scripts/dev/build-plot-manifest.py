@@ -40,19 +40,22 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_OUT = REPO_ROOT / "react" / "src" / "assets" / "plot-manifest.json"
 
-# The three figures nlm-ckn#283 asks for, in the order the UI shows them, mapped
-# to the extensions worth recording. The silhouette summary is published both as
-# an interactive plotly page and as a flat SVG; the UI prefers the page and falls
-# back to the SVG, so both are recorded.
+# The figures the UI shows, each mapped to the filename prefix that selects it
+# and the extensions worth recording. Where the pipeline publishes a scaled
+# variant ("<figure>__scaled<rest>", no separator after "scaled"), that is the
+# one shown; the dendrogram and silhouette summary have none. The silhouette
+# summary is also published as an interactive plotly page, recorded alongside
+# its SVG so the UI can link to it.
 FIGURES = {
-    "silhouette_fscore_summary": ("html", "svg"),
-    "dendrogram": ("svg",),
-    "stacked_violin": ("svg",),
+    "dendrogram": ("dendrogram_", ("svg",)),
+    "dotplot": ("dotplot__scaled", ("svg",)),
+    "matrixplot": ("matrixplot__scaled", ("svg",)),
+    "silhouette_fscore_summary": ("silhouette_fscore_summary_", ("html", "svg")),
+    "stacked_violin": ("stacked_violin__scaled", ("svg",)),
 }
 
-# Same-prefix figures that are NOT the one we want. "dendrogram_before_filter_"
-# is a different plot; "<figure>__scaled" is a rescaled variant of one.
-EXCLUDED = re.compile(r"^(dendrogram_before_filter_|[a-z_]+__scaled)")
+# A different plot that shares the dendrogram's prefix.
+EXCLUDED = re.compile(r"^dendrogram_before_filter_")
 
 # plots/<tag>/<anatomical structure>/sc-nsforest-qc-nf/results/<dataset dir>/<file>
 KEY_PATTERN = re.compile(
@@ -90,9 +93,9 @@ def build_manifest(tag, keys):
         filename = match["filename"]
         if EXCLUDED.match(filename):
             continue
-        for figure, extensions in FIGURES.items():
+        for figure, (prefix, extensions) in FIGURES.items():
             extension = filename.rsplit(".", 1)[-1]
-            if not filename.startswith(f"{figure}_") or extension not in extensions:
+            if not filename.startswith(prefix) or extension not in extensions:
                 continue
             entry = datasets.setdefault(
                 f"{match['anatomy']}/{hash_match['hash']}",
