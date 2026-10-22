@@ -3,7 +3,10 @@
  */
 import { fieldSections, omittedFields } from "config/fieldSections";
 import collMaps from "../assets/nlm-ckn-collection-maps.json";
+import { getAnatomicalStructureName, getCitation } from "./cellSetLabelLookups";
 import { capitalCase } from "./strings";
+
+export { setCellSetLabelLookups } from "./cellSetLabelLookups";
 
 /**
  * Module-level collection config map built from the JSON asset.
@@ -105,25 +108,6 @@ const decorateCellSetDatasetLabel = (item, label) => {
 };
 
 /**
- * Citations keyed by DOI and anatomical structure names keyed by UBERON CURIE,
- * loaded once at startup. Labels are built synchronously, so they read these
- * rather than fetching the documents a cell set references.
- */
-let cellSetLabelLookups = { publications: {}, anatomical_structures: {} };
-
-/**
- * Install the lookups cell set labels read. A missing or failed load leaves
- * them empty, and labels omit the parts they would have named.
- * @param {{publications?: Object, anatomical_structures?: Object}|null} lookups
- */
-export const setCellSetLabelLookups = (lookups) => {
-  cellSetLabelLookups = {
-    publications: lookups?.publications ?? {},
-    anatomical_structures: lookups?.anatomical_structures ?? {},
-  };
-};
-
-/**
  * Decorate a cell set label to mirror the cell set dataset label (#266):
  * `<term> in <Citation> - "<dataset>" for <anatomical structure>`. Each part
  * the document or lookups do not carry is left out.
@@ -137,8 +121,8 @@ const decorateCellSetLabel = (item, label) => {
     return label;
   }
 
-  const citation = cellSetLabelLookups.publications[item.publication];
-  const organ = cellSetLabelLookups.anatomical_structures[item.anatomical_structure];
+  const citation = getCitation(item.publication);
+  const organ = getAnatomicalStructureName(item.anatomical_structure);
 
   let decorated = label;
   if (citation) {
