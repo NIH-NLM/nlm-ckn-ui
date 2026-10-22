@@ -47,6 +47,14 @@ describe("getSectionedFields", () => {
     ]);
   });
 
+  it("labels the cluster annotation as the annotation level", () => {
+    const analysis = getSectionedFields(csd()).find((s) => s.section === "Analysis Metadata");
+    expect(analysis.fields[0]).toMatchObject({
+      key: "cluster_annotation",
+      label: "Annotation level",
+    });
+  });
+
   it("carries the filtering criteria as static text", () => {
     const criteria = getSectionedFields(csd()).find((s) => s.section === "CKN Filtering Criteria");
     expect(criteria.fields).toEqual([]);
@@ -209,6 +217,34 @@ describe("getSectionedFields for cell sets", () => {
       "Author cell set annotation",
       "Publication",
     ]);
+  });
+
+  describe("names the publication and anatomical structure (nlm-ckn#358)", () => {
+    afterEach(() => setCellSetLabelLookups(null));
+
+    const row = (sectionName, key) => section(sectionName).fields.find((f) => f.key === key);
+
+    it("shows the citation and structure name, keeping their links", () => {
+      setCellSetLabelLookups({
+        publications: { "10.1038/s41586-020-2157-4": "Han (2020) Nature" },
+        anatomical_structures: { "UBERON:0001004": "respiratory system" },
+      });
+      expect(row("Context", "publication")).toMatchObject({
+        value: "Han (2020) Nature",
+        url: "https://doi.org/10.1038/s41586-020-2157-4",
+      });
+      expect(row("Post-filtering Cell Set Metadata", "anatomical_structure")).toMatchObject({
+        value: "respiratory system",
+        url: "http://purl.obolibrary.org/obo/UBERON_0001004",
+      });
+    });
+
+    it("falls back to the identifier when the lookups do not name it", () => {
+      expect(row("Context", "publication").value).toBe("10.1038/s41586-020-2157-4");
+      expect(row("Post-filtering Cell Set Metadata", "anatomical_structure").value).toBe(
+        "UBERON:0001004",
+      );
+    });
   });
 
   it("reports the cell set statistics post-filtering, once each", () => {

@@ -1,3 +1,4 @@
+import { getAnatomicalStructureName, getCitation } from "utils/cellSetLabelLookups";
 import { humanizeSlug } from "utils/strings";
 
 /**
@@ -69,7 +70,9 @@ export const fieldSections = {
       section: "Context",
       fields: [
         { key: "author_cell_term", label: "Author cell set annotation" },
-        { key: "publication", label: "Publication" },
+        // The document holds the DOI; show the citation, e.g. "Xu (2023) Cell",
+        // and keep the DOI link. An unknown DOI shows as itself.
+        { key: "publication", label: "Publication", transform: (doi) => getCitation(doi) ?? doi },
       ],
     },
     {
@@ -91,7 +94,12 @@ export const fieldSections = {
       section: "Post-filtering Cell Set Metadata",
       fields: [
         { key: "species", label: "Species" },
-        { key: "anatomical_structure", label: "Anatomical Structure Collection" },
+        {
+          key: "anatomical_structure",
+          label: "Anatomical Structure Collection",
+          // UBERON CURIE to name; the PURL link stays on the row.
+          transform: (curie) => getAnatomicalStructureName(curie) ?? curie,
+        },
         // Only ~28% of cell sets carry a Cell Ontology term; the rest omit the row.
         { key: "ontology_purl", label: "Cell Type" },
       ],
@@ -151,7 +159,7 @@ export const fieldSections = {
     {
       section: "Analysis Metadata",
       fields: [
-        { key: "cluster_annotation", label: "Cluster annotation level" },
+        { key: "cluster_annotation", label: "Annotation level" },
         { key: "embedding", label: "Embedding" },
       ],
     },
