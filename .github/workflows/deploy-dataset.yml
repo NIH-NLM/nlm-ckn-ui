@@ -44,6 +44,10 @@ jobs:
   # A failure here deliberately blocks the dataset job: swapping the database to
   # a version whose plots were never copied would ship broken links.
   deploy-assets:
+    # workflow_dispatch has no branch filter, so without this a dispatch from a
+    # feature branch deploys that branch's ETL_VERSION to dev (#167). The NIH-NLM
+    # mirror receives this file via promote-to-upstream and must not deploy.
+    if: github.repository_owner == 'Springbok-LLC' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30  # the copy is ~2,850 server-side S3 copies, 1-3 min
     steps:
@@ -68,6 +72,7 @@ jobs:
 
   deploy-dataset:
     needs: deploy-assets
+    if: github.repository_owner == 'Springbok-LLC' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 110  # matches the 90-min SSM timeout plus overhead
     steps:
