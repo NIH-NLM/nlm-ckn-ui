@@ -79,6 +79,15 @@ if [ -z "$ETL_VERSION" ]; then
   exit 1
 fi
 
+# Deploying a branch's dataset to dev is how a dump is tested before bumping, so
+# a pin that differs from main's warns rather than fails. Skipped when origin/main
+# is unavailable (shallow or detached checkout).
+MAIN_ETL_VERSION=$(git -C "$SCRIPT_DIR" show origin/main:ETL_VERSION 2>/dev/null | tr -d '[:space:]' || true)
+if [ -n "$MAIN_ETL_VERSION" ] && [ "$MAIN_ETL_VERSION" != "$ETL_VERSION" ]; then
+  echo -e "${YELLOW}Warning: deploying ETL_VERSION $ETL_VERSION, but origin/main pins $MAIN_ETL_VERSION.${NC}"
+  echo -e "${YELLOW}The environment will serve a dataset main does not declare.${NC}"
+fi
+
 DATASET_S3_KEY="runs/${ETL_VERSION}/06-golden-dump.tar.gz"
 echo "ETL version : $ETL_VERSION"
 echo "S3 key      : $DATASET_S3_KEY"
