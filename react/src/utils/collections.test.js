@@ -358,6 +358,30 @@ describe("outbound links from the shipped collection maps", () => {
     const doi = getDisplayFields(pub).find((field) => field.key === "publication_doi");
     expect(doi.url).toBe("https://doi.org/10.7554/elife.62522");
   });
+
+  it("links the publication card's citation to its DOI (nlm-ckn#364)", () => {
+    const pub = {
+      _id: "PUB/10.7554-elife.62522",
+      Citation: "Smith (2021) eLife",
+      publication_doi: "10.7554/elife.62522",
+    };
+    const rows = getSectionedFields(pub).flatMap((s) => s.fields);
+    expect(rows.find((f) => f.key === "Citation")).toMatchObject({
+      label: "Publication",
+      value: "Smith (2021) eLife",
+      url: "https://doi.org/10.7554/elife.62522",
+    });
+    // The specification still drops the DOI row itself.
+    expect(rows.map((f) => f.key)).not.toContain("publication_doi");
+  });
+
+  it("leaves the citation unlinked when the DOI is empty", () => {
+    const pub = { _id: "PUB/x", Citation: "Smith (2021) eLife", publication_doi: "" };
+    const citation = getSectionedFields(pub)
+      .flatMap((s) => s.fields)
+      .find((f) => f.key === "Citation");
+    expect(citation.url).toBeNull();
+  });
 });
 
 describe("getLabel for multi-organ cell set datasets", () => {

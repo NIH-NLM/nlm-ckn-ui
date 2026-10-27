@@ -237,7 +237,7 @@ describe("DocumentCard", () => {
     expect(screen.getByText("Homo sapiens")).toBeInTheDocument();
   });
 
-  it("lays out a publication card with the citation as plain text and no DOI", () => {
+  it("lays out a publication card with the citation linked to its DOI and no DOI row", () => {
     renderCard({
       _id: "PUB/10.7554-elife.62522",
       Citation: "Wang (2020) eLife",
@@ -252,11 +252,16 @@ describe("DocumentCard", () => {
     expect(screen.getByRole("heading", { level: 3 })).toHaveTextContent(/^Publication: Wang/);
     expect(screen.getByText("Overview")).toBeInTheDocument();
     expect(screen.getByText("Publication")).toBeInTheDocument();
-    expect(screen.getByText("Wang (2020) eLife")).toBeInTheDocument();
+    // nlm-ckn#364: the citation links to the DOI; the specification still drops
+    // the DOI row itself.
+    expect(screen.getByRole("link", { name: /Wang \(2020\) eLife/ })).toHaveAttribute(
+      "href",
+      "https://doi.org/10.7554/elife.62522",
+    );
     expect(screen.getByText("Authors")).toBeInTheDocument();
     expect(screen.getByText("Journal")).toBeInTheDocument();
     expect(screen.queryByText("DOI")).not.toBeInTheDocument();
-    expect(screen.queryByRole("link")).toBeNull();
+    expect(screen.getAllByRole("link")).toHaveLength(1);
   });
 
   it("falls back to the flat Overview card for a non-configured collection", () => {
