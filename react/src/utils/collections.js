@@ -260,7 +260,8 @@ export const getDisplayFields = (item) => {
 
         if (config.field_url && config.field_to_use) {
           const urlValue = item[config.field_to_use];
-          if (urlValue !== null && urlValue !== undefined) {
+          // An empty value would yield a bare template such as "https://doi.org/".
+          if (urlValue !== null && urlValue !== undefined && urlValue !== "") {
             const replacement = applyFieldTransform(config, urlValue);
             fieldUrl = config.field_url.replace("<FIELD_TO_USE>", replacement);
           }
@@ -306,7 +307,7 @@ export const getSectionedFields = (item) => {
 
     const curated = sections.map(({ section, fields, description, info }) => {
       const resolved = fields
-        .map(({ key, label, variant, transform, value: fixed }) => {
+        .map(({ key, label, variant, transform, urlFrom, value: fixed }) => {
           placed.add(key);
           const configured = byKey.get(key);
           // A field may declare a fixed value the data does not carry.
@@ -316,7 +317,8 @@ export const getSectionedFields = (item) => {
             label,
             variant,
             value: transform ? transform(raw) : raw,
-            url: configured ? configured.url : null,
+            // A row may take its link from another configured key.
+            url: (urlFrom ? byKey.get(urlFrom) : configured)?.url ?? null,
           };
         })
         .filter((f) => isPresent(f.value));

@@ -17,6 +17,7 @@ import { humanizeSlug } from "utils/strings";
  *   - label:   the display label shown in the card (authoritative).
  *   - value:   optional; a fixed value shown instead of the document's.
  *   - variant: optional; "description" renders as a lead paragraph, not a row.
+ *   - urlFrom: optional; another key whose collection-map URL the row links to.
  *
  * Values and URLs for keys that also appear in the collection map are resolved
  * through `getDisplayFields` (so URL templates stay in one place). Keys not in
@@ -236,14 +237,13 @@ export const fieldSections = {
     },
   ],
   // Slots follow the Publication sheet attached to nlm-ckn#330. PMID is left
-  // out because no PUB document carries it. The citation stays plain text: the
-  // card shows only what the node holds, and the collection map puts no URL on
-  // Citation.
+  // out because no PUB document carries it. The sheet drops the DOI row, so the
+  // citation links to the DOI instead (nlm-ckn#364), as the cell set card does.
   PUB: [
     {
       section: "Overview",
       fields: [
-        { key: "Citation", label: "Publication" },
+        { key: "Citation", label: "Publication", urlFrom: "publication_doi" },
         { key: "author_list", label: "Authors" },
         { key: "year", label: "Year" },
         { key: "title", label: "Title" },
