@@ -1,0 +1,113 @@
+name: PR Preview
+
+# Ephemeral per-PR preview at https://pr-<n>.dev.nlm-ckn.org (basic auth).
+#
+# A maintainer adds the `preview` label → deploy; every push while labelled →
+# redeploy. Teardown (label removed / PR closed) is preview-teardown.yml. The
+# nlm-ckn-iac sweeper deletes any preview past its ExpiresAt (3 days after
+# creation), so there is no sweep job.
+#
+# Split so PR code never runs next to AWS credentials:
+#   build   — this workflow, no AWS access: builds the backend image and the
+#             frontend from the PR head and uploads them as artifacts.
+#   deploy  — preview-deploy.yml (reusable), in the `preview` environment:
+#             downloads those artifacts and pushes/deploys them. It checks out
+#             nothing and runs nothing from the artifacts.
+#
+# STEP 1 (now): deploy is called from this pull_request workflow, so the deploy
+# YAML is still the PR's own copy and the `preview` environment still needs
+# required reviewers to be a real gate.
+# STEP 2: move the deploy call into a workflow_run workflow (runs main's YAML),
+# switch preview-teardown.yml to pull_request_target, restrict the `preview`
+# environment to the main branch and drop its required reviewers.
+
+on:
+  pull_request:
+    types: [labeled, synchronize, reopened]
+
+# Shared with preview-teardown.yml: one preview operation per PR at a time,
+# never cancelled mid-flight (a cancelled stack update leaves a half-done stack).
+concurrency:
+  group: preview-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  build:
+    name: Build preview
+    # Same-repo PRs only. `labeled` builds only for the preview label itself.
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      contains(github.event.pull_request.labels.*.name, 'preview') &&
+      (github.event.action != 'labeled' || github.event.label.name == 'preview')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      # As scripts/app/deploy-backend.sh builds dev's image. UI_VERSION matches
+      # the tag preview-deploy.yml pushes it under.
+      - name: Build backend image
+        run: |
+          set -euo pipefail
+          docker build --platform linux/amd64 \
+            --build-arg UI_VERSION="pr-${PR_NUMBER}-${HEAD_SHA::7}" -t preview-backend .
+          docker save preview-backend | gzip > backend-image.tar.gz
+          ls -lh backend-image.tar.gz
+
+      - name: Upload backend image
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: preview-backend-image
+          path: backend-image.tar.gz
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'react/package-lock.json'
+
+      # Mirrors scripts/app/deploy-frontend.sh's build. The router CloudFront
+      # Function maps pr-<n>.<domain>/... onto the pr-<n>/ prefix, so the build
+      # is served from / and needs no PUBLIC_URL.
+      - name: Build frontend
+        working-directory: react
+        run: |
+          set -euo pipefail
+          npm ci --prefer-offline --no-audit
+          REACT_APP_VERSION="pr-${PR_NUMBER}-${HEAD_SHA::7}" npm run build-react
+
+      - name: Upload frontend
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: preview-frontend
+          path: react/build/
+          retention-days: 1
+          if-no-files-found: error
+
+  deploy:
+    name: Deploy preview
+    needs: build
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+      actions: read
+    uses: ./.github/workflows/preview-deploy.yml
+    with:
+      pr-number: ${{ github.event.pull_request.number }}
+      head-sha: ${{ github.event.pull_request.head.sha }}
+      build-run-id: ${{ github.run_id }}
