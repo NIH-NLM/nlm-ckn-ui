@@ -1,5 +1,7 @@
 # Frontend
 react/
+# ...except the collection maps, which the backend reads its search tiers from.
+!react/src/assets/nlm-ckn-collection-maps.json
 
 # Deployment/shell scripts
 archive/
