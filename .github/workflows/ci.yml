@@ -57,6 +57,8 @@ jobs:
               # rebuild the backend or dev keeps advertising the previous
               # dataset while serving the new one.
               - 'ETL_VERSION'
+              # The backend reads its search tiers from the collection maps.
+              - 'react/src/assets/nlm-ckn-collection-maps.json'
             e2e:
               - '.github/workflows/ci.yml'
               - 'react/src/**'
