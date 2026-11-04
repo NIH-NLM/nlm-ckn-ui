@@ -1157,11 +1157,6 @@ const ForceGraph = ({
     handleSettingChange("edgeFontSize", Number.parseInt(e.target.value, 10));
   const handleLeafModeChange = (e) => handleSettingChange("collapseOnStart", e.target.value);
   const handleFocusNodesToggle = (e) => handleSettingChange("useFocusNodes", e.target.checked);
-  const handleGraphToggle = () =>
-    handleSettingChange(
-      "graphType",
-      settings.graphType === "phenotypes" ? "ontologies" : "phenotypes",
-    );
   const handleCollectionChange = (name) => {
     const newAllowed = settings.allowedCollections.includes(name)
       ? settings.allowedCollections.filter((n) => n !== name)
@@ -1778,7 +1773,6 @@ const ForceGraph = ({
                     onLabelToggle={handleLabelToggle}
                     onLeafModeChange={handleLeafModeChange}
                     onFocusNodesToggle={handleFocusNodesToggle}
-                    onGraphToggle={handleGraphToggle}
                     onLayoutModeChange={(e) =>
                       dispatch(updateSetting({ setting: "layoutMode", value: e.target.value }))
                     }

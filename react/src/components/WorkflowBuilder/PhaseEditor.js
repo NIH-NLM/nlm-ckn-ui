@@ -18,7 +18,6 @@ import {
   DEPTH_OPTIONS,
   DIRECTION_OPTIONS,
   ORIGIN_FILTER_OPTIONS,
-  PHENOTYPES_ENABLED,
   SET_OPERATION_OPTIONS,
 } from "constants/index";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
@@ -578,21 +577,6 @@ const PhaseEditor = ({
       {/* Settings Section — hide traversal settings for combine/filter phases */}
       <div className="phase-section">
         <h4>{isCombinePhase || isFilterPhase ? "Output Settings" : "Settings"}</h4>
-
-        {/* Graph Type toggle - only visible when phenotypes graph is enabled */}
-        {!isCombinePhase && !isFilterPhase && PHENOTYPES_ENABLED && (
-          <div className="setting-item full-width" style={{ marginBottom: "var(--spacing-md)" }}>
-            <label htmlFor={`graph-type-${phase.id}`}>Graph</label>
-            <select
-              id={`graph-type-${phase.id}`}
-              value={phase.settings.graphType || "phenotypes"}
-              onChange={(e) => onUpdateSettings("graphType", e.target.value)}
-            >
-              <option value="phenotypes">Phenotypes</option>
-              <option value="ontologies">Ontologies</option>
-            </select>
-          </div>
-        )}
 
         {!isCombinePhase && !isFilterPhase && (
           <>
