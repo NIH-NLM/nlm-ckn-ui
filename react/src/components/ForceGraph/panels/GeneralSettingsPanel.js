@@ -3,7 +3,6 @@ import {
   DEPTH_OPTIONS,
   DIRECTION_OPTIONS,
   LAYOUT_MODE_OPTIONS,
-  PHENOTYPES_ENABLED,
 } from "constants/index";
 import { memo, useId } from "react";
 
@@ -23,7 +22,6 @@ const GeneralSettingsPanel = ({
   onLabelToggle,
   onLeafModeChange,
   onFocusNodesToggle,
-  onGraphToggle,
   onLayoutModeChange,
   onSimulationRestart,
   onResetPositions,
@@ -140,24 +138,6 @@ const GeneralSettingsPanel = ({
           </label>
         </div>
       </div>
-
-      {PHENOTYPES_ENABLED && (
-        <div className="option-group labels-toggle-container">
-          <h3 className="group-label">Graph Source</h3>
-          <div className="labels-toggle graph-source-toggle">
-            Evidence
-            <label className="switch">
-              <input
-                type="checkbox"
-                checked={settings.graphType === "ontologies"}
-                onChange={onGraphToggle}
-              />
-              <span className="slider round" />
-            </label>
-            Knowledge
-          </div>
-        </div>
-      )}
 
       <div className="option-group field-row">
         <label htmlFor={layoutModeSelectId}>Layout</label>

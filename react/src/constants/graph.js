@@ -2,12 +2,6 @@
  * Default graph settings and configuration
  */
 
-/**
- * Feature flag to show/hide the graph source toggle in settings.
- * Currently false — phenotypes graph is used exclusively.
- */
-export const PHENOTYPES_ENABLED = false;
-
 // Graph generation defaults
 export const DEFAULT_DEPTH = 2;
 // How many nodes of a collection to use as origins when the "all nodes from a

@@ -423,7 +423,10 @@ jobs:
           echo "Backend Docker build: ${{ needs.backend-docker-build.result }}"
 
           # Check if any job failed - skipped jobs are OK due to path filtering
-          if [[ "${{ needs.check-fork-permissions.result }}" == "failure" ]] || \
+          # A failed detect-changes leaves every filter output unset, which
+          # skips the test jobs and would otherwise read as a pass.
+          if [[ "${{ needs.detect-changes.result }}" == "failure" ]] || \
+             [[ "${{ needs.check-fork-permissions.result }}" == "failure" ]] || \
              [[ "${{ needs.frontend-lint.result }}" == "failure" ]] || \
              [[ "${{ needs.frontend-unit-tests.result }}" == "failure" ]] || \
              [[ "${{ needs.frontend-e2e.result }}" == "failure" ]] || \
@@ -437,6 +440,88 @@ jobs:
 
           echo "All checks passed"
           echo "passed=true" >> $GITHUB_OUTPUT
+
+  # ============================================================================
+  # Auto-approve ETL bumps - a PR that only rewrites the ETL_VERSION line is
+  # approved once CI passes. The ruleset does not dismiss stale approvals, so
+  # this check runs without waiting on CI and withdraws an earlier approval as
+  # soon as a push makes the PR anything more than that one line.
+  # ============================================================================
+
+  etl-bump-check:
+    if: github.event_name == 'pull_request_target'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    outputs:
+      qualifies: ${{ steps.check.outputs.qualifies }}
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: ${{ github.repository }}
+      PR: ${{ github.event.pull_request.number }}
+      HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+      SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - name: Check the diff is one ETL_VERSION line
+        id: check
+        run: |
+          # Snapshot the bot's approvals before reading the head, so an approval
+          # a newer commit's run gives later is never among those withdrawn.
+          approvals=$(gh api "repos/$REPO/pulls/$PR/reviews" --paginate \
+            --jq '.[] | select(.user.login == "github-actions[bot]" and .state == "APPROVED") | .id')
+          # The files endpoint reads the PR's current head, so only trust it
+          # when that head is still the commit this run was triggered for.
+          head=$(gh api "repos/$REPO/pulls/$PR" --jq .head.sha)
+          files=$(gh api "repos/$REPO/pulls/$PR/files?per_page=100")
+          qualifies=false
+          if [[ "$head" == "$SHA" && "$HEAD_REPO" == "$REPO" ]] && jq -e 'length == 1 and .[0].filename == "ETL_VERSION"
+              and .[0].status == "modified" and .[0].additions == 1 and .[0].deletions == 1' \
+              <<<"$files" >/dev/null; then
+            added=$(jq -r '.[0].patch' <<<"$files" | grep '^+' | cut -c2-)
+            if [[ "$added" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+              qualifies=true
+            fi
+          fi
+          echo "qualifies=$qualifies" >> "$GITHUB_OUTPUT"
+
+          # Only the run for the current head withdraws, and only the approvals
+          # snapshotted above.
+          if [[ "$head" == "$SHA" && "$qualifies" != true ]]; then
+            for id in $approvals; do
+              gh api -X PUT "repos/$REPO/pulls/$PR/reviews/$id/dismissals" \
+                -f event=DISMISS -f message="No longer a one-line ETL_VERSION bump."
+            done
+          fi
+
+  auto-approve-etl-bump:
+    needs: [etl-bump-check, ci-passed]
+    if: ${{ !cancelled() && needs.etl-bump-check.outputs.qualifies == 'true' && needs.ci-passed.outputs.success == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Approve the checked commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          # A push since the check gets its own run; never approve a superseded commit.
+          head=$(gh api "repos/$REPO/pulls/$PR" --jq .head.sha)
+          if [[ "$head" != "$SHA" ]]; then
+            echo "Head moved to $head; the run for it decides."
+            exit 0
+          fi
+          review=$(gh api -X POST "repos/$REPO/pulls/$PR/reviews" -f commit_id="$SHA" \
+            -f event=APPROVE -f body="One-line ETL_VERSION bump and CI passed." --jq .id)
+          # A push between the check above and the POST could otherwise leave
+          # an approval on a superseded commit; withdraw this one if so.
+          head=$(gh api "repos/$REPO/pulls/$PR" --jq .head.sha)
+          if [[ "$head" != "$SHA" ]]; then
+            gh api -X PUT "repos/$REPO/pulls/$PR/reviews/$review/dismissals" \
+              -f event=DISMISS -f message="Head moved to $head after this approval."
+          fi
 
   # ============================================================================
   # Deploy jobs - only run on push to main after all tests pass
