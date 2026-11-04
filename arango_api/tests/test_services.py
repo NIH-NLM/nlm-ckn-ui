@@ -58,6 +58,9 @@ class CollectionServiceTestCase(ArangoDBTestCase):
     def test_get_all_by_collection(self):
         result = list(collection_service.get_all_by_collection("CL", "ontologies"))
         self.assertEqual(len(result), 6)
+        # Ordered by key, so callers taking the first N get the same N.
+        keys = [doc["_key"] for doc in result]
+        self.assertEqual(keys, sorted(keys))
 
     def test_get_collection_count(self):
         self.assertEqual(collection_service.get_collection_count("CL", "ontologies"), 6)

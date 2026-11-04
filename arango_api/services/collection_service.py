@@ -53,14 +53,15 @@ def get_all_by_collection(coll, graph):
         graph (str): The graph type ("ontologies" or "phenotypes").
 
     Returns:
-        cursor: An ArangoDB cursor with all documents.
+        cursor: An ArangoDB cursor with all documents, ordered by key.
     """
     db, _ = get_db_and_graph(graph)
-    collection = db.collection(coll)
-
-    if not collection:
-        logger.warning("Collection '%s' not found", coll)
-    return collection.all()
+    # Storage order changes with every restore, and collection-origin callers
+    # take the first N, so an unsorted read picks a different N each time.
+    return db.aql.execute(
+        "FOR doc IN @@collection SORT doc._key RETURN doc",
+        bind_vars={"@collection": coll},
+    )
 
 
 def get_collection_count(coll, graph):
