@@ -73,6 +73,11 @@ Deploys the dataset version pinned in `ETL_VERSION`, which the script resolves t
 `runs/<version>/06-golden-dump.tar.gz` in the dataset bucket. Example:
 `./scripts/app/deploy-dataset.sh dev`
 
+Environments in other accounts (e.g. `int`) are described by
+`scripts/envs/<env>.conf` rather than stacks. Both this script and
+`deploy-assets.sh` accept them. See
+[`DEPLOYMENT-NOTES.md`](./DEPLOYMENT-NOTES.md#environments-in-other-accounts-int-).
+
 ### `app/deploy-assets.sh` - Static Plot Assets
 ```bash
 ./scripts/app/deploy-assets.sh [--tag <nlm-ckn tag>] [--force] [--prune [N]] <environment>

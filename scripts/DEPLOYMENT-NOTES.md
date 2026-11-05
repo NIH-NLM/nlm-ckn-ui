@@ -36,6 +36,37 @@ scripts in this repo:
 | `arango-tunnel.sh [env]` | ops | SSM port-forward `localhost:8530 → instance:8529` (no SSH / public IP). |
 | `backup-arangodb.sh <env>` | ops | ECS-Exec tar of the data dirs to `s3://.../backups/`. **Note: appears stale** — rejects `stage`, assumes the old ECS-container ArangoDB layout. |
 
+## Environments in other accounts (`int`, ...)
+
+`deploy-dataset.sh` and `deploy-assets.sh` also deploy to environments that live
+in other AWS accounts, without assuming anything about those accounts' stacks or
+exports. Each is described by a file, `scripts/envs/<env>.conf`; adding an
+environment means adding a file. See [`env-config.sh`](./env-config.sh) for the
+loader and [`envs/int.conf`](./envs/int.conf) for the full key list.
+
+- **Values** are fixed names or `ssm:<parameter>`, read in the target account.
+  Any key already set in your shell wins over the file
+  (`CKN_ARANGO_INSTANCE_ID=i-... ./scripts/app/deploy-dataset.sh int`). Each
+  script resolves only the keys it uses.
+- **Access:** run with your normal springbok credentials. The scripts assume
+  `arn:aws:iam::<CKN_ACCOUNT_ID>:role/<CKN_ROLE_NAME>` (`nlm_aws_devops` for int)
+  and do everything under it. If you are already in the target account, no role
+  is assumed. The 90-minute restore re-assumes the role before its one-hour
+  session expires.
+- **Sources stay in springbok** and are read cross-account: the dataset bucket
+  (dumps and `release.json`) and the static-assets bucket. Their names are fixed
+  in the env file, because springbok's SSM is not readable from another account.
+- **CloudFront and the public URL are optional.** With no `CKN_CF_DIST_ID`,
+  the invalidation is skipped. With no `CKN_FRONTEND_URL`, the edge check and
+  the post-restore smoke test are skipped.
+
+Grants the target account needs (set up in IaC, not by these scripts):
+
+| Who | Needs |
+|---|---|
+| `nlm_aws_devops` (target account) | read on both springbok buckets (bucket policy there + IAM here); write on the frontend bucket; `ssm:SendCommand`/`GetCommandInvocation` on the ArangoDB instance; read/write on the dataset-version parameter; CloudFront invalidation if configured |
+| ArangoDB instance role (target account) | read on the springbok dataset bucket (it downloads the dump itself); its own root secret, and the read-only user's parameter and secret if configured |
+
 ## Workflow map
 
 All deploy workflows authenticate via **GitHub OIDC** (assume
