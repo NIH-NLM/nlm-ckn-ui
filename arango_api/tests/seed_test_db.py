@@ -365,16 +365,16 @@ def seed_phenotypes_db(client):
     create_collection(db, "NAC_EDGES", edge=True)
     nac_edges = [
         # broken dipper (no treats edge to d1)
-        ("nac_b1", "GS/nac_g1", "MONDO/nac_d1", "IS_GENETIC_BASIS_FOR_CONDITION"),
+        ("nac_b1", "GS/nac_g1", "MONDO/nac_d1", "DISEASE_HAS_FEATURE"),
         ("nac_b2", "GS/nac_g1", "PR/nac_p1", "PRODUCES"),
         ("nac_b3", "CHEMBL/nac_dr1", "PR/nac_p1", "MOLECULARLY_INTERACTS_WITH"),
         # complete dipper (drug treats d2)
-        ("nac_c1", "GS/nac_g2", "MONDO/nac_d2", "IS_GENETIC_BASIS_FOR_CONDITION"),
+        ("nac_c1", "GS/nac_g2", "MONDO/nac_d2", "DISEASE_HAS_FEATURE"),
         ("nac_c2", "GS/nac_g2", "PR/nac_p2", "PRODUCES"),
         ("nac_c3", "CHEMBL/nac_dr2", "PR/nac_p2", "MOLECULARLY_INTERACTS_WITH"),
         ("nac_c4", "CHEMBL/nac_dr2", "MONDO/nac_d2", "IS_SUBSTANCE_THAT_TREATS"),
         # cross-disease (drug treats d4, NOT d3)
-        ("nac_x1", "GS/nac_g3", "MONDO/nac_d3", "IS_GENETIC_BASIS_FOR_CONDITION"),
+        ("nac_x1", "GS/nac_g3", "MONDO/nac_d3", "DISEASE_HAS_FEATURE"),
         ("nac_x2", "GS/nac_g3", "PR/nac_p3", "PRODUCES"),
         ("nac_x3", "CHEMBL/nac_dr3", "PR/nac_p3", "MOLECULARLY_INTERACTS_WITH"),
         ("nac_x4", "CHEMBL/nac_dr3", "MONDO/nac_d4", "IS_SUBSTANCE_THAT_TREATS"),

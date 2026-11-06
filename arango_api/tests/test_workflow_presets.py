@@ -24,6 +24,9 @@ RETIRED_LABELS = {
     "MEMBER_OF",
     # ETL v1.8.0-rc.2: CSD -WAS_ATTRIBUTED_TO-> PUB relabelled to DESCRIBED_IN.
     "WAS_ATTRIBUTED_TO",
+    # ETL v1.8.0-rc.1: GS -> MONDO relabelled DISEASE_HAS_FEATURE, the RO label of
+    # RO:0004029 (ckn-schema alpha.6 is_associated_with); direction unchanged.
+    "IS_GENETIC_BASIS_FOR_CONDITION",
 }
 
 # ETL v1 renamed the cell-set-to-gene-set hop CS -EXPRESSES-> GS to

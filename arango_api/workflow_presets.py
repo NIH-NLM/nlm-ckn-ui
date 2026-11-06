@@ -224,7 +224,7 @@ _UC9_PHASES = [
             "allowedCollections": ["GS", "PR", "CHEMBL"],
             "edgeFilters": {
                 "Label": [
-                    "IS_GENETIC_BASIS_FOR_CONDITION",
+                    "DISEASE_HAS_FEATURE",
                     "PRODUCES",
                     "MOLECULARLY_INTERACTS_WITH",
                 ],
@@ -253,7 +253,7 @@ _UC10_PHASES = [
     _scan_phase(
         f"{_UC10}-phase-1",
         "Disease genes (sampled diseases)",
-        _hop(1, "INBOUND", "GS", "IS_GENETIC_BASIS_FOR_CONDITION"),
+        _hop(1, "INBOUND", "GS", "DISEASE_HAS_FEATURE"),
         originCollection="MONDO",
     ),
     _scan_phase(
@@ -577,7 +577,7 @@ WORKFLOW_PRESETS = [
                     "allowedCollections": ["GS", "CHEMBL"],
                     "edgeFilters": {
                         "Label": [
-                            "IS_GENETIC_BASIS_FOR_CONDITION",
+                            "DISEASE_HAS_FEATURE",
                             "IS_SUBSTANCE_THAT_TREATS",
                         ],
                         "Source": [],
@@ -670,7 +670,7 @@ WORKFLOW_PRESETS = [
                     "edgeDirection": "INBOUND",
                     "allowedCollections": ["GS"],
                     "edgeFilters": {
-                        "Label": ["IS_GENETIC_BASIS_FOR_CONDITION"],
+                        "Label": ["DISEASE_HAS_FEATURE"],
                         "Source": [],
                     },
                     "setOperation": "Union",
@@ -692,7 +692,7 @@ WORKFLOW_PRESETS = [
                     "allowedCollections": ["GS", "PR", "CHEMBL"],
                     "edgeFilters": {
                         "Label": [
-                            "IS_GENETIC_BASIS_FOR_CONDITION",
+                            "DISEASE_HAS_FEATURE",
                             "PRODUCES",
                             "MOLECULARLY_INTERACTS_WITH",
                         ],
@@ -796,7 +796,7 @@ WORKFLOW_PRESETS = [
                     "allowedCollections": ["GS"],
                     "edgeFilters": {
                         "Label": [
-                            "IS_GENETIC_BASIS_FOR_CONDITION",
+                            "DISEASE_HAS_FEATURE",
                         ],
                         "Source": [],
                     },
@@ -863,12 +863,10 @@ WORKFLOW_PRESETS = [
         "id": "leber-congenital-amaurosis-uc11",
         "name": "RPE65-related Leber congenital amaurosis (UC11)",
         "description": (
-            "Leber congenital amaurosis as a Big Dipper: causal genes "
-            "(ABCA4, AIPL1, LRAT, KCNJ13), treating compounds, expressing "
-            "cell types, and anatomy. Anchored on the parent disease term: "
-            "the current data release has no RPE65 gene, no edges on the "
-            "RPE65-related subtype (LCA2), and no cell sets for retinal "
-            "pigment epithelial cells."
+            "Leber congenital amaurosis as a complete Big Dipper through "
+            "RPE65: the RPE65-targeted compounds that treat it, and the cell "
+            "sets that selectively express RPE65 with their cell types and "
+            "the anatomy they come from."
         ),
         "category": "Use Cases",
         "layoutMode": "big-dipper",
@@ -879,56 +877,52 @@ WORKFLOW_PRESETS = [
         "phases": [
             {
                 "id": "preset-uc11-phase-1",
-                "name": "Disease genes and treatments",
+                "name": "Disease gene, its protein, and compounds that treat the disease",
                 "originSource": "manual",
                 "originNodeIds": ["MONDO/0018998"],
                 "previousPhaseId": None,
                 "originFilter": "all",
                 "settings": {
-                    "depth": 1,
+                    # Requiring the closing edge keeps only genes whose
+                    # protein is targeted by a compound that treats the
+                    # disease; in the data that is RPE65 and voretigene.
+                    "depth": 3,
                     "edgeDirection": "ANY",
-                    "allowedCollections": ["GS", "CHEMBL"],
+                    "allowedCollections": ["GS", "PR", "CHEMBL"],
                     "edgeFilters": {
                         "Label": [
-                            "IS_GENETIC_BASIS_FOR_CONDITION",
-                            "IS_SUBSTANCE_THAT_TREATS",
+                            "DISEASE_HAS_FEATURE",
+                            "PRODUCES",
+                            "MOLECULARLY_INTERACTS_WITH",
                         ],
                         "Source": [],
                     },
+                    "requireClosingEdges": {"Label": ["IS_SUBSTANCE_THAT_TREATS"]},
                     "setOperation": "Union",
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
-                    "collapseLeafNodes": "off",
                 },
                 "perNodeSettings": {},
             },
             {
                 "id": "preset-uc11-phase-2",
-                "name": "Gene to cell types, protein, and drugs",
+                "name": "Cell sets selectively expressing RPE65, cell types, anatomy",
                 "originSource": "previousPhase",
                 "originNodeIds": [],
                 "previousPhaseId": "preset-uc11-phase-1",
                 "originFilter": "all",
                 "settings": {
-                    "depth": 3,
+                    # Depth 2 stops at the cell set's own cell type and
+                    # anatomy; depth 3 would pull in every other cell set of
+                    # that cell type.
+                    "depth": 2,
                     "edgeDirection": "ANY",
-                    "allowedCollections": [
-                        "CL",
-                        "UBERON",
-                        "NCBITaxon",
-                        "PR",
-                        "CHEMBL",
-                        "CS",
-                    ],
+                    "allowedCollections": ["CS", "CL", "UBERON"],
                     "edgeFilters": {
                         "Label": [
-                            "PART_OF",
-                            "PRESENT_IN_TAXON",
-                            "PRODUCES",
-                            "MOLECULARLY_INTERACTS_WITH",
-                            "EXPRESSES",
                             "SELECTIVELY_EXPRESSES",
                             "COMPOSED_PRIMARILY_OF",
+                            "DERIVES_FROM",
                         ],
                         "Source": [],
                     },
@@ -989,7 +983,7 @@ WORKFLOW_PRESETS = [
                     "allowedCollections": ["GS", "PR", "CHEMBL"],
                     "edgeFilters": {
                         "Label": [
-                            "IS_GENETIC_BASIS_FOR_CONDITION",
+                            "DISEASE_HAS_FEATURE",
                             "PRODUCES",
                             "MOLECULARLY_INTERACTS_WITH",
                         ],
@@ -1615,7 +1609,7 @@ WORKFLOW_PRESETS = [
                     "edgeDirection": "INBOUND",
                     "allowedCollections": ["MONDO", "GS"],
                     "edgeFilters": {
-                        "Label": ["SUB_CLASS_OF", "IS_GENETIC_BASIS_FOR_CONDITION"],
+                        "Label": ["SUB_CLASS_OF", "DISEASE_HAS_FEATURE"],
                         "Source": [],
                     },
                     "setOperation": "Union",
@@ -1680,7 +1674,7 @@ WORKFLOW_PRESETS = [
                     "edgeDirection": "INBOUND",
                     "allowedCollections": ["GS"],
                     "edgeFilters": {
-                        "Label": ["IS_GENETIC_BASIS_FOR_CONDITION"],
+                        "Label": ["DISEASE_HAS_FEATURE"],
                         "Source": [],
                     },
                     "setOperation": "Union",
@@ -1774,7 +1768,7 @@ WORKFLOW_PRESETS = [
                     "allowedCollections": ["GS", "PR", "CHEMBL"],
                     "edgeFilters": {
                         "Label": [
-                            "IS_GENETIC_BASIS_FOR_CONDITION",
+                            "DISEASE_HAS_FEATURE",
                             "PRODUCES",
                             "MOLECULARLY_INTERACTS_WITH",
                         ],
@@ -1819,7 +1813,7 @@ WORKFLOW_PRESETS = [
                     "allowedCollections": ["GS", "PR", "CHEMBL"],
                     "edgeFilters": {
                         "Label": [
-                            "IS_GENETIC_BASIS_FOR_CONDITION",
+                            "DISEASE_HAS_FEATURE",
                             "PRODUCES",
                             "MOLECULARLY_INTERACTS_WITH",
                         ],
@@ -1940,7 +1934,7 @@ WORKFLOW_PRESETS = [
                     "allowedCollections": ["MONDO", "PR", "CHEMBL"],
                     "edgeFilters": {
                         "Label": [
-                            "IS_GENETIC_BASIS_FOR_CONDITION",
+                            "DISEASE_HAS_FEATURE",
                             "PRODUCES",
                             "MOLECULARLY_INTERACTS_WITH",
                         ],
