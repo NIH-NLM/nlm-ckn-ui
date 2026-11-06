@@ -108,6 +108,13 @@ def tier_of(collection, field):
     return load_search_tiers().field_tiers.get((collection, field))
 
 
+def tiered_field_names():
+    """Field names with a search tier in at least one collection."""
+    return frozenset(
+        name for (_, name), tier in load_search_tiers().field_tiers.items() if tier
+    )
+
+
 def analyzers_of(tier):
     """The analyzers the view links a tier's fields with."""
     return load_search_tiers().analyzers[tier]
