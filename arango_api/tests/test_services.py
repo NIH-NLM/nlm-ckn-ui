@@ -1347,6 +1347,27 @@ class SearchByTermIdentifierTestCase(TestCase):
         self.assertNotIn("_search", bind_vars["projection_fields"])
 
 
+class SearchByTermTierTestCase(TestCase):
+    """Only tiered fields get per-field SEARCH clauses (#345, U8)."""
+
+    _run = SearchByTermQueryTestCase._run
+
+    def test_untiered_field_is_projected_but_not_searched(self):
+        query, bind_vars = self._run(["label", "year"])
+        self.assertIn("LEVENSHTEIN_MATCH(doc.`label`", query)
+        self.assertNotIn("doc.`year`", query)
+        self.assertIn("year", bind_vars["projection_fields"])
+
+    def test_only_untiered_fields_search_identifiers_alone(self):
+        query, bind_vars = self._run(["year"])
+        search = query[query.index("SEARCH") : query.index("LET is_exact_match")]
+        self.assertNotIn("LEVENSHTEIN_MATCH", search)
+        self.assertNotIn("n-gram", search)
+        self.assertIn("LET is_exact_match = (identifier_term IN", query)
+        labels = set(search_service.LABEL_FIELDS) | set(search_service.BADGE_FIELDS)
+        self.assertEqual(bind_vars["projection_fields"], sorted({"year"} | labels))
+
+
 class SearchByTermErrorTestCase(SimpleTestCase):
     """search_by_term must tell a failed query apart from no matches."""
 

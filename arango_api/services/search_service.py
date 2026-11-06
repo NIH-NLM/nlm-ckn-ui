@@ -9,6 +9,7 @@ import requests
 
 from arango_api.circuit_breaker import CircuitBreakerOpen
 from arango_api.db import db_ontologies
+from arango_api.search_tiers import tiered_field_names
 from arango_api.services.base import get_db_and_graph
 from arango_api.services.collection_service import get_collections
 
@@ -97,7 +98,11 @@ def search_by_term(search_term, search_fields, graph):
         SearchServiceError: If the query could not be executed.
     """
     db_connection, _ = get_db_and_graph(graph)
-    search_fields = [f for f in search_fields if f != IDENTIFIER_FIELD]
+    requested = [f for f in search_fields if f != IDENTIFIER_FIELD]
+    # Only tiered fields are linked in the view with the analyzers the clauses
+    # below use; an untiered field (e.g. year) is returned but not searched.
+    tiered = tiered_field_names()
+    search_fields = [f for f in requested if f in tiered]
 
     # norm-lower also strips accents, so the term is normalized with the same
     # analyzer rather than LOWER(), after trimming a pasted identifier.
@@ -153,7 +158,8 @@ def search_by_term(search_term, search_fields, graph):
 
             RETURN sortedDocs
             """.format(exact_match_conditions=exact_match_conditions)
-    # A request may name only `_search`; the identifier clause then stands alone.
+    # A request may name only `_search` or untiered fields; the identifier
+    # clause then stands alone.
     per_field_clauses = (
         levenshtein_string_0 + levenshtein_string_1 + n_gram_string
         if search_fields
@@ -161,10 +167,10 @@ def search_by_term(search_term, search_fields, graph):
     )
     query = query_beginning + per_field_clauses + query_end
 
-    # Project only the fields the dropdown needs: _id (always), the searched
-    # fields, and any label or badge fields the row reads. _id is merged in
-    # explicitly because KEEP does not retain system attributes.
-    projection_fields = sorted(set(search_fields) | set(LABEL_FIELDS) | set(BADGE_FIELDS))
+    # Project only the fields the dropdown needs: _id (always), the requested
+    # fields (searched or not), and any label or badge fields the row reads.
+    # _id is merged in explicitly because KEEP does not retain system attributes.
+    projection_fields = sorted(set(requested) | set(LABEL_FIELDS) | set(BADGE_FIELDS))
 
     bind_vars = {
         "search_term": search_term,
