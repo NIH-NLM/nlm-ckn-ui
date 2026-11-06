@@ -619,7 +619,7 @@ class SanitizeAllowedCollectionsTestCase(ArangoDBTestCase):
             graph="phenotypes",
             edge_filters={
                 "Label": [
-                    "IS_GENETIC_BASIS_FOR_CONDITION",
+                    "DISEASE_HAS_FEATURE",
                     "PRODUCES",
                     "MOLECULARLY_INTERACTS_WITH",
                 ]
@@ -641,7 +641,7 @@ class SanitizeAllowedCollectionsTestCase(ArangoDBTestCase):
             edge_direction="ANY",
             allowed_collections=["CHEBI"],
             graph="phenotypes",
-            edge_filters={"Label": ["IS_GENETIC_BASIS_FOR_CONDITION"]},
+            edge_filters={"Label": ["DISEASE_HAS_FEATURE"]},
             include_inter_node_edges=False,
             exclude_closing_edges={"Label": ["IS_SUBSTANCE_THAT_TREATS"]},
         )
@@ -666,7 +666,7 @@ class SanitizeAllowedCollectionsTestCase(ArangoDBTestCase):
                 edge_filters=None,
                 include_inter_node_edges=False,
                 exclude_closing_edges={"Label": ["IS_SUBSTANCE_THAT_TREATS"]},
-                require_closing_edges={"Label": ["IS_GENETIC_BASIS_FOR_CONDITION"]},
+                require_closing_edges={"Label": ["DISEASE_HAS_FEATURE"]},
             )
 
 
@@ -726,7 +726,7 @@ class AntiEdgeTraversalTestCase(ArangoDBTestCase):
             graph="phenotypes",
             edge_filters={
                 "Label": [
-                    "IS_GENETIC_BASIS_FOR_CONDITION",
+                    "DISEASE_HAS_FEATURE",
                     "PRODUCES",
                     "MOLECULARLY_INTERACTS_WITH",
                 ]
@@ -763,7 +763,7 @@ class AntiEdgeTraversalTestCase(ArangoDBTestCase):
             "allowedCollections": ["GS", "PR", "CHEMBL"],
             "edgeFilters": {
                 "Label": [
-                    "IS_GENETIC_BASIS_FOR_CONDITION",
+                    "DISEASE_HAS_FEATURE",
                     "PRODUCES",
                     "MOLECULARLY_INTERACTS_WITH",
                 ]
@@ -794,7 +794,7 @@ class AntiEdgeTraversalTestCase(ArangoDBTestCase):
             graph="phenotypes",
             edge_filters={
                 "Label": [
-                    "IS_GENETIC_BASIS_FOR_CONDITION",
+                    "DISEASE_HAS_FEATURE",
                     "PRODUCES",
                     "MOLECULARLY_INTERACTS_WITH",
                 ]
@@ -831,7 +831,7 @@ class AntiEdgeTraversalTestCase(ArangoDBTestCase):
                 edge_direction="ANY",
                 allowed_collections=["GS", "PR", "CHEMBL"],
                 graph="phenotypes",
-                edge_filters={"Label": ["IS_GENETIC_BASIS_FOR_CONDITION"]},
+                edge_filters={"Label": ["DISEASE_HAS_FEATURE"]},
                 include_inter_node_edges=False,
                 exclude_closing_edges={"Label": ["IS_SUBSTANCE_THAT_TREATS"]},
                 require_closing_edges={"Label": ["IS_SUBSTANCE_THAT_TREATS"]},
@@ -860,7 +860,7 @@ class AntiEdgeTraversalTestCase(ArangoDBTestCase):
             graph="phenotypes",
             edge_filters={
                 "Label": [
-                    "IS_GENETIC_BASIS_FOR_CONDITION",
+                    "DISEASE_HAS_FEATURE",
                     "PRODUCES",
                     "MOLECULARLY_INTERACTS_WITH",
                 ]
@@ -877,13 +877,13 @@ class AntiEdgeTraversalTestCase(ArangoDBTestCase):
         return gene_ids
 
     def test_closing_branch_applies_exclude_edge_filter(self):
-        # IS_GENETIC_BASIS_FOR_CONDITION is the disease->gene edge on EVERY gene
+        # DISEASE_HAS_FEATURE is the disease->gene edge on EVERY gene
         # path (nac_b1, nac_c1, nac_x1), so excluding it means every path has an
         # excluded edge and no gene survives. Before the closing-edge branch
         # applied exclude filters this returned {g1, g3} (exclude ignored); now
         # it is empty.
         genes = self._genes_from_diseases_exclude(
-            exclude_edge_filters={"Label": ["IS_GENETIC_BASIS_FOR_CONDITION"]}
+            exclude_edge_filters={"Label": ["DISEASE_HAS_FEATURE"]}
         )
         self.assertEqual(genes, set())
 

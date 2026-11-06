@@ -91,7 +91,7 @@ let phaseTimeout = null;
  *   Megrez (gene) -PRODUCES-> Dubhe (protein)
  *     -MOLECULARLY_INTERACTS_WITH-> Merak (compound)
  *     -IS_SUBSTANCE_THAT_TREATS-> Phecda (disease)
- *     -IS_GENETIC_BASIS_FOR_CONDITION-> back to Megrez
+ *     -DISEASE_HAS_FEATURE-> back to Megrez
  *
  * Because the treats-edge is the Merak-Phecda side, a broken dipper — the
  * repurposing case, where the compound does not already treat the disease —
