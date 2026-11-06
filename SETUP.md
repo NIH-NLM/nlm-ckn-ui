@@ -136,6 +136,12 @@ restore. After an intentional dataset or ranking change, record a new baseline
 with `--update-baseline` and commit it with the change. The golden queries are in
 `arango_api/search_golden_queries.json`.
 
+A preset broken by a known data gap can be left out with
+`sweep_presets --skip <preset-id>` (repeatable). A full `--update-baseline` then
+records the skipped ids in the baseline's provenance and drops their old counts,
+so every count in the file comes from one restore. Link the data issue in the
+commit, and drop the skip once the data is fixed.
+
 ## Frontend Development
 
 There are two ways to work on the frontend. They are different tools, not

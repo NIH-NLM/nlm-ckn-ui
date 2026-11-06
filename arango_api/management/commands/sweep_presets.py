@@ -103,6 +103,15 @@ class Command(BaseCommand):
                 "--update-baseline replaces it."
             ),
         )
+        parser.add_argument(
+            "--skip",
+            action="append",
+            metavar="PRESET",
+            help=(
+                "Leave out a preset broken by a known data gap (repeatable). "
+                "--update-baseline records the skips in the provenance."
+            ),
+        )
 
     def handle(self, *args, **options):
         tolerance = options["tolerance"]
@@ -112,6 +121,16 @@ class Command(BaseCommand):
             )
 
         presets = WORKFLOW_PRESETS
+        skips = sorted(set(options.get("skip") or []))
+        unknown = set(skips) - {p["id"] for p in presets}
+        if unknown:
+            raise CommandError(f"No preset with id {sorted(unknown)!r} to skip")
+        if skips and options["preset"]:
+            # A targeted merge keeps the counts the skips say are stale.
+            raise CommandError("--skip applies to a full sweep, not with --preset")
+        presets = [p for p in presets if p["id"] not in skips]
+        for preset_id in skips:
+            self.stdout.write(f"SKIP  {preset_id}")
         if options["preset"]:
             presets = [p for p in presets if p["id"] == options["preset"]]
             if not presets:
@@ -128,6 +147,11 @@ class Command(BaseCommand):
             f"Loaded dataset {stamp['etl_version']}; baseline from {recorded_version}"
             + (f" (generated {generated})" if generated else "")
             + (" (mixed restores)" if recorded.get("mixed") else "")
+            + (
+                f" (skipped {', '.join(recorded['skipped'])})"
+                if recorded.get("skipped")
+                else ""
+            )
         )
         # One version string can name two different restores, so a dataset is
         # the same only when the restore time matches too. An unrecorded value
@@ -229,6 +253,12 @@ class Command(BaseCommand):
             provenance = {**stamp, "generated_at": now.strftime("%Y-%m-%dT%H:%M:%SZ")}
             if mixed:
                 provenance["mixed"] = True
+            if options["preset"]:
+                # A targeted merge keeps the other presets' gaps on record;
+                # only the preset that now has a count leaves the list.
+                skips = [s for s in recorded.get("skipped", []) if s not in results]
+            if skips:
+                provenance["skipped"] = skips
             _write_baseline({PROVENANCE_KEY: provenance, **merged})
             self.stdout.write(
                 self.style.SUCCESS(

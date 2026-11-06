@@ -227,8 +227,69 @@ class SweepPresetsBaselineTests(TestCase):
 
         self._run(["alpha"], {"alpha": _outcome(90)})
 
+    def test_skipped_preset_is_not_run(self):
+        """A preset broken by a known data gap must not fail the sweep."""
+        with mock.patch(f"{MODULE}.workflow_service") as service:
+            service.execute_preset.side_effect = lambda pid: _outcome(10)
+            with mock.patch(
+                f"{MODULE}.WORKFLOW_PRESETS",
+                [{"id": "alpha", "phases": []}, {"id": "beta", "phases": []}],
+            ):
+                call_command("sweep_presets", skip=["beta"], stdout=StringIO())
+
+        service.execute_preset.assert_called_once_with("alpha")
+
+    def test_full_update_records_skips_and_drops_their_counts(self):
+        """A skipped preset's old count is from another dataset, so it goes."""
+        self.baseline_path.write_text(
+            json.dumps({**PROVENANCE, "alpha": 100, "beta": 75})
+        )
+
+        self._run(
+            ["alpha", "beta"],
+            {"alpha": _outcome(90)},
+            skip=["beta"],
+            update_baseline=True,
+        )
+
+        recorded = json.loads(self.baseline_path.read_text())
+        self.assertEqual(recorded.pop("_provenance")["skipped"], ["beta"])
+        self.assertEqual(recorded, {"alpha": 90})
+
+    def test_targeted_update_keeps_recorded_skips(self):
+        """Only the preset that now has a count leaves the skip list."""
+        provenance = {**PROVENANCE["_provenance"], "skipped": ["beta", "gamma"]}
+        self.baseline_path.write_text(
+            json.dumps({"_provenance": provenance, "alpha": 100})
+        )
+        presets = ["alpha", "beta", "gamma"]
+        outcomes = {"alpha": _outcome(90), "beta": _outcome(20)}
+
+        self._run(presets, outcomes, preset="alpha", update_baseline=True)
+        recorded = json.loads(self.baseline_path.read_text())
+        self.assertEqual(recorded["_provenance"]["skipped"], ["beta", "gamma"])
+
+        self._run(presets, outcomes, preset="beta", update_baseline=True)
+        recorded = json.loads(self.baseline_path.read_text())
+        self.assertEqual(recorded.pop("_provenance")["skipped"], ["gamma"])
+        self.assertEqual(recorded, {"alpha": 90, "beta": 20})
+
 
 class SweepPresetsArgumentTests(TestCase):
+    def test_unknown_skip_id_fails(self):
+        with mock.patch(f"{MODULE}.WORKFLOW_PRESETS", [{"id": "alpha", "phases": []}]):
+            with self.assertRaises(CommandError):
+                call_command("sweep_presets", skip=["nope"])
+
+    def test_skip_with_preset_is_rejected(self):
+        """A targeted merge would keep counts the skip list says are stale."""
+        with mock.patch(
+            f"{MODULE}.WORKFLOW_PRESETS",
+            [{"id": "alpha", "phases": []}, {"id": "beta", "phases": []}],
+        ):
+            with self.assertRaises(CommandError):
+                call_command("sweep_presets", preset="alpha", skip=["beta"])
+
     def test_unknown_preset_id_fails(self):
         """A typo'd id must not exit successfully having swept nothing."""
         with mock.patch(f"{MODULE}.WORKFLOW_PRESETS", [{"id": "alpha", "phases": []}]):
