@@ -1368,6 +1368,132 @@ class SearchByTermTierTestCase(TestCase):
         self.assertEqual(bind_vars["projection_fields"], sorted({"year"} | labels))
 
 
+class MatchReasonTestCase(SimpleTestCase):
+    """match_reason names the field and value a result matched on (#345, U9)."""
+
+    def _reason(self, doc, term, searched=None):
+        searched = searched or [f for f in doc if f != "_id"]
+        return search_service.match_reason(doc, term, searched)
+
+    def test_only_searched_fields_are_a_reason(self):
+        # label is projected for display but was not searched here.
+        doc = {"_id": "CL/0000084", "label": "T cell", "hasExactSynonym": "T-cell"}
+        self.assertEqual(
+            self._reason(doc, "t", ["hasExactSynonym"]),
+            {"tier": "synonym", "field": "hasExactSynonym", "value": "T-cell"},
+        )
+
+    def test_label_equal_ignores_case_and_extra_whitespace(self):
+        doc = {"_id": "CL/0000084", "label": "T cell"}
+        self.assertEqual(
+            self._reason(doc, "  t CELL "),
+            {"tier": "label", "field": "label", "value": "T cell"},
+        )
+
+    def test_accents_are_ignored_like_the_norm_lower_analyzer(self):
+        doc = {"_id": "CL/1", "label": "Café cell"}
+        self.assertEqual(
+            self._reason(doc, "cafe cell"),
+            {"tier": "label", "field": "label", "value": "Café cell"},
+        )
+
+    def test_equal_synonym_beats_a_label_that_only_contains(self):
+        doc = {
+            "_id": "CL/0000084",
+            "label": "T lymphocyte subset",
+            "hasExactSynonym": "T lymphocyte",
+        }
+        self.assertEqual(
+            self._reason(doc, "t lymphocyte"),
+            {"tier": "synonym", "field": "hasExactSynonym", "value": "T lymphocyte"},
+        )
+
+    def test_synonym_list_returns_the_matching_element(self):
+        doc = {
+            "_id": "CL/0000084",
+            "hasExactSynonym": ["T-cell", "T lymphocyte", "thymus-derived cell"],
+        }
+        self.assertEqual(
+            self._reason(doc, "t LYMPHOCYTE"),
+            {"tier": "synonym", "field": "hasExactSynonym", "value": "T lymphocyte"},
+        )
+
+    def test_identifier_field_that_contains_the_term(self):
+        doc = {"_id": "CL/0000084", "hasDbXref": ["FMA:9825", "BTO:0000782"]}
+        self.assertEqual(
+            self._reason(doc, "fma:98"),
+            {"tier": "identifier", "field": "hasDbXref", "value": "FMA:9825"},
+        )
+
+    def test_identifier_found_by_the_query_is_returned_in_stored_form(self):
+        doc = {"_id": "CL/0000084", "_search_match": "CL:0000084"}
+        self.assertEqual(
+            self._reason(doc, "cl:0000084"),
+            {"tier": "identifier", "field": "_search", "value": "CL:0000084"},
+        )
+
+    def test_text_tier_and_unmatched_documents_give_no_reason(self):
+        doc = {
+            "_id": "CL/0000084",
+            "label": "T cell",
+            "definition": "A bone marrow cell",
+        }
+        self.assertIsNone(self._reason(doc, "marrow"))
+        self.assertIsNone(self._reason(doc, "neuron"))
+
+    def test_tier_depends_on_the_collection(self):
+        # dataset_name is a label on CSD but untiered on CS.
+        fields = {"dataset_name": "Lung atlas"}
+        self.assertIsNone(self._reason({"_id": "CS/1", **fields}, "lung atlas"))
+        self.assertEqual(
+            self._reason({"_id": "CSD/1", **fields}, "lung atlas"),
+            {"tier": "label", "field": "dataset_name", "value": "Lung atlas"},
+        )
+
+
+class SearchByTermMatchTestCase(TestCase):
+    """search_by_term attaches `_match` (#345, U9)."""
+
+    _run = SearchByTermQueryTestCase._run
+
+    def test_search_match_is_computed_after_the_limit(self):
+        query, _ = self._run(["label"])
+        self.assertIn("SORT is_exact_match DESC, BM25(doc) DESC\n", query)
+        self.assertGreater(
+            query.index('"_search_match": NTH(doc.`_search`'),
+            query.index("LIMIT @limit"),
+        )
+        # Stored forms are normalized like the search clause, not by LOWER().
+        self.assertIn(
+            'doc.`_search`[* RETURN FIRST(TOKENS(CURRENT, "norm-lower"))], '
+            "identifier_term, true))",
+            " ".join(query.split()),
+        )
+
+    def test_rows_carry_match_and_drop_search_match(self):
+        cursor = mock.Mock()
+        cursor.next.return_value = [
+            {"_id": "CL/0000084", "label": "T cell", "_search_match": "CL:0000084"},
+            {"_id": "CL/0000624", "label": "CD4-positive T cell"},
+            {"_id": "CL/0000000", "definition": "unrelated"},
+        ]
+        db_connection = mock.Mock()
+        db_connection.aql.execute.return_value = cursor
+        with mock.patch.object(
+            search_service, "get_db_and_graph", return_value=(db_connection, None)
+        ):
+            rows = search_service.search_by_term("cl:0000084", ["label"], "ontologies")
+        self.assertEqual(
+            [r["_match"] for r in rows],
+            [
+                {"tier": "identifier", "field": "_search", "value": "CL:0000084"},
+                None,
+                None,
+            ],
+        )
+        self.assertNotIn("_search_match", rows[0])
+
+
 class SearchByTermErrorTestCase(SimpleTestCase):
     """search_by_term must tell a failed query apart from no matches."""
 
