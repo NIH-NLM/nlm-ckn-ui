@@ -1,7 +1,7 @@
 {
   "_provenance": {
     "etl_version": "v1.8.0-rc.9",
-    "generated_at": "2026-11-03T16:19:17Z",
+    "generated_at": "2026-11-06T16:46:28Z",
     "restored_at": "2026-11-03T15:06:51Z",
     "skipped": [
       "cell-types-in-respiratory-system",
@@ -10,19 +10,19 @@
     ]
   },
   "alzheimers-disease-uc8": 153,
-  "broken-dipper-candidates": 173,
+  "broken-dipper-candidates": 442,
   "cell-type-hierarchy": 73,
   "cftr-acute-lung-injury-uc12": 24,
-  "clean-dipper-candidates": 92,
-  "complete-dipper-genes-uc9": 92,
+  "clean-dipper-candidates": 395,
+  "complete-dipper-genes-uc9": 395,
   "cystic-fibrosis-uc6": 40,
   "dataset-comparison-uc5": 172,
   "datasets-for-cell-type": 295,
   "datasets-provenance-uc1": 158,
   "dipper-explorer": 71,
   "disease-cellular-pathogenesis": 10,
-  "disease-drug-genes-uc10": 181,
-  "druggable-disease-genes": 141,
+  "disease-drug-genes-uc10": 493,
+  "druggable-disease-genes": 489,
   "hereditary-chronic-pancreatitis-uc7": 46,
   "hlca-cell-type-markers-uc3": 295,
   "hlca-dendritic-markers-uc4": 19,

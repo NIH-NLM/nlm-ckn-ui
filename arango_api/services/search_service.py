@@ -3,13 +3,14 @@ Service for search operations.
 """
 
 import logging
+import unicodedata
 from itertools import chain
 
 import requests
 
 from arango_api.circuit_breaker import CircuitBreakerOpen
 from arango_api.db import db_ontologies
-from arango_api.search_tiers import tiered_field_names
+from arango_api.search_tiers import tier_of, tiered_field_names
 from arango_api.services.base import get_db_and_graph
 from arango_api.services.collection_service import get_collections
 
@@ -79,6 +80,52 @@ class SearchServiceError(Exception):
         self.unavailable = unavailable
 
 
+# Tiers that can explain a match, strongest first. The text tier (definitions,
+# species, ...) and untiered fields are never a reason.
+MATCH_REASON_TIERS = ("label", "synonym", "identifier")
+
+
+def _normalize(text):
+    # Like the norm-lower analyzer: case and accents ignored ("Café" == "cafe").
+    decomposed = unicodedata.normalize("NFKD", " ".join(text.split()).casefold())
+    return "".join(c for c in decomposed if not unicodedata.combining(c))
+
+
+def match_reason(doc, search_term, searched_fields):
+    """Say why a search result matched: {"tier", "field", "value"}, or None.
+
+    `tier` is the search tier of the matching field in the document's
+    collection (label, synonym or identifier), `field` its name and `value`
+    the stored text, original case, that matched (the element, for a list).
+    Only `searched_fields` count, not fields projected just for display.
+    Matching ignores case and extra whitespace. A whole-value match beats a
+    partial one, and a stronger tier beats a weaker one. None means no
+    label, synonym or identifier field matched as typed: a match on a
+    definition, or a typo-tolerant match.
+    """
+    if doc.get("_search_match"):
+        return {"tier": "identifier", "field": "_search", "value": doc["_search_match"]}
+    term = _normalize(search_term)
+    collection = doc["_id"].split("/")[0]
+    candidates = []
+    for tier in MATCH_REASON_TIERS:
+        for field in sorted(set(doc) & set(searched_fields)):
+            if tier_of(collection, field) != tier:
+                continue
+            values = doc[field] if isinstance(doc[field], list) else [doc[field]]
+            candidates += [
+                (tier, field, value) for value in values if isinstance(value, str)
+            ]
+    for matches in (
+        lambda text: text == term,
+        lambda text: term in text,
+    ):
+        for tier, field, value in candidates:
+            if matches(_normalize(value)):
+                return {"tier": tier, "field": field, "value": value}
+    return None
+
+
 def search_by_term(search_term, search_fields, graph):
     """
     Search for documents matching a search term across specified fields.
@@ -93,6 +140,7 @@ def search_by_term(search_term, search_fields, graph):
 
     Returns:
         list: Sorted list of matching documents (empty when nothing matches).
+            Each carries `_match`, from match_reason().
 
     Raises:
         SearchServiceError: If the query could not be executed.
@@ -153,11 +201,17 @@ def search_by_term(search_term, search_fields, graph):
                     LET is_exact_match = ({exact_match_conditions})
                     SORT is_exact_match DESC, BM25(doc) DESC
                     LIMIT @limit
-                    RETURN MERGE({{"_id": doc._id}}, KEEP(doc, @projection_fields))
+                    RETURN MERGE({{"_id": doc._id}},
+                        {{"_search_match": NTH(doc.`{field}`, POSITION(
+                            doc.`{field}`[* RETURN FIRST(TOKENS(CURRENT, "norm-lower"))],
+                            identifier_term, true))}},
+                        KEEP(doc, @projection_fields))
             )
 
             RETURN sortedDocs
-            """.format(exact_match_conditions=exact_match_conditions)
+            """.format(
+        exact_match_conditions=exact_match_conditions, field=IDENTIFIER_FIELD
+    )
     # A request may name only `_search` or untiered fields; the identifier
     # clause then stands alone.
     per_field_clauses = (
@@ -189,6 +243,9 @@ def search_by_term(search_term, search_fields, graph):
         logger.exception("Error executing search query")
         raise SearchServiceError(unavailable=isinstance(e, UNAVAILABLE_ERRORS)) from e
 
+    for row in results:
+        row["_match"] = match_reason(row, search_term, search_fields)
+        row.pop("_search_match", None)
     return results
 
 

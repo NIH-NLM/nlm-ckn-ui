@@ -51,6 +51,10 @@ def _delta(now, baseline):
     return f"{(now - baseline) / baseline:+.0%}"
 
 
+# GitHub rejects a comment over 65,536 characters; leave room for the footer.
+MAX_BODY_CHARS = 60_000
+
+
 def render(sweep_output, baselines, etl_version, pinned_version):
     """The comment body: one table row per preset, worst first."""
     rows = sorted(parse(sweep_output), key=lambda r: (ORDER[r[0]], r[1]))
@@ -70,6 +74,8 @@ def render(sweep_output, baselines, etl_version, pinned_version):
         "| | preset | baseline | now | Δ |",
         "|---|---|---|---|---|",
     ]
+    size = sum(len(line) + 1 for line in lines)
+    shown_rows = 0
     for status, preset, now in rows:
         baseline = baselines.get(preset)
         if status == "ok":
@@ -81,15 +87,24 @@ def render(sweep_output, baselines, etl_version, pinned_version):
         else:
             glyph, change = "⚠️", "empty" if status == "EMPTY" else status.lower()
         shown = "" if now is None else now
-        lines.append(
-            f"| {glyph} | `{preset}` | {baseline or ''} | {shown} | {change} |"
-        )
+        row = f"| {glyph} | `{preset}` | {baseline or ''} | {shown} | {change} |"
+        if size + len(row) + 1 > MAX_BODY_CHARS:
+            break
+        lines.append(row)
+        size += len(row) + 1
+        shown_rows += 1
     attention = sum(1 for r in rows if r[0] not in ("ok", "SKIP"))
-    lines += [
-        "",
+    footer = (
         f"{len(rows)} presets · {len(rows) - attention} ok or skipped · "
-        f"{attention} need attention",
-    ]
+        f"{attention} need attention"
+    )
+    if shown_rows < len(rows):
+        # Rows run worst first, so the ones left out are the least urgent.
+        footer += (
+            f" · {len(rows) - shown_rows} rows not shown (comment size limit); "
+            "see the workflow run's log"
+        )
+    lines += ["", footer]
     return "\n".join(lines) + "\n"
 
 
@@ -98,7 +113,13 @@ def main(argv):
     with open(sweep_path) as fh:
         sweep_output = fh.read()
     with open(baselines_path) as fh:
-        baselines = {k: v for k, v in json.load(fh).items() if not k.startswith("_")}
+        # Counts only: the file comes from the PR, and its values land in the
+        # comment, so anything that is not a count is left out.
+        baselines = {
+            k: v
+            for k, v in json.load(fh).items()
+            if not k.startswith("_") and type(v) is int and v >= 0
+        }
     sys.stdout.write(render(sweep_output, baselines, etl_version, pinned_version))
 
 
