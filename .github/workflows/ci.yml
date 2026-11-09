@@ -108,13 +108,16 @@ jobs:
           echo "Job originally triggered by ${{ github.actor }}"
           exit 1
 
-  # Frontend linting with Biome - auto-fixes and pushes on PRs
+  # Frontend linting with Biome. Runs PR code, so it holds a read-only token;
+  # the auto-fix leaves as a patch that frontend-autofix-push commits.
   frontend-lint:
     needs: detect-changes
     if: needs.detect-changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # pushes the Biome auto-fix commit
+      contents: read
+    outputs:
+      has-patch: ${{ steps.patch.outputs.has-patch }}
     defaults:
       run:
         working-directory: react
@@ -123,7 +126,6 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 2
-          # npm ci runs PR install scripts; keep the write token out of .git/config.
           persist-credentials: false
 
       - name: Check if last commit was auto-fix
@@ -161,32 +163,67 @@ jobs:
         run: npm run fix
         continue-on-error: true
 
-      - name: Check for changes and push
+      - name: Save Biome changes as a patch
+        id: patch
         if: steps.check-autofix.outputs.skip != 'true' && github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name == github.repository
-        env:
-          PUSH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          HEAD_REF: ${{ github.head_ref }}
-          REPO: ${{ github.repository }}
+        working-directory: .
         run: |
-          cd ..
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          if [[ -n $(git status --porcelain react/) ]]; then
-            echo "Biome made changes, committing and pushing..."
-            git add react/
-            # Hooks are off so none written by PR code run while the token is set.
-            git -c core.hooksPath=/dev/null commit -m "style: auto-fix linting issues [biome auto-fix]"
-            git -c core.hooksPath=/dev/null push \
-              "https://x-access-token:${PUSH_TOKEN}@github.com/${REPO}.git" "HEAD:${HEAD_REF}"
-            echo "Changes pushed. The workflow will re-run on the new commit."
+          git add -N react/
+          git diff --binary --no-ext-diff -- react/ > "$RUNNER_TEMP/autofix.patch"
+          if [[ -s "$RUNNER_TEMP/autofix.patch" ]]; then
+            echo "has-patch=true" >> "$GITHUB_OUTPUT"
           else
             echo "No changes needed"
           fi
 
+      - name: Upload Biome patch
+        if: steps.patch.outputs.has-patch == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: biome-autofix
+          path: ${{ runner.temp }}/autofix.patch
+          retention-days: 1
+
       - name: Run Biome check
         if: steps.check-autofix.outputs.skip != 'true'
         run: npm run check
+
+  # Commits the Biome patch from frontend-lint to the PR branch. This job holds
+  # the write token, so it runs no PR code: no npm, no hooks, react/ only.
+  frontend-autofix-push:
+    needs: frontend-lint
+    # !cancelled(): push the fix even when the Biome check then fails, as before.
+    if: ${{ !cancelled() && needs.frontend-lint.outputs.has-patch == 'true' && github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: biome-autofix
+          path: ${{ runner.temp }}/autofix
+
+      - name: Commit and push the Biome fix
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          PATCH: ${{ runner.temp }}/autofix/autofix.patch
+        run: |
+          git apply --index "$PATCH"
+          # Reject anything outside react/; --no-renames lists both sides of a
+          # rename. A pathspec, not grep, so a quoted path (spaces) still counts.
+          if [[ -n "$(git diff --cached --name-only --no-renames -- . ':(exclude)react/')" ]]; then
+            echo "Patch touches files outside react/"
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git -c core.hooksPath=/dev/null commit -m "style: auto-fix linting issues [biome auto-fix]"
+          git -c core.hooksPath=/dev/null push origin "HEAD:${HEAD_REF}"
 
   # Frontend unit tests with Jest
   frontend-unit-tests:
@@ -423,6 +460,7 @@ jobs:
       - detect-changes
       - check-fork-permissions
       - frontend-lint
+      - frontend-autofix-push
       - frontend-unit-tests
       - frontend-e2e
       - backend-unit-tests
@@ -437,6 +475,7 @@ jobs:
         run: |
           echo "Fork permissions: ${{ needs.check-fork-permissions.result }}"
           echo "Frontend lint: ${{ needs.frontend-lint.result }}"
+          echo "Frontend auto-fix push: ${{ needs.frontend-autofix-push.result }}"
           echo "Frontend unit tests: ${{ needs.frontend-unit-tests.result }}"
           echo "Frontend E2E: ${{ needs.frontend-e2e.result }}"
           echo "Backend unit tests: ${{ needs.backend-unit-tests.result }}"
@@ -449,6 +488,7 @@ jobs:
           if [[ "${{ needs.detect-changes.result }}" == "failure" ]] || \
              [[ "${{ needs.check-fork-permissions.result }}" == "failure" && "${{ needs.detect-changes.outputs.backend }}" == "true" ]] || \
              [[ "${{ needs.frontend-lint.result }}" == "failure" ]] || \
+             [[ "${{ needs.frontend-autofix-push.result }}" == "failure" ]] || \
              [[ "${{ needs.frontend-unit-tests.result }}" == "failure" ]] || \
              [[ "${{ needs.frontend-e2e.result }}" == "failure" ]] || \
              [[ "${{ needs.backend-unit-tests.result }}" == "failure" ]] || \
