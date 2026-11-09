@@ -1,7 +1,13 @@
 """Tests for the preset-sweep PR comment renderer (no database, no Django)."""
 
+import io
+import json
+import tempfile
+from contextlib import redirect_stdout
+from pathlib import Path
 from unittest import TestCase
 
+from arango_api import preset_sweep_report
 from arango_api.preset_sweep_report import MARKER, parse, render
 
 SWEEP = """\
@@ -120,3 +126,29 @@ class RenderTests(TestCase):
     def test_omits_the_pin_when_it_matches(self):
         body = render(SWEEP, BASELINES, "v1.8.0-rc.9", "v1.8.0-rc.9")
         self.assertNotIn("pin was", body)
+
+    def test_stops_adding_rows_before_the_comment_size_limit(self):
+        sweep = "\n".join(f"ok    preset-{i:05d}  [{i}]" for i in range(5000))
+        body = render(sweep, {}, "v1", "v1")
+        self.assertLessEqual(len(body), preset_sweep_report.MAX_BODY_CHARS + 200)
+        self.assertRegex(body, r"5000 presets .* · \d+ rows not shown")
+
+
+class MainTests(TestCase):
+    def test_leaves_out_baseline_values_that_are_not_counts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sweep, baselines = Path(tmp, "sweep.txt"), Path(tmp, "baselines.json")
+            sweep.write_text("ok    a  [5]\nok    b  [5]\nok    c  [5]\n")
+            baselines.write_text(
+                json.dumps(
+                    {"_provenance": {}, "a": 4, "b": "[x](https://e.test)", "c": -1}
+                )
+            )
+            out = io.StringIO()
+            with redirect_stdout(out):
+                preset_sweep_report.main([str(sweep), str(baselines), "v1", "v1"])
+        body = out.getvalue()
+        self.assertIn("| ✅ | `a` | 4 | 5 |", body)
+        self.assertIn("| ✅ | `b` |  | 5 | new |", body)
+        self.assertIn("| ✅ | `c` |  | 5 | new |", body)
+        self.assertNotIn("e.test", body)
