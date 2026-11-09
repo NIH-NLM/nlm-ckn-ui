@@ -12,15 +12,18 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+# Read-only by default: pull_request_target jobs run PR code. A job that needs
+# more declares it, and a job-level block replaces this one entirely.
 permissions:
-  contents: write
-  pull-requests: write
-  id-token: write  # Required for GitHub OIDC (deploy jobs)
+  contents: read
 
 jobs:
   # Detect which parts of the codebase changed to skip unnecessary tests
   detect-changes:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read  # paths-filter lists PR files through the API
     outputs:
       frontend: ${{ steps.filter.outputs.frontend }}
       backend: ${{ steps.filter.outputs.backend }}
@@ -102,6 +105,8 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # pushes the Biome auto-fix commit
     defaults:
       run:
         working-directory: react
@@ -110,6 +115,8 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 2
+          # npm ci runs PR install scripts; keep the write token out of .git/config.
+          persist-credentials: false
 
       - name: Check if last commit was auto-fix
         id: check-autofix
@@ -148,6 +155,10 @@ jobs:
 
       - name: Check for changes and push
         if: steps.check-autofix.outputs.skip != 'true' && github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          PUSH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_REF: ${{ github.head_ref }}
+          REPO: ${{ github.repository }}
         run: |
           cd ..
           git config user.name "github-actions[bot]"
@@ -156,8 +167,10 @@ jobs:
           if [[ -n $(git status --porcelain react/) ]]; then
             echo "Biome made changes, committing and pushing..."
             git add react/
-            git commit -m "style: auto-fix linting issues [biome auto-fix]"
-            git push origin HEAD:${{ github.head_ref }}
+            # Hooks are off so none written by PR code run while the token is set.
+            git -c core.hooksPath=/dev/null commit -m "style: auto-fix linting issues [biome auto-fix]"
+            git -c core.hooksPath=/dev/null push \
+              "https://x-access-token:${PUSH_TOKEN}@github.com/${REPO}.git" "HEAD:${HEAD_REF}"
             echo "Changes pushed. The workflow will re-run on the new commit."
           else
             echo "No changes needed"
@@ -539,6 +552,9 @@ jobs:
         (github.event_name == 'push' && needs.detect-changes.outputs.frontend == 'true')
       )
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # GitHub OIDC for the AWS deploy role
     steps:
       - uses: actions/checkout@v4
 
@@ -571,6 +587,9 @@ jobs:
         (github.event_name == 'push' && needs.detect-changes.outputs.backend == 'true')
       )
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # GitHub OIDC for the AWS deploy role
     steps:
       - uses: actions/checkout@v4
 
