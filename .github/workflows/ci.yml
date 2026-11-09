@@ -28,6 +28,7 @@ jobs:
       frontend: ${{ steps.filter.outputs.frontend }}
       backend: ${{ steps.filter.outputs.backend }}
       e2e: ${{ steps.filter.outputs.e2e }}
+      presets: ${{ steps.filter.outputs.presets }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -62,6 +63,13 @@ jobs:
               - 'ETL_VERSION'
               # The backend reads its search tiers from the collection maps.
               - 'react/src/assets/nlm-ckn-collection-maps.json'
+            presets:
+              - '.github/workflows/ci.yml'
+              - 'ETL_VERSION'
+              - 'arango_api/workflow_presets.py'
+              - 'arango_api/preset_baselines.json'
+              - 'arango_api/management/commands/sweep_presets.py'
+              - 'scripts/lib/restore-dump.sh'
             e2e:
               - '.github/workflows/ci.yml'
               - 'react/src/**'
@@ -81,7 +89,7 @@ jobs:
   check-fork-permissions:
     needs: detect-changes
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request_target' && needs.detect-changes.outputs.backend == 'true'
+    if: github.event_name == 'pull_request_target' && (needs.detect-changes.outputs.backend == 'true' || needs.detect-changes.outputs.presets == 'true')
     steps:
       - name: Get User Permission
         id: checkAccess
@@ -439,7 +447,7 @@ jobs:
           # A failed detect-changes leaves every filter output unset, which
           # skips the test jobs and would otherwise read as a pass.
           if [[ "${{ needs.detect-changes.result }}" == "failure" ]] || \
-             [[ "${{ needs.check-fork-permissions.result }}" == "failure" ]] || \
+             [[ "${{ needs.check-fork-permissions.result }}" == "failure" && "${{ needs.detect-changes.outputs.backend }}" == "true" ]] || \
              [[ "${{ needs.frontend-lint.result }}" == "failure" ]] || \
              [[ "${{ needs.frontend-unit-tests.result }}" == "failure" ]] || \
              [[ "${{ needs.frontend-e2e.result }}" == "failure" ]] || \
@@ -534,6 +542,191 @@ jobs:
           if [[ "$head" != "$SHA" ]]; then
             gh api -X PUT "repos/$REPO/pulls/$PR/reviews/$review/dismissals" \
               -f event=DISMISS -f message="Head moved to $head after this approval."
+          fi
+
+  # ============================================================================
+  # Preset sweep - run every workflow preset against the dump a PR's
+  # ETL_VERSION names and post one comment with the counts against
+  # preset_baselines.json (#167). Never blocks: ci-passed does not need it.
+  # Three jobs keep credentials from PR code: preset-dump (AWS role, no PR
+  # code), preset-sweep (PR code, no credentials) and preset-sweep-comment
+  # (write token, the base branch's renderer only).
+  # ============================================================================
+
+  preset-dump:
+    needs: [detect-changes, check-fork-permissions]
+    if: |
+      always() &&
+      (needs.detect-changes.outputs.presets == 'true' || github.event_name == 'workflow_dispatch') &&
+      (needs.check-fork-permissions.result == 'success' || needs.check-fork-permissions.result == 'skipped')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      etl_version: ${{ steps.version.outputs.etl_version }}
+    steps:
+      - name: Read the PR's ETL_VERSION
+        id: version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          REF: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          version=$(gh api "repos/$REPO/contents/ETL_VERSION?ref=$REF" --jq .content | base64 -d | tr -d '[:space:]')
+          if [[ ! "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+            echo "::error::ETL_VERSION is not a version tag"
+            exit 1
+          fi
+          echo "etl_version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/nlm-ckn-github-actions
+          aws-region: us-east-1
+
+      - name: Download the golden dump
+        env:
+          VERSION: ${{ steps.version.outputs.etl_version }}
+        run: |
+          bucket=$(aws ssm get-parameter --name /nlm-ckn/shared/arangodb-bucket-name \
+            --query Parameter.Value --output text)
+          aws s3 cp "s3://$bucket/runs/$VERSION/06-golden-dump.tar.gz" dump.tar.gz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: golden-dump
+          path: dump.tar.gz
+          retention-days: 1
+
+  preset-sweep:
+    needs: preset-dump
+    if: always() && needs.preset-dump.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    services:
+      arangodb:
+        image: arangodb:latest
+        ports:
+          - 8530:8529
+        env:
+          ARANGO_ROOT_PASSWORD: test
+        options: >-
+          --health-cmd "arangosh --server.password test --javascript.execute-string 'db._version()'"
+          --health-interval 10s
+          --health-timeout 10s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: golden-dump
+
+      - name: Restore the dump
+        env:
+          ARANGO_PASSWORD: test
+          VERSION: ${{ needs.preset-dump.outputs.etl_version }}
+        run: |
+          mkdir dump && tar -xzf dump.tar.gz -C dump
+          onto=$(find dump -maxdepth 3 -type d -name Cell-KN-Ontologies -print -quit)
+          [[ -n "$onto" ]] || { echo "No Cell-KN-Ontologies directory in the dump"; exit 1; }
+          scripts/lib/restore-dump.sh "${onto%/Cell-KN-Ontologies}" 8530 \
+            "s3://golden/runs/$VERSION/06-golden-dump.tar.gz"
+
+      - name: Sweep the presets
+        env:
+          DJANGO_SETTINGS_MODULE: core.settings
+          SECRET_KEY: preset-sweep-only
+          ARANGO_DB_HOST: http://127.0.0.1:8530
+          ARANGO_DB_USER: root
+          ARANGO_DB_PASSWORD: test
+          ARANGO_DB_NAME_ONTOLOGIES: Cell-KN-Ontologies
+          ARANGO_DB_NAME_PHENOTYPES: Cell-KN-Phenotypes
+          GRAPH_NAME_ONTOLOGIES: KN-Ontologies-v2.0
+          GRAPH_NAME_PHENOTYPES: KN-Phenotypes-v2.0
+          # Full-collection presets run one long query each.
+          ARANGO_REQUEST_TIMEOUT: '600'
+        # A failing preset is the report, not a job failure. The baseline's
+        # recorded known-gap skips are passed again, so they read as SKIP.
+        run: |
+          skips=()
+          while IFS= read -r arg; do skips+=("$arg"); done < <(
+            jq -r '._provenance.skipped // [] | .[] | "--skip=" + .' arango_api/preset_baselines.json)
+          python manage.py sweep_presets "${skips[@]}" > sweep.txt 2>&1 || true
+          cp arango_api/preset_baselines.json baselines.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: preset-sweep
+          path: |
+            sweep.txt
+            baselines.json
+          retention-days: 7
+
+  preset-sweep-comment:
+    needs: [preset-dump, preset-sweep]
+    if: ${{ !cancelled() && (needs.preset-dump.result == 'success' || needs.preset-dump.result == 'failure') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      # The base branch's code: the renderer that writes into the comment.
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            arango_api/preset_sweep_report.py
+            ETL_VERSION
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: preset-sweep
+
+      - name: Post or update the comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          VERSION: ${{ needs.preset-dump.outputs.etl_version || 'unknown' }}
+        run: |
+          pin=$(tr -d '[:space:]' < ETL_VERSION)
+          touch sweep.txt; [[ -s baselines.json ]] || echo '{}' > baselines.json
+          python3 arango_api/preset_sweep_report.py sweep.txt baselines.json "$VERSION" "$pin" > comment.md
+          if [[ -s sweep.txt ]] && ! grep -Eq '^(All [0-9]+ presets returned data|[0-9]+ of [0-9]+ presets need attention)$' sweep.txt; then
+            printf '\n⚠️ The sweep did not finish, so this list may be incomplete. See the workflow run log.\n' >> comment.md
+          fi
+          if [[ -z "$PR" ]]; then
+            cat comment.md >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          id=$(gh api "repos/$REPO/issues/$PR/comments" --paginate \
+            --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("<!-- preset-sweep -->"))) | .id' | head -1)
+          if [[ -n "$id" ]]; then
+            gh api -X PATCH "repos/$REPO/issues/comments/$id" -F body=@comment.md >/dev/null
+          else
+            gh api "repos/$REPO/issues/$PR/comments" -F body=@comment.md >/dev/null
           fi
 
   # ============================================================================
