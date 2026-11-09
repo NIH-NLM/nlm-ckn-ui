@@ -151,6 +151,12 @@ def _build_ph_phases(id_prefix, count):
     return phases
 
 
+# Larger than any collection. The builder caps a collection origin at the
+# collection's size and shows this limit as "All (N)", so the scan keeps
+# covering every disease as the collection grows.
+_WHOLE_COLLECTION = 1_000_000
+
+
 def _scan_phase(phase_id, name, settings, prev=None, **extra):
     """One phase of the UC9/UC10 gene scans; returns only gene or cell set lists."""
     return {
@@ -217,7 +223,7 @@ _UC9 = "preset-uc9-genes"
 _UC9_PHASES = [
     _scan_phase(
         f"{_UC9}-phase-1",
-        "Genes on a complete dipper (sampled diseases)",
+        "Genes on a complete dipper (all diseases)",
         {
             "depth": 3,
             "edgeDirection": "ANY",
@@ -235,6 +241,7 @@ _UC9_PHASES = [
             "returnCollections": ["GS"],
         },
         originCollection="MONDO",
+        originLimit=_WHOLE_COLLECTION,
     ),
     *_selectively_expressed(_UC9, f"{_UC9}-phase-1", 2),
     _intersect(
@@ -252,9 +259,10 @@ _UC10_LABELS = ("PRODUCES", "MOLECULARLY_INTERACTS_WITH")
 _UC10_PHASES = [
     _scan_phase(
         f"{_UC10}-phase-1",
-        "Disease genes (sampled diseases)",
+        "Disease genes (all diseases)",
         _hop(1, "INBOUND", "GS", "DISEASE_HAS_FEATURE"),
         originCollection="MONDO",
+        originLimit=_WHOLE_COLLECTION,
     ),
     _scan_phase(
         f"{_UC10}-phase-2",
@@ -838,8 +846,8 @@ WORKFLOW_PRESETS = [
         "description": (
             "Genes selectively expressed in a cell set, strongly associated "
             "with a disease, and encoding a protein that a compound used to "
-            "treat that disease interacts with. Phase 1 samples the disease "
-            "collection; raise its origin count to scan more."
+            "treat that disease interacts with. Scans every disease, so it "
+            "takes longer than the other use cases."
         ),
         "category": "Use Cases",
         "layoutMode": "force",
@@ -851,9 +859,8 @@ WORKFLOW_PRESETS = [
         "description": (
             "Genes selectively expressed in a cell set, strongly associated "
             "with a disease, and encoding a protein that a compound interacts "
-            "with. Unlike UC9 the compound need not treat that disease. "
-            "Phase 1 samples the disease collection; raise its origin count "
-            "to scan more."
+            "with. Unlike UC9 the compound need not treat that disease. Scans "
+            "every disease, so it takes longer than the other use cases."
         ),
         "category": "Use Cases",
         "layoutMode": "force",
@@ -1665,6 +1672,7 @@ WORKFLOW_PRESETS = [
                 "originSource": "collection",
                 "originNodeIds": [],
                 "originCollection": "MONDO",
+                "originLimit": _WHOLE_COLLECTION,
                 "previousPhaseId": None,
                 "previousPhaseIds": [],
                 "phaseCombineOperation": "Intersection",
@@ -1690,6 +1698,7 @@ WORKFLOW_PRESETS = [
                 "originSource": "collection",
                 "originNodeIds": [],
                 "originCollection": "MONDO",
+                "originLimit": _WHOLE_COLLECTION,
                 "previousPhaseId": None,
                 "previousPhaseIds": [],
                 "phaseCombineOperation": "Intersection",
@@ -1747,9 +1756,8 @@ WORKFLOW_PRESETS = [
             "candidates: genes whose protein is hit by a drug that does not "
             "already treat the gene's disease, leaving the dipper's closing "
             "side missing. Pick a gene from the results and run 'Big Dipper: "
-            "explore a candidate' to see its full dipper. Phase 1 samples "
-            "the disease collection by default — raise its origin count to "
-            "scan more."
+            "explore a candidate' to see its full dipper. Scans every "
+            "disease, so it takes longer than most presets."
         ),
         "category": "Big Dipper",
         "layoutMode": "force",
@@ -1759,6 +1767,7 @@ WORKFLOW_PRESETS = [
                 "name": "Discovery: genes on a broken dipper (all diseases)",
                 "originSource": "collection",
                 "originCollection": "MONDO",
+                "originLimit": _WHOLE_COLLECTION,
                 "originNodeIds": [],
                 "previousPhaseId": None,
                 "originFilter": "all",
@@ -1793,8 +1802,7 @@ WORKFLOW_PRESETS = [
             "The positive control for 'Broken Big Dipper: candidate genes'. "
             "Finds genes whose protein is hit by a drug that already treats "
             "the gene's disease, so the dipper's closing side is present. "
-            "Phase 1 samples the disease collection by default — raise its "
-            "origin count to scan more."
+            "Scans every disease, so it takes longer than most presets."
         ),
         "category": "Big Dipper",
         "layoutMode": "force",
@@ -1804,6 +1812,7 @@ WORKFLOW_PRESETS = [
                 "name": "Discovery: genes on a complete dipper (all diseases)",
                 "originSource": "collection",
                 "originCollection": "MONDO",
+                "originLimit": _WHOLE_COLLECTION,
                 "originNodeIds": [],
                 "previousPhaseId": None,
                 "originFilter": "all",
