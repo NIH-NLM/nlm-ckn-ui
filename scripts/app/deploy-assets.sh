@@ -18,7 +18,8 @@
 #
 # ARGUMENTS:
 #   environment    Environment name: dev, stage, or prod (sandbox is blocked —
-#                  see the guard below)
+#                  see the guard below), or any environment with a
+#                  scripts/envs/<env>.conf file (see scripts/env-config.sh)
 #   --tag TAG      Copy this nlm-ckn tag instead of the one the pinned
 #                  ETL_VERSION resolves to. No default: an ad-hoc escape hatch,
 #                  not a fallback.
@@ -73,6 +74,7 @@ NC='\033[0m' # No Color
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/../common.sh"
+source "$SCRIPT_DIR/../env-config.sh"
 AWS_REGION=${AWS_REGION:-us-east-1}
 
 # ── Arguments ────────────────────────────────────────────────────────────────
@@ -105,8 +107,14 @@ if [ ${#POSITIONAL[@]} -ne 1 ]; then
 fi
 ENVIRONMENT="${POSITIONAL[0]}"
 
-if [[ ! "$ENVIRONMENT" =~ ^(dev|stage|sandbox|prod)$ ]]; then
-  echo -e "${RED}Error: Environment must be dev, stage, sandbox, or prod${NC}"
+# Config-file environments (scripts/envs/<env>.conf) live in another account and
+# name every resource explicitly; dev/stage/prod resolve from stack outputs.
+CONFIG_ENV=false
+if ckn_has_env_config "$ENVIRONMENT"; then
+  CONFIG_ENV=true
+elif [[ ! "$ENVIRONMENT" =~ ^(dev|stage|sandbox|prod)$ ]]; then
+  echo -e "${RED}Error: unknown environment '${ENVIRONMENT}'.${NC}"
+  echo "Expected dev, stage, prod, sandbox, or one with a config file: $(ckn_env_config_names)"
   exit 1
 fi
 
@@ -291,7 +299,7 @@ check_edge_and_print_urls() {
 
   echo ""
   if [ -z "$BASE_URL" ]; then
-  echo -e "${YELLOW}==> Skipping edge check — no FrontendUrl output (CDN stack $CDN_STACK_NAME not deployed).${NC}"
+  echo -e "${YELLOW}==> Skipping edge check — $NO_URL_REASON.${NC}"
   echo "  Objects are in place at s3://${DST_BUCKET}/${PREFIX} but have no public URL yet."
   else
   echo -e "${GREEN}==> Checking the assets over ${BASE_URL}...${NC}"
@@ -350,12 +358,26 @@ check_edge_and_print_urls() {
 }
 
 
+if [ "$CONFIG_ENV" = true ]; then
+  # Assumes the target account's role; everything below runs under it, and the
+  # springbok source buckets are read cross-account.
+  echo -e "${GREEN}==> Loading scripts/envs/${ENVIRONMENT}.conf...${NC}"
+  ckn_load_env_config "$ENVIRONMENT"
+  ckn_require CKN_FRONTEND_BUCKET CKN_STATIC_ASSETS_BUCKET
+  if [ -z "$TAG" ]; then ckn_require CKN_ARANGO_BUCKET; fi
+  ckn_resolve CKN_CF_DIST_ID CKN_FRONTEND_URL
+fi
+
 echo -e "${GREEN}==> Resolving release tag and buckets...${NC}"
 
 # ── Source bucket (shared, written by nlm-ckn's publish-plot-assets.yml) ─────
-SRC_BUCKET=$(get_ssm_parameter \
-  "/${PROJECT_NAME}/shared/static-assets-bucket-name" \
-  "Make sure the shared static-assets stack (nlm-ckn-iac shared/cloudformation/static-assets.yaml) is deployed.")
+if [ "$CONFIG_ENV" = true ]; then
+  SRC_BUCKET="$CKN_STATIC_ASSETS_BUCKET"
+else
+  SRC_BUCKET=$(get_ssm_parameter \
+    "/${PROJECT_NAME}/shared/static-assets-bucket-name" \
+    "Make sure the shared static-assets stack (nlm-ckn-iac shared/cloudformation/static-assets.yaml) is deployed.")
+fi
 
 # ── Tag ──────────────────────────────────────────────────────────────────────
 # Without --tag, resolve it through release.json. `nlm_ckn_tag` there is the tag
@@ -380,9 +402,13 @@ else
 
   # Same bucket deploy-dataset.sh resolves, read under the same role — so this
   # lookup needs no new IAM.
-  DATASET_BUCKET=$(get_ssm_parameter \
-    "/${PROJECT_NAME}/shared/arangodb-bucket-name" \
-    "Make sure the shared-resources stack is deployed.")
+  if [ "$CONFIG_ENV" = true ]; then
+    DATASET_BUCKET="$CKN_ARANGO_BUCKET"
+  else
+    DATASET_BUCKET=$(get_ssm_parameter \
+      "/${PROJECT_NAME}/shared/arangodb-bucket-name" \
+      "Make sure the shared-resources stack is deployed.")
+  fi
 
   RELEASE_JSON_URI="s3://${DATASET_BUCKET}/runs/${ETL_VERSION}/release.json"
   RELEASE_JSON=$(aws s3 cp "$RELEASE_JSON_URI" - --region "$AWS_REGION" 2>/dev/null) || {
@@ -414,37 +440,49 @@ fi
 PREFIX="plots/${TAG}/"
 
 # ── Destination bucket + optional CDN ────────────────────────────────────────
-STACK_NAME="${PROJECT_NAME}-${ENVIRONMENT}-frontend"
-CDN_STACK_NAME="${PROJECT_NAME}-${ENVIRONMENT}-frontend-cdn"
+# NO_CDN_REASON / NO_URL_REASON explain the skipped invalidation and edge
+# check, which differ in wording between the two kinds of environment.
+if [ "$CONFIG_ENV" = true ]; then
+  DST_BUCKET="$CKN_FRONTEND_BUCKET"
+  CF_DIST_ID="$CKN_CF_DIST_ID"
+  BASE_URL="${CKN_FRONTEND_URL%/}"
+  NO_CDN_REASON="CKN_CF_DIST_ID is not set in scripts/envs/${ENVIRONMENT}.conf"
+  NO_URL_REASON="CKN_FRONTEND_URL is not set in scripts/envs/${ENVIRONMENT}.conf"
+else
+  STACK_NAME="${PROJECT_NAME}-${ENVIRONMENT}-frontend"
+  CDN_STACK_NAME="${PROJECT_NAME}-${ENVIRONMENT}-frontend-cdn"
 
-STACK_DATA=$(fetch_stack_outputs "$STACK_NAME")
-if [ -z "$STACK_DATA" ]; then
-  echo -e "${RED}Error: Stack $STACK_NAME not found or has no outputs.${NC}"
-  exit 1
-fi
-CDN_DATA=$(fetch_stack_outputs "$CDN_STACK_NAME")
-
-BucketName=""
-CloudFrontDistributionId=""
-FrontendUrl=""
-while read -r key value; do
-  if [ -n "$key" ]; then
-    declare "$key=$value"
+  STACK_DATA=$(fetch_stack_outputs "$STACK_NAME")
+  if [ -z "$STACK_DATA" ]; then
+    echo -e "${RED}Error: Stack $STACK_NAME not found or has no outputs.${NC}"
+    exit 1
   fi
-done <<< "$STACK_DATA
+  CDN_DATA=$(fetch_stack_outputs "$CDN_STACK_NAME")
+
+  BucketName=""
+  CloudFrontDistributionId=""
+  FrontendUrl=""
+  while read -r key value; do
+    if [ -n "$key" ]; then
+      declare "$key=$value"
+    fi
+  done <<< "$STACK_DATA
 $CDN_DATA"
 
-DST_BUCKET=$BucketName
-CF_DIST_ID=$CloudFrontDistributionId
-BASE_URL=$FrontendUrl
-: "${DST_BUCKET:?Error: BucketName output is missing from stack $STACK_NAME.}"
+  DST_BUCKET=$BucketName
+  CF_DIST_ID=$CloudFrontDistributionId
+  BASE_URL=$FrontendUrl
+  : "${DST_BUCKET:?Error: BucketName output is missing from stack $STACK_NAME.}"
+  NO_CDN_REASON="CDN stack $CDN_STACK_NAME not deployed"
+  NO_URL_REASON="no FrontendUrl output — CDN stack $CDN_STACK_NAME not deployed"
+fi
 
 echo "  Source       : s3://${SRC_BUCKET}/${PREFIX}"
 echo "  Destination  : s3://${DST_BUCKET}/${PREFIX}"
 if [ -n "$CF_DIST_ID" ]; then
   echo "  CloudFront   : $CF_DIST_ID"
 else
-  echo -e "  ${YELLOW}CloudFront   : not found (CDN stack $CDN_STACK_NAME not deployed) — will skip invalidation.${NC}"
+  echo -e "  ${YELLOW}CloudFront   : not configured ($NO_CDN_REASON) — will skip invalidation.${NC}"
 fi
 
 # ── Verify the source prefix exists and is non-empty ─────────────────────────
@@ -560,7 +598,7 @@ if [ -n "$CF_DIST_ID" ]; then
   echo "  Invalidation ID: $INVALIDATION_ID"
 else
   echo ""
-  echo -e "${YELLOW}Skipping CloudFront invalidation — CDN stack $CDN_STACK_NAME not deployed.${NC}"
+  echo -e "${YELLOW}Skipping CloudFront invalidation — $NO_CDN_REASON.${NC}"
 fi
 
 check_edge_and_print_urls

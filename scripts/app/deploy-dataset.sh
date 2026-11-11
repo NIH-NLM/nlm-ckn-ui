@@ -10,7 +10,9 @@
 #   ./scripts/app/deploy-dataset.sh [--force] <environment>
 #
 # ARGUMENTS:
-#   environment   Environment name: dev, sandbox, or prod
+#   environment   Environment name: dev, stage, prod, sandbox, or any
+#                 environment with a scripts/envs/<env>.conf file (another
+#                 account; see scripts/env-config.sh)
 #   --force       Re-restore even when the version is unchanged
 #
 # WHAT IT DOES:
@@ -92,49 +94,77 @@ DATASET_S3_KEY="runs/${ETL_VERSION}/06-golden-dump.tar.gz"
 echo "ETL version : $ETL_VERSION"
 echo "S3 key      : $DATASET_S3_KEY"
 source "$SCRIPT_DIR/../common.sh"
+source "$SCRIPT_DIR/../env-config.sh"
 AWS_REGION=${AWS_REGION:-us-east-1}
-STACK_NAME="${PROJECT_NAME}-${ENVIRONMENT}-arangodb"
 
-# Validate environment
-if [[ ! "$ENVIRONMENT" =~ ^(dev|sandbox|prod|stage)$ ]]; then
-  echo -e "${RED}Error: Environment must be dev, sandbox, prod, or stage${NC}"
-  exit 1
-fi
+# Names the on-host restore script uses; set per environment below and injected
+# into it, so the instance never has to know how this environment is laid out.
+FRONTEND_URL=""
 
-echo "==> Getting infrastructure details from CloudFormation / SSM..."
+if ckn_has_env_config "$ENVIRONMENT"; then
+  # Config-file environment (scripts/envs/<env>.conf): another account, no
+  # assumptions about its stacks. Assumes the role and resolves every name.
+  echo "==> Loading scripts/envs/${ENVIRONMENT}.conf..."
+  ckn_load_env_config "$ENVIRONMENT"
+  ckn_require CKN_ARANGO_INSTANCE_ID CKN_DATASET_VERSION_PARAM \
+    CKN_ARANGO_ROOT_SECRET CKN_ARANGO_BUCKET
+  ckn_resolve CKN_ARANGO_RO_USER_PARAM CKN_ARANGO_RO_PASSWORD_SECRET CKN_FRONTEND_URL
+  if [ -n "$CKN_ARANGO_RO_USER_PARAM" ] && [ -z "$CKN_ARANGO_RO_PASSWORD_SECRET" ]; then
+    echo -e "${RED}Error: CKN_ARANGO_RO_USER_PARAM is set but CKN_ARANGO_RO_PASSWORD_SECRET is not${NC}"
+    exit 1
+  fi
+  SSM_PARAMETER="$CKN_DATASET_VERSION_PARAM"
+  INSTANCE_ID="$CKN_ARANGO_INSTANCE_ID"
+  S3_BUCKET="$CKN_ARANGO_BUCKET"
+  ROOT_SECRET="$CKN_ARANGO_ROOT_SECRET"
+  RO_USER_PARAM="$CKN_ARANGO_RO_USER_PARAM"
+  RO_PASSWORD_SECRET="$CKN_ARANGO_RO_PASSWORD_SECRET"
+  FRONTEND_URL="$CKN_FRONTEND_URL"
+elif [[ "$ENVIRONMENT" =~ ^(dev|sandbox|prod|stage)$ ]]; then
+  STACK_NAME="${PROJECT_NAME}-${ENVIRONMENT}-arangodb"
+  ROOT_SECRET="/${PROJECT_NAME}/${ENVIRONMENT}/secrets/arangodb-root-password"
+  RO_USER_PARAM="/${PROJECT_NAME}/${ENVIRONMENT}/arango/db-user"
+  RO_PASSWORD_SECRET="/${PROJECT_NAME}/${ENVIRONMENT}/secrets/arangodb-password"
 
-# Read the dataset version SSM parameter name from stack outputs
-SSM_PARAMETER=$(aws cloudformation describe-stacks \
-  --stack-name "$STACK_NAME" \
-  --region "$AWS_REGION" \
-  --query 'Stacks[0].Outputs[?OutputKey==`DatasetVersionParameter`].OutputValue' \
-  --output text 2>/dev/null) || {
-  echo -e "${RED}Error: Could not read stack outputs from ${STACK_NAME}.${NC}"
-  echo "Make sure the arangodb stack is deployed."
-  exit 1
-}
+  echo "==> Getting infrastructure details from CloudFormation / SSM..."
 
-INSTANCE_ID=$(aws cloudformation describe-stacks \
-  --stack-name "$STACK_NAME" \
-  --region "$AWS_REGION" \
-  --query 'Stacks[0].Outputs[?OutputKey==`InstanceId`].OutputValue' \
-  --output text 2>/dev/null)
+  # Read the dataset version SSM parameter name from stack outputs
+  SSM_PARAMETER=$(aws cloudformation describe-stacks \
+    --stack-name "$STACK_NAME" \
+    --region "$AWS_REGION" \
+    --query 'Stacks[0].Outputs[?OutputKey==`DatasetVersionParameter`].OutputValue' \
+    --output text 2>/dev/null) || {
+    echo -e "${RED}Error: Could not read stack outputs from ${STACK_NAME}.${NC}"
+    echo "Make sure the arangodb stack is deployed."
+    exit 1
+  }
 
-# Read S3 bucket name from SSM (written by shared-resources stack)
-S3_BUCKET=$(aws ssm get-parameter \
-  --name "/${PROJECT_NAME}/shared/arangodb-bucket-name" \
-  --query 'Parameter.Value' \
-  --output text \
-  --region "$AWS_REGION" 2>/dev/null) || {
-  echo -e "${RED}Error: Could not read S3 bucket name from SSM.${NC}"
-  echo "Make sure the shared-resources stack is deployed."
-  exit 1
-}
+  INSTANCE_ID=$(aws cloudformation describe-stacks \
+    --stack-name "$STACK_NAME" \
+    --region "$AWS_REGION" \
+    --query 'Stacks[0].Outputs[?OutputKey==`InstanceId`].OutputValue' \
+    --output text 2>/dev/null)
 
-if [ -z "$SSM_PARAMETER" ] || [ -z "$INSTANCE_ID" ]; then
-  echo -e "${RED}Error: Could not read required values from stack ${STACK_NAME}.${NC}"
-  echo "  SSM_PARAMETER: ${SSM_PARAMETER:-(empty)}"
-  echo "  INSTANCE_ID:   ${INSTANCE_ID:-(empty)}"
+  # Read S3 bucket name from SSM (written by shared-resources stack)
+  S3_BUCKET=$(aws ssm get-parameter \
+    --name "/${PROJECT_NAME}/shared/arangodb-bucket-name" \
+    --query 'Parameter.Value' \
+    --output text \
+    --region "$AWS_REGION" 2>/dev/null) || {
+    echo -e "${RED}Error: Could not read S3 bucket name from SSM.${NC}"
+    echo "Make sure the shared-resources stack is deployed."
+    exit 1
+  }
+
+  if [ -z "$SSM_PARAMETER" ] || [ -z "$INSTANCE_ID" ]; then
+    echo -e "${RED}Error: Could not read required values from stack ${STACK_NAME}.${NC}"
+    echo "  SSM_PARAMETER: ${SSM_PARAMETER:-(empty)}"
+    echo "  INSTANCE_ID:   ${INSTANCE_ID:-(empty)}"
+    exit 1
+  fi
+else
+  echo -e "${RED}Error: unknown environment '${ENVIRONMENT}'.${NC}"
+  echo "Expected dev, stage, prod, sandbox, or one with a config file: $(ckn_env_config_names)"
   exit 1
 fi
 
@@ -185,8 +215,12 @@ cat > "$RESTORE_SCRIPT_TMP" << 'RESTORE_SCRIPT_EOF'
 #!/bin/bash
 set -euo pipefail
 
-PROJECT_NAME="__PROJECT_NAME__"
 ENVIRONMENT="__ENVIRONMENT__"
+BUCKET="__BUCKET__"
+ROOT_SECRET="__ROOT_SECRET__"
+# Empty means this environment has no read-only backend user.
+RO_USER_PARAM="__RO_USER_PARAM__"
+RO_PASSWORD_SECRET="__RO_PASSWORD_SECRET__"
 FORCE="__FORCE__"
 REGION="__AWS_REGION__"
 DATA_DIR=/var/lib/arangodb3
@@ -203,17 +237,13 @@ EXPECTED_DBS="${EXPECTED_DBS:-Cell-KN-Ontologies Cell-KN-Phenotypes}"
 
 echo "==> Starting ArangoDB blue-green dataset restore $(date)"
 
-BUCKET=$(aws ssm get-parameter \
-  --name "/$PROJECT_NAME/shared/arangodb-bucket-name" \
-  --query 'Parameter.Value' --output text --region "$REGION")
-
 # Target version is injected directly by the dispatcher rather than read from
 # SSM: the dataset-version SSM parameter is only advanced to this value *after*
 # a successful swap, so during the restore SSM still reflects the old version.
 VERSION="__DATASET_S3_KEY__"
 
 ARANGO_PASSWORD=$(aws secretsmanager get-secret-value \
-  --secret-id "/$PROJECT_NAME/$ENVIRONMENT/secrets/arangodb-root-password" \
+  --secret-id "$ROOT_SECRET" \
   --query 'SecretString' --output text --region "$REGION")
 
 LAST_RESTORED=$(cat "$DATA_DIR/.dataset-version" 2>/dev/null || echo "none")
@@ -232,30 +262,48 @@ echo "Last restored  : $LAST_RESTORED"
 # dataset is already current, so a plain re-run repairs an environment whose
 # user was lost to an earlier restore.
 #
-# get-parameters (plural) so a genuinely absent parameter comes back in
-# InvalidParameters rather than as a CLI error. An environment with no
-# read-only user is a valid configuration; a denied or throttled lookup is not,
-# and must not be mistaken for one.
+# An empty RO_USER_PARAM is the only way to say an environment has no
+# read-only user. A named parameter that is missing (reported in
+# InvalidParameters), denied, or throttled is an error: swapping without the
+# user would take the backend down.
+#
+# Callers invoke this in an `if !` context, where set -e does not apply, so
+# every step checks its own result.
 ensure_ro_user() {
   local container="$1"
   local ro_lookup ro_user ro_missing ro_password
 
-  ro_lookup=$(aws ssm get-parameters \
-    --names "/$PROJECT_NAME/$ENVIRONMENT/arango/db-user" \
-    --query '[Parameters[0].Value, InvalidParameters[0]]' \
-    --output text --region "$REGION")
-  ro_user=$(printf '%s' "$ro_lookup" | cut -f1)
-  ro_missing=$(printf '%s' "$ro_lookup" | cut -f2)
-
-  if [ "$ro_user" = "None" ] && [ "$ro_missing" != "None" ]; then
+  if [ -z "$RO_USER_PARAM" ]; then
     echo "==> No read-only user configured for $ENVIRONMENT — backend connects as root"
     return 0
   fi
 
+  ro_lookup=$(aws ssm get-parameters \
+    --names "$RO_USER_PARAM" \
+    --query '[Parameters[0].Value, InvalidParameters[0]]' \
+    --output text --region "$REGION") || {
+    echo "ERROR: could not look up SSM parameter $RO_USER_PARAM"
+    return 1
+  }
+  ro_user=$(printf '%s' "$ro_lookup" | cut -f1)
+  ro_missing=$(printf '%s' "$ro_lookup" | cut -f2)
+
+  if [ -n "$ro_missing" ] && [ "$ro_missing" != "None" ]; then
+    echo "ERROR: read-only user parameter $RO_USER_PARAM does not exist"
+    return 1
+  fi
+  if [ -z "$ro_user" ] || [ "$ro_user" = "None" ]; then
+    echo "ERROR: read-only user parameter $RO_USER_PARAM returned no value"
+    return 1
+  fi
+
   echo "==> Ensuring read-only backend user '$ro_user' in $container"
   ro_password=$(aws secretsmanager get-secret-value \
-    --secret-id "/$PROJECT_NAME/$ENVIRONMENT/secrets/arangodb-password" \
-    --query 'SecretString' --output text --region "$REGION")
+    --secret-id "$RO_PASSWORD_SECRET" \
+    --query 'SecretString' --output text --region "$REGION") || {
+    echo "ERROR: could not read secret $RO_PASSWORD_SECRET"
+    return 1
+  }
 
   # Values reach arangosh through the environment, never through the JS source:
   # a quote in a rotated password would otherwise break the script, and a
@@ -638,13 +686,19 @@ echo "==> Blue-green swap complete $(date)"
 RESTORE_SCRIPT_EOF
 
 # Substitute environment-specific values into the restore script
-# (avoid sed -i: BSD/macOS requires an explicit backup extension while GNU does not)
+# (avoid sed -i: BSD/macOS requires an explicit backup extension while GNU does not).
+# Values are escaped for the replacement side: a secret ARN or parameter name
+# must not be able to break out of the s||| expression.
+sed_escape() { printf '%s' "$1" | sed -e 's/[\\|&]/\\&/g'; }
 sed \
-  -e "s|__PROJECT_NAME__|${PROJECT_NAME}|g" \
-  -e "s|__ENVIRONMENT__|${ENVIRONMENT}|g" \
-  -e "s|__AWS_REGION__|${AWS_REGION}|g" \
+  -e "s|__ENVIRONMENT__|$(sed_escape "$ENVIRONMENT")|g" \
+  -e "s|__AWS_REGION__|$(sed_escape "$AWS_REGION")|g" \
   -e "s|__FORCE__|${FORCE}|g" \
-  -e "s|__DATASET_S3_KEY__|${DATASET_S3_KEY}|g" \
+  -e "s|__DATASET_S3_KEY__|$(sed_escape "$DATASET_S3_KEY")|g" \
+  -e "s|__BUCKET__|$(sed_escape "$S3_BUCKET")|g" \
+  -e "s|__ROOT_SECRET__|$(sed_escape "$ROOT_SECRET")|g" \
+  -e "s|__RO_USER_PARAM__|$(sed_escape "$RO_USER_PARAM")|g" \
+  -e "s|__RO_PASSWORD_SECRET__|$(sed_escape "$RO_PASSWORD_SECRET")|g" \
   "$RESTORE_SCRIPT_TMP" > "${RESTORE_SCRIPT_TMP}.new"
 mv "${RESTORE_SCRIPT_TMP}.new" "$RESTORE_SCRIPT_TMP"
 
@@ -719,6 +773,26 @@ if err:
 PYEOF
 }
 
+# Printed whenever this script stops before it knows the restore's outcome, so
+# the operator can reconcile the instance and the published version by hand.
+print_reconcile_instructions() {
+  echo ""
+  echo "The restore may still be running on the instance, and the dataset-version"
+  echo "parameter has NOT been advanced to the target. To reconcile (using"
+  echo "credentials for the environment's account):"
+  echo ""
+  echo "  1. Check the restore status:"
+  echo "     aws ssm get-command-invocation --command-id $COMMAND_ID --instance-id $INSTANCE_ID --region $AWS_REGION --query Status --output text"
+  echo "     Wait while it is Pending/InProgress/Delayed. Do NOT re-run this script"
+  echo "     then: that would start a second restore on the same instance."
+  echo "  2. If it is Success, publish the version:"
+  echo "     aws ssm put-parameter --name $SSM_PARAMETER --value $DATASET_S3_KEY --overwrite --region $AWS_REGION"
+  echo "     (or re-run this script: it sees the version is already restored, skips"
+  echo "     the restore, repairs the read-only user, and publishes the version)."
+  echo "  3. If it failed, leave the parameter alone: blue is still serving the"
+  echo "     previous version. Inspect the output with get-command-invocation."
+}
+
 # Poll until the SSM command reaches a terminal state or we exceed SSM_TIMEOUT_SECONDS.
 POLL_INTERVAL=30
 ELAPSED=0
@@ -726,6 +800,20 @@ ELAPSED=0
 echo "Waiting for restore to complete..."
 echo ""
 while [ "$ELAPSED" -lt "$SSM_TIMEOUT_SECONDS" ]; do
+  # A config-file environment runs under an assumed role whose session is
+  # capped at an hour; the restore can take 90 minutes. No-op otherwise.
+  # Refreshes start 10 minutes before expiry and a failed attempt keeps the
+  # current session, so a failure is retried on the next poll. Give up only
+  # once the session has expired and the restore can no longer be watched.
+  if ! ckn_refresh_role; then
+    if [ "$(date +%s)" -ge "${_CKN_ROLE_EXPIRES:-0}" ]; then
+      echo ""
+      echo -e "${RED}==> Role session expired and could not be refreshed — can no longer monitor the restore${NC}"
+      print_reconcile_instructions
+      exit 1
+    fi
+    echo -e "${YELLOW}  Warning: role refresh failed; retrying on the next poll (session valid until $(date -r "$_CKN_ROLE_EXPIRES" 2>/dev/null || date -d "@$_CKN_ROLE_EXPIRES"))${NC}"
+  fi
   STATUS=$(aws ssm get-command-invocation \
     --command-id "$COMMAND_ID" \
     --instance-id "$INSTANCE_ID" \
@@ -763,8 +851,17 @@ while [ "$ELAPSED" -lt "$SSM_TIMEOUT_SECONDS" ]; do
       # Smoke test the deployment. A failing probe fails the deploy: the restore
       # succeeded but the environment is not serving the data (see #207).
       echo ""
-      echo -e "${GREEN}==> Running smoke test...${NC}"
-      "$SCRIPT_DIR/../ops/smoke-test.sh" "$ENVIRONMENT"
+      if ckn_has_env_config "$ENVIRONMENT"; then
+        if [ -n "$FRONTEND_URL" ]; then
+          echo -e "${GREEN}==> Running smoke test...${NC}"
+          "$SCRIPT_DIR/../ops/smoke-test.sh" "$ENVIRONMENT" --url "$FRONTEND_URL"
+        else
+          echo -e "${YELLOW}==> Skipping smoke test — CKN_FRONTEND_URL is not set in scripts/envs/${ENVIRONMENT}.conf${NC}"
+        fi
+      else
+        echo -e "${GREEN}==> Running smoke test...${NC}"
+        "$SCRIPT_DIR/../ops/smoke-test.sh" "$ENVIRONMENT"
+      fi
       exit 0
       ;;
     Failed|Cancelled|TimedOut|DeliveryTimedOut|ExecutionTimedOut)
@@ -782,6 +879,5 @@ done
 
 echo ""
 echo -e "${RED}==> Timed out after ${SSM_TIMEOUT_SECONDS}s — SSM command may still be running${NC}"
-echo "Check manually:"
-echo "  aws ssm get-command-invocation --command-id $COMMAND_ID --instance-id $INSTANCE_ID --region $AWS_REGION"
+print_reconcile_instructions
 exit 1
