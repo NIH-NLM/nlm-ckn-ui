@@ -12,7 +12,7 @@ Application deployment and operations scripts for NLM-CKN.
 scripts/
   common.sh          # Shared constants (PROJECT_NAME) sourced by app, ops, and the sandbox env resolver
   app/               # Application deployments (ship code to existing infrastructure)
-  ops/               # Operational helpers (smoke test, ...)
+  ops/               # Operational helpers (smoke test, preview login, ...)
   sandbox/           # Sandbox-account deploy (separate naming; see sandbox/README.md)
   dev/               # Local developer helpers
   arango-tunnel.sh
@@ -72,6 +72,11 @@ Builds the React app and deploys to S3/CloudFront. The S3 sync excludes
 Deploys the dataset version pinned in `ETL_VERSION`, which the script resolves to
 `runs/<version>/06-golden-dump.tar.gz` in the dataset bucket. Example:
 `./scripts/app/deploy-dataset.sh dev`
+
+Environments in other accounts (e.g. `int`) are described by
+`scripts/envs/<env>.conf` rather than stacks. Both this script and
+`deploy-assets.sh` accept them. See
+[`DEPLOYMENT-NOTES.md`](./DEPLOYMENT-NOTES.md#environments-in-other-accounts-int-).
 
 ### `app/deploy-assets.sh` - Static Plot Assets
 ```bash
@@ -148,6 +153,18 @@ AWS_PROFILE=springbok ./scripts/ops/smoke-test.sh [env] [options]
 Fast, read-only pass/fail check of the public edge (CloudFront → S3 app and
 CloudFront → backend ALB), exercising frontend, backend, and ArangoDB
 connectivity end to end. Exits non-zero on any failure, so it can gate a deploy.
+
+### `ops/preview-login.sh` - Open a PR preview
+```bash
+AWS_PROFILE=springbok ./scripts/ops/preview-login.sh <pr> [--env dev] [--hours 12] [--print]
+```
+
+Signs a sign-in link for `https://pr-<pr>.dev.nlm-ckn.org` with the key in the
+preview KeyValueStore (so it needs AWS access) and opens it; the link sets an
+HttpOnly cookie for that one preview, valid `--hours` (max 168). The link can be
+shared with reviewers who have no AWS access. Rotating the key in `nlm-ckn-iac`
+signs everyone out. Needs Perl's `Digest::SHA` (core Perl; on Debian/Ubuntu the
+full `perl` package, not just `perl-base`).
 
 > **ArangoDB monitoring + wedge detection** (the `…-monitoring` stack, the
 > read-only monitor user, and the correlation dashboard) now lives in

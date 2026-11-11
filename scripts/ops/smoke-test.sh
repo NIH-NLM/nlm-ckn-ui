@@ -14,7 +14,8 @@
 # USAGE:
 #   AWS_PROFILE=springbok ./scripts/ops/smoke-test.sh [env] [options]
 #
-#   env             Environment: dev | stage | prod | sandbox (default: stage).
+#   env             Environment: dev | stage | prod | sandbox, or one with a
+#                   scripts/envs/<env>.conf file (needs --url) (default: stage).
 #                   Used to resolve the base URL from the frontend stack output.
 #   --url URL       Probe this base URL directly and skip stack lookup. Handy for
 #                   environments without a FrontendUrl output (e.g. sandbox) or a
@@ -46,7 +47,13 @@ while [ $# -gt 0 ]; do
     -k|--insecure) INSECURE=1; shift ;;
     -h|--help) sed -n '2,28p' "$0"; exit 0 ;;
     dev|stage|prod|sandbox) ENVIRONMENT="$1"; shift ;;
-    *) echo "unknown argument: $1 (try --help)" >&2; exit 2 ;;
+    # Config-file environments (scripts/envs/<env>.conf) have no stacks to
+    # resolve a URL from, so they need --url.
+    *) if [[ "$1" =~ ^[a-z0-9-]+$ ]] && [ -f "$SCRIPT_DIR/../envs/$1.conf" ]; then
+         ENVIRONMENT="$1"; shift
+       else
+         echo "unknown argument: $1 (try --help)" >&2; exit 2
+       fi ;;
   esac
 done
 

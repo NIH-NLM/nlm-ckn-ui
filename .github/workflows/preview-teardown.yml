@@ -1,0 +1,126 @@
+name: PR Preview Teardown
+
+# Deletes a PR's preview stack and frontend when the PR closes or loses the
+# `preview` label. pull_request_target, so it runs main's YAML (a PR cannot
+# change it) and still runs when the PR has merge conflicts, which a
+# pull_request workflow does not. Safe because it checks out no code and runs
+# nothing from the PR.
+
+on:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] checks out and runs no PR code; only deletes the PR's preview
+    types: [unlabeled, closed]
+
+# Same group as preview-deploy.yml's deploy job, so a teardown waits for an
+# in-flight deploy. Runs that will skip (the condition mirrors the job's `if`)
+# get their own group so they cannot replace a pending deploy or teardown.
+concurrency:
+  group: >-
+    ${{ (github.event.pull_request.head.repo.full_name == github.repository &&
+    ((github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'preview')) ||
+    (github.event.action == 'unlabeled' && github.event.label.name == 'preview')))
+    && format('preview-pr-{0}', github.event.pull_request.number)
+    || format('preview-noop-{0}', github.run_id) }}
+  cancel-in-progress: false
+
+permissions: {}
+
+env:
+  AWS_REGION: us-east-1
+  PR_NUMBER: ${{ github.event.pull_request.number }}
+  STACK_NAME: nlm-ckn-preview-pr-${{ github.event.pull_request.number }}
+  COMMENT_MARKER: '<!-- nlm-ckn-preview -->'
+
+jobs:
+  teardown:
+    name: Tear down preview
+    # `closed` only matters if the PR still had a preview; `unlabeled` only for
+    # the preview label. Gating on the label keeps unrelated closes from
+    # queueing a `preview` environment approval.
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (
+        (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'preview')) ||
+        (github.event.action == 'unlabeled' && github.event.label.name == 'preview')
+      )
+    runs-on: ubuntu-latest
+    environment: preview
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      # The run may have queued behind a deploy; skip if the PR has since been
+      # reopened or relabelled and still wants its preview.
+      - name: Check PR state
+        id: state
+        run: |
+          set -euo pipefail
+          wanted=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq \
+            '(.state == "open" and ([.labels[].name] | index("preview") != null))')
+          echo "Preview still wanted: ${wanted}"
+          echo "skip=${wanted}" >> "$GITHUB_OUTPUT"
+
+      - name: Configure AWS credentials via OIDC
+        id: creds
+        if: steps.state.outputs.skip != 'true'
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: ${{ vars.PREVIEW_CI_ROLE_ARN }}
+          role-session-name: preview-pr-${{ github.event.pull_request.number }}
+          aws-region: us-east-1
+
+      - name: Delete preview stack
+        if: steps.state.outputs.skip != 'true'
+        run: |
+          set -euo pipefail
+          # Only a missing stack counts as NONE; any other error fails the step.
+          if ! status=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" \
+            --query 'Stacks[0].StackStatus' --output text 2>describe.err); then
+            if grep -q 'does not exist' describe.err; then
+              status=NONE
+            else
+              cat describe.err >&2
+              exit 1
+            fi
+          fi
+          echo "Stack status: ${status}"
+          if [ "$status" = NONE ]; then
+            echo "No stack to delete."
+            exit 0
+          fi
+          if [ "$status" != DELETE_IN_PROGRESS ]; then
+            aws cloudformation delete-stack --stack-name "$STACK_NAME"
+          fi
+          aws cloudformation wait stack-delete-complete --stack-name "$STACK_NAME"
+
+      # Runs even if the stack delete failed (the job still fails from it).
+      - name: Remove frontend
+        if: ${{ !cancelled() && steps.creds.outcome == 'success' }}
+        env:
+          PREVIEW_BUCKET: ${{ vars.PREVIEW_BUCKET }}
+          PREVIEW_DISTRIBUTION_ID: ${{ vars.PREVIEW_DISTRIBUTION_ID }}
+        run: |
+          set -euo pipefail
+          aws s3 rm "s3://${PREVIEW_BUCKET}/pr-${PR_NUMBER}/" --recursive --only-show-errors
+          aws cloudfront create-invalidation --distribution-id "$PREVIEW_DISTRIBUTION_ID" \
+            --paths "/pr-${PR_NUMBER}/*" --query 'Invalidation.Id' --output text
+
+      - name: Update comment
+        if: steps.state.outputs.skip != 'true'
+        env:
+          REASON: ${{ github.event.action == 'closed' && 'PR closed' || 'label removed' }}
+        run: |
+          set -euo pipefail
+          id=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+            --jq "[.[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"${COMMENT_MARKER}\")))][0].id // empty" | head -n1)
+          if [ -z "$id" ]; then
+            exit 0
+          fi
+          body="${COMMENT_MARKER}
+          ### PR preview
+
+          Torn down (${REASON}). Add the \`preview\` label to deploy a new one."
+          gh api -X PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${id}" -f body="$body" >/dev/null
