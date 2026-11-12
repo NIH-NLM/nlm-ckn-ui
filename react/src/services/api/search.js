@@ -10,9 +10,10 @@ import { postJson } from "./fetchWrapper";
  * @param {string} searchTerm - The search term.
  * @param {string} graphType - Graph/database type.
  * @param {Array<string>} searchFields - Fields to search in.
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request.
  * @returns {Promise<Array>} Array of matching documents.
  */
-export const searchDocuments = async (searchTerm, graphType, searchFields) => {
+export const searchDocuments = async (searchTerm, graphType, searchFields, signal) => {
   return postJson(
     SEARCH_ENDPOINT,
     {
@@ -21,5 +22,6 @@ export const searchDocuments = async (searchTerm, graphType, searchFields) => {
       search_fields: searchFields,
     },
     { fallback: [] },
+    signal,
   );
 };

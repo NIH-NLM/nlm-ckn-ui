@@ -23,7 +23,11 @@ set -euo pipefail
 
 [ $# -eq 3 ] || { echo "Usage: ARANGO_PASSWORD=... $0 DUMP_DIR PORT S3_URI"; exit 1; }
 # Absolute, because docker run -v reads a relative path as a volume name.
-DUMP_DIR="$(cd "$1" && pwd)"
+# An empty path would mount the current directory. A relative path gets "./"
+# so cd neither searches CDPATH nor reads "-" as the previous directory.
+[ -n "$1" ] || { echo "ERROR: DUMP_DIR must not be empty" >&2; exit 1; }
+case "$1" in /*) DUMP_DIR="$1" ;; *) DUMP_DIR="./$1" ;; esac
+DUMP_DIR="$(cd -- "$DUMP_DIR" && pwd)"
 PORT="$2"
 S3_URI="$3"
 PW="${ARANGO_PASSWORD:?ARANGO_PASSWORD must be set}"

@@ -8,9 +8,15 @@ from itertools import chain
 
 import requests
 
+from arango_api.aql_safety import escape_like
 from arango_api.circuit_breaker import CircuitBreakerOpen
 from arango_api.db import db_ontologies
-from arango_api.search_tiers import tier_of, tiered_field_names
+from arango_api.search_tiers import (
+    TIERS,
+    load_search_tiers,
+    tier_of,
+    tiered_field_names,
+)
 from arango_api.services.base import get_db_and_graph
 from arango_api.services.collection_service import get_collections
 
@@ -28,7 +34,7 @@ SEARCH_RESULT_LIMIT = 50
 # its node first. It is server-side only: never searched through the per-field
 # clauses below and never returned to the client.
 IDENTIFIER_FIELD = "_search"
-IDENTIFIER_BOOST = 1000.0
+IDENTIFIER_BOOST = 5000.0
 
 # Label fields read by the frontend's getLabel() (utils/collections.js
 # individual_labels -> field_to_use). The search dropdown only needs _id, the
@@ -126,12 +132,107 @@ def match_reason(doc, search_term, searched_fields):
     return None
 
 
+# Length gates. A term shorter than the n-gram analyzer's ngramSize (3) is
+# too short to match as a prefix; one character longer is the shortest term
+# worth a typo-tolerant or substring match.
+PREFIX_MIN_LENGTH = 3
+FUZZY_MIN_LENGTH = PREFIX_MIN_LENGTH + 1
+
+# Boosts. A whole-value match on an identifier, label or synonym puts its
+# node first; a label prefix beats a fuzzy match; text fields barely count.
+WHOLE_VALUE_BOOST = 4000.0
+LABEL_EXACT_TOKEN_BOOST = 1000.0
+LABEL_FUZZY_BOOST = 50.0
+LABEL_PREFIX_BOOST = 300.0
+SYNONYM_EXACT_TOKEN_BOOST = 200.0
+SYNONYM_FUZZY_BOOST = 15.0
+IDENTIFIER_SUBSTRING_BOOST = 20.0
+TEXT_WORD_BOOST = 2.0
+
+
+def _fields_by_tier(fields):
+    """Group searched field names by tier; a tierless name is left out."""
+    tier_by_name = {
+        name: tier
+        for (_, name), tier in load_search_tiers().field_tiers.items()
+        if tier
+    }
+    by_tier = {tier: [] for tier in TIERS}
+    for field in fields:
+        if field in tier_by_name:
+            by_tier[tier_by_name[field]].append(field)
+    return by_tier
+
+
+def _any(fields, template):
+    """One clause per field from `template` ({f} is the field), joined by OR."""
+    return " OR ".join(template.format(f=f) for f in fields)
+
+
+def _search_clauses(by_tier, term_length):
+    """The SEARCH clauses for one term, each scored by BM25 and its boost."""
+    label, synonym = by_tier["label"], by_tier["synonym"]
+    identifier, text = by_tier["identifier"], by_tier["text"]
+    clauses = [
+        f'BOOST(ANALYZER(doc.`{IDENTIFIER_FIELD}` == norm_term, "norm-lower"), '
+        f"{IDENTIFIER_BOOST})"
+    ]
+    for fields, exact, fuzzy in (
+        (label, LABEL_EXACT_TOKEN_BOOST, LABEL_FUZZY_BOOST),
+        (synonym, SYNONYM_EXACT_TOKEN_BOOST, SYNONYM_FUZZY_BOOST),
+    ):
+        if not fields:
+            continue
+        distances = [(0, exact)] + (
+            [(1, fuzzy)] if term_length >= FUZZY_MIN_LENGTH else []
+        )
+        for distance, boost in distances:
+            match = _any(
+                fields,
+                f"BOOST(LEVENSHTEIN_MATCH(doc.`{{f}}`, lower_term, {distance}), {boost})",
+            )
+            clauses.append(f'ANALYZER({match}, "text_en_no_stem")')
+    if label and term_length >= PREFIX_MIN_LENGTH:
+        prefix = _any(
+            label,
+            'doc.`{f}` LIKE CONCAT(like_term, "%") '
+            'OR doc.`{f}` LIKE CONCAT("% ", like_term, "%")',
+        )
+        clauses.append(
+            f'BOOST(ANALYZER({prefix}, "wildcard-lower"), {LABEL_PREFIX_BOOST})'
+        )
+    if identifier and term_length >= FUZZY_MIN_LENGTH:
+        substring = _any(identifier, 'doc.`{f}` LIKE CONCAT("%", like_term, "%")')
+        clauses.append(
+            f'BOOST(ANALYZER({substring}, "wildcard-lower"), '
+            f"{IDENTIFIER_SUBSTRING_BOOST})"
+        )
+    if text:
+        word = _any(text, "doc.`{f}` == lower_term")
+        clauses.append(f'BOOST(ANALYZER({word}, "text_en"), {TEXT_WORD_BOOST})')
+    whole = label + synonym + identifier
+    if whole:
+        exact = _any(whole, "doc.`{f}` == norm_term")
+        clauses.append(f'BOOST(ANALYZER({exact}, "norm-lower"), {WHOLE_VALUE_BOOST})')
+    # Kept from the previous query, unboosted: today it is the only clause
+    # that finds a synonym inside a comma-joined synonym string ("KL-6",
+    # "Insulin, human"). Remove it once the ETL stores synonyms as lists
+    # (Springbok-LLC/nlm-ckn-etl#113); it is most of the query's cost.
+    every = label + synonym + identifier + text
+    if every:
+        ngram = _any(every, 'doc.`{f}` LIKE CONCAT("%", @raw_like_term, "%")')
+        clauses.append(f'ANALYZER({ngram}, "n-gram")')
+    return clauses
+
+
 def search_by_term(search_term, search_fields, graph):
     """
     Search for documents matching a search term across specified fields.
 
-    Uses a combination of exact match, Levenshtein fuzzy matching, and n-gram
-    search to provide comprehensive results ranked by relevance.
+    Each searched field contributes the clauses of its search tier (label,
+    synonym, identifier or text, from the collection maps), and results are
+    ranked by BM25 alone, so the boosts decide the order: a whole-value match
+    first, then label prefixes, then typo-tolerant and substring matches.
 
     Args:
         search_term (str): The term to search for.
@@ -139,7 +240,7 @@ def search_by_term(search_term, search_fields, graph):
         graph (str): The graph type ("ontologies" or "phenotypes").
 
     Returns:
-        list: Sorted list of matching documents (empty when nothing matches).
+        list: Matching documents, best first (empty when nothing matches).
             Each carries `_match`, from match_reason().
 
     Raises:
@@ -148,78 +249,30 @@ def search_by_term(search_term, search_fields, graph):
     db_connection, _ = get_db_and_graph(graph)
     requested = [f for f in search_fields if f != IDENTIFIER_FIELD]
     # Only tiered fields are linked in the view with the analyzers the clauses
-    # below use; an untiered field (e.g. year) is returned but not searched.
+    # use; an untiered field (e.g. year) is returned but not searched.
     tiered = tiered_field_names()
     search_fields = [f for f in requested if f in tiered]
+    term = " ".join(search_term.split())
+    clauses = _search_clauses(_fields_by_tier(search_fields), len(term))
 
-    # norm-lower also strips accents, so the term is normalized with the same
-    # analyzer rather than LOWER(), after trimming a pasted identifier.
-    query_beginning = """
-            LET lower_search_term = LOWER(@search_term)
-            LET identifier_term = FIRST(TOKENS(TRIM(@search_term), "norm-lower"))
-            LET sortedDocs = (
-                FOR doc IN indexed
-                    SEARCH
-                    BOOST(ANALYZER(doc.`{field}` == identifier_term, "norm-lower"), {boost})
-                    """.format(field=IDENTIFIER_FIELD, boost=IDENTIFIER_BOOST)
-
-    # Levenshtein match with no substitutions, boosted
-    levenshtein_string = " OR ANALYZER("
-    for field in search_fields:
-        levenshtein_string += (
-            f"BOOST(LEVENSHTEIN_MATCH(doc.`{field}`, lower_search_term, 0), 100.0) OR "
-        )
-    levenshtein_string_0 = levenshtein_string[0:-3] + ', "text_en_no_stem")'
-
-    # Levenshtein match with substitutions, boosted less
-    levenshtein_string = " OR ANALYZER("
-    for field in search_fields:
-        levenshtein_string += (
-            f"BOOST(LEVENSHTEIN_MATCH(doc.`{field}`, lower_search_term, 1), 5.0) OR "
-        )
-    levenshtein_string_1 = levenshtein_string[0:-3] + ', "text_en_no_stem")'
-
-    # n-gram search for phrases
-    n_gram_string = " OR "
-    for field in search_fields:
-        n_gram_string += f'ANALYZER(doc.`{field}` LIKE CONCAT("%", CONCAT(@search_term, "%")), "n-gram") OR '
-    n_gram_string = n_gram_string[0:-3]
-
-    # Build exact match check for sorting. A node whose own identifier was
-    # typed counts as exact too, or a cell set storing that CURIE in a searched
-    # field (ontology_purl) would sort above the node it names; the boost then
-    # puts the node first among the exact matches.
-    exact_match_conditions = " OR ".join(
-        [f"LOWER(doc.`{field}`) == lower_search_term" for field in search_fields]
-        + [
-            f"identifier_term IN (FOR s IN doc.`{IDENTIFIER_FIELD}` || [] "
-            "RETURN LOWER(s))"
-        ]
-    )
-
-    query_end = """
-                    LET is_exact_match = ({exact_match_conditions})
-                    SORT is_exact_match DESC, BM25(doc) DESC
-                    LIMIT @limit
-                    RETURN MERGE({{"_id": doc._id}},
-                        {{"_search_match": NTH(doc.`{field}`, POSITION(
-                            doc.`{field}`[* RETURN FIRST(TOKENS(CURRENT, "norm-lower"))],
-                            identifier_term, true))}},
-                        KEEP(doc, @projection_fields))
-            )
-
-            RETURN sortedDocs
-            """.format(
-        exact_match_conditions=exact_match_conditions, field=IDENTIFIER_FIELD
-    )
-    # A request may name only `_search` or untiered fields; the identifier
-    # clause then stands alone.
-    per_field_clauses = (
-        levenshtein_string_0 + levenshtein_string_1 + n_gram_string
-        if search_fields
-        else ""
-    )
-    query = query_beginning + per_field_clauses + query_end
+    # norm-lower also strips accents, so whole-value and LIKE terms are
+    # normalized with that analyzer, not LOWER(); it leaves the LIKE escapes
+    # alone. The raw term feeds only the n-gram clause, whose analyzer is
+    # case-sensitive.
+    query = f"""
+            LET lower_term = LOWER(@search_term)
+            LET norm_term = FIRST(TOKENS(@search_term, "norm-lower"))
+            LET like_term = FIRST(TOKENS(@raw_like_term, "norm-lower"))
+            FOR doc IN indexed
+                SEARCH {" OR ".join(clauses)}
+                SORT BM25(doc) DESC
+                LIMIT @limit
+                RETURN MERGE({{"_id": doc._id}},
+                    {{"_search_match": NTH(doc.`{IDENTIFIER_FIELD}`, POSITION(
+                        doc.`{IDENTIFIER_FIELD}`[* RETURN FIRST(TOKENS(CURRENT, "norm-lower"))],
+                        norm_term, true))}},
+                    KEEP(doc, @projection_fields))
+            """
 
     # Project only the fields the dropdown needs: _id (always), the requested
     # fields (searched or not), and any label or badge fields the row reads.
@@ -227,18 +280,14 @@ def search_by_term(search_term, search_fields, graph):
     projection_fields = sorted(set(requested) | set(LABEL_FIELDS) | set(BADGE_FIELDS))
 
     bind_vars = {
-        "search_term": search_term,
+        "search_term": term,
         "limit": SEARCH_RESULT_LIMIT,
         "projection_fields": projection_fields,
+        "raw_like_term": escape_like(term),
     }
 
     try:
-        cursor = db_connection.aql.execute(query, bind_vars=bind_vars)
-        results = cursor.next()
-
-    except StopIteration:
-        logger.debug("Search query returned no results for term: %s", search_term)
-        results = []
+        results = list(db_connection.aql.execute(query, bind_vars=bind_vars))
     except Exception as e:
         logger.exception("Error executing search query")
         raise SearchServiceError(unavailable=isinstance(e, UNAVAILABLE_ERRORS)) from e

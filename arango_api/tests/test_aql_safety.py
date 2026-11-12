@@ -8,7 +8,7 @@ future caller depend on.
 
 from django.test import SimpleTestCase
 
-from arango_api.aql_safety import is_safe_aql_identifier
+from arango_api.aql_safety import escape_like, is_safe_aql_identifier
 
 
 class IsSafeAqlIdentifierTestCase(SimpleTestCase):
@@ -37,3 +37,19 @@ class IsSafeAqlIdentifierTestCase(SimpleTestCase):
         # failure it exists to prevent.
         for value in (None, 123, 1.5, True, ["Label"], {"Label": 1}, object()):
             self.assertFalse(is_safe_aql_identifier(value), repr(value))
+
+
+class EscapeLikeTestCase(SimpleTestCase):
+    """escape_like makes LIKE match a typed term literally."""
+
+    def test_wildcards_and_backslash_are_escaped_once(self):
+        """%, _ and a backslash each get one escape; other text is unchanged."""
+        for term, escaped in (
+            ("50%", "50\\%"),
+            ("a_b", "a\\_b"),
+            ("end\\", "end\\\\"),
+            ("\\%", "\\\\\\%"),
+            ("T Cell", "T Cell"),
+        ):
+            with self.subTest(term):
+                self.assertEqual(escape_like(term), escaped)

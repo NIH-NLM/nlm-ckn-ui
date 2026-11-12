@@ -14,6 +14,7 @@ Test Configuration:
         docker run -d --name arangodb-test -p 8530:8529 -e ARANGO_ROOT_PASSWORD=test arangodb
 """
 
+import re
 from unittest import mock
 
 from django.test import SimpleTestCase, TestCase, tag
@@ -1220,20 +1221,18 @@ class ConnectingPathsUnboundedCollectionsTestCase(SimpleTestCase):
 class SearchByTermQueryTestCase(TestCase):
     """Unit tests for search_by_term query construction (no DB required)."""
 
-    def _run(self, search_fields):
+    def _run(self, search_fields, term="cell"):
         """Invoke search_by_term with the DB layer mocked out.
 
         Returns the (query, bind_vars) passed to aql.execute.
         """
-        cursor = mock.Mock()
-        cursor.next.return_value = []
         db_connection = mock.Mock()
-        db_connection.aql.execute.return_value = cursor
+        db_connection.aql.execute.return_value = iter([])
 
         with mock.patch.object(
             search_service, "get_db_and_graph", return_value=(db_connection, None)
         ):
-            search_service.search_by_term("cell", search_fields, "ontologies")
+            search_service.search_by_term(term, search_fields, "ontologies")
 
         _, kwargs = db_connection.aql.execute.call_args
         return db_connection.aql.execute.call_args[0][0], kwargs["bind_vars"]
@@ -1244,8 +1243,7 @@ class SearchByTermQueryTestCase(TestCase):
         # number, so the relevance ranking is preserved while capping output.
         self.assertIn("LIMIT @limit", query)
         self.assertEqual(bind_vars["limit"], search_service.SEARCH_RESULT_LIMIT)
-        sort_idx = query.index("SORT is_exact_match DESC")
-        self.assertLess(sort_idx, query.index("LIMIT @limit"))
+        self.assertRegex(query, r"SORT BM25\(doc\) DESC\s+LIMIT @limit")
 
     def test_query_projects_minimal_fields(self):
         query, bind_vars = self._run(["label", "definition"])
@@ -1274,11 +1272,13 @@ class SearchByTermQueryTestCase(TestCase):
         for field in search_service.BADGE_FIELDS:
             self.assertIn(field, bind_vars["projection_fields"])
 
-    def test_ranking_clauses_unchanged(self):
+    def test_ranking_is_bm25_alone(self):
         query, _ = self._run(["label"])
-        # Exact-match boost, BM25, Levenshtein and n-gram branches still present.
-        self.assertIn("is_exact_match", query)
-        self.assertIn("BM25(doc)", query)
+        # One sort, so the view can stop at the limit (constrained sort); the
+        # boosts decide the order.
+        self.assertEqual(query.count("SORT "), 1)
+        self.assertNotIn("is_exact_match", query)
+        self.assertNotIn("sortedDocs", query)
         self.assertIn("LEVENSHTEIN_MATCH", query)
         self.assertIn('"n-gram"', query)
 
@@ -1321,22 +1321,22 @@ class SearchByTermIdentifierTestCase(TestCase):
 
     def test_identifier_clause_matches_whole_value_with_norm_lower(self):
         query, _ = self._run(["label"])
-        self.assertIn('FIRST(TOKENS(TRIM(@search_term), "norm-lower"))', query)
+        self.assertIn('FIRST(TOKENS(@search_term, "norm-lower"))', query)
+        # Boosted above a whole-value field match, so the node outranks cell
+        # sets that store the same CURIE in ontology_purl.
+        boost = search_service.IDENTIFIER_BOOST
+        self.assertGreater(boost, search_service.WHOLE_VALUE_BOOST)
         self.assertIn(
-            'BOOST(ANALYZER(doc.`_search` == identifier_term, "norm-lower"), 1000.0)',
+            f'BOOST(ANALYZER(doc.`_search` == norm_term, "norm-lower"), {boost})',
             query,
         )
-        # An own-identifier match counts as exact, so the node outranks cell
-        # sets that store the same CURIE in ontology_purl.
-        self.assertIn("identifier_term IN (FOR s IN doc.`_search`", query)
 
     def test_identifier_only_request_builds_a_valid_search(self):
         query, bind_vars = self._run(["_search"])
-        search = query[query.index("SEARCH") : query.index("LET is_exact_match")]
+        search = query[query.index("SEARCH") : query.index("SORT")]
         self.assertNotIn("LEVENSHTEIN_MATCH", search)
         self.assertNotIn("n-gram", search)
         self.assertNotRegex(search, r"\bOR\s*$")
-        self.assertIn("LET is_exact_match = (identifier_term IN", query)
         self.assertNotIn("_search", bind_vars["projection_fields"])
 
     def test_client_supplied_search_field_gets_no_per_field_clause(self):
@@ -1360,12 +1360,87 @@ class SearchByTermTierTestCase(TestCase):
 
     def test_only_untiered_fields_search_identifiers_alone(self):
         query, bind_vars = self._run(["year"])
-        search = query[query.index("SEARCH") : query.index("LET is_exact_match")]
+        search = query[query.index("SEARCH") : query.index("SORT")]
         self.assertNotIn("LEVENSHTEIN_MATCH", search)
         self.assertNotIn("n-gram", search)
-        self.assertIn("LET is_exact_match = (identifier_term IN", query)
+        self.assertIn("doc.`_search` == norm_term", search)
         labels = set(search_service.LABEL_FIELDS) | set(search_service.BADGE_FIELDS)
         self.assertEqual(bind_vars["projection_fields"], sorted({"year"} | labels))
+
+
+class SearchByTermRankingTestCase(TestCase):
+    """The tiered ranking clauses (#345, U10)."""
+
+    _run = SearchByTermQueryTestCase._run
+
+    def _search(self, fields, term):
+        query, bind_vars = self._run(fields, term)
+        return query[query.index("SEARCH") : query.index("SORT")], bind_vars
+
+    def test_term_reaches_the_query_only_as_bind_variables(self):
+        query, bind_vars = self._run(["label"], r"zq% x_\ ")
+        self.assertNotIn("zq", query)
+        self.assertEqual(bind_vars["search_term"], r"zq% x_\ ".strip())
+        self.assertEqual(bind_vars["raw_like_term"], r"zq\% x\_\\")
+
+    def test_whitespace_is_collapsed_before_matching(self):
+        _, bind_vars = self._run(["label"], "  T   cell ")
+        self.assertEqual(bind_vars["search_term"], "T cell")
+
+    def test_clauses_follow_the_term_length(self):
+        """Prefix matching starts at 3 characters, fuzzy and substring at 4."""
+        fields = ["label", "hasDbXref"]
+        for term, prefix, fuzzy in (
+            ("a", False, False),
+            ("abc", True, False),
+            ("abcd", True, True),
+        ):
+            with self.subTest(term):
+                search, _ = self._search(fields, term)
+                self.assertEqual("LIKE CONCAT(like_term" in search, prefix)
+                self.assertEqual("lower_term, 1)" in search, fuzzy)
+                self.assertEqual('LIKE CONCAT("%", like_term' in search, fuzzy)
+                self.assertIn("lower_term, 0)", search)
+                self.assertIn("doc.`label` == norm_term", search)
+
+    def test_each_tier_gets_only_its_own_clauses(self):
+        fields = ["label", "hasExactSynonym", "hasDbXref", "definition"]
+        search, _ = self._search(fields, "cell type")
+        self.assertIn("LEVENSHTEIN_MATCH(doc.`hasExactSynonym`", search)
+        self.assertNotIn("LEVENSHTEIN_MATCH(doc.`hasDbXref`", search)
+        self.assertNotIn("LEVENSHTEIN_MATCH(doc.`definition`", search)
+        self.assertNotIn("doc.`hasExactSynonym` LIKE CONCAT(like_term", search)
+        self.assertIn('doc.`definition` == lower_term, "text_en")', search)
+        self.assertNotIn("doc.`definition` == norm_term", search)
+
+    def test_a_tier_with_no_requested_fields_adds_no_empty_group(self):
+        search, _ = self._search(["definition"], "marrow cell")
+        self.assertNotIn("LEVENSHTEIN_MATCH", search)
+        self.assertNotRegex(search, r"doc\.`(?!_search`)\w+` == norm_term")
+        self.assertNotRegex(search, r"\(\s*OR|OR\s*\)|ANALYZER\(\s*,")
+
+    def test_ngram_clause_covers_tiered_fields_only(self):
+        search, _ = self._search(["label", "year"], "cell")
+        self.assertIn('doc.`label` LIKE CONCAT("%", @raw_like_term, "%")', search)
+        self.assertNotIn("doc.`year`", search)
+
+    def test_normalized_clauses_do_not_use_lower(self):
+        """norm-lower and wildcard-lower clauses use the analyzer-normalized term."""
+        search, _ = self._search(["label", "hasDbXref"], "café")
+        clauses = re.findall(
+            r'ANALYZER\(((?:(?!ANALYZER\().)*?), "(?:norm|wildcard)-lower"\)', search
+        )
+        self.assertGreaterEqual(len(clauses), 3)
+        for clause in clauses:
+            self.assertNotIn("lower_term", clause)
+            self.assertNotIn("LOWER(", clause)
+
+    def test_no_boost_is_zero(self):
+        """Every *_BOOST constant is positive."""
+        # ArangoDB scores a zero boost as if unboosted (arangodb#23375).
+        for name in dir(search_service):
+            if name.endswith("_BOOST"):
+                self.assertGreater(getattr(search_service, name), 0, name)
 
 
 class MatchReasonTestCase(SimpleTestCase):
@@ -1458,7 +1533,7 @@ class SearchByTermMatchTestCase(TestCase):
 
     def test_search_match_is_computed_after_the_limit(self):
         query, _ = self._run(["label"])
-        self.assertIn("SORT is_exact_match DESC, BM25(doc) DESC\n", query)
+        self.assertIn("SORT BM25(doc) DESC\n", query)
         self.assertGreater(
             query.index('"_search_match": NTH(doc.`_search`'),
             query.index("LIMIT @limit"),
@@ -1466,19 +1541,20 @@ class SearchByTermMatchTestCase(TestCase):
         # Stored forms are normalized like the search clause, not by LOWER().
         self.assertIn(
             'doc.`_search`[* RETURN FIRST(TOKENS(CURRENT, "norm-lower"))], '
-            "identifier_term, true))",
+            "norm_term, true))",
             " ".join(query.split()),
         )
 
     def test_rows_carry_match_and_drop_search_match(self):
-        cursor = mock.Mock()
-        cursor.next.return_value = [
-            {"_id": "CL/0000084", "label": "T cell", "_search_match": "CL:0000084"},
-            {"_id": "CL/0000624", "label": "CD4-positive T cell"},
-            {"_id": "CL/0000000", "definition": "unrelated"},
-        ]
+        """Each row gets `_match`; the internal `_search_match` is removed."""
         db_connection = mock.Mock()
-        db_connection.aql.execute.return_value = cursor
+        db_connection.aql.execute.return_value = iter(
+            [
+                {"_id": "CL/0000084", "label": "T cell", "_search_match": "CL:0000084"},
+                {"_id": "CL/0000624", "label": "CD4-positive T cell"},
+                {"_id": "CL/0000000", "definition": "unrelated"},
+            ]
+        )
         with mock.patch.object(
             search_service, "get_db_and_graph", return_value=(db_connection, None)
         ):
@@ -1513,9 +1589,7 @@ class SearchByTermErrorTestCase(SimpleTestCase):
         self.assertIs(ctx.exception.__cause__, error)
 
     def test_no_matches_returns_empty_list(self):
-        cursor = mock.Mock()
-        cursor.next.side_effect = StopIteration
-        self.assertEqual(self._search([cursor]), [])
+        self.assertEqual(self._search([iter([])]), [])
 
     def test_unreachable_database_is_unavailable(self):
         import requests

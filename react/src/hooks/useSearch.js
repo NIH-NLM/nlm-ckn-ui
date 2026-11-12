@@ -8,6 +8,16 @@ const useSearch = (graphType) => {
   const containerRef = useRef(null);
   const debounceTimeoutRef = useRef(null);
   const mountedRef = useRef(true);
+  // Only the latest request may set results: each new term or a clear bumps
+  // the sequence and aborts the request in flight.
+  const requestSeqRef = useRef(0);
+  const abortRef = useRef(null);
+
+  const cancelInFlight = useCallback(() => {
+    requestSeqRef.current += 1;
+    abortRef.current?.abort();
+    abortRef.current = null;
+  }, []);
 
   const [query, setQueryState] = useState("");
   const [results, setResults] = useState([]);
@@ -34,6 +44,7 @@ const useSearch = (graphType) => {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
+      abortRef.current?.abort();
     };
   }, []);
 
@@ -43,6 +54,7 @@ const useSearch = (graphType) => {
       setHighlightedIndex(-1);
 
       if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
+      cancelInFlight();
 
       if (!value.trim()) {
         setResults([]);
@@ -52,25 +64,31 @@ const useSearch = (graphType) => {
       }
 
       setIsLoading(true);
+      const seq = requestSeqRef.current;
       debounceTimeoutRef.current = setTimeout(async () => {
+        const controller = new AbortController();
+        abortRef.current = controller;
         const searchFields = Array.from(getAllSearchableFields());
-        const data = await searchDocuments(value, graphType, searchFields);
-        if (!mountedRef.current) return;
-        setResults(data || []);
+        const data = await searchDocuments(value, graphType, searchFields, controller.signal);
+        if (!mountedRef.current || seq !== requestSeqRef.current) return;
+        abortRef.current = null;
+        setResults(Array.isArray(data) ? data : []);
         setIsOpen(true);
         setIsLoading(false);
       }, DEBOUNCE_MS);
     },
-    [graphType],
+    [graphType, cancelInFlight],
   );
 
   const clearSearch = useCallback(() => {
+    if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
+    cancelInFlight();
     setQueryState("");
     setResults([]);
     setIsOpen(false);
     setIsLoading(false);
     setHighlightedIndex(-1);
-  }, []);
+  }, [cancelInFlight]);
 
   const handleKeyDown = useCallback(
     (e) => {
