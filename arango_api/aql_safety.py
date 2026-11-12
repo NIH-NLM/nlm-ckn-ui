@@ -27,3 +27,14 @@ def is_safe_aql_identifier(name):
     predicate invites the failure it exists to prevent.
     """
     return isinstance(name, str) and bool(SAFE_AQL_IDENTIFIER.match(name))
+
+
+# LIKE treats % and _ as wildcards and \ as their escape. A typed term is
+# matched literally, so each gets a backslash, in one pass so the backslashes
+# added for % and _ are not escaped again.
+_LIKE_SPECIAL = re.compile(r"[\\%_]")
+
+
+def escape_like(term):
+    """Escape `term` so an AQL LIKE pattern matches it literally."""
+    return _LIKE_SPECIAL.sub(lambda m: "\\" + m.group(), term)
