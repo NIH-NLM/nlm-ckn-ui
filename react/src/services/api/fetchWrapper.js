@@ -73,8 +73,9 @@ export const fetchWithErrorHandling = async (endpoint, options = {}, config = {}
       throw error;
     }
 
-    // Handle network errors or other fetch failures
-    if (!silent) {
+    // Handle network errors or other fetch failures. A request the caller
+    // aborted is not an error worth logging.
+    if (!silent && !options.signal?.aborted) {
       console.error(`Network Error [${endpoint}]:`, error.message);
     }
 
