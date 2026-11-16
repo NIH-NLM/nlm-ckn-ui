@@ -838,6 +838,25 @@ WORKFLOW_PRESETS = [
                 },
                 "perNodeSettings": {},
             },
+            {
+                "id": "preset-uc8-phase-3",
+                "name": "Genes, proteins and compounds with the disease",
+                "originSource": "multiplePhases",
+                "originNodeIds": [],
+                "previousPhaseId": None,
+                "previousPhaseIds": ["preset-uc8-phase-1", "preset-uc8-phase-2"],
+                "phaseCombineOperation": "Union",
+                "originFilter": "all",
+                # The protein and compound traversal keeps only its own edge
+                # labels, so it drops the disease -> gene edges. The union
+                # restores them.
+                "settings": {
+                    "graphType": "phenotypes",
+                    "includeInterNodeEdges": True,
+                    "collapseLeafNodes": "off",
+                },
+                "perNodeSettings": {},
+            },
         ],
     },
     {
