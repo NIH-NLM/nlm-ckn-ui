@@ -93,6 +93,8 @@ const PhaseEditor = ({
   onExecute,
   onDelete,
   isExecuting,
+  isSolution = false,
+  onToggleSolution,
   collections,
   edgeFilterOptions,
   nodeDetails = {},
@@ -577,6 +579,18 @@ const PhaseEditor = ({
       {/* Settings Section — hide traversal settings for combine/filter phases */}
       <div className="phase-section">
         <h4>{isCombinePhase || isFilterPhase ? "Output Settings" : "Settings"}</h4>
+
+        <div className="setting-item full-width">
+          <label className="toggle-label" htmlFor={`solution-${phase.id}`}>
+            <input
+              id={`solution-${phase.id}`}
+              type="checkbox"
+              checked={isSolution}
+              onChange={(e) => onToggleSolution(e.target.checked)}
+            />
+            Use as answer
+          </label>
+        </div>
 
         {!isCombinePhase && !isFilterPhase && (
           <>

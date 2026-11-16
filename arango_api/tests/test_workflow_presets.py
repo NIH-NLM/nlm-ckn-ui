@@ -168,3 +168,18 @@ class PresetSchemaDriftTests(TestCase):
         for preset, phase in _iter_phases():
             for origin in _phase_origins(phase):
                 self.assertRegex(origin, pattern, msg=f"{preset['id']}/{phase['id']}")
+
+    def test_solution_references_resolve(self):
+        """A preset's solution names one of its phases and well-formed columns."""
+        for preset in WORKFLOW_PRESETS:
+            solution = preset.get("solution")
+            if not solution:
+                continue
+            phase_ids = {p["id"] for p in preset["phases"]}
+            self.assertIn(solution["phaseId"], phase_ids, msg=preset["id"])
+            for column in solution.get("linkedColumns", []):
+                path = column["path"]
+                self.assertIn(len(path), (1, 2), msg=preset["id"])
+                for hop in path:
+                    self.assertTrue(hop.get("label"), msg=preset["id"])
+                    self.assertTrue(hop.get("collection"), msg=preset["id"])

@@ -22,6 +22,7 @@ import {
   loadWorkflow,
   removePhase,
   removePhaseOriginNode,
+  setSolutionPhase,
   setWorkflowDescription,
   setWorkflowName,
   showPresets,
@@ -57,6 +58,7 @@ const WorkflowBuilder = ({ onGraphReady }) => {
     failedNodeIds,
     showPresetSelector,
     unknownLabels,
+    solution,
   } = useSelector((state) => state.workflowBuilder);
 
   // Get collections and edge filter options from graph state
@@ -237,6 +239,7 @@ const WorkflowBuilder = ({ onGraphReady }) => {
       id: workflowId,
       name: workflowName,
       description: workflowDescription,
+      solution,
       phases: phases.map((p) => ({
         ...p,
         result: null, // Don't include results in shared URL
@@ -265,7 +268,7 @@ const WorkflowBuilder = ({ onGraphReady }) => {
       console.error("Failed to create shareable URL:", err);
       setToastMessage("Failed to create shareable URL. The workflow may be too large to encode.");
     }
-  }, [workflowId, workflowName, workflowDescription, phases]);
+  }, [workflowId, workflowName, workflowDescription, phases, solution]);
 
   // Check if all phases have origin nodes configured
   const hasPhases = phases.length > 0;
@@ -380,6 +383,10 @@ const WorkflowBuilder = ({ onGraphReady }) => {
                 onExecute={() => handleExecutePhase(phase.id)}
                 onDelete={() => handleRemovePhase(phase.id)}
                 isExecuting={executingPhaseId === phase.id}
+                isSolution={solution?.phaseId === phase.id}
+                onToggleSolution={(checked) =>
+                  dispatch(setSolutionPhase(checked ? phase.id : null))
+                }
                 collections={collections}
                 edgeFilterOptions={availableEdgeFilters}
                 nodeDetails={nodeDetails}

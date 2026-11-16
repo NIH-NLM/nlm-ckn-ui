@@ -1,3 +1,4 @@
+import { TextDecoder, TextEncoder } from "node:util";
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { Provider } from "react-redux";
@@ -69,5 +70,25 @@ describe("WorkflowBuilder schema-drift banner", () => {
     renderBuilder({ unknownLabels: ["MEMBER_OF"], showPresetSelector: false });
     fireEvent.click(screen.getByRole("button", { name: /dismiss/i }));
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+});
+
+describe("WorkflowBuilder sharing", () => {
+  it("includes the solution in the shared link", () => {
+    // jsdom does not provide the encoders the share handler uses.
+    Object.assign(global, { TextEncoder, TextDecoder });
+    const writeText = jest.fn();
+    Object.assign(navigator, { clipboard: { writeText } });
+    const solution = { phaseId: "p1", collection: "CS", linkedColumns: [], fields: ["x"] };
+    renderBuilder({
+      showPresetSelector: false,
+      solution,
+      phases: [{ id: "p1", name: "", originSource: "manual", originNodeIds: [], settings: {} }],
+    });
+    fireEvent.click(screen.getByRole("button", { name: /share/i }));
+    const url = writeText.mock.calls[0][0];
+    const encoded = decodeURIComponent(url.split("?w=")[1]);
+    const bytes = Uint8Array.from(atob(encoded), (c) => c.charCodeAt(0));
+    expect(JSON.parse(new TextDecoder().decode(bytes)).solution).toEqual(solution);
   });
 });
