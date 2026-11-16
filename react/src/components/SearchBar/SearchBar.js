@@ -19,7 +19,7 @@ const SearchIcon = () => (
 
 // Presentational bar driven by a provided search object (from useSearch).
 const SearchBarView = ({ placeholder, search }) => {
-  const { query, setQuery, results, isOpen, setIsOpen, containerRef } = search;
+  const { query, setQuery, results, isOpen, setIsOpen, isLoading, error, containerRef } = search;
   const shouldDropdownBeVisible = isOpen && query.trim() !== "";
 
   return (
@@ -37,7 +37,7 @@ const SearchBarView = ({ placeholder, search }) => {
           <SearchIcon />
         </div>
         <div className={`search-results-dropdown ${shouldDropdownBeVisible ? "show" : ""}`}>
-          <SearchResultsTable searchResults={results} />
+          <SearchResultsTable searchResults={results} isLoading={isLoading} error={error} />
         </div>
       </div>
     </div>

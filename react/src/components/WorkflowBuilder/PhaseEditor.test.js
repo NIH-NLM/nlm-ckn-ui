@@ -39,6 +39,7 @@ const makePhase = (overrides = {}) => ({
 const renderEditor = (extraProps = {}) => {
   const store = configureStore({ reducer: { graph: graphStub } });
   const onUpdateSettings = jest.fn();
+  const onToggleSolution = jest.fn();
   render(
     <Provider store={store}>
       <PhaseEditor
@@ -53,13 +54,15 @@ const renderEditor = (extraProps = {}) => {
         onExecute={jest.fn()}
         onDelete={jest.fn()}
         isExecuting={false}
+        isSolution={false}
+        onToggleSolution={onToggleSolution}
         collections={["CL"]}
         edgeFilterOptions={{ Label: { type: "categorical", values: ["DERIVES_FROM"] } }}
         nodeDetails={{}}
       />
     </Provider>,
   );
-  return { onUpdateSettings };
+  return { onUpdateSettings, onToggleSolution };
 };
 
 describe("PhaseEditor edge filter include/exclude mode", () => {
@@ -179,5 +182,15 @@ describe("PhaseEditor result summary counts", () => {
     const summary = screen.getByTestId("phase-result-summary");
     expect(summary).toHaveTextContent("4 nodes, 3 edges");
     expect(summary).not.toHaveTextContent("before collapse");
+  });
+});
+
+describe("PhaseEditor solution checkbox", () => {
+  it("shows an unchecked box and reports a click", () => {
+    const { onToggleSolution } = renderEditor();
+    const box = screen.getByLabelText("Use as answer");
+    expect(box).not.toBeChecked();
+    fireEvent.click(box);
+    expect(onToggleSolution).toHaveBeenCalledWith(true);
   });
 });

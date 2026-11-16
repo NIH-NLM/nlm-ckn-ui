@@ -11,7 +11,7 @@ import { postJson } from "./fetchWrapper";
  * @param {string} graphType - Graph/database type.
  * @param {Array<string>} searchFields - Fields to search in.
  * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request.
- * @returns {Promise<Array>} Array of matching documents.
+ * @returns {Promise<Array>} Array of matching documents; rejects on failure.
  */
 export const searchDocuments = async (searchTerm, graphType, searchFields, signal) => {
   return postJson(
@@ -21,7 +21,7 @@ export const searchDocuments = async (searchTerm, graphType, searchFields, signa
       db: graphType,
       search_fields: searchFields,
     },
-    { fallback: [] },
+    {},
     signal,
   );
 };

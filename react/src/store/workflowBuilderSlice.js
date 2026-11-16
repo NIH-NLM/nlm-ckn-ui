@@ -636,6 +636,11 @@ const initialState = {
   // Phases configuration
   phases: [createEmptyPhase(0)],
 
+  // The step whose result is the workflow's solution, or null:
+  // { phaseId, collection, linkedColumns: [{ path: [{ label, collection }] }], fields }
+  // where fields lists the row fields to show, or null for the default.
+  solution: null,
+
   // Execution results keyed by phase ID (source of truth for results)
   phaseResults: {},
 
@@ -685,6 +690,7 @@ const workflowBuilderSlice = createSlice({
       state.workflowDescription = "";
       state.unknownLabels = [];
       state.phases = [createEmptyPhase(0)];
+      state.solution = null;
       state.phaseResults = {};
       state.nodeDetails = {};
       state.requestedNodeIds = [];
@@ -720,12 +726,40 @@ const workflowBuilderSlice = createSlice({
         result: null,
         settings: { ...UI_DEFAULTS, ...p.settings },
       }));
+      // A solution naming a phase that did not load (e.g. a hand-edited link) is dropped.
+      const solutionLoads =
+        !!workflow.solution && state.phases.some((p) => p.id === workflow.solution?.phaseId);
+      state.solution = solutionLoads
+        ? {
+            phaseId: workflow.solution.phaseId,
+            collection: workflow.solution.collection ?? null,
+            linkedColumns: workflow.solution.linkedColumns ?? [],
+            fields: workflow.solution.fields ?? null,
+          }
+        : null;
       state.phaseResults = {};
       state.activePhaseId = null;
       state.activeGraph = null;
       state.status = GRAPH_STATUS.IDLE;
       state.error = null;
       state.showPresetSelector = false; // Hide presets after loading
+    },
+
+    /**
+     * Mark a phase as the workflow's solution; null clears it.
+     */
+    setSolutionPhase: (state, action) => {
+      state.solution = action.payload
+        ? { phaseId: action.payload, collection: null, linkedColumns: [], fields: null }
+        : null;
+    },
+
+    setSolutionCollection: (state, action) => {
+      if (state.solution) state.solution.collection = action.payload;
+    },
+
+    setSolutionLinkedColumns: (state, action) => {
+      if (state.solution) state.solution.linkedColumns = action.payload;
     },
 
     /**
@@ -780,6 +814,7 @@ const workflowBuilderSlice = createSlice({
         // Update subsequent phases that reference this one
         const removedPhaseId = state.phases[phaseIndex].id;
         state.phases.splice(phaseIndex, 1);
+        if (state.solution?.phaseId === removedPhaseId) state.solution = null;
 
         // Fix references in phases that pointed to the removed phase
         for (const phase of state.phases) {
@@ -1008,6 +1043,9 @@ export const {
   addFinalStage,
   addPhase,
   removePhase,
+  setSolutionPhase,
+  setSolutionCollection,
+  setSolutionLinkedColumns,
   updatePhase,
   updatePhaseSettings,
   addPhaseOriginNode,

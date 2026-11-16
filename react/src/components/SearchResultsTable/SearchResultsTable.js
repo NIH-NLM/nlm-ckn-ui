@@ -9,7 +9,7 @@ import { getColorForCollection } from "utils";
  * SearchResultsTable component.
  * Displays a list of search results.
  */
-const SearchResultsTable = ({ searchResults }) => {
+const SearchResultsTable = ({ searchResults, isLoading = false, error = false }) => {
   const navigate = useNavigate();
   const collectionMaps = useMemo(() => new Map(collMaps.maps), []);
   const expandAmount = 20;
@@ -33,7 +33,10 @@ const SearchResultsTable = ({ searchResults }) => {
   };
 
   if (!Array.isArray(searchResults) || searchResults.length === 0) {
-    return <div className="no-results-message">No results found.</div>;
+    let message = "No results found";
+    if (error) message = "Search failed. Try again.";
+    else if (isLoading) message = "Searching...";
+    return <div className="no-results-message">{message}</div>;
   }
 
   return (

@@ -63,13 +63,34 @@ describe("SearchResultsTable", () => {
   test("shows no results message when array is empty", () => {
     renderWithProviders(<SearchResultsTable searchResults={[]} />);
 
-    expect(screen.getByText("No results found.")).toBeInTheDocument();
+    expect(screen.getByText("No results found")).toBeInTheDocument();
+  });
+
+  test("shows only Searching... while loading with no results", () => {
+    renderWithProviders(<SearchResultsTable searchResults={[]} isLoading />);
+
+    expect(screen.getByText("Searching...")).toBeInTheDocument();
+    expect(screen.queryByText("No results found")).not.toBeInTheDocument();
+  });
+
+  test("shows only the failure message on error", () => {
+    renderWithProviders(<SearchResultsTable searchResults={[]} error />);
+
+    expect(screen.getByText("Search failed. Try again.")).toBeInTheDocument();
+    expect(screen.queryByText("No results found")).not.toBeInTheDocument();
+  });
+
+  test("keeps showing results while a newer search loads", () => {
+    renderWithProviders(<SearchResultsTable searchResults={sampleResults} isLoading />);
+
+    expect(screen.getByText("Apple")).toBeInTheDocument();
+    expect(screen.queryByText("Searching...")).not.toBeInTheDocument();
   });
 
   test("shows no results message when searchResults is not an array", () => {
     renderWithProviders(<SearchResultsTable searchResults={null} />);
 
-    expect(screen.getByText("No results found.")).toBeInTheDocument();
+    expect(screen.getByText("No results found")).toBeInTheDocument();
   });
 
   test("falls back to _id and renders tags when a projected result has no label", () => {
