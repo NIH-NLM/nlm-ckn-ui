@@ -15,6 +15,7 @@ jest.useFakeTimers();
 // Mock SearchResultsTable to simplify testing
 jest.mock("../SearchResultsTable/SearchResultsTable", () => (props) => (
   <div data-testid="search-results-table">
+    {props.error && <span>Search failed. Try again.</span>}
     {props.searchResults?.map((item) => (
       <div key={item._id || item.label} data-testid="search-result-item">
         {item.label || item._id}
@@ -134,5 +135,19 @@ describe("SearchBar Component", () => {
     expect(input).toHaveValue("pericyte");
     fireEvent.change(input, { target: { value: "lung" } });
     expect(external.setQuery).toHaveBeenCalledWith("lung");
+  });
+
+  it("passes the failure state to the results table when the search rejects", async () => {
+    searchDocuments.mockRejectedValue(new Error("503"));
+    renderWithContext(<SearchBar />);
+    fireEvent.change(screen.getByPlaceholderText("Search NLM-CKN..."), {
+      target: { value: "test" },
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(250);
+    });
+
+    expect(screen.getByText("Search failed. Try again.")).toBeInTheDocument();
   });
 });

@@ -113,3 +113,14 @@ test("exact match appears first when backend returns correctly sorted results", 
   // Verify no errors occurred
   expect(filterErrorsContaining(await getCollectedErrors(page), "split").length).toBe(0);
 });
+
+test("a failing search shows the failure message", async ({ page }) => {
+  await page.route("**/arango_api/search/", (route) =>
+    route.fulfill({ status: 503, contentType: "application/json", body: "{}" }),
+  );
+
+  await page.goto("/");
+  await page.getByPlaceholder("Search NLM-CKN...").fill("lung");
+
+  await expect(page.getByText("Search failed. Try again.")).toBeVisible();
+});

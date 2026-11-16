@@ -11,6 +11,7 @@ const NodeSearchInput = ({ onSelectNode, existingNodeIds = [] }) => {
     isOpen,
     setIsOpen,
     isLoading,
+    error,
     highlightedIndex,
     containerRef,
     clearSearch,
@@ -59,7 +60,8 @@ const NodeSearchInput = ({ onSelectNode, existingNodeIds = [] }) => {
       {isOpen && (
         <div className="node-search-dropdown">
           {isLoading && <div className="node-search-status">Searching...</div>}
-          {!isLoading && results.length === 0 && query.trim() && (
+          {error && <div className="node-search-status">Search failed. Try again.</div>}
+          {!isLoading && !error && results.length === 0 && query.trim() && (
             <div className="node-search-status">No results found</div>
           )}
           {!isLoading &&
