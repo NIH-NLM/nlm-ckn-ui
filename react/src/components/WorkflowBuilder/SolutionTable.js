@@ -4,7 +4,7 @@
  */
 
 import { memo, useCallback, useMemo, useState } from "react";
-import { getCollectionFields, getNodeLabel } from "utils";
+import { getCollectionDisplayName, getCollectionFields, getNodeLabel } from "utils";
 import { pickRowCollection } from "utils/solution";
 import { formatFieldValue, SortableHeaders, sortRows } from "./ResultsTable";
 
@@ -21,13 +21,20 @@ const findLabelField = (fields, rows, collection) =>
       )
     : undefined;
 
-const SolutionTable = ({ phaseResult, solution }) => {
+const SolutionTable = ({ phaseResult, solution, onChangeCollection }) => {
   const [sort, setSort] = useState({ column: null, direction: null });
   const nodes = phaseResult?.nodes;
 
   const collection = useMemo(
     () => pickRowCollection(nodes, solution?.collection),
     [nodes, solution?.collection],
+  );
+  const collections = useMemo(
+    () =>
+      [...new Set((nodes || []).map(collectionOf))].sort((a, b) =>
+        getCollectionDisplayName(a).localeCompare(getCollectionDisplayName(b)),
+      ),
+    [nodes],
   );
   const rows = useMemo(
     () => (nodes || []).filter((n) => collectionOf(n) === collection),
@@ -64,6 +71,11 @@ const SolutionTable = ({ phaseResult, solution }) => {
     });
   }, []);
 
+  const handleCollection = (next) => {
+    setSort({ column: null, direction: null });
+    onChangeCollection(next);
+  };
+
   if (!phaseResult) return <p className="empty-message">Run the workflow to see its answer.</p>;
 
   const sorted = sortRows(
@@ -74,6 +86,23 @@ const SolutionTable = ({ phaseResult, solution }) => {
 
   return (
     <div className="results-table-container">
+      <div className="results-tabs">
+        <div className="results-tabs-left">
+          {collections.length > 1 && (
+            <select
+              aria-label="Collection"
+              value={collection}
+              onChange={(e) => handleCollection(e.target.value)}
+            >
+              {collections.map((c) => (
+                <option key={c} value={c}>
+                  {getCollectionDisplayName(c)}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      </div>
       <div className="results-table-wrapper">
         <table className="results-table">
           <thead>
