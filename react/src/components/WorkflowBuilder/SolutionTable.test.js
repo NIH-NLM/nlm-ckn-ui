@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import SolutionTable from "components/WorkflowBuilder/SolutionTable";
 
 const phaseResult = {
@@ -16,6 +16,7 @@ const renderTable = (props) =>
       allPhaseResults={{ p1: phaseResult }}
       nodeDetails={{}}
       solution={{ phaseId: "p1", collection: null, linkedColumns: [] }}
+      onChangeCollection={() => {}}
       onChangeLinkedColumns={() => {}}
       {...props}
     />,
@@ -26,10 +27,24 @@ it("asks for a run when the step has no results", () => {
   expect(screen.getByText("Run the workflow to see its answer.")).toBeInTheDocument();
 });
 
-it("shows the dominant collection's rows", () => {
-  renderTable();
+it("shows the dominant collection's rows and offers a collection selector", () => {
+  const onChangeCollection = jest.fn();
+  renderTable({ onChangeCollection });
   expect(screen.getAllByRole("row")).toHaveLength(3);
   expect(screen.getByRole("button", { name: /Author cell term/ })).toBeInTheDocument();
+  const select = screen.getByRole("combobox");
+  expect([...select.options].map((o) => [o.value, o.text])).toEqual([
+    ["CS", "Cell set"],
+    ["CL", "Cell type"],
+  ]);
+  fireEvent.change(select, { target: { value: "CL" } });
+  expect(onChangeCollection).toHaveBeenCalledWith("CL");
+});
+
+it("hides the selector for a single-collection step", () => {
+  const gs = { nodes: [{ _id: "GS/1" }], links: [] };
+  renderTable({ phaseResult: gs });
+  expect(screen.queryByRole("combobox")).toBeNull();
 });
 
 it("says so when the chosen collection has no rows", () => {
