@@ -656,35 +656,15 @@ WORKFLOW_PRESETS = [
         "name": "Hereditary chronic pancreatitis: factors, candidate treatments (UC7)",
         "description": (
             "Hereditary chronic pancreatitis as a broken Big Dipper: the "
-            "genes behind it, the cell types that selectively express them, "
-            "and the compounds acting on their proteins that do not already "
-            "treat the disease, as hypothetical treatments."
+            "genes behind it and the compounds acting on their proteins that "
+            "do not already treat the disease, as hypothetical treatments, "
+            "then the cell sets that selectively express those genes, with "
+            "their datasets and organs."
         ),
         "category": "Use Cases",
         "layoutMode": "big-dipper",
         "labelStates": {"link-label": False},
         "phases": [
-            {
-                "id": "preset-uc7-hcp-phase-1",
-                "name": "Disease genes",
-                "originSource": "manual",
-                "originNodeIds": ["MONDO/0008185"],
-                "previousPhaseId": None,
-                "originFilter": "all",
-                "settings": {
-                    "depth": 1,
-                    "edgeDirection": "INBOUND",
-                    "allowedCollections": ["GS"],
-                    "edgeFilters": {
-                        "Label": ["ASSOCIATED_WITH"],
-                        "Source": [],
-                    },
-                    "setOperation": "Union",
-                    "graphType": "phenotypes",
-                    "includeInterNodeEdges": True,
-                },
-                "perNodeSettings": {},
-            },
             {
                 "id": "preset-uc7-hcp-phase-2",
                 "name": "Compounds on those genes' proteins that do not treat it",
@@ -705,74 +685,24 @@ WORKFLOW_PRESETS = [
                         "Source": [],
                     },
                     # Anti-edge: drop paths whose compound already treats the
-                    # disease. Only complete three-hop paths survive, so genes
-                    # without a compound come from phase 1 instead.
+                    # disease.
                     "excludeClosingEdges": {"Label": ["IS_SUBSTANCE_THAT_TREATS"]},
                     "setOperation": "Union",
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
-                },
-                "perNodeSettings": {},
-            },
-            {
-                "id": "preset-uc7-hcp-phase-3",
-                "name": "Every gene, with its candidate compounds",
-                "originSource": "multiplePhases",
-                "originNodeIds": [],
-                "previousPhaseId": None,
-                "previousPhaseIds": [
-                    "preset-uc7-hcp-phase-1",
-                    "preset-uc7-hcp-phase-2",
-                ],
-                "phaseCombineOperation": "Union",
-                "originFilter": "all",
-                "settings": {"graphType": "phenotypes", "includeInterNodeEdges": True},
-                "perNodeSettings": {},
-            },
-            {
-                "id": "preset-uc7-hcp-phase-4",
-                "name": "Cell sets and cell types selectively expressing the genes",
-                "originSource": "previousPhase",
-                "originNodeIds": [],
-                "previousPhaseId": "preset-uc7-hcp-phase-3",
-                "originFilter": "all",
-                "settings": {
-                    "depth": 2,
-                    "edgeDirection": "ANY",
-                    "allowedCollections": ["CS", "CL"],
-                    "edgeFilters": {
-                        "Label": ["SELECTIVELY_EXPRESSES", "COMPOSED_PRIMARILY_OF"],
-                        "Source": [],
-                    },
-                    "setOperation": "Union",
-                    "graphType": "phenotypes",
-                    "includeInterNodeEdges": True,
                     "collapseLeafNodes": "off",
                 },
                 "perNodeSettings": {},
             },
-            {
-                "id": "preset-uc7-hcp-phase-5",
-                "name": "The dipper with its cell leg",
-                "originSource": "multiplePhases",
-                "originNodeIds": [],
-                "previousPhaseId": None,
-                "previousPhaseIds": [
+            *_dataset_leg("preset-uc7-hcp", "preset-uc7-hcp-phase-2", 3),
+            _dipper_union(
+                "preset-uc7-hcp-phase-5",
+                [
+                    "preset-uc7-hcp-phase-2",
                     "preset-uc7-hcp-phase-3",
                     "preset-uc7-hcp-phase-4",
                 ],
-                "phaseCombineOperation": "Union",
-                "originFilter": "all",
-                # A traversal phase keeps only edges matching its own labels,
-                # so the cell-leg phase drops the disease, gene, protein and
-                # compound edges. The union restores them.
-                "settings": {
-                    "graphType": "phenotypes",
-                    "includeInterNodeEdges": True,
-                    "collapseLeafNodes": "off",
-                },
-                "perNodeSettings": {},
-            },
+            ),
         ],
     },
     {
