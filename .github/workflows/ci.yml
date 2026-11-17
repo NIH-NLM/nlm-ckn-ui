@@ -372,7 +372,9 @@ jobs:
         run: python manage.py test --exclude-tag=integration --verbosity=2
         env:
           DJANGO_SETTINGS_MODULE: core.settings
-          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          # Not a secret: tests sign nothing that outlives the run, and a fixed
+          # value lets PRs without repository secrets (forks) run them.
+          SECRET_KEY: ci-test-only
           ARANGO_TEST_MODE: 'true'
 
   # Backend integration tests - requires ArangoDB
@@ -426,7 +428,7 @@ jobs:
         env:
           DJANGO_SETTINGS_MODULE: core.settings
           ARANGO_TEST_MODE: 'true'
-          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          SECRET_KEY: ci-test-only
 
   # Backend Docker build - verify the image builds successfully
   backend-docker-build:
