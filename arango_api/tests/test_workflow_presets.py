@@ -27,6 +27,9 @@ RETIRED_LABELS = {
     # ETL v1.8.0-rc.1: GS -> MONDO relabelled DISEASE_HAS_FEATURE, the RO label of
     # RO:0004029 (ckn-schema alpha.6 is_associated_with); direction unchanged.
     "IS_GENETIC_BASIS_FOR_CONDITION",
+    # ETL v1.8.0-rc.10: GS -> MONDO relabelled again, to ASSOCIATED_WITH;
+    # direction unchanged.
+    "DISEASE_HAS_FEATURE",
 }
 
 # ETL v1 renamed the cell-set-to-gene-set hop CS -EXPRESSES-> GS to

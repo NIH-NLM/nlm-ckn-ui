@@ -180,7 +180,7 @@ class GraphViewsTestCase(ArangoDBViewTestCase):
             "allowedCollections": ["GS", "PR", "CHEMBL"],
             "edgeFilters": {
                 "Label": [
-                    "DISEASE_HAS_FEATURE",
+                    "ASSOCIATED_WITH",
                     "PRODUCES",
                     "MOLECULARLY_INTERACTS_WITH",
                 ]
