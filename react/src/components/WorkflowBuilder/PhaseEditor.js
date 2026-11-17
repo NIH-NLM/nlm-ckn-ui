@@ -14,6 +14,7 @@ import RangeSliderFilter from "components/RangeSliderFilter/RangeSliderFilter";
 import {
   COLLAPSE_OPTIONS,
   COLLECTION_ORIGIN_LIMIT_STEP,
+  COMBINE_OPERATION_OPTIONS,
   DEFAULT_COLLECTION_ORIGIN_LIMIT,
   DEPTH_OPTIONS,
   DIRECTION_OPTIONS,
@@ -302,7 +303,12 @@ const PhaseEditor = ({
       ? previousPhaseResult && previousPhaseResult.nodes?.length > 0
       : isCombinePhase
         ? (phase.previousPhaseIds || []).length >= 2 &&
-          (phase.previousPhaseIds || []).every((id) => allPhaseResults[id]?.nodes?.length > 0)
+          (phase.previousPhaseIds || []).every((id) =>
+            // A completed empty step is a valid operand of Difference.
+            phase.phaseCombineOperation === "Difference"
+              ? !!allPhaseResults[id]?.nodes
+              : allPhaseResults[id]?.nodes?.length > 0,
+          )
         : phase.originSource === "collection"
           ? !!phase.originCollection
           : phase.originSource === "previousPhase"
@@ -541,7 +547,7 @@ const PhaseEditor = ({
                 id={`combine-op-${phase.id}`}
                 label="Combine Operation"
                 value={phase.phaseCombineOperation || "Intersection"}
-                options={SET_OPERATION_OPTIONS}
+                options={COMBINE_OPERATION_OPTIONS}
                 onChange={handleCombineOperationChange}
               />
             </div>

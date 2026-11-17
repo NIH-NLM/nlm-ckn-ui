@@ -219,16 +219,25 @@ def _execute_combine_phase(
     phase, all_phases, phase_results, phase_origin_ids, settings, graph=None
 ):
     """Handle multiplePhases origin: combine results from multiple prior phases."""
-    source_phase_ids = phase.get("previousPhaseIds", [])
+    # Step order, whatever order the ids are stored in: Difference subtracts
+    # the later steps from the earliest.
+    step_index = {p.get("id"): i for i, p in enumerate(all_phases)}
+    source_phase_ids = sorted(
+        phase.get("previousPhaseIds", []),
+        key=lambda pid: step_index.get(pid, len(step_index)),
+    )
     if len(source_phase_ids) < 2:
         raise ValueError("Combine phase requires at least 2 source phases.")
 
     origin_filter = phase.get("originFilter", "all")
+    combine_op = phase.get("phaseCombineOperation", "Intersection")
+    # A completed empty step is a valid operand of Difference: A minus nothing is A.
+    allow_empty = combine_op.lower() == "difference"
     source_graphs = []
 
     for src_id in source_phase_ids:
         src_result = phase_results.get(src_id)
-        if not src_result or not src_result.get("nodes"):
+        if src_result is None or not (src_result.get("nodes") or allow_empty):
             raise ValueError(f"Source phase '{src_id}' has no results.")
 
         src_origin_ids = phase_origin_ids.get(src_id, [])
@@ -248,7 +257,6 @@ def _execute_combine_phase(
         ]
         source_graphs.append({"nodes": filtered_nodes, "links": filtered_links})
 
-    combine_op = phase.get("phaseCombineOperation", "Intersection")
     combined_result = _perform_set_operation(source_graphs, combine_op)
 
     if settings.get("includeInterNodeEdges", True) and graph:
@@ -532,6 +540,21 @@ def _perform_set_operation(graphs, operation, min_overlap=None):
     elif op in ("symmetric difference", "symmetric_difference", "xor"):
         final_nodes = [
             entry["node"] for entry in node_frequency.values() if entry["count"] == 1
+        ]
+    elif op == "difference":
+        # First graph's nodes that appear in no other graph
+        first_ids = {
+            n.get("_id") or n.get("id") for n in safe_graphs[0].get("nodes") or []
+        }
+        other_ids = {
+            n.get("_id") or n.get("id")
+            for g in safe_graphs[1:]
+            for n in g.get("nodes") or []
+        }
+        final_nodes = [
+            entry["node"]
+            for node_id, entry in node_frequency.items()
+            if node_id in first_ids and node_id not in other_ids
         ]
     else:
         # Union

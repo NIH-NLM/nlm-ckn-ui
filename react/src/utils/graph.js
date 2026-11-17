@@ -122,3 +122,17 @@ export function parseId(document) {
   }
   return [document._id];
 }
+
+/**
+ * The origins of a workflow step that are nodes of its result graph. A combine
+ * step records the ids of the steps it combined as its origins, and those are
+ * not nodes, so they are dropped.
+ * @param {object} phase - Workflow step, with executed or configured origins.
+ * @param {object} graph - The step's result, `{ nodes, links }`.
+ * @returns {Array<string>} Origin node ids present in the graph.
+ */
+export function phaseOriginsIn(phase, graph) {
+  const nodeIds = new Set((graph?.nodes || []).map((n) => n?._id));
+  const origins = phase?._executedOriginNodeIds || phase?.originNodeIds || [];
+  return origins.filter((id) => nodeIds.has(id));
+}
