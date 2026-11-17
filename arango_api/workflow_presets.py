@@ -219,6 +219,49 @@ def _selectively_expressed(prefix, src, first):
     ]
 
 
+# The cell leg of a dipper: the cell sets selectively expressing the genes of
+# phase *src*, then the datasets they belong to and those datasets' organs. From
+# a dataset, IS_ABOUT also reaches every other cell set in it; allowing only
+# CSD and UBERON keeps the walk from re-entering CS.
+def _dataset_leg(prefix, src, first):
+    cs, ds = f"{prefix}-phase-{first}", f"{prefix}-phase-{first + 1}"
+    keep = {"includeInterNodeEdges": True, "collapseLeafNodes": "off"}
+    return [
+        _scan_phase(
+            cs,
+            "Cell sets selectively expressing the genes",
+            {**_hop(1, "INBOUND", "CS", "SELECTIVELY_EXPRESSES"), **keep},
+            prev=src,
+        ),
+        _scan_phase(
+            ds,
+            "Their datasets and organs",
+            {
+                "depth": 2,
+                "edgeDirection": "ANY",
+                "allowedCollections": ["CSD", "UBERON"],
+                "edgeFilters": {"Label": ["IS_ABOUT"], "Source": []},
+                "returnCollections": ["CSD", "UBERON"],
+                **keep,
+            },
+            prev=cs,
+        ),
+    ]
+
+
+# A traversal phase keeps only edges matching its own labels, so the leg drops
+# the disease, gene, protein and compound edges. The union restores them.
+def _dipper_union(phase_id, sources):
+    return _scan_phase(
+        phase_id,
+        "The dipper with its cell leg",
+        {"includeInterNodeEdges": True, "collapseLeafNodes": "off"},
+        originSource="multiplePhases",
+        previousPhaseIds=sources,
+        phaseCombineOperation="Union",
+    )
+
+
 _UC9 = "preset-uc9-genes"
 _UC9_PHASES = [
     _scan_phase(
@@ -561,9 +604,10 @@ WORKFLOW_PRESETS = [
         "id": "cystic-fibrosis-uc6",
         "name": "Cystic fibrosis: genetic and cellular factors, treatments (UC6)",
         "description": (
-            "Cystic fibrosis as a Big Dipper: its causal genes and "
-            "treatments, then the cell types that express those genes and "
-            "where they sit anatomically."
+            "Cystic fibrosis as a complete Big Dipper: its causal genes and "
+            "the compounds that treat it through their proteins, then the "
+            "cell sets that selectively express those genes, with their "
+            "datasets and organs."
         ),
         "category": "Use Cases",
         "layoutMode": "big-dipper",
@@ -574,83 +618,37 @@ WORKFLOW_PRESETS = [
         "phases": [
             {
                 "id": "preset-uc6-phase-1",
-                "name": "Disease genes and treatments",
+                "name": "Disease genes, proteins, and compounds that treat it",
                 "originSource": "manual",
                 "originNodeIds": ["MONDO/0009061"],
                 "previousPhaseId": None,
                 "originFilter": "all",
                 "settings": {
-                    "depth": 1,
+                    "depth": 3,
                     "edgeDirection": "ANY",
-                    "allowedCollections": ["GS", "CHEMBL"],
+                    "allowedCollections": ["GS", "PR", "CHEMBL"],
                     "edgeFilters": {
                         "Label": [
                             "DISEASE_HAS_FEATURE",
-                            "IS_SUBSTANCE_THAT_TREATS",
-                        ],
-                        "Source": [],
-                    },
-                    "setOperation": "Union",
-                    "graphType": "phenotypes",
-                    "includeInterNodeEdges": True,
-                    "collapseLeafNodes": "off",
-                },
-                "perNodeSettings": {},
-            },
-            {
-                "id": "preset-uc6-phase-2",
-                "name": "Gene to cell types and anatomy",
-                "originSource": "previousPhase",
-                "originNodeIds": [],
-                "previousPhaseId": "preset-uc6-phase-1",
-                "originFilter": "all",
-                "settings": {
-                    "depth": 3,
-                    "edgeDirection": "ANY",
-                    "allowedCollections": [
-                        "CL",
-                        "UBERON",
-                        "NCBITaxon",
-                        "PR",
-                        "CS",
-                    ],
-                    "edgeFilters": {
-                        "Label": [
-                            "PART_OF",
-                            "PRESENT_IN_TAXON",
                             "PRODUCES",
-                            "EXPRESSES",
-                            "SELECTIVELY_EXPRESSES",
-                            "COMPOSED_PRIMARILY_OF",
+                            "MOLECULARLY_INTERACTS_WITH",
                         ],
                         "Source": [],
                     },
+                    # The compound must treat the disease itself.
+                    "requireClosingEdges": {"Label": ["IS_SUBSTANCE_THAT_TREATS"]},
                     "setOperation": "Union",
-                    "graphType": "phenotypes",
-                    "includeInterNodeEdges": True,
-                    "collapseLeafNodes": "all",
-                },
-                "perNodeSettings": {},
-            },
-            {
-                "id": "preset-uc6-phase-3",
-                "name": "The dipper with its cell leg",
-                "originSource": "multiplePhases",
-                "originNodeIds": [],
-                "previousPhaseId": None,
-                "previousPhaseIds": ["preset-uc6-phase-1", "preset-uc6-phase-2"],
-                "phaseCombineOperation": "Union",
-                "originFilter": "all",
-                # A traversal phase keeps only edges matching its own labels,
-                # so the cell-leg phase drops the disease, gene, protein and
-                # compound edges. The union restores them.
-                "settings": {
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
                     "collapseLeafNodes": "off",
                 },
                 "perNodeSettings": {},
             },
+            *_dataset_leg("preset-uc6", "preset-uc6-phase-1", 2),
+            _dipper_union(
+                "preset-uc6-phase-4",
+                ["preset-uc6-phase-1", "preset-uc6-phase-2", "preset-uc6-phase-3"],
+            ),
         ],
     },
     {
