@@ -1,7 +1,7 @@
 {
   "_provenance": {
     "etl_version": "v1.8.0-rc.9",
-    "generated_at": "2026-11-13T17:23:00Z",
+    "generated_at": "2026-11-13T17:46:47Z",
     "restored_at": "2026-11-03T15:06:51Z",
     "skipped": [
       "cell-types-in-respiratory-system",
@@ -15,7 +15,7 @@
   "cftr-acute-lung-injury-uc12": 24,
   "clean-dipper-candidates": 395,
   "complete-dipper-genes-uc9": 395,
-  "cystic-fibrosis-uc6": 40,
+  "cystic-fibrosis-uc6": 43,
   "dataset-comparison-uc5": 172,
   "datasets-for-cell-type": 295,
   "datasets-provenance-uc1": 158,
