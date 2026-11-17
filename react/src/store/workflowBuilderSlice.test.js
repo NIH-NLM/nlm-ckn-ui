@@ -777,3 +777,29 @@ describe("executePhase honours per-node depth on Connected Paths", () => {
     expect(action.error.message).toContain("depth 4");
   });
 });
+
+describe("executePhase keeps an empty result that a Difference step uses", () => {
+  const traversal = {
+    id: "p1",
+    originSource: "manual",
+    originNodeIds: ["CL/a"],
+    settings: { graphType: "ontologies", depth: 1, returnCollections: ["GS"] },
+  };
+  const difference = {
+    id: "p2",
+    originSource: "multiplePhases",
+    previousPhaseIds: ["p0", "p1"],
+    phaseCombineOperation: "Difference",
+  };
+
+  it("stores the empty result only when a Difference step lists it", async () => {
+    services.fetchGraphData.mockResolvedValue({ "CL/a": { nodes: [{ _id: "CL/a" }], links: [] } });
+    const run = async (phases) => {
+      const store = makeStore();
+      store.dispatch(loadWorkflow({ phases }));
+      return store.dispatch(executePhase({ phaseId: "p1" }));
+    };
+    expect((await run([traversal, difference])).payload.result.nodes).toEqual([]);
+    expect((await run([traversal])).error.message).toMatch("No results found");
+  });
+});

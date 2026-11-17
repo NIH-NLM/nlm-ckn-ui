@@ -47,6 +47,10 @@ export const SET_OPERATION_OPTIONS = [
   { value: "Connected Paths", label: "Connected Paths (between origins)" },
   { value: "Symmetric Difference", label: "Symmetric Difference" },
 ];
+export const COMBINE_OPERATION_OPTIONS = [
+  ...SET_OPERATION_OPTIONS,
+  { value: "Difference", label: "Difference (first minus the rest)" },
+];
 export const LAYOUT_MODE_OPTIONS = [
   { value: "force", label: "Force" },
   { value: "clustered", label: "Collection Cluster" },

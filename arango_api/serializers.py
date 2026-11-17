@@ -371,6 +371,7 @@ class PhaseSerializer(serializers.Serializer):
             "Intersection with Origins",
             "Connected Paths",
             "Symmetric Difference",
+            "Difference",
         ],
         required=False,
         default="Intersection",

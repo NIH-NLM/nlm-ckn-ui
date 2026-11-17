@@ -259,7 +259,11 @@ export const executePhase = createAsyncThunk(
 
     // Handle "multiplePhases" combine origin — no API call, pure set operation
     if (phase.originSource === "multiplePhases") {
-      const sourcePhaseIds = phase.previousPhaseIds || [];
+      // Step order, however stored: Difference subtracts later steps from the earliest.
+      const stepIndex = (id) => phases.findIndex((p) => p.id === id);
+      const sourcePhaseIds = [...(phase.previousPhaseIds || [])].sort(
+        (a, b) => stepIndex(a) - stepIndex(b),
+      );
       if (sourcePhaseIds.length < 2) {
         throw new Error("Combine phase requires at least 2 source phases.");
       }
@@ -536,8 +540,11 @@ export const executePhase = createAsyncThunk(
       phase.settings.returnCollections || [],
     );
 
-    // Check for empty results and provide a helpful message
-    if (!finalResult.nodes || finalResult.nodes.length === 0) {
+    // Empty results get a helpful error, unless a Difference subtracts this step.
+    const subtracted = phases.some(
+      (p) => p.phaseCombineOperation === "Difference" && p.previousPhaseIds?.includes(phase.id),
+    );
+    if (!finalResult.nodes?.length && !subtracted) {
       const op = phase.settings.setOperation || "Union";
       if (op === "Connected Paths") {
         throw new Error(
