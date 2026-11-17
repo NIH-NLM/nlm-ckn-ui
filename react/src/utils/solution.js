@@ -9,7 +9,7 @@ export function buildEdgePool(phaseResults) {
   for (const result of Object.values(phaseResults || {})) {
     for (const link of result?.links || []) {
       if (!link?._from || !link?._to) continue;
-      const key = link._id || `${link._from}|${link.Label}|${link._to}`;
+      const key = link._id || `${link._from}|${typeof link.Label}|${link.Label}|${link._to}`;
       if (seen.has(key)) continue;
       seen.add(key);
       pool.push({ id: link._id, from: link._from, to: link._to, label: link.Label });
@@ -73,20 +73,66 @@ export function resolvePath(rowId, path, adjacency) {
 export function listLinkOptions(rowIds, adjacency, prefix = []) {
   const counts = new Map();
   for (const rowId of rowIds) {
-    const options = new Set();
+    const options = new Map(); // keyed by label type too, so a missing label stays undefined
     for (const id of walk(rowId, prefix, adjacency)) {
-      for (const e of adjacency.get(id) || []) {
-        if (e.neighborId !== rowId) {
-          options.add(JSON.stringify([e.label, collectionOf(e.neighborId)]));
-        }
+      for (const { label, neighborId } of adjacency.get(id) || []) {
+        if (neighborId === rowId) continue;
+        const collection = collectionOf(neighborId);
+        options.set(`${typeof label}|${label}|${collection}`, { label, collection });
       }
     }
-    for (const key of options) counts.set(key, (counts.get(key) || 0) + 1);
+    for (const [key, option] of options) {
+      counts.set(key, { ...option, count: (counts.get(key)?.count || 0) + 1 });
+    }
   }
-  return [...counts]
-    .map(([key, count]) => {
-      const [label, collection] = JSON.parse(key);
-      return { label, collection, count };
-    })
-    .sort((a, b) => b.count - a.count);
+  return [...counts.values()].sort((a, b) => b.count - a.count);
+}
+
+/**
+ * Groups a node's neighbors by edge label and direction.
+ */
+export function neighborsByRelationship(nodeId, adjacency) {
+  const groups = new Map();
+  for (const { label, direction, neighborId } of adjacency.get(nodeId) || []) {
+    const key = `${direction}|${typeof label}|${label}`; // a missing label is not "undefined"
+    if (!groups.has(key)) groups.set(key, { label, direction, nodeIds: [] });
+    const group = groups.get(key);
+    if (!group.nodeIds.includes(neighborId)) group.nodeIds.push(neighborId);
+  }
+  return [...groups.values()].sort((a, b) =>
+    String(a.label ?? "").localeCompare(String(b.label ?? "")),
+  );
+}
+
+/**
+ * Chooses which collection's nodes make up the answer rows.
+ * @returns {string|null} requested if present, else the most common collection (ties alphabetical)
+ */
+export function pickRowCollection(nodes, requested) {
+  const counts = new Map();
+  for (const n of nodes || []) {
+    const c = collectionOf(n._id);
+    counts.set(c, (counts.get(c) || 0) + 1);
+  }
+  if (requested && counts.has(requested)) return requested;
+  const ranked = [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  return ranked.length ? ranked[0][0] : null;
+}
+
+/**
+ * Joins labels for a table cell, truncating after `max`.
+ * @returns {string} e.g. "a, b, c +2"; an en dash when empty
+ */
+export function formatLinkedLabels(labels, max = 3) {
+  if (!labels.length) return "–";
+  const shown = labels.slice(0, max).join(", ");
+  return labels.length > max ? `${shown} +${labels.length - max}` : shown;
+}
+
+/**
+ * Turns an edge predicate into readable text.
+ */
+export function humanizeEdgeLabel(label) {
+  const text = String(label).replace(/_/g, " ").toLowerCase();
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }

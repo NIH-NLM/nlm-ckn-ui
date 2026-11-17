@@ -98,7 +98,7 @@ let phaseTimeout = null;
  * renders as a visibly open bowl.
  *
  * The handle attaches at Megrez, where the cell leg hangs off the gene:
- *   Megrez (gene) -> Alioth (cell set) -> Mizar (cell type) -> Alkaid (anatomy)
+ *   Megrez (gene) -> Alioth (cell set) -> Mizar (cell set dataset) -> Alkaid (anatomy)
  */
 export const BIG_DIPPER_STARS = {
   PR: { star: "Dubhe", x: 0.543, y: -0.264 },
@@ -106,7 +106,8 @@ export const BIG_DIPPER_STARS = {
   MONDO: { star: "Phecda", x: 0.163, y: 0.336 },
   GS: { star: "Megrez", x: 0.183, y: -0.034 },
   CS: { star: "Alioth", x: -0.127, y: -0.074 },
-  CL: { star: "Mizar", x: -0.457, y: -0.184 },
+  CSD: { star: "Mizar", x: -0.457, y: -0.184 },
+  CL: { star: "Alcor", x: -0.437, y: -0.254 },
   UBERON: { star: "Alkaid", x: -0.828, y: -0.044 },
 };
 
