@@ -25,7 +25,7 @@ import { applyCollapse } from "utils/collapseLeaves";
  * Scalars are delegated to the shared formatter so numbers round consistently
  * with the document inspector.
  */
-const formatFieldValue = (value) => {
+export const formatFieldValue = (value) => {
   if (value === null || value === undefined) return "-";
   if (Array.isArray(value)) {
     const formatted = value.map(formatScalarValue);
@@ -82,7 +82,7 @@ export const sortRows = (rows, accessor, direction) => {
 };
 
 /** Header cells that sort the table by their own column. */
-const SortableHeaders = ({ columns, sort, onSort }) =>
+export const SortableHeaders = ({ columns, sort, onSort }) =>
   columns.map(({ key, label }) => {
     const active = sort.column === key;
     return (
