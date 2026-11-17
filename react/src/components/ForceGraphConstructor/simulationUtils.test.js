@@ -69,6 +69,18 @@ describe("computeBigDipperTargets", () => {
     expect([...xs].sort((a, b) => a - b)).toEqual(xs);
   });
 
+  it("places cell set datasets on Mizar and cell types on Alcor", () => {
+    const targets = computeBigDipperTargets(["CS", "CSD", "UBERON", "CL"], 1000, 1000);
+
+    expect(targets.CSD.x).toBeCloseTo(-0.457 * 900);
+    expect(targets.CSD.y).toBeCloseTo(-0.184 * 900);
+    expect(targets.CL.x).toBeCloseTo(-0.437 * 900);
+    expect(targets.CL.y).toBeCloseTo(-0.254 * 900);
+
+    // Every collection here has a star, so none is parked on the off-motif row.
+    expect(Object.keys(targets).sort()).toEqual(["CL", "CS", "CSD", "UBERON"]);
+  });
+
   it("omits collections that are not in the graph", () => {
     const targets = computeBigDipperTargets(["GS", "MONDO"], 1000, 1000);
 
@@ -83,8 +95,11 @@ describe("computeBigDipperTargets", () => {
     expect(large.PR.y).toBeCloseTo(small.PR.y * 2);
 
     // The seven stars are balanced around the origin, so the canvas centers on
-    // the asterism rather than on one end of it.
-    const mean = (axis) => MOTIF.reduce((sum, c) => sum + large[c][axis], 0) / MOTIF.length;
+    // the asterism rather than on one end of it. CSD holds Mizar in the seven;
+    // CL sits on its companion Alcor outside them.
+    const SEVEN = ["GS", "PR", "CHEMBL", "MONDO", "CS", "CSD", "UBERON"];
+    const sevenTargets = computeBigDipperTargets(SEVEN, 1000, 1000);
+    const mean = (axis) => SEVEN.reduce((sum, c) => sum + sevenTargets[c][axis], 0) / SEVEN.length;
     expect(mean("x")).toBeCloseTo(0);
     expect(mean("y")).toBeCloseTo(0);
   });
