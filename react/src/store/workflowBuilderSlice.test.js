@@ -124,7 +124,7 @@ describe("executePhase forwards excludeClosingEdges", () => {
               allowedCollections: ["GS", "PR", "CHEMBL"],
               setOperation: "Union",
               includeInterNodeEdges: false,
-              edgeFilters: { Label: ["DISEASE_HAS_FEATURE"] },
+              edgeFilters: { Label: ["ASSOCIATED_WITH"] },
               excludeClosingEdges: { Label: ["IS_SUBSTANCE_THAT_TREATS"] },
             },
           },
