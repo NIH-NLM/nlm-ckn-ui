@@ -1,4 +1,4 @@
-import { mergeChildren } from "./graph";
+import { mergeChildren, phaseOriginsIn } from "./graph";
 
 describe("mergeChildren", () => {
   test("merges children into every node sharing the target id, not just the first", () => {
@@ -42,5 +42,25 @@ describe("mergeChildren", () => {
     expect(merged).toEqual(graphData);
     expect(warnSpy).toHaveBeenCalled();
     warnSpy.mockRestore();
+  });
+});
+
+describe("phaseOriginsIn", () => {
+  const graph = { nodes: [{ _id: "CL/1" }, { _id: "CS/2" }], links: [] };
+
+  test("keeps a step's executed origins that are nodes of its result", () => {
+    const phase = { _executedOriginNodeIds: ["CL/1", "CL/9"], originNodeIds: ["CS/2"] };
+    expect(phaseOriginsIn(phase, graph)).toEqual(["CL/1"]);
+  });
+
+  test("drops the step ids a combine step records as its origins", () => {
+    const phase = { _executedOriginNodeIds: ["preset-a", "preset-b"] };
+    expect(phaseOriginsIn(phase, graph)).toEqual([]);
+  });
+
+  test("falls back to the configured origins, and to none", () => {
+    expect(phaseOriginsIn({ originNodeIds: ["CS/2"] }, graph)).toEqual(["CS/2"]);
+    expect(phaseOriginsIn(undefined, graph)).toEqual([]);
+    expect(phaseOriginsIn({ originNodeIds: ["CS/2"] }, null)).toEqual([]);
   });
 });

@@ -18,6 +18,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
 import { loadWorkflow, setActiveGraph, setGraphData } from "store";
+import { phaseOriginsIn } from "utils";
 
 const WorkflowBuilderPage = () => {
   const dispatch = useDispatch();
@@ -80,7 +81,7 @@ const WorkflowBuilderPage = () => {
       if (graphData?.nodes?.length > 0) {
         // Use the actual origin node IDs from the active phase, not all graph nodes.
         const activePhase = phases.find((p) => p.id === activePhaseId);
-        const nodeIds = activePhase?._executedOriginNodeIds || activePhase?.originNodeIds || [];
+        const nodeIds = phaseOriginsIn(activePhase, graphData);
 
         // Set graph data and origin node IDs in a single dispatch.
         // The setGraphData reducer also sets depth=0 and useFocusNodes=false
@@ -183,9 +184,7 @@ const WorkflowBuilderPage = () => {
                   <ResultsTable
                     graphData={activeGraph}
                     collapseMode={activePhase?.settings?.collapseLeafNodes ?? "standard"}
-                    originNodeIds={
-                      activePhase?._executedOriginNodeIds || activePhase?.originNodeIds || []
-                    }
+                    originNodeIds={phaseOriginsIn(activePhase, activeGraph)}
                   />
                 </div>
               )}
