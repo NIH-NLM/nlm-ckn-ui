@@ -336,10 +336,8 @@ WORKFLOW_PRESETS = [
         "id": "datasets-provenance-uc1",
         "name": "Single-cell datasets and their provenance (UC1)",
         "description": (
-            "Every single-cell dataset in NLM-CKN with the publication it is "
-            "attributed to and the organ it is about. Select a dataset to see "
-            "its provenance (CELLxGENE collection, assay, donors, cell counts) "
-            "and quality evidence (mean F-beta and silhouette scores)."
+            "Which single-cell datasets are represented in NLM-CKN, and what "
+            "provenance and quality evidence are available for each dataset?"
         ),
         "category": "Use Cases",
         "layoutMode": "force",
@@ -376,9 +374,8 @@ WORKFLOW_PRESETS = [
         "id": "hlca-lung-cell-types",
         "name": "HLCA lung cell types (UC2)",
         "description": (
-            "The HLCA respiratory dataset (Sikkema et al.) with its ~61 cell "
-            "sets and the cell types they map to. The dataset sits at the "
-            "center, cell sets in orange, cell types in blue."
+            "What are the cell sets and cell types detected by the HLCA "
+            "dataset (Sikkema et al., 2023) in the human respiratory system?"
         ),
         "category": "Use Cases",
         "layoutMode": "force",
@@ -416,11 +413,9 @@ WORKFLOW_PRESETS = [
         "id": "hlca-cell-type-markers-uc3",
         "name": "HLCA cell types with marker genes and evidence (UC3)",
         "description": (
-            "The cell types the HLCA dataset (Sikkema et al.) detects, each "
-            "through the cell set that defines it, with that cell set's "
-            "marker gene combination and marker genes. Select a cell set for "
-            "its silhouette score, or a marker gene combination for its "
-            "F-beta score."
+            "What information does NLM-CKN provide about the cell sets "
+            "detected in the HLCA dataset (Sikkema et al., 2023), including "
+            "their marker genes and associated evidence?"
         ),
         "category": "Use Cases",
         "layoutMode": "force",
@@ -481,10 +476,9 @@ WORKFLOW_PRESETS = [
         "id": "hlca-dendritic-markers-uc4",
         "name": "HLCA marker gene combinations for dendritic cells (UC4)",
         "description": (
-            "The marker gene combinations that differentiate dendritic cells "
-            "in the healthy human respiratory system, from the HLCA core "
-            "dataset (Sikkema et al.). Each dendritic cell set carries its "
-            "own combination; select one for its F-beta score."
+            "Which marker gene combinations from the HLCA dataset (Sikkema et"
+            " al., 2023) differentiate dendritic cells in the healthy human "
+            "respiratory system?"
         ),
         "category": "Use Cases",
         "layoutMode": "force",
@@ -561,10 +555,9 @@ WORKFLOW_PRESETS = [
         "id": "dataset-comparison-uc5",
         "name": "CellRef cell types not found in HLCA (UC5)",
         "description": (
-            "The cell types in the CellRef dataset (Guo et al.) that the HLCA "
-            "dataset (Sikkema et al.) does not detect. Both datasets are "
-            "shown side by side: shared cell types sit between the two "
-            "dataset hubs, and the ones only CellRef finds stay on its side."
+            "What cell types in the CellRef dataset (Guo et al., 2023) are "
+            "not found in the HLCA dataset (Sikkema et al., 2023) in scRNA-"
+            "seq experiments?"
         ),
         "category": "Use Cases",
         "layoutMode": "force",
@@ -604,10 +597,8 @@ WORKFLOW_PRESETS = [
         "id": "cystic-fibrosis-uc6",
         "name": "Cystic fibrosis: genetic and cellular factors, treatments (UC6)",
         "description": (
-            "Cystic fibrosis as a complete Big Dipper: its causal genes and "
-            "the compounds that treat it through their proteins, then the "
-            "cell sets that selectively express those genes, with their "
-            "datasets and organs."
+            "Which genetic and cellular factors contribute to cystic fibrosis"
+            " pathogenesis, and what treatment options are available?"
         ),
         "category": "Use Cases",
         "layoutMode": "big-dipper",
@@ -655,11 +646,9 @@ WORKFLOW_PRESETS = [
         "id": "hereditary-chronic-pancreatitis-uc7",
         "name": "Hereditary chronic pancreatitis: factors, candidate treatments (UC7)",
         "description": (
-            "Hereditary chronic pancreatitis as a broken Big Dipper: the "
-            "genes behind it and the compounds acting on their proteins that "
-            "do not already treat the disease, as hypothetical treatments, "
-            "then the cell sets that selectively express those genes, with "
-            "their datasets and organs."
+            "Which genetic and cellular factors contribute to hereditary "
+            "chronic pancreatitis pathogenesis? What are hypothetical "
+            "treatments for hereditary chronic pancreatitis?"
         ),
         "category": "Use Cases",
         "layoutMode": "big-dipper",
@@ -709,9 +698,8 @@ WORKFLOW_PRESETS = [
         "id": "alzheimers-disease-uc8",
         "name": "Alzheimer's disease genes and the compounds targeting them (UC8)",
         "description": (
-            "The genes strongly associated with Alzheimer's disease, the "
-            "proteins they produce, and the compounds that interact with "
-            "those proteins."
+            "Which genes in NLM-CKN are strongly associated with Alzheimer "
+            "disease, and what treatments target them?"
         ),
         "category": "Use Cases",
         # A gene -> protein -> compound fan-out (~130 nodes, ~80 of them
@@ -791,10 +779,10 @@ WORKFLOW_PRESETS = [
         "id": "complete-dipper-genes-uc9",
         "name": "Genes on a complete Big Dipper (UC9)",
         "description": (
-            "Genes selectively expressed in a cell set, strongly associated "
-            "with a disease, and encoding a protein that a compound used to "
-            "treat that disease interacts with. Scans every disease, so it "
-            "takes longer than the other use cases."
+            "List all genes that are selectively expressed in specific cell "
+            "set(s), are strongly associated with a disease, and encode a "
+            "protein that interacts with bioactive compound(s) used to treat "
+            "that disease."
         ),
         "category": "Use Cases",
         "layoutMode": "force",
@@ -804,10 +792,9 @@ WORKFLOW_PRESETS = [
         "id": "disease-drug-genes-uc10",
         "name": "Selectively expressed disease genes with interacting compounds (UC10)",
         "description": (
-            "Genes selectively expressed in a cell set, strongly associated "
-            "with a disease, and encoding a protein that a compound interacts "
-            "with. Unlike UC9 the compound need not treat that disease. Scans "
-            "every disease, so it takes longer than the other use cases."
+            "List all genes that are selectively expressed in specific cell "
+            "set(s), are strongly associated with a disease, and encode a "
+            "protein that interacts with bioactive compound(s)."
         ),
         "category": "Use Cases",
         "layoutMode": "force",
@@ -817,10 +804,8 @@ WORKFLOW_PRESETS = [
         "id": "leber-congenital-amaurosis-uc11",
         "name": "RPE65-related Leber congenital amaurosis (UC11)",
         "description": (
-            "Leber congenital amaurosis as a complete Big Dipper through "
-            "RPE65: the RPE65-targeted compounds that treat it, and the cell "
-            "sets that selectively express RPE65 with their cell types and "
-            "the anatomy they come from."
+            "What is the contribution of retinal pigment epithelial (RPE) "
+            "cells to RPE65-related Leber congenital amaurosis?"
         ),
         "category": "Use Cases",
         "layoutMode": "big-dipper",
@@ -912,10 +897,8 @@ WORKFLOW_PRESETS = [
         "id": "cftr-acute-lung-injury-uc12",
         "name": "CFTR-targeted therapy for acute lung injury (UC12)",
         "description": (
-            "Acute lung injury as a complete Big Dipper through CFTR: the "
-            "CFTR-targeted compounds that treat it, and the cell sets that "
-            "selectively express CFTR with their cell types and the anatomy "
-            "they come from, as the cellular context for that therapy."
+            "What is the cellular context of CFTR-targeted therapy for acute "
+            "lung injury?"
         ),
         "category": "Use Cases",
         "layoutMode": "big-dipper",
