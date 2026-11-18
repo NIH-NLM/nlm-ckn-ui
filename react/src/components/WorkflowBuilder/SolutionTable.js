@@ -4,9 +4,18 @@
  */
 
 import { memo, useCallback, useMemo, useState } from "react";
-import { getCollectionDisplayName, getCollectionFields, getNodeLabel } from "utils";
+import {
+  downloadFile,
+  generateCsv,
+  getCollectionDisplayName,
+  getCollectionFields,
+  getNodeLabel,
+} from "utils";
 import { pickRowCollection } from "utils/solution";
 import { formatFieldValue, SortableHeaders, sortRows } from "./ResultsTable";
+
+// The CSV keeps every array element; the on-screen cell truncates.
+const csvValue = (v) => (Array.isArray(v) ? v.join("; ") : v);
 
 const collectionOf = (node) => String(node._id).split("/")[0];
 
@@ -76,6 +85,18 @@ const SolutionTable = ({ phaseResult, solution, onChangeCollection }) => {
     onChangeCollection(next);
   };
 
+  const handleDownloadCsv = () => {
+    // A repeated header (the fallback "Label" beside a field shown as "Label")
+    // takes its field name, so neither column overwrites the other.
+    const headers = columns.map((c, i) =>
+      columns.findIndex((d) => d.label === c.label) === i ? c.label : `${c.label} (${c.key})`,
+    );
+    const data = rows.map((row) =>
+      Object.fromEntries(columns.map((c, i) => [headers[i], csvValue(c.accessor(row))])),
+    );
+    downloadFile(generateCsv(data), "workflow-results.csv");
+  };
+
   if (!phaseResult) return <p className="empty-message">Run the workflow to see its answer.</p>;
 
   const sorted = sortRows(
@@ -102,6 +123,14 @@ const SolutionTable = ({ phaseResult, solution, onChangeCollection }) => {
             </select>
           )}
         </div>
+        <button
+          type="button"
+          className="download-csv-btn"
+          onClick={handleDownloadCsv}
+          disabled={rows.length === 0}
+        >
+          Download CSV
+        </button>
       </div>
       <div className="results-table-wrapper">
         <table className="results-table">
