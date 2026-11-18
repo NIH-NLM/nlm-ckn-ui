@@ -769,6 +769,10 @@ const workflowBuilderSlice = createSlice({
       if (state.solution) state.solution.linkedColumns = action.payload;
     },
 
+    setSolutionFields: (state, action) => {
+      if (state.solution) state.solution.fields = action.payload;
+    },
+
     /**
      * Update workflow name.
      */
@@ -1053,6 +1057,7 @@ export const {
   setSolutionPhase,
   setSolutionCollection,
   setSolutionLinkedColumns,
+  setSolutionFields,
   updatePhase,
   updatePhaseSettings,
   addPhaseOriginNode,

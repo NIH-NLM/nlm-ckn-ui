@@ -73,6 +73,7 @@ export {
   removePhaseOriginNode,
   setActiveGraph,
   setSolutionCollection,
+  setSolutionFields,
   setSolutionLinkedColumns,
   setSolutionPhase,
   setWorkflowDescription,

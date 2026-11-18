@@ -2,7 +2,15 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import SolutionTable from "components/WorkflowBuilder/SolutionTable";
 import { downloadFile } from "utils";
 
-jest.mock("utils", () => ({ ...jest.requireActual("utils"), downloadFile: jest.fn() }));
+let mockFields = null;
+jest.mock("utils", () => {
+  const actual = jest.requireActual("utils");
+  return {
+    ...actual,
+    downloadFile: jest.fn(),
+    getCollectionFields: (c) => mockFields ?? actual.getCollectionFields(c),
+  };
+});
 
 const phaseResult = {
   nodes: [
@@ -125,5 +133,63 @@ describe("column identity", () => {
     expect(screen.getAllByRole("button", { name: /^Label/ })).toHaveLength(1);
     expect(spy.mock.calls.flat().join(" ")).not.toMatch(/same key/);
     spy.mockRestore();
+  });
+});
+
+describe("own fields", () => {
+  const names = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"];
+  const row = Object.fromEntries(names.map((n) => [n, `v-${n}`]));
+  // "empty" has no value on any row, not even inside its array; "late" has one
+  // only on the second row.
+  const fields = ["empty", "late", ...names].map((n) => ({
+    fieldName: n,
+    displayName: `Field ${n}`,
+  }));
+  const withFields = (extra, nodes) => {
+    mockFields = fields;
+    renderTable({
+      phaseResult: {
+        nodes: nodes ?? [
+          { _id: "XX/1", ...row, empty: [[], [""]] },
+          { _id: "XX/2", late: "v-late" },
+        ],
+        links: [],
+      },
+      allPhaseResults: {},
+      solution: { phaseId: "p1", collection: "XX", linkedColumns: [], ...extra },
+    });
+  };
+  afterEach(() => {
+    mockFields = null;
+  });
+  const headers = () =>
+    screen
+      .getAllByRole("columnheader")
+      .map((h) => h.textContent.replace(/[\u2195\u25b2\u25bc]/g, ""));
+  const defaults = ["Label", "Field late", ...names.slice(0, 5).map((n) => `Field ${n}`)];
+
+  it("shows the label and the first six fields with a value on any row", () => {
+    withFields({});
+    expect(headers()).toEqual(defaults);
+  });
+
+  it("shows exactly the chosen fields, once each", () => {
+    withFields({ fields: ["b", "a", "b"] });
+    expect(headers()).toEqual(["Label", "Field b", "Field a"]);
+  });
+
+  it.each([
+    ["not a list", "b"],
+    ["empty", []],
+  ])("falls back to the default fields when fields is %s", (_, fields) => {
+    withFields({ fields });
+    expect(headers()).toEqual(defaults);
+  });
+
+  it("shows every array element, nested too, and an object's contents in the title", () => {
+    const wxyz = ["w", "x", "y", "z"];
+    withFields({ fields: ["a", "b", "c"] }, [{ _id: "XX/1", a: wxyz, b: { count: 3 }, c: [wxyz] }]);
+    expect(screen.getAllByText("w, x, y, z")).toHaveLength(2);
+    expect(screen.getByText('{"count":3}')).toHaveAttribute("title", '{"count":3}');
   });
 });

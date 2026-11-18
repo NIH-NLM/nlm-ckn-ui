@@ -180,6 +180,11 @@ class PresetSchemaDriftTests(TestCase):
                 continue
             phase_ids = {p["id"] for p in preset["phases"]}
             self.assertIn(solution["phaseId"], phase_ids, msg=preset["id"])
+            fields = solution.get("fields")
+            if fields is not None:
+                self.assertIsInstance(fields, list, msg=preset["id"])
+                for name in fields:
+                    self.assertTrue(isinstance(name, str) and name, msg=preset["id"])
             for column in solution.get("linkedColumns", []):
                 path = column["path"]
                 self.assertIn(len(path), (1, 2), msg=preset["id"])

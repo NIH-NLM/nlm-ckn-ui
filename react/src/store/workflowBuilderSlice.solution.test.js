@@ -3,6 +3,7 @@ import workflowBuilderReducer, {
   initializeWorkflow,
   loadWorkflow,
   removePhase,
+  setSolutionFields,
   setSolutionPhase,
 } from "./workflowBuilderSlice";
 
@@ -36,6 +37,15 @@ describe("workflow solution", () => {
     });
     store.dispatch(loadWorkflow({ phases }));
     expect(solution(store)).toBeNull();
+  });
+
+  it("sets and loads the chosen solution fields", () => {
+    const store = makeStore();
+    store.dispatch(setSolutionPhase("p1"));
+    store.dispatch(setSolutionFields(["x", "y"]));
+    expect(solution(store).fields).toEqual(["x", "y"]);
+    store.dispatch(loadWorkflow({ phases, solution: { phaseId: "p1", fields: ["z"] } }));
+    expect(solution(store).fields).toEqual(["z"]);
   });
 
   it("keeps every part of a loaded solution", () => {
