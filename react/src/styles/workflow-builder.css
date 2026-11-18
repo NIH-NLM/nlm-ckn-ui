@@ -1316,6 +1316,23 @@
   color: var(--color-gray-dark);
 }
 
+/* Columns take their content's width and the wrapper scrolls sideways, rather
+   than every column squeezing into the panel. Long values wrap, never cut off. */
+.results-table.solution-table {
+  width: max-content;
+  min-width: 100%;
+}
+
+.results-table.solution-table td {
+  vertical-align: top;
+}
+
+.results-table td.solution-cell {
+  min-width: 6rem;
+  max-width: 20rem;
+  overflow-wrap: anywhere;
+}
+
 .results-table tbody tr:hover {
   background: var(--color-gray-lightest);
 }

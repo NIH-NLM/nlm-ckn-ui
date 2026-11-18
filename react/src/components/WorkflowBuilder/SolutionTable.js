@@ -14,10 +14,17 @@ import {
 import { pickRowCollection } from "utils/solution";
 import { formatFieldValue, SortableHeaders, sortRows } from "./ResultsTable";
 
-// The CSV keeps every array element; the on-screen cell truncates.
+// The CSV joins array elements with semicolons.
 const csvValue = (v) => (Array.isArray(v) ? v.join("; ") : v);
 
 const collectionOf = (node) => String(node._id).split("/")[0];
+
+// Own fields shown when the solution does not choose any.
+const DEFAULT_FIELD_COUNT = 6;
+
+// An array counts only if some element, at any depth, has a value.
+const hasValue = (v) =>
+  Array.isArray(v) ? v.some(hasValue) : v !== null && v !== undefined && v !== "";
 
 const isScalar = (v) => ["string", "number", "boolean"].includes(typeof v);
 
@@ -29,6 +36,18 @@ const findLabelField = (fields, rows, collection) =>
         rows.every((r) => isScalar(r[f]) && String(r[f]) === getNodeLabel(r, collection)),
       )
     : undefined;
+
+// Every array element is shown, and the cell wraps rather than truncating.
+const cellText = (v) => (Array.isArray(v) ? v.map(cellText).join(", ") : formatFieldValue(v));
+
+const FieldCell = ({ value }) => {
+  const text = cellText(value);
+  return (
+    <td className="solution-cell" title={hasValue(value) ? text : undefined}>
+      {text}
+    </td>
+  );
+};
 
 const SolutionTable = ({ phaseResult, solution, onChangeCollection }) => {
   const [sort, setSort] = useState({ column: null, direction: null });
@@ -59,17 +78,29 @@ const SolutionTable = ({ phaseResult, solution, onChangeCollection }) => {
     const label = findLabelField(fields, rows, collection);
     return { header: label?.displayName ?? "Label", ownFields: fields.filter((f) => f !== label) };
   }, [collection, rows]);
+  const filledFields = useMemo(
+    () => ownFields.filter(({ fieldName }) => rows.some((r) => hasValue(r[fieldName]))),
+    [ownFields, rows],
+  );
+  // A hand-edited link can carry any value; only a non-empty list chooses fields.
+  const shownFields = useMemo(() => {
+    if (!Array.isArray(solution?.fields) || !solution.fields.length)
+      return filledFields.slice(0, DEFAULT_FIELD_COUNT);
+    return [...new Set(solution.fields)]
+      .map((name) => ownFields.find((f) => f.fieldName === name))
+      .filter(Boolean);
+  }, [solution?.fields, filledFields, ownFields]);
 
   const columns = useMemo(() => {
     return [
       { key: "__label", label: header, accessor: (n) => getNodeLabel(n, collection) },
-      ...ownFields.map(({ fieldName, displayName }) => ({
+      ...shownFields.map(({ fieldName, displayName }) => ({
         key: fieldName,
         label: displayName,
         accessor: (n) => n[fieldName],
       })),
     ];
-  }, [collection, header, ownFields]);
+  }, [collection, header, shownFields]);
 
   // Ascending, then descending, then back to the order the traversal returned.
   const handleSort = useCallback((column) => {
@@ -133,7 +164,7 @@ const SolutionTable = ({ phaseResult, solution, onChangeCollection }) => {
         </button>
       </div>
       <div className="results-table-wrapper">
-        <table className="results-table">
+        <table className="results-table solution-table">
           <thead>
             <tr>
               <SortableHeaders columns={columns} sort={sort} onSort={handleSort} />
@@ -143,7 +174,7 @@ const SolutionTable = ({ phaseResult, solution, onChangeCollection }) => {
             {sorted.map((node) => (
               <tr key={node._id}>
                 {columns.map((c) => (
-                  <td key={c.key}>{formatFieldValue(c.accessor(node))}</td>
+                  <FieldCell key={c.key} value={c.accessor(node)} />
                 ))}
               </tr>
             ))}
