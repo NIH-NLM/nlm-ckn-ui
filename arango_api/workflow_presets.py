@@ -840,57 +840,19 @@ WORKFLOW_PRESETS = [
                     "setOperation": "Union",
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
-                },
-                "perNodeSettings": {},
-            },
-            {
-                "id": "preset-uc11-phase-2",
-                "name": "Cell sets selectively expressing RPE65, cell types, anatomy",
-                "originSource": "previousPhase",
-                "originNodeIds": [],
-                "previousPhaseId": "preset-uc11-phase-1",
-                "originFilter": "all",
-                "settings": {
-                    # Depth 2 stops at the cell set's own cell type and
-                    # anatomy; depth 3 would pull in every other cell set of
-                    # that cell type.
-                    "depth": 2,
-                    "edgeDirection": "ANY",
-                    "allowedCollections": ["CS", "CL", "UBERON"],
-                    "edgeFilters": {
-                        "Label": [
-                            "SELECTIVELY_EXPRESSES",
-                            "COMPOSED_PRIMARILY_OF",
-                            "DERIVES_FROM",
-                        ],
-                        "Source": [],
-                    },
-                    "setOperation": "Union",
-                    "graphType": "phenotypes",
-                    "includeInterNodeEdges": True,
                     "collapseLeafNodes": "off",
                 },
                 "perNodeSettings": {},
             },
-            {
-                "id": "preset-uc11-phase-3",
-                "name": "The dipper with its cell leg",
-                "originSource": "multiplePhases",
-                "originNodeIds": [],
-                "previousPhaseId": None,
-                "previousPhaseIds": ["preset-uc11-phase-1", "preset-uc11-phase-2"],
-                "phaseCombineOperation": "Union",
-                "originFilter": "all",
-                # A traversal phase keeps only edges matching its own labels,
-                # so the cell-leg phase drops the disease, gene, protein and
-                # compound edges. The union restores them.
-                "settings": {
-                    "graphType": "phenotypes",
-                    "includeInterNodeEdges": True,
-                    "collapseLeafNodes": "off",
-                },
-                "perNodeSettings": {},
-            },
+            *_dataset_leg("preset-uc11", "preset-uc11-phase-1", 2),
+            _dipper_union(
+                "preset-uc11-phase-4",
+                [
+                    "preset-uc11-phase-1",
+                    "preset-uc11-phase-2",
+                    "preset-uc11-phase-3",
+                ],
+            ),
         ],
     },
     {
@@ -930,54 +892,19 @@ WORKFLOW_PRESETS = [
                     "setOperation": "Union",
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
-                },
-                "perNodeSettings": {},
-            },
-            {
-                "id": "preset-uc12-phase-2",
-                "name": "Cell sets selectively expressing CFTR, cell types, anatomy",
-                "originSource": "previousPhase",
-                "originNodeIds": [],
-                "previousPhaseId": "preset-uc12-phase-1",
-                "originFilter": "all",
-                "settings": {
-                    "depth": 2,
-                    "edgeDirection": "ANY",
-                    "allowedCollections": ["CS", "CL", "UBERON"],
-                    "edgeFilters": {
-                        "Label": [
-                            "SELECTIVELY_EXPRESSES",
-                            "COMPOSED_PRIMARILY_OF",
-                            "DERIVES_FROM",
-                        ],
-                        "Source": [],
-                    },
-                    "setOperation": "Union",
-                    "graphType": "phenotypes",
-                    "includeInterNodeEdges": True,
                     "collapseLeafNodes": "off",
                 },
                 "perNodeSettings": {},
             },
-            {
-                "id": "preset-uc12-phase-3",
-                "name": "The dipper with its cell leg",
-                "originSource": "multiplePhases",
-                "originNodeIds": [],
-                "previousPhaseId": None,
-                "previousPhaseIds": ["preset-uc12-phase-1", "preset-uc12-phase-2"],
-                "phaseCombineOperation": "Union",
-                "originFilter": "all",
-                # A traversal phase keeps only edges matching its own labels,
-                # so the cell-leg phase drops the disease, gene, protein and
-                # compound edges. The union restores them.
-                "settings": {
-                    "graphType": "phenotypes",
-                    "includeInterNodeEdges": True,
-                    "collapseLeafNodes": "off",
-                },
-                "perNodeSettings": {},
-            },
+            *_dataset_leg("preset-uc12", "preset-uc12-phase-1", 2),
+            _dipper_union(
+                "preset-uc12-phase-4",
+                [
+                    "preset-uc12-phase-1",
+                    "preset-uc12-phase-2",
+                    "preset-uc12-phase-3",
+                ],
+            ),
         ],
     },
     {
