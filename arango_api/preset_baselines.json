@@ -1,8 +1,9 @@
 {
   "_provenance": {
-    "etl_version": "v1.8.0-rc.9",
-    "generated_at": "2026-11-13T17:46:47Z",
-    "restored_at": "2026-11-03T15:06:51Z",
+    "etl_version": "v1.8.0-rc.10",
+    "generated_at": "2026-11-18T13:35:50Z",
+    "mixed": true,
+    "restored_at": "2026-11-17T18:45:01Z",
     "skipped": [
       "cell-types-in-respiratory-system",
       "epithelial-cells-respiratory-system",
@@ -25,7 +26,7 @@
   "druggable-disease-genes": 489,
   "hereditary-chronic-pancreatitis-uc7": 39,
   "hlca-cell-type-markers-uc3": 295,
-  "hlca-dendritic-markers-uc4": 19,
+  "hlca-dendritic-markers-uc4": 21,
   "hlca-lung-cell-types": 118,
   "leber-congenital-amaurosis-uc11": 7,
   "ph-drug-target-cell-types": 40,
