@@ -3,8 +3,7 @@
  *
  * Features:
  * - Multi-phase workflow configuration
- * - Table view of results (default)
- * - Graph visualization of results
+ * - A step's results shown as a graph (default) or a table
  * - Shareable URLs with encoded workflow state
  * - Graph results rendered in the shared GraphWorkspace shell
  */
@@ -13,6 +12,7 @@ import ErrorBoundary from "components/ErrorBoundary";
 import GraphWorkspace from "components/GraphWorkspace";
 import WorkflowBuilder from "components/WorkflowBuilder";
 import ResultsTable from "components/WorkflowBuilder/ResultsTable";
+import ResultsViewSwitch from "components/WorkflowBuilder/ResultsViewSwitch";
 import { GRAPH_STATUS } from "constants/index";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -28,11 +28,12 @@ const WorkflowBuilderPage = () => {
 
   // Local state
   const [hasResults, setHasResults] = useState(false);
-  const [activeView, setActiveView] = useState("table"); // "table" | "graph"
-  // Defer mounting ForceGraph until the user first clicks the Graph tab.
-  // Once activated, stay mounted (hidden via display:none when on other tabs)
-  // so re-clicking the tab is instant and the simulation isn't re-run.
-  const [hasActivatedGraphTab, setHasActivatedGraphTab] = useState(false);
+  const [view, setView] = useState("graph"); // "graph" | "table"
+  // Defer mounting ForceGraph until the graph is first shown. Once shown, stay
+  // mounted (hidden via display:none on the table) so switching back is
+  // instant and the simulation isn't re-run.
+  const [hasShownGraph, setHasShownGraph] = useState(false);
+  if (hasResults && view === "graph" && !hasShownGraph) setHasShownGraph(true);
 
   // Workflow builder state
   const { activeGraph, activePhaseId, phases, phaseResults, status, executingPhaseId } =
@@ -157,29 +158,10 @@ const WorkflowBuilderPage = () => {
                 </div>
               )}
 
-              {/* View Tabs */}
-              <div className="results-view-tabs">
-                <button
-                  type="button"
-                  className={`view-tab ${activeView === "table" ? "active" : ""}`}
-                  onClick={() => setActiveView("table")}
-                >
-                  Table
-                </button>
-                <button
-                  type="button"
-                  className={`view-tab ${activeView === "graph" ? "active" : ""}`}
-                  onClick={() => {
-                    setActiveView("graph");
-                    setHasActivatedGraphTab(true);
-                  }}
-                >
-                  Graph
-                </button>
-              </div>
+              <ResultsViewSwitch view={view} onChange={setView} />
 
               {/* Table View */}
-              {activeView === "table" && (
+              {view === "table" && (
                 <div className="results-view-content">
                   <ResultsTable
                     graphData={activeGraph}
@@ -189,12 +171,12 @@ const WorkflowBuilderPage = () => {
                 </div>
               )}
 
-              {/* Graph View - mounted only after first activation of the Graph tab,
-                  then kept mounted (display:none) when navigating away. */}
-              {hasActivatedGraphTab && (
+              {/* Graph View - mounted only once the graph is first shown, then kept
+                  mounted (display:none) while the table shows. */}
+              {hasShownGraph && (
                 <div
                   className="results-view-content graph-view"
-                  style={{ display: activeView === "graph" ? "block" : "none" }}
+                  style={{ display: view === "graph" ? "block" : "none" }}
                 >
                   <ErrorBoundary>
                     <GraphWorkspace
@@ -212,7 +194,7 @@ const WorkflowBuilderPage = () => {
                 <h3>Results</h3>
                 <p>
                   Configure and execute a workflow phase to see results here. Results will display
-                  as a table of nodes and edges, with an option to view as a graph.
+                  as a graph of nodes and edges, with an option to view as a table.
                 </p>
                 {status === GRAPH_STATUS.LOADING && (
                   <div className="wb-loading-indicator">
