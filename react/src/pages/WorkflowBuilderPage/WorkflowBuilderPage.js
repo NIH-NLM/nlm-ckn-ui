@@ -3,7 +3,8 @@
  *
  * Features:
  * - Multi-phase workflow configuration
- * - A step's results shown as a graph (default) or a table
+ * - The marked step's rows as the workflow's answer (Results tab)
+ * - A step's results shown as a graph (default) or a table (Results in context)
  * - Shareable URLs with encoded workflow state
  * - Graph results rendered in the shared GraphWorkspace shell
  */
@@ -12,12 +13,14 @@ import ErrorBoundary from "components/ErrorBoundary";
 import GraphWorkspace from "components/GraphWorkspace";
 import WorkflowBuilder from "components/WorkflowBuilder";
 import ResultsTable from "components/WorkflowBuilder/ResultsTable";
+import ResultsTabs from "components/WorkflowBuilder/ResultsTabs";
 import ResultsViewSwitch from "components/WorkflowBuilder/ResultsViewSwitch";
+import SolutionTable from "components/WorkflowBuilder/SolutionTable";
 import { GRAPH_STATUS } from "constants/index";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
-import { loadWorkflow, setActiveGraph, setGraphData } from "store";
+import { loadWorkflow, setActiveGraph, setGraphData, setSolutionCollection } from "store";
 import { phaseOriginsIn } from "utils";
 
 const WorkflowBuilderPage = () => {
@@ -28,17 +31,31 @@ const WorkflowBuilderPage = () => {
 
   // Local state
   const [hasResults, setHasResults] = useState(false);
+  const [tab, setTab] = useState(null); // "data" | "context", or null until results pick one
   const [view, setView] = useState("graph"); // "graph" | "table"
   // Defer mounting ForceGraph until the graph is first shown. Once shown, stay
-  // mounted (hidden via display:none on the table) so switching back is
+  // mounted (hidden via display:none on the other views) so switching back is
   // instant and the simulation isn't re-run.
   const [hasShownGraph, setHasShownGraph] = useState(false);
-  if (hasResults && view === "graph" && !hasShownGraph) setHasShownGraph(true);
 
   // Workflow builder state
-  const { activeGraph, activePhaseId, phases, phaseResults, status, executingPhaseId } =
+  const { activeGraph, activePhaseId, phases, phaseResults, status, executingPhaseId, solution } =
     useSelector((state) => state.workflowBuilder);
+  // Without a marked step there is no Results tab; the context view shows alone.
+  const inContext = !solution || tab === "context";
+  if (hasResults && inContext && view === "graph" && !hasShownGraph) setHasShownGraph(true);
   const activePhase = phases.find((p) => p.id === activePhaseId);
+
+  // A loaded workflow's first results open on Results if a step is marked by then.
+  // Loading a workflow clears activeGraph and the tab; re-runs keep both.
+  useEffect(() => {
+    if (!activeGraph) setTab(null);
+    else setTab((t) => t ?? (solution ? "data" : "context"));
+  }, [activeGraph, solution]);
+  // Unmarking the answer falls back to the context view, and re-marking keeps it.
+  useEffect(() => {
+    if (!solution) setTab((t) => t && "context");
+  }, [solution]);
 
   // Load workflow from URL on mount
   useEffect(() => {
@@ -134,8 +151,20 @@ const WorkflowBuilderPage = () => {
         <main className="workflow-builder-results-area" ref={resultsAreaRef}>
           {hasResults ? (
             <>
-              {/* Phase Tabs - show when multiple phases exist and execution has started */}
-              {phases.length > 1 && (hasResults || status === GRAPH_STATUS.LOADING) && (
+              {solution && <ResultsTabs tab={inContext ? "context" : "data"} onChange={setTab} />}
+
+              {!inContext && (
+                <div className="results-view-content">
+                  <SolutionTable
+                    phaseResult={phaseResults[solution.phaseId]}
+                    solution={solution}
+                    onChangeCollection={(c) => dispatch(setSolutionCollection(c))}
+                  />
+                </div>
+              )}
+
+              {/* Step buttons - show when the workflow has more than one step */}
+              {inContext && phases.length > 1 && (
                 <div className="results-phase-tabs">
                   {phases.map((phase, index) => {
                     const hasPhaseResults = !!phaseResults[phase.id];
@@ -158,10 +187,10 @@ const WorkflowBuilderPage = () => {
                 </div>
               )}
 
-              <ResultsViewSwitch view={view} onChange={setView} />
+              {inContext && <ResultsViewSwitch view={view} onChange={setView} />}
 
               {/* Table View */}
-              {view === "table" && (
+              {inContext && view === "table" && (
                 <div className="results-view-content">
                   <ResultsTable
                     graphData={activeGraph}
@@ -172,11 +201,11 @@ const WorkflowBuilderPage = () => {
               )}
 
               {/* Graph View - mounted only once the graph is first shown, then kept
-                  mounted (display:none) while the table shows. */}
+                  mounted (display:none) while the table or Results shows. */}
               {hasShownGraph && (
                 <div
                   className="results-view-content graph-view"
-                  style={{ display: view === "graph" ? "block" : "none" }}
+                  style={{ display: inContext && view === "graph" ? "block" : "none" }}
                 >
                   <ErrorBoundary>
                     <GraphWorkspace
