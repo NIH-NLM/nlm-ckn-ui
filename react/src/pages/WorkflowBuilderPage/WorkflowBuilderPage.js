@@ -13,7 +13,7 @@ import ErrorBoundary from "components/ErrorBoundary";
 import GraphWorkspace from "components/GraphWorkspace";
 import WorkflowBuilder from "components/WorkflowBuilder";
 import ResultsTable from "components/WorkflowBuilder/ResultsTable";
-import ResultsTabs from "components/WorkflowBuilder/ResultsTabs";
+import ResultsTabs, { resultsPanelProps } from "components/WorkflowBuilder/ResultsTabs";
 import ResultsViewSwitch from "components/WorkflowBuilder/ResultsViewSwitch";
 import SolutionTable from "components/WorkflowBuilder/SolutionTable";
 import { GRAPH_STATUS } from "constants/index";
@@ -153,69 +153,83 @@ const WorkflowBuilderPage = () => {
             <>
               {solution && <ResultsTabs tab={inContext ? "context" : "data"} onChange={setTab} />}
 
-              {!inContext && (
-                <div className="results-view-content">
-                  <SolutionTable
-                    phaseResult={phaseResults[solution.phaseId]}
-                    solution={solution}
-                    onChangeCollection={(c) => dispatch(setSolutionCollection(c))}
-                  />
-                </div>
-              )}
-
-              {/* Step buttons - show when the workflow has more than one step */}
-              {inContext && phases.length > 1 && (
-                <div className="results-phase-tabs">
-                  {phases.map((phase, index) => {
-                    const hasPhaseResults = !!phaseResults[phase.id];
-                    const isExecuting = executingPhaseId === phase.id;
-                    const isPending = !hasPhaseResults && !isExecuting;
-                    return (
-                      <button
-                        type="button"
-                        key={phase.id}
-                        className={`phase-tab${activePhaseId === phase.id ? " active" : ""}${isExecuting ? " executing" : ""}${isPending ? " pending" : ""}`}
-                        onClick={() => handlePhaseSelect(phase.id)}
-                        disabled={isPending}
-                      >
-                        Phase {index + 1}
-                        {phase.name ? `: ${phase.name}` : ""}
-                        {isExecuting && <span className="spinner" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-
-              {inContext && <ResultsViewSwitch view={view} onChange={setView} />}
-
-              {/* Table View */}
-              {inContext && view === "table" && (
-                <div className="results-view-content">
-                  <ResultsTable
-                    graphData={activeGraph}
-                    collapseMode={activePhase?.settings?.collapseLeafNodes ?? "standard"}
-                    originNodeIds={phaseOriginsIn(activePhase, activeGraph)}
-                  />
-                </div>
-              )}
-
-              {/* Graph View - mounted only once the graph is first shown, then kept
-                  mounted (display:none) while the table or Results shows. */}
-              {hasShownGraph && (
+              {/* Kept mounted while a step is marked so the Results tab's aria-controls has a target */}
+              {solution && (
                 <div
-                  className="results-view-content graph-view"
-                  style={{ display: inContext && view === "graph" ? "block" : "none" }}
+                  className="results-view-content"
+                  style={inContext ? { display: "none" } : undefined}
+                  {...resultsPanelProps("data")}
                 >
-                  <ErrorBoundary>
-                    <GraphWorkspace
-                      title="Workflow Graph"
-                      showLearnExplore={false}
-                      isWorkflowHost
+                  {!inContext && (
+                    <SolutionTable
+                      phaseResult={phaseResults[solution.phaseId]}
+                      solution={solution}
+                      onChangeCollection={(c) => dispatch(setSolutionCollection(c))}
                     />
-                  </ErrorBoundary>
+                  )}
                 </div>
               )}
+
+              {/* One wrapper, always rendered, so toggling the answer never remounts the graph */}
+              <div
+                className="results-context"
+                style={inContext ? undefined : { display: "none" }}
+                {...(solution && resultsPanelProps("context"))}
+              >
+                {/* Step buttons - show when the workflow has more than one step */}
+                {phases.length > 1 && (
+                  <div className="results-phase-tabs">
+                    {phases.map((phase, index) => {
+                      const hasPhaseResults = !!phaseResults[phase.id];
+                      const isExecuting = executingPhaseId === phase.id;
+                      const isPending = !hasPhaseResults && !isExecuting;
+                      return (
+                        <button
+                          type="button"
+                          key={phase.id}
+                          className={`phase-tab${activePhaseId === phase.id ? " active" : ""}${isExecuting ? " executing" : ""}${isPending ? " pending" : ""}`}
+                          onClick={() => handlePhaseSelect(phase.id)}
+                          disabled={isPending}
+                        >
+                          Phase {index + 1}
+                          {phase.name ? `: ${phase.name}` : ""}
+                          {isExecuting && <span className="spinner" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <ResultsViewSwitch view={view} onChange={setView} />
+
+                {/* Table View */}
+                {inContext && view === "table" && (
+                  <div className="results-view-content">
+                    <ResultsTable
+                      graphData={activeGraph}
+                      collapseMode={activePhase?.settings?.collapseLeafNodes ?? "standard"}
+                      originNodeIds={phaseOriginsIn(activePhase, activeGraph)}
+                    />
+                  </div>
+                )}
+
+                {/* Graph View - mounted only once the graph is first shown, then kept
+                  mounted (display:none) while the table or Results shows. */}
+                {hasShownGraph && (
+                  <div
+                    className="results-view-content graph-view"
+                    style={{ display: view === "graph" ? "block" : "none" }}
+                  >
+                    <ErrorBoundary>
+                      <GraphWorkspace
+                        title="Workflow Graph"
+                        showLearnExplore={false}
+                        isWorkflowHost
+                      />
+                    </ErrorBoundary>
+                  </div>
+                )}
+              </div>
             </>
           ) : (
             <div className="workflow-graph-placeholder">
