@@ -52,6 +52,12 @@ const WorkflowBuilderPage = () => {
     if (!activeGraph) setTab(null);
     else setTab((t) => t ?? (solution ? "data" : "context"));
   }, [activeGraph, solution]);
+  // A loaded or new workflow has no results yet; the old ones and their graph go.
+  useEffect(() => {
+    if (activeGraph) return;
+    setHasResults(false);
+    setHasShownGraph(false);
+  }, [activeGraph]);
   // Unmarking the answer falls back to the context view, and re-marking keeps it.
   useEffect(() => {
     if (!solution) setTab((t) => t && "context");

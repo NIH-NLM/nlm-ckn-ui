@@ -117,6 +117,19 @@ describe("WorkflowBuilderPage results", () => {
     act(() => store.dispatch(loadWorkflow({ phases, solution: { phaseId: "p1" } })));
     click("button", "Run");
     expect(screen.getByRole("tab", { name: "Results" })).toHaveAttribute("aria-selected", "true");
+    // The earlier workflow's graph went with its results; this one's waits for context.
+    expect(screen.queryByText("graph")).toBeNull();
+  });
+
+  it("clears the old results when a workflow loads, until it runs", () => {
+    const store = renderPage();
+    act(() => store.dispatch(loadWorkflow({ phases })));
+    expect(screen.getByText(/Configure and execute a workflow phase/)).toBeInTheDocument();
+    expect(switchGroup()).toBeNull();
+    expect(screen.queryByRole("tablist")).toBeNull();
+    click("button", "Run");
+    expect(switchGroup()).toBeInTheDocument();
+    expect(screen.getByText("graph")).toBeInTheDocument();
   });
 
   it("keeps the context view when a step is marked after a run", () => {
