@@ -1206,6 +1206,14 @@
 }
 
 /* Results View Content */
+/* The Results in context panel stacks the step buttons, switch and view. */
+.results-context {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .results-view-content {
   flex: 1;
   min-height: 0;
