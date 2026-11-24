@@ -158,6 +158,20 @@ describe("linked columns", () => {
     renderLinked([{ path: [toGene.path[0]] }], { nodeDetails: { "PR/P1": { _id: "PR/P1" } } });
     expect(screen.getByRole("link", { name: "PR/P1" })).toBeInTheDocument();
   });
+
+  it("exports linked values to CSV, joined with semicolons", () => {
+    const two = {
+      nodes: [{ _id: "CHEMBL/1" }],
+      links: [...links, edge("e3", "CHEMBL/1", "PR/P2", "MOLECULARLY_INTERACTS_WITH")],
+    };
+    renderLinked([{ path: [toGene.path[0]] }], {
+      phaseResult: two,
+      allPhaseResults: { p1: two },
+      nodeDetails: { "PR/P1": { _id: "PR/P1", label: "A" }, "PR/P2": { _id: "PR/P2", label: "B" } },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Download CSV/ }));
+    expect(downloadFile.mock.calls.at(-1)[0]).toContain('"A; B"');
+  });
 });
 
 describe("column identity", () => {
@@ -185,6 +199,23 @@ describe("column identity", () => {
     expect(screen.getAllByRole("button", { name: /^Label/ })).toHaveLength(1);
     expect(spy.mock.calls.flat().join(" ")).not.toMatch(/same key/);
     spy.mockRestore();
+  });
+
+  it("keeps the linked marker on a second linked column to the same collection", () => {
+    const viaGene = { path: [{ label: "PRODUCES", collection: "PR" }] };
+    renderChembl({
+      solution: { phaseId: "p1", collection: "CHEMBL", linkedColumns: [column, viaGene] },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Download CSV/ }));
+    expect(downloadFile.mock.calls.at(-1)[0]).toContain("(linked) (2)");
+  });
+
+  it("keeps an own field and a same-named linked column apart in the CSV", () => {
+    renderChembl();
+    fireEvent.click(screen.getByRole("button", { name: /Download CSV/ }));
+    const csv = downloadFile.mock.calls.at(-1)[0];
+    expect(csv).toContain("own-protein");
+    expect(csv).toContain("linked-protein");
   });
 
   it("sorts rows without links last when ascending", () => {
