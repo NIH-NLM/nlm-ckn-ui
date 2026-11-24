@@ -194,6 +194,12 @@ def _hop(depth, direction, collection, *labels):
 # share a label and differ only in the collection they end on.
 _TO_CELL_TYPE = {"label": "COMPOSED_PRIMARILY_OF", "collection": "CL"}
 _FROM_CELL_SET = {"label": "COMPOSED_PRIMARILY_OF", "collection": "CS"}
+# A compound reaches a gene only through its protein; a gene reaches a compound
+# the same way in reverse.
+_TO_PROTEIN = {"label": "MOLECULARLY_INTERACTS_WITH", "collection": "PR"}
+_PROTEIN_TO_GENE = {"label": "PRODUCES", "collection": "GS"}
+_GENE_TO_PROTEIN = {"label": "PRODUCES", "collection": "PR"}
+_PROTEIN_TO_COMPOUND = {"label": "MOLECULARLY_INTERACTS_WITH", "collection": "CHEMBL"}
 _TO_MARKERS = [
     {"label": "HAS_CHARACTERIZING_MARKER_SET", "collection": "BMC"},
     {"label": "PART_OF", "collection": "GS"},
@@ -778,6 +784,7 @@ WORKFLOW_PRESETS = [
         # Labeling every one of them buries the shape, so start with
         # edge labels off; the Labels panel can turn them back on.
         "labelStates": {"link-label": False},
+        "solution": _solution("preset-uc6-phase-1", "CHEMBL", [_TO_PROTEIN], [_TO_PROTEIN, _PROTEIN_TO_GENE]),
         "phases": [
             {
                 "id": "preset-uc6-phase-1",
@@ -825,6 +832,7 @@ WORKFLOW_PRESETS = [
         "category": "Use Cases",
         "layoutMode": "big-dipper",
         "labelStates": {"link-label": False},
+        "solution": _solution("preset-uc7-hcp-phase-2", "CHEMBL", [_TO_PROTEIN], [_TO_PROTEIN, _PROTEIN_TO_GENE]),
         "phases": [
             {
                 "id": "preset-uc7-hcp-phase-2",
@@ -878,6 +886,7 @@ WORKFLOW_PRESETS = [
         # compounds), not a dipper: there is no cell leg or closing edge.
         "layoutMode": "strict-cluster",
         "labelStates": {"link-label": False},
+        "solution": _solution("preset-uc8-phase-1", "GS", [_GENE_TO_PROTEIN, _PROTEIN_TO_COMPOUND]),
         "phases": [
             {
                 "id": "preset-uc8-phase-1",
@@ -958,6 +967,9 @@ WORKFLOW_PRESETS = [
         ),
         "category": "Use Cases",
         "layoutMode": "force",
+        "solution": _solution(
+            "preset-uc9-genes-phase-4", "GS", fields=["gene_symbol", "label", "refseq_summary"]
+        ),
         "phases": _UC9_PHASES,
     },
     {
@@ -970,6 +982,9 @@ WORKFLOW_PRESETS = [
         ),
         "category": "Use Cases",
         "layoutMode": "force",
+        "solution": _solution(
+            "preset-uc10-genes-phase-6", "GS", fields=["gene_symbol", "label", "refseq_summary"]
+        ),
         "phases": _UC10_PHASES,
     },
     {
@@ -985,6 +1000,7 @@ WORKFLOW_PRESETS = [
         # Labeling every one of them buries the shape, so start with
         # edge labels off; the Labels panel can turn them back on.
         "labelStates": {"link-label": False},
+        "solution": _solution("preset-uc11-phase-1", "CHEMBL", [_TO_PROTEIN], [_TO_PROTEIN, _PROTEIN_TO_GENE]),
         "phases": [
             {
                 "id": "preset-uc11-phase-1",
@@ -1037,6 +1053,7 @@ WORKFLOW_PRESETS = [
         "category": "Use Cases",
         "layoutMode": "big-dipper",
         "labelStates": {"link-label": False},
+        "solution": _solution("preset-uc12-phase-1", "CHEMBL", [_TO_PROTEIN], [_TO_PROTEIN, _PROTEIN_TO_GENE]),
         "phases": [
             {
                 "id": "preset-uc12-phase-1",
