@@ -41,6 +41,7 @@ const WorkflowBuilderPage = () => {
   // Workflow builder state
   const { activeGraph, activePhaseId, phases, phaseResults, status, executingPhaseId, solution } =
     useSelector((state) => state.workflowBuilder);
+  const nodeDetails = useSelector((state) => state.workflowBuilder.nodeDetails);
   // Without a marked step there is no Results tab; the context view shows alone.
   const inContext = !solution || tab === "context";
   if (hasResults && inContext && view === "graph" && !hasShownGraph) setHasShownGraph(true);
@@ -169,6 +170,8 @@ const WorkflowBuilderPage = () => {
                   {!inContext && (
                     <SolutionTable
                       phaseResult={phaseResults[solution.phaseId]}
+                      allPhaseResults={phaseResults}
+                      nodeDetails={nodeDetails}
                       solution={solution}
                       onChangeCollection={(c) => dispatch(setSolutionCollection(c))}
                     />

@@ -83,11 +83,12 @@ export const sortRows = (rows, accessor, direction) => {
 
 /** Header cells that sort the table by their own column. */
 export const SortableHeaders = ({ columns, sort, onSort }) =>
-  columns.map(({ key, label }) => {
+  columns.map(({ key, label, title }) => {
     const active = sort.column === key;
     return (
       <th
         key={key}
+        title={title}
         aria-sort={active ? (sort.direction === "asc" ? "ascending" : "descending") : "none"}
       >
         <button type="button" className="results-sort-btn" onClick={() => onSort(key)}>
