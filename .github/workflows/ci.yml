@@ -2,7 +2,8 @@ name: CI
 
 on:
   pull_request_target:
-    branches: [main]
+    # spearw/** covers stacked PRs, whose base is the branch below them.
+    branches: [main, 'spearw/**']
   push:
     branches: [main]
   workflow_dispatch:
@@ -534,10 +535,14 @@ jobs:
             --jq '.[] | select(.user.login == "github-actions[bot]" and .state == "APPROVED") | .id')
           # The files endpoint reads the PR's current head, so only trust it
           # when that head is still the commit this run was triggered for.
-          head=$(gh api "repos/$REPO/pulls/$PR" --jq .head.sha)
+          pr=$(gh api "repos/$REPO/pulls/$PR")
+          head=$(jq -r .head.sha <<<"$pr")
+          # A stacked PR's diff is against the branch below it, and an approval
+          # survives a retarget to main, so only a PR into main qualifies.
+          base=$(jq -r .base.ref <<<"$pr")
           files=$(gh api "repos/$REPO/pulls/$PR/files?per_page=100")
           qualifies=false
-          if [[ "$head" == "$SHA" && "$HEAD_REPO" == "$REPO" ]] && jq -e 'length == 1 and .[0].filename == "ETL_VERSION"
+          if [[ "$head" == "$SHA" && "$HEAD_REPO" == "$REPO" && "$base" == main ]] && jq -e 'length == 1 and .[0].filename == "ETL_VERSION"
               and .[0].status == "modified" and .[0].additions == 1 and .[0].deletions == 1' \
               <<<"$files" >/dev/null; then
             added=$(jq -r '.[0].patch' <<<"$files" | grep '^+' | cut -c2-)

@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# Keep the organization's settings and add only what differs here.
+inheritance: true
+reviews:
+  auto_review:
+    # Review stacked PRs too, whose base is the branch below them, not main.
+    base_branches:
+      - "spearw/.*"
