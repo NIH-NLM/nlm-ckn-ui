@@ -200,6 +200,9 @@ _TO_PROTEIN = {"label": "MOLECULARLY_INTERACTS_WITH", "collection": "PR"}
 _PROTEIN_TO_GENE = {"label": "PRODUCES", "collection": "GS"}
 _GENE_TO_PROTEIN = {"label": "PRODUCES", "collection": "PR"}
 _PROTEIN_TO_COMPOUND = {"label": "MOLECULARLY_INTERACTS_WITH", "collection": "CHEMBL"}
+_TO_EXPRESSING_CELL_SET = {"label": "SELECTIVELY_EXPRESSES", "collection": "CS"}
+_CELL_SET_TO_ORGAN = {"label": "DERIVES_FROM", "collection": "UBERON"}
+_GENE_TO_DISEASE = {"label": "ASSOCIATED_WITH", "collection": "MONDO"}
 _TO_MARKERS = [
     {"label": "HAS_CHARACTERIZING_MARKER_SET", "collection": "BMC"},
     {"label": "PART_OF", "collection": "GS"},
@@ -323,6 +326,52 @@ def _dipper_union(phase_id, sources):
     )
 
 
+# Context for the answer genes of phase *src*, so the Data tab can list each
+# gene's organs and diseases: the cell sets selectively expressing the genes,
+# the organs those cell sets derive from, and the genes' diseases. Each phase
+# returns both ends of its edges, since a phase keeps only edges between nodes
+# it returns.
+def _gene_context(prefix, src, first):
+    cs, organs, diseases = (f"{prefix}-phase-{n}" for n in range(first, first + 3))
+    return [
+        _scan_phase(
+            cs,
+            "Cell sets selectively expressing the answer genes",
+            {
+                **_hop(1, "INBOUND", "CS", "SELECTIVELY_EXPRESSES"),
+                "returnCollections": ["GS", "CS"],
+            },
+            prev=src,
+        ),
+        _scan_phase(
+            organs,
+            "Organs those cell sets derive from",
+            {
+                **_hop(1, "OUTBOUND", "UBERON", "DERIVES_FROM"),
+                "returnCollections": ["CS", "UBERON"],
+            },
+            prev=cs,
+            originFilter="nonOriginNodes",
+        ),
+        _scan_phase(
+            diseases,
+            "Diseases of the answer genes",
+            {
+                **_hop(1, "OUTBOUND", "MONDO", "ASSOCIATED_WITH"),
+                "returnCollections": ["GS", "MONDO"],
+            },
+            prev=src,
+        ),
+    ]
+
+
+# Each answer gene's organs (through its cell sets) and diseases.
+_GENE_CONTEXT_COLUMNS = (
+    [_TO_EXPRESSING_CELL_SET, _CELL_SET_TO_ORGAN],
+    [_GENE_TO_DISEASE],
+)
+
+
 _UC9 = "preset-uc9-genes"
 _UC9_PHASES = [
     _scan_phase(
@@ -353,6 +402,7 @@ _UC9_PHASES = [
         "Dipper genes a cell set selectively expresses",
         [f"{_UC9}-phase-1", f"{_UC9}-phase-3"],
     ),
+    *_gene_context(_UC9, f"{_UC9}-phase-4", 5),
 ]
 
 # No closing edge, so no path query: disease genes, intersected with the genes
@@ -386,6 +436,7 @@ _UC10_PHASES = [
         "Disease genes with a compound, selectively expressed in a cell set",
         [f"{_UC10}-phase-1", f"{_UC10}-phase-3", f"{_UC10}-phase-5"],
     ),
+    *_gene_context(_UC10, f"{_UC10}-phase-6", 7),
 ]
 
 
@@ -968,7 +1019,10 @@ WORKFLOW_PRESETS = [
         "category": "Use Cases",
         "layoutMode": "force",
         "solution": _solution(
-            "preset-uc9-genes-phase-4", "GS", fields=["gene_symbol", "label", "refseq_summary"]
+            "preset-uc9-genes-phase-4",
+            "GS",
+            *_GENE_CONTEXT_COLUMNS,
+            fields=["gene_symbol", "label", "refseq_summary"],
         ),
         "phases": _UC9_PHASES,
     },
@@ -983,7 +1037,10 @@ WORKFLOW_PRESETS = [
         "category": "Use Cases",
         "layoutMode": "force",
         "solution": _solution(
-            "preset-uc10-genes-phase-6", "GS", fields=["gene_symbol", "label", "refseq_summary"]
+            "preset-uc10-genes-phase-6",
+            "GS",
+            *_GENE_CONTEXT_COLUMNS,
+            fields=["gene_symbol", "label", "refseq_summary"],
         ),
         "phases": _UC10_PHASES,
     },
