@@ -137,6 +137,23 @@ class FindUnknownLabelsTestCase(SimpleTestCase):
             schema_guard.find_unknown_labels(preset, self.KNOWN), ["MEMBER_OF"]
         )
 
+    def test_flags_a_label_pinned_by_a_linked_column(self):
+        preset = _preset({"graphType": "phenotypes"})
+        preset["solution"] = {
+            "phaseId": "phase-0",
+            "linkedColumns": [
+                {
+                    "path": [
+                        {"label": "IS_ABOUT", "collection": "CS"},
+                        {"label": "MEMBER_OF", "collection": "CSD"},
+                    ]
+                }
+            ],
+        }
+        self.assertEqual(
+            schema_guard.find_unknown_labels(preset, self.KNOWN), ["MEMBER_OF"]
+        )
+
     def test_valid_preset_flags_nothing(self):
         preset = _preset(
             {"graphType": "phenotypes", "edgeFilters": {"Label": ["IS_ABOUT"]}}

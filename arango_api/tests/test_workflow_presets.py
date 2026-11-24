@@ -63,6 +63,12 @@ def _phase_labels(phase):
     return labels
 
 
+def _solution_labels(preset):
+    """Every edge Label pinned by the preset's solution linked columns."""
+    columns = (preset.get("solution") or {}).get("linkedColumns") or []
+    return {hop["label"] for column in columns for hop in column["path"]}
+
+
 class PresetStructureTests(TestCase):
     """Internal consistency of the preset definitions."""
 
@@ -121,6 +127,15 @@ class PresetSchemaDriftTests(TestCase):
                     f"{preset['id']}/{phase['id']} pins retired predicate(s) "
                     f"{sorted(retired)}; check the current data before replacing"
                 ),
+            )
+
+    def test_no_retired_linked_column_labels(self):
+        for preset in WORKFLOW_PRESETS:
+            retired = _solution_labels(preset) & RETIRED_LABELS
+            self.assertEqual(
+                retired,
+                set(),
+                msg=f"{preset['id']} solution links via retired predicate(s) {sorted(retired)}",
             )
 
     def test_cell_set_phases_pin_selective_expresses(self):
