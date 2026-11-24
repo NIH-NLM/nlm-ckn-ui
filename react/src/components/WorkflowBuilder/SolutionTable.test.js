@@ -161,6 +161,30 @@ describe("linked columns", () => {
     expect(screen.getByText(/Molecularly interacts with →/)).toBeInTheDocument();
   });
 
+  it("lists the strongest linked nodes first, with their score or route count", () => {
+    const scored = (id, to, Score) => ({ ...edge(id, "CHEMBL/1", to, "TREATS"), Score });
+    const viaPr = (id, from) => edge(id, from, "PR/P3", "MOLECULARLY_INTERACTS_WITH");
+    const result = {
+      nodes: [{ _id: "CHEMBL/1", label: "drug" }],
+      links: [
+        scored("s1", "MONDO/weak", "0.5"),
+        scored("s2", "MONDO/strong", "0.9"),
+        edge("s3", "CHEMBL/1", "MONDO/unscored", "TREATS"),
+        ...links,
+        viaPr("s4", "CHEMBL/1"),
+        edge("s5", "GS/OTHER", "PR/P3", "PRODUCES"),
+        edge("s6", "GS/CFTR", "PR/P3", "PRODUCES"),
+      ],
+    };
+    renderLinked([{ path: [{ label: "TREATS", collection: "MONDO" }] }, toGene], {
+      phaseResult: result,
+      allPhaseResults: { p1: result },
+    });
+    const [diseases, genes] = screen.getAllByRole("row")[1].querySelectorAll("td + td + td");
+    expect(diseases).toHaveTextContent("MONDO/strong (0.90), MONDO/weak (0.50), MONDO/unscored");
+    expect(genes).toHaveTextContent("GS/CFTR (2), GS/OTHER (1)");
+  });
+
   it("falls back to the id for a node missing from results and details", () => {
     renderLinked([{ path: [toGene.path[0]] }]);
     expect(screen.getByRole("link", { name: "PR/P1" })).toBeInTheDocument();

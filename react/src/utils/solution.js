@@ -12,7 +12,14 @@ export function buildEdgePool(phaseResults) {
       const key = link._id || `${link._from}|${typeof link.Label}|${link.Label}|${link._to}`;
       if (seen.has(key)) continue;
       seen.add(key);
-      pool.push({ id: link._id, from: link._from, to: link._to, label: link.Label });
+      const score = Number.parseFloat(link.Score);
+      pool.push({
+        id: link._id,
+        from: link._from,
+        to: link._to,
+        label: link.Label,
+        ...(Number.isFinite(score) && { score }),
+      });
     }
   }
   return pool;
@@ -25,9 +32,9 @@ export function buildAdjacency(edgePool) {
     if (!adjacency.has(id)) adjacency.set(id, []);
     adjacency.get(id).push(entry);
   };
-  for (const { from, to, label } of edgePool) {
-    add(from, { label, neighborId: to, direction: "out" });
-    add(to, { label, neighborId: from, direction: "in" });
+  for (const { from, to, label, score } of edgePool) {
+    add(from, { label, neighborId: to, direction: "out", score });
+    add(to, { label, neighborId: from, direction: "in", score });
   }
   return adjacency;
 }
@@ -44,6 +51,35 @@ export function buildNodeIndex(phaseResults, nodeDetails) {
     }
   }
   return index;
+}
+
+/**
+ * Nodes reached by following `path` from a row, excluding the row itself, with
+ * how strongly each is linked: `routes` counts the distinct paths that reach it,
+ * and `score` is the highest numeric Score on a last-hop edge (null when none).
+ * @returns {{id: string, routes: number, score: number|null}[]} in traversal order
+ */
+export function rankLinked(rowId, path, adjacency) {
+  let frontier = new Map([[rowId, { routes: 1, score: null }]]);
+  for (const step of path) {
+    const next = new Map();
+    for (const [id, { routes }] of frontier) {
+      for (const e of adjacency.get(id) || []) {
+        if (e.label !== step.label || collectionOf(e.neighborId) !== step.collection) continue;
+        // A self-loop is listed both out and in; count it once.
+        if (e.direction === "in" && e.neighborId === id) continue;
+        const reached = next.get(e.neighborId) || { routes: 0, score: null };
+        reached.routes += routes;
+        if (e.score !== undefined && (reached.score === null || e.score > reached.score)) {
+          reached.score = e.score;
+        }
+        next.set(e.neighborId, reached);
+      }
+    }
+    frontier = next;
+  }
+  frontier.delete(rowId);
+  return [...frontier].map(([id, strength]) => ({ id, ...strength }));
 }
 
 const hop = (ids, step, adjacency) => {
@@ -64,10 +100,14 @@ const walk = (rowId, path, adjacency) =>
 
 /** Distinct node ids reached by following `path` from a row, excluding the row itself. */
 export function resolvePath(rowId, path, adjacency) {
-  const reached = walk(rowId, path, adjacency);
-  reached.delete(rowId);
-  return [...reached];
+  return rankLinked(rowId, path, adjacency).map((n) => n.id);
 }
+
+/** Orders linked nodes strongest first: by score, then routes, then label. */
+export const byStrength = (a, b) =>
+  (b.score ?? -Infinity) - (a.score ?? -Infinity) ||
+  b.routes - a.routes ||
+  String(a.label).localeCompare(String(b.label));
 
 /** Hops available after `prefix`, with how many rows can take each, most common first. */
 export function listLinkOptions(rowIds, adjacency, prefix = []) {
