@@ -3,7 +3,7 @@
  * at a time, with that collection's own fields as columns.
  */
 
-import { memo, useCallback, useMemo, useState } from "react";
+import { Fragment, memo, useCallback, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   downloadFile,
@@ -23,6 +23,7 @@ import {
   resolvePath,
 } from "utils/solution";
 import LinkedColumnsMenu from "./LinkedColumnsMenu";
+import LinkedNodes from "./LinkedNodes";
 import { formatFieldValue, SortableHeaders, sortRows } from "./ResultsTable";
 
 // The CSV joins array elements with semicolons.
@@ -104,6 +105,7 @@ const SolutionTable = ({
   onChangeFields,
 }) => {
   const [sort, setSort] = useState({ column: null, direction: null });
+  const [expanded, setExpanded] = useState(new Set());
   const nodes = phaseResult?.nodes;
 
   const collection = useMemo(
@@ -205,6 +207,14 @@ const SolutionTable = ({
     });
   }, []);
 
+  const toggleExpanded = useCallback((id) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
+  }, []);
+
   const handleCollection = (next) => {
     setSort({ column: null, direction: null });
     onChangeCollection(next);
@@ -266,24 +276,61 @@ const SolutionTable = ({
         <table className="results-table solution-table">
           <thead>
             <tr>
+              <th className="expand-col" />
               <SortableHeaders columns={columns} sort={sort} onSort={handleSort} />
             </tr>
           </thead>
           <tbody>
-            {sorted.map((node) => (
-              <tr key={node._id}>
-                {columns.map((c) =>
-                  c.linked ? (
-                    <LinkedCell key={c.key} nodes={linkedNodes(node, c.linked)} />
-                  ) : (
-                    <FieldCell key={c.key} value={c.accessor(node)} />
-                  ),
-                )}
-              </tr>
-            ))}
+            {sorted.map((node) => {
+              const isExpanded = expanded.has(node._id);
+              return (
+                <Fragment key={node._id}>
+                  <tr className={isExpanded ? "expanded" : ""}>
+                    <td className="expand-col">
+                      {adjacency.get(node._id)?.length > 0 && (
+                        <button
+                          type="button"
+                          className="expand-btn"
+                          onClick={() => toggleExpanded(node._id)}
+                          aria-label={
+                            isExpanded ? "Collapse linked nodes" : "Expand to see linked nodes"
+                          }
+                          aria-expanded={isExpanded}
+                          title={
+                            isExpanded ? "Collapse linked nodes" : "Expand to see linked nodes"
+                          }
+                        >
+                          {isExpanded ? "−" : "+"}
+                        </button>
+                      )}
+                    </td>
+                    {columns.map((c) =>
+                      c.linked ? (
+                        <LinkedCell key={c.key} nodes={linkedNodes(node, c.linked)} />
+                      ) : (
+                        <FieldCell key={c.key} value={c.accessor(node)} />
+                      ),
+                    )}
+                  </tr>
+                  {isExpanded && (
+                    <tr className="expanded-row">
+                      <td colSpan={columns.length + 1}>
+                        <div className="expanded-content">
+                          <LinkedNodes
+                            nodeId={node._id}
+                            adjacency={adjacency}
+                            nodeIndex={nodeIndex}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              );
+            })}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={columns.length} className="empty-message">
+                <td colSpan={columns.length + 1} className="empty-message">
                   The answer step returned no rows
                 </td>
               </tr>

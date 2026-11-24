@@ -19,6 +19,7 @@ import {
   getNodeLabel,
 } from "utils";
 import { applyCollapse } from "utils/collapseLeaves";
+import LinkedNodes from "./LinkedNodes";
 
 /**
  * Format a field value for display (handles arrays, objects, etc.)
@@ -130,7 +131,13 @@ const accessorFor = (columns, key) => columns.find((c) => c.key === key)?.access
 /**
  * ResultsTable displays the workflow results as tables of nodes and edges.
  */
-const ResultsTable = ({ graphData, collapseMode = "off", originNodeIds = [] }) => {
+const ResultsTable = ({
+  graphData,
+  collapseMode = "off",
+  originNodeIds = [],
+  adjacency,
+  nodeIndex,
+}) => {
   const [activeTab, setActiveTab] = useState("nodes");
   const [expandedRows, setExpandedRows] = useState(new Set());
   const [sort, setSort] = useState({ column: null, direction: null });
@@ -318,12 +325,13 @@ const ResultsTable = ({ graphData, collapseMode = "off", originNodeIds = [] }) =
                 const externalUrl = getNodeExternalUrl(node, collection);
                 const isExpanded = expandedRows.has(node._id);
                 const collectionFields = getCollectionFields(collection);
+                const hasNeighbors = !!adjacency?.get(node._id)?.length;
 
                 return (
                   <React.Fragment key={node._id}>
                     <tr className={isExpanded ? "expanded" : ""}>
                       <td className="expand-col">
-                        {collectionFields.length > 0 && (
+                        {(collectionFields.length > 0 || hasNeighbors) && (
                           <button
                             type="button"
                             className="expand-btn"
@@ -391,6 +399,11 @@ const ResultsTable = ({ graphData, collapseMode = "off", originNodeIds = [] }) =
                                 },
                               )}
                             </div>
+                            <LinkedNodes
+                              nodeId={node._id}
+                              adjacency={adjacency}
+                              nodeIndex={nodeIndex}
+                            />
                           </div>
                         </td>
                       </tr>
