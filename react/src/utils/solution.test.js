@@ -2,11 +2,13 @@ import {
   buildAdjacency,
   buildEdgePool,
   buildNodeIndex,
+  byStrength,
   formatLinkedLabels,
   humanizeEdgeLabel,
   listLinkOptions,
   neighborsByRelationship,
   pickRowCollection,
+  rankLinked,
   resolvePath,
 } from "./solution";
 
@@ -71,6 +73,62 @@ describe("resolvePath", () => {
 
   it("returns nothing for an unknown row", () => {
     expect(resolvePath("nope/1", [{ label: "PRODUCES", collection: "GS" }], adj)).toEqual([]);
+  });
+});
+
+describe("rankLinked and byStrength", () => {
+  const expresses = (cs, gene) => edge(`x${cs}`, `CS/${cs}`, `GS/${gene}`, "EXPRESSES");
+  const derives = (cs, organ) => edge(`d${cs}`, `CS/${cs}`, `UBERON/${organ}`, "DERIVES_FROM");
+  const toOrgans = [
+    { label: "EXPRESSES", collection: "CS" },
+    { label: "DERIVES_FROM", collection: "UBERON" },
+  ];
+
+  it("counts the routes that reach each node", () => {
+    const a = adjOf([
+      ...[1, 2, 3].map((cs) => expresses(cs, "CFTR")),
+      derives(1, "liver"),
+      derives(2, "lung"),
+      derives(3, "lung"),
+    ]);
+    expect(rankLinked("GS/CFTR", toOrgans, a)).toEqual([
+      { id: "UBERON/liver", routes: 1, score: null },
+      { id: "UBERON/lung", routes: 2, score: null },
+    ]);
+  });
+
+  it("counts a self-loop once per step", () => {
+    const a = adjOf([edge("e1", "A/1", "A/1", "X"), edge("e2", "A/1", "B/1", "Y")]);
+    const path = [
+      { label: "X", collection: "A" },
+      { label: "Y", collection: "B" },
+    ];
+    expect(rankLinked("A/1", path, a)).toEqual([{ id: "B/1", routes: 1, score: null }]);
+  });
+
+  it("keeps the highest numeric last-hop score and ignores text", () => {
+    const hasFeature = (id, mondo, Score) => ({
+      ...edge(id, `MONDO/${mondo}`, "GS/CFTR", "HAS_FEATURE"),
+      Score,
+    });
+    const a = adjOf([
+      hasFeature("h1", "cf", "0.5"),
+      hasFeature("h2", "cf", "0.92"),
+      hasFeature("h3", "ali", "n/a"),
+    ]);
+    const ranked = rankLinked("GS/CFTR", [{ label: "HAS_FEATURE", collection: "MONDO" }], a);
+    expect(ranked).toEqual([
+      { id: "MONDO/cf", routes: 2, score: 0.92 },
+      { id: "MONDO/ali", routes: 1, score: null },
+    ]);
+  });
+
+  it("orders by score, then routes, then label", () => {
+    const n = (label, routes, score = null) => ({ label, routes, score });
+    const sorted = [n("b", 1), n("a", 1), n("c", 6), n("d", 1, 0.5), n("e", 1, 0.9)].sort(
+      byStrength,
+    );
+    expect(sorted.map((x) => x.label)).toEqual(["e", "d", "c", "a", "b"]);
   });
 });
 

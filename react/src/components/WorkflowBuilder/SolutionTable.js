@@ -16,11 +16,12 @@ import {
   buildAdjacency,
   buildEdgePool,
   buildNodeIndex,
+  byStrength,
   formatLinkedLabels,
   humanizeEdgeLabel,
   listLinkOptions,
   pickRowCollection,
-  resolvePath,
+  rankLinked,
 } from "utils/solution";
 import LinkedColumnsMenu from "./LinkedColumnsMenu";
 import LinkedNodes from "./LinkedNodes";
@@ -70,17 +71,30 @@ const uniqueHeaders = (columns) => {
   });
 };
 
+// A score when the last hop has one; otherwise the route count, shown only when
+// some node in the cell is reached more than one way.
+const strengthNote = (n, showRoutes) => {
+  if (n.score !== null) return { text: n.score.toFixed(2), title: "Score" };
+  if (showRoutes) return { text: String(n.routes), title: `Reached by ${n.routes} paths` };
+  return null;
+};
+
 const LinkedCell = ({ nodes }) => {
   const shown = nodes.slice(0, 3);
+  const showRoutes = nodes.some((n) => n.routes > 1);
   return (
     <td title={nodes.map((n) => n.label).join(", ")}>
       {nodes.length === 0 && formatLinkedLabels([])}
-      {shown.map((n, i) => (
-        <span key={n.id}>
-          {i > 0 && ", "}
-          <Link to={`/collections/${n.id}`}>{n.label}</Link>
-        </span>
-      ))}
+      {shown.map((n, i) => {
+        const note = strengthNote(n, showRoutes);
+        return (
+          <span key={n.id}>
+            {i > 0 && ", "}
+            <Link to={`/collections/${n.id}`}>{n.label}</Link>
+            {note && <span title={note.title}> ({note.text})</span>}
+          </span>
+        );
+      })}
       {nodes.length > shown.length && ` +${nodes.length - shown.length}`}
     </td>
   );
@@ -138,10 +152,9 @@ const SolutionTable = ({
   const linkedNodes = useCallback(
     (row, path) =>
       // The full id is getNodeLabel's fallback for a missing node or label.
-      resolvePath(row._id, path, adjacency).map((id) => ({
-        id,
-        label: getNodeLabel(nodeIndex.get(id), id),
-      })),
+      rankLinked(row._id, path, adjacency)
+        .map((linked) => ({ ...linked, label: getNodeLabel(nodeIndex.get(linked.id), linked.id) }))
+        .sort(byStrength),
     [adjacency, nodeIndex],
   );
   const { header, ownFields } = useMemo(() => {
