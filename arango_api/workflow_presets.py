@@ -372,73 +372,46 @@ _GENE_CONTEXT_COLUMNS = (
 )
 
 
-_UC9 = "preset-uc9-genes"
-_UC9_PHASES = [
-    _scan_phase(
-        f"{_UC9}-phase-1",
-        "Genes on a complete dipper (all diseases)",
-        {
-            "depth": 3,
-            "edgeDirection": "ANY",
-            "allowedCollections": ["GS", "PR", "CHEMBL"],
-            "edgeFilters": {
-                "Label": [
-                    "ASSOCIATED_WITH",
-                    "PRODUCES",
-                    "MOLECULARLY_INTERACTS_WITH",
-                ],
-                "Source": [],
+def _dipper_gene_phases(prefix, closing, kind):
+    """A dipper-gene scan over every disease, kept to the genes a cell set
+    selectively expresses, then the gene context. `closing` is
+    "requireClosingEdges" (the compound treats the path's own disease, a
+    complete dipper) or "excludeClosingEdges" (it does not, a bottomless one).
+    """
+    return [
+        _scan_phase(
+            f"{prefix}-phase-1",
+            f"Genes on a {kind} dipper (all diseases)",
+            {
+                "depth": 3,
+                "edgeDirection": "ANY",
+                "allowedCollections": ["GS", "PR", "CHEMBL"],
+                "edgeFilters": {
+                    "Label": [
+                        "ASSOCIATED_WITH",
+                        "PRODUCES",
+                        "MOLECULARLY_INTERACTS_WITH",
+                    ],
+                    "Source": [],
+                },
+                closing: {"Label": ["IS_SUBSTANCE_THAT_TREATS"]},
+                "returnCollections": ["GS"],
             },
-            # The compound must treat the path's own disease.
-            "requireClosingEdges": {"Label": ["IS_SUBSTANCE_THAT_TREATS"]},
-            "returnCollections": ["GS"],
-        },
-        originCollection="MONDO",
-        originLimit=_WHOLE_COLLECTION,
-    ),
-    *_selectively_expressed(_UC9, f"{_UC9}-phase-1", 2),
-    _intersect(
-        f"{_UC9}-phase-4",
-        "Dipper genes a cell set selectively expresses",
-        [f"{_UC9}-phase-1", f"{_UC9}-phase-3"],
-    ),
-    *_gene_context(_UC9, f"{_UC9}-phase-4", 5),
-]
+            originCollection="MONDO",
+            originLimit=_WHOLE_COLLECTION,
+        ),
+        *_selectively_expressed(prefix, f"{prefix}-phase-1", 2),
+        _intersect(
+            f"{prefix}-phase-4",
+            "Dipper genes a cell set selectively expresses",
+            [f"{prefix}-phase-1", f"{prefix}-phase-3"],
+        ),
+        *_gene_context(prefix, f"{prefix}-phase-4", 5),
+    ]
 
-# No closing edge, so no path query: disease genes, intersected with the genes
-# whose protein some compound interacts with and the genes a cell set
-# selectively expresses. Equal to the broken plus complete dipper genes.
-_UC10 = "preset-uc10-genes"
-_UC10_LABELS = ("PRODUCES", "MOLECULARLY_INTERACTS_WITH")
-_UC10_PHASES = [
-    _scan_phase(
-        f"{_UC10}-phase-1",
-        "Disease genes (all diseases)",
-        _hop(1, "INBOUND", "GS", "ASSOCIATED_WITH"),
-        originCollection="MONDO",
-        originLimit=_WHOLE_COLLECTION,
-    ),
-    _scan_phase(
-        f"{_UC10}-phase-2",
-        "Compounds interacting with their proteins",
-        _hop(2, "ANY", "CHEMBL", *_UC10_LABELS),
-        prev=f"{_UC10}-phase-1",
-    ),
-    _scan_phase(
-        f"{_UC10}-phase-3",
-        "Genes whose proteins those compounds interact with",
-        _hop(2, "ANY", "GS", *_UC10_LABELS),
-        prev=f"{_UC10}-phase-2",
-    ),
-    *_selectively_expressed(_UC10, f"{_UC10}-phase-1", 4),
-    _intersect(
-        f"{_UC10}-phase-6",
-        "Disease genes with a compound, selectively expressed in a cell set",
-        [f"{_UC10}-phase-1", f"{_UC10}-phase-3", f"{_UC10}-phase-5"],
-    ),
-    *_gene_context(_UC10, f"{_UC10}-phase-6", 7),
-]
 
+_UC9_PHASES = _dipper_gene_phases("preset-uc9-genes", "requireClosingEdges", "complete")
+_UC10_PHASES = _dipper_gene_phases("preset-uc10-genes", "excludeClosingEdges", "bottomless")
 
 WORKFLOW_PRESETS = [
     # -------------------------------------------------------------------------
@@ -1028,16 +1001,17 @@ WORKFLOW_PRESETS = [
     },
     {
         "id": "disease-drug-genes-uc10",
-        "name": "Selectively expressed disease genes with interacting compounds (UC10)",
+        "name": "Genes on a bottomless Big Dipper (UC10)",
         "description": (
             "List all genes that are selectively expressed in specific cell "
             "set(s), are strongly associated with a disease, and encode a "
-            "protein that interacts with bioactive compound(s)."
+            "protein that interacts with bioactive compound(s) not used to "
+            "treat that disease."
         ),
         "category": "Use Cases",
         "layoutMode": "force",
         "solution": _solution(
-            "preset-uc10-genes-phase-6",
+            "preset-uc10-genes-phase-4",
             "GS",
             *_GENE_CONTEXT_COLUMNS,
             fields=["gene_symbol", "label", "refseq_summary"],
