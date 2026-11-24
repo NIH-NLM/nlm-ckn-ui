@@ -57,3 +57,13 @@ it('keeps a missing label apart from the string "undefined"', () => {
   const checked = screen.getAllByRole("checkbox").filter((box) => box.checked);
   expect(checked).toHaveLength(1);
 });
+
+it("closes on Escape and on a mousedown outside", () => {
+  renderMenu([]);
+  fireEvent.click(screen.getByRole("button", { name: "Columns" }));
+  fireEvent.keyDown(document, { key: "Escape" });
+  expect(screen.queryByRole("list")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Columns" }));
+  fireEvent.mouseDown(document.body);
+  expect(screen.queryByRole("list")).toBeNull();
+});

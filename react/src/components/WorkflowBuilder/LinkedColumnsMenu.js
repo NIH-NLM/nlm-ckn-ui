@@ -3,7 +3,7 @@
  * table shows. Each option is one edge hop; expanding it offers a second hop.
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getCollectionDisplayName } from "utils";
 import { humanizeEdgeLabel } from "utils/solution";
 
@@ -24,6 +24,21 @@ const LinkedColumnsMenu = ({
 }) => {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(null);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (e) => e.key === "Escape" && setOpen(false);
+    const onDown = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onDown);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onDown);
+    };
+  }, [open]);
 
   const toggle = (path) => {
     const key = pathKey(path);
@@ -77,12 +92,17 @@ const LinkedColumnsMenu = ({
   };
 
   return (
-    <div className="linked-columns-menu">
-      <button type="button" aria-expanded={open} onClick={() => setOpen(!open)}>
+    <div className="linked-columns-menu" ref={menuRef}>
+      <button
+        type="button"
+        className="linked-columns-toggle"
+        aria-expanded={open}
+        onClick={() => setOpen(!open)}
+      >
         Columns
       </button>
       {open && (
-        <ul>
+        <ul className="linked-columns-panel">
           {fields.length > 0 && onChangeFields && (
             <li>
               Fields
