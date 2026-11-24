@@ -130,4 +130,23 @@ def find_unknown_labels(preset, labels_by_graph):
                 if label not in known:
                     unknown.add(label)
 
+    # Linked columns follow edges of the solution step's graph.
+    solution = preset.get("solution") or {}
+    solution_phase = next(
+        (
+            p
+            for p in preset.get("phases") or []
+            if p.get("id") == solution.get("phaseId")
+        ),
+        {},
+    )
+    graph = (solution_phase.get("settings") or {}).get("graphType") or default_graph
+    known = labels_by_graph.get(graph)
+    if known is not None:
+        for column in solution.get("linkedColumns") or []:
+            for hop in column.get("path") or []:
+                label = hop.get("label")
+                if label and label not in known:
+                    unknown.add(label)
+
     return sorted(unknown)
