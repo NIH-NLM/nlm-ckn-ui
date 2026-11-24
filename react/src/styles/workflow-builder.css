@@ -1569,6 +1569,18 @@
   color: var(--color-gray-dark);
 }
 
+/* "+N" / "Show fewer" in a linked cell, styled as an inline link */
+.linked-more {
+  margin-left: var(--spacing-xs);
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .results-table tr.expanded {
   background: rgba(0, 113, 188, 0.05); /* --color-primary with alpha */
 }
@@ -1683,6 +1695,7 @@
 .results-view-switch button:focus-visible,
 .results-tab:focus-visible,
 .expand-btn:focus-visible,
+.linked-more:focus-visible,
 .node-search-result:focus-visible,
 .phase-delete-btn:focus-visible,
 .download-csv-btn:focus-visible {

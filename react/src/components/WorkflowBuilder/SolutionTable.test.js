@@ -185,6 +185,26 @@ describe("linked columns", () => {
     expect(genes).toHaveTextContent("GS/CFTR (2), GS/OTHER (1)");
   });
 
+  it("opens and folds the nodes past the first three", () => {
+    const pr = [1, 2, 3, 4, 5].map((n) =>
+      edge(`m${n}`, "CHEMBL/1", `PR/P${n}`, "MOLECULARLY_INTERACTS_WITH"),
+    );
+    const result = { nodes: [{ _id: "CHEMBL/1", label: "drug" }], links: pr };
+    renderLinked([{ path: [toGene.path[0]] }], {
+      phaseResult: result,
+      allPhaseResults: { p1: result },
+    });
+    expect(screen.queryByRole("link", { name: "PR/P5" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Show 2 more" }));
+    expect(screen.getByRole("link", { name: "PR/P5" })).toBeInTheDocument();
+    // Focus moves to the first revealed link, then back to +N on folding.
+    expect(screen.getByRole("link", { name: "PR/P4" })).toHaveFocus();
+    fireEvent.click(screen.getByRole("button", { name: "Show fewer" }));
+    expect(screen.queryByRole("link", { name: "PR/P5" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Show 2 more" })).toHaveTextContent("+2");
+    expect(screen.getByRole("button", { name: "Show 2 more" })).toHaveFocus();
+  });
+
   it("falls back to the id for a node missing from results and details", () => {
     renderLinked([{ path: [toGene.path[0]] }]);
     expect(screen.getByRole("link", { name: "PR/P1" })).toBeInTheDocument();
