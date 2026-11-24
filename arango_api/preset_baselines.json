@@ -1,7 +1,7 @@
 {
   "_provenance": {
     "etl_version": "v1.8.0-rc.10",
-    "generated_at": "2026-11-24T18:07:43Z",
+    "generated_at": "2026-11-24T18:46:40Z",
     "mixed": true,
     "restored_at": "2026-11-17T18:45:01Z",
     "skipped": [
@@ -22,7 +22,7 @@
   "datasets-provenance-uc1": 158,
   "dipper-explorer": 71,
   "disease-cellular-pathogenesis": 10,
-  "disease-drug-genes-uc10": 1670,
+  "disease-drug-genes-uc10": 1619,
   "druggable-disease-genes": 489,
   "hereditary-chronic-pancreatitis-uc7": 39,
   "hlca-cell-type-markers-uc3": 295,
