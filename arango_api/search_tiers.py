@@ -35,6 +35,14 @@ def all_map_fields(path=None):
     )
 
 
+def collection_field_names(collection, path=None):
+    """One collection's individual_fields[].field_to_display, in map order."""
+    with open(path or maps_path()) as fh:
+        config = dict(json.load(fh)["maps"])[collection]
+    names = (field["field_to_display"] for field in config.get("individual_fields", []))
+    return list(dict.fromkeys(names))
+
+
 # The tiers the ETL's create_view links fields by; any other name is a typo.
 TIERS = frozenset({"label", "synonym", "identifier", "text"})
 
