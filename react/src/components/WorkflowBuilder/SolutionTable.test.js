@@ -159,6 +159,14 @@ describe("linked columns", () => {
     expect(screen.getByRole("link", { name: "PR/P1" })).toBeInTheDocument();
   });
 
+  it("passes the ticked path to onChangeLinkedColumns", () => {
+    const onChangeLinkedColumns = jest.fn();
+    renderLinked([], { onChangeLinkedColumns });
+    fireEvent.click(screen.getByRole("button", { name: "Columns" }));
+    fireEvent.click(screen.getByLabelText("Molecularly interacts with → Protein (1)"));
+    expect(onChangeLinkedColumns).toHaveBeenCalledWith([{ path: [toGene.path[0]] }]);
+  });
+
   it("exports linked values to CSV, joined with semicolons", () => {
     const two = {
       nodes: [{ _id: "CHEMBL/1" }],
@@ -285,5 +293,34 @@ describe("own fields", () => {
     withFields({ fields: ["a", "b", "c"] }, [{ _id: "XX/1", a: wxyz, b: { count: 3 }, c: [wxyz] }]);
     expect(screen.getAllByText("w, x, y, z")).toHaveLength(2);
     expect(screen.getByText('{"count":3}')).toHaveAttribute("title", '{"count":3}');
+  });
+
+  it("appends a ticked field through onChangeFields", () => {
+    const onChangeFields = jest.fn();
+    mockFields = fields;
+    renderTable({
+      phaseResult: { nodes: [{ _id: "XX/1", ...row }], links: [] },
+      allPhaseResults: {},
+      solution: { phaseId: "p1", collection: "XX", linkedColumns: [], fields: ["a"] },
+      onChangeFields,
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Columns" }));
+    expect(screen.queryByLabelText("Field empty")).toBeNull();
+    fireEvent.click(screen.getByLabelText("Field j"));
+    expect(onChangeFields).toHaveBeenCalledWith(["a", "j"]);
+  });
+
+  it("offers a chosen field with no values so it can be unticked", () => {
+    const onChangeFields = jest.fn();
+    mockFields = fields;
+    renderTable({
+      phaseResult: { nodes: [{ _id: "XX/1", ...row }], links: [] },
+      allPhaseResults: {},
+      solution: { phaseId: "p1", collection: "XX", linkedColumns: [], fields: ["a", "empty"] },
+      onChangeFields,
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Columns" }));
+    fireEvent.click(screen.getByLabelText("Field empty"));
+    expect(onChangeFields).toHaveBeenCalledWith(["a"]);
   });
 });
