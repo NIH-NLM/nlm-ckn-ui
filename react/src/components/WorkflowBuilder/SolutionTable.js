@@ -51,6 +51,22 @@ const findLabelField = (fields, rows, collection) =>
 // Every array element is shown, and the cell wraps rather than truncating.
 const cellText = (v) => (Array.isArray(v) ? v.map(cellText).join(", ") : formatFieldValue(v));
 
+// Header text must be unique in the CSV, or a repeated header overwrites its twin.
+// A repeated own header (the fallback "Label" beside a field shown as "Label")
+// takes its field name, a linked column is marked (linked), and a header
+// still repeated is numbered after that.
+const uniqueHeaders = (columns) => {
+  const used = new Set();
+  return columns.map((c) => {
+    let header = c.linked ? `${c.label} (linked)` : c.label;
+    if (used.has(header) && !c.linked) header = `${c.label} (${c.key})`;
+    const base = header;
+    for (let n = 2; used.has(header); n++) header = `${base} (${n})`;
+    used.add(header);
+    return header;
+  });
+};
+
 const LinkedCell = ({ nodes }) => {
   const shown = nodes.slice(0, 3);
   return (
@@ -184,14 +200,9 @@ const SolutionTable = ({
   };
 
   const handleDownloadCsv = () => {
-    const own = columns.filter((c) => !c.linked);
-    // A repeated header (the fallback "Label" beside a field shown as "Label")
-    // takes its field name, so neither column overwrites the other.
-    const headers = own.map((c, i) =>
-      own.findIndex((d) => d.label === c.label) === i ? c.label : `${c.label} (${c.key})`,
-    );
+    const headers = uniqueHeaders(columns);
     const data = rows.map((row) =>
-      Object.fromEntries(own.map((c, i) => [headers[i], csvValue(c.accessor(row))])),
+      Object.fromEntries(columns.map((c, i) => [headers[i], csvValue(c.accessor(row))])),
     );
     downloadFile(generateCsv(data), "workflow-results.csv");
   };
