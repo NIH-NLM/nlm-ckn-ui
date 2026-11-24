@@ -18,9 +18,11 @@ import {
   buildNodeIndex,
   formatLinkedLabels,
   humanizeEdgeLabel,
+  listLinkOptions,
   pickRowCollection,
   resolvePath,
 } from "utils/solution";
+import LinkedColumnsMenu from "./LinkedColumnsMenu";
 import { formatFieldValue, SortableHeaders, sortRows } from "./ResultsTable";
 
 // The CSV joins array elements with semicolons.
@@ -98,6 +100,8 @@ const SolutionTable = ({
   nodeDetails,
   solution,
   onChangeCollection,
+  onChangeLinkedColumns,
+  onChangeFields,
 }) => {
   const [sort, setSort] = useState({ column: null, direction: null });
   const nodes = phaseResult?.nodes;
@@ -125,6 +129,8 @@ const SolutionTable = ({
     () => buildNodeIndex(allPhaseResults, nodeDetails),
     [allPhaseResults, nodeDetails],
   );
+  const rowIds = useMemo(() => rows.map((r) => r._id), [rows]);
+  const linkOptions = useMemo(() => listLinkOptions(rowIds, adjacency), [rowIds, adjacency]);
   const linkedColumns = solution?.linkedColumns || [];
 
   const linkedNodes = useCallback(
@@ -158,6 +164,11 @@ const SolutionTable = ({
       .map((name) => ownFields.find((f) => f.fieldName === name))
       .filter(Boolean);
   }, [solution?.fields, filledFields, ownFields]);
+  // The menu offers filled fields, plus any shown field left empty so it can be unticked.
+  const menuFields = useMemo(
+    () => ownFields.filter((f) => filledFields.includes(f) || shownFields.includes(f)),
+    [ownFields, filledFields, shownFields],
+  );
 
   const columns = useMemo(() => {
     return [
@@ -219,6 +230,15 @@ const SolutionTable = ({
     <div className="results-table-container">
       <div className="results-tabs">
         <div className="results-tabs-left">
+          <LinkedColumnsMenu
+            options={linkOptions}
+            chosen={linkedColumns}
+            onChange={onChangeLinkedColumns}
+            fields={menuFields}
+            shownFields={shownFields.map((f) => f.fieldName)}
+            onChangeFields={onChangeFields}
+            loadNextHop={(prefix) => listLinkOptions(rowIds, adjacency, prefix)}
+          />
           {collections.length > 1 && (
             <select
               aria-label="Collection"

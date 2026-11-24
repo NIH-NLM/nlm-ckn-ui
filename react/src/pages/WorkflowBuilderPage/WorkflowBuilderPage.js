@@ -20,7 +20,14 @@ import { GRAPH_STATUS } from "constants/index";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
-import { loadWorkflow, setActiveGraph, setGraphData, setSolutionCollection } from "store";
+import {
+  loadWorkflow,
+  setActiveGraph,
+  setGraphData,
+  setSolutionCollection,
+  setSolutionFields,
+  setSolutionLinkedColumns,
+} from "store";
 import { phaseOriginsIn } from "utils";
 
 const WorkflowBuilderPage = () => {
@@ -174,6 +181,8 @@ const WorkflowBuilderPage = () => {
                       nodeDetails={nodeDetails}
                       solution={solution}
                       onChangeCollection={(c) => dispatch(setSolutionCollection(c))}
+                      onChangeLinkedColumns={(cols) => dispatch(setSolutionLinkedColumns(cols))}
+                      onChangeFields={(fields) => dispatch(setSolutionFields(fields))}
                     />
                   )}
                 </div>
