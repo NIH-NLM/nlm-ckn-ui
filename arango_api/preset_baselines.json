@@ -1,7 +1,7 @@
 {
   "_provenance": {
     "etl_version": "v1.8.0-rc.10",
-    "generated_at": "2026-11-18T13:35:50Z",
+    "generated_at": "2026-11-24T18:07:43Z",
     "mixed": true,
     "restored_at": "2026-11-17T18:45:01Z",
     "skipped": [
@@ -15,14 +15,14 @@
   "cell-type-hierarchy": 73,
   "cftr-acute-lung-injury-uc12": 34,
   "clean-dipper-candidates": 395,
-  "complete-dipper-genes-uc9": 395,
+  "complete-dipper-genes-uc9": 1347,
   "cystic-fibrosis-uc6": 43,
   "dataset-comparison-uc5": 172,
   "datasets-for-cell-type": 295,
   "datasets-provenance-uc1": 158,
   "dipper-explorer": 71,
   "disease-cellular-pathogenesis": 10,
-  "disease-drug-genes-uc10": 493,
+  "disease-drug-genes-uc10": 1670,
   "druggable-disease-genes": 489,
   "hereditary-chronic-pancreatitis-uc7": 39,
   "hlca-cell-type-markers-uc3": 295,
