@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import ResultsTable, { sortRows } from "components/WorkflowBuilder/ResultsTable";
+import { MemoryRouter } from "react-router-dom";
 
 const cellCount = (row) => row.cell_count;
 const rows = [
@@ -41,4 +42,24 @@ it("cycles a header through ascending, descending, then traversal order", () => 
   expect(labels()).toEqual([...original].sort().reverse());
   fireEvent.click(header);
   expect(labels()).toEqual(original);
+});
+
+it("shows linked nodes in an expanded row only when adjacency is supplied", () => {
+  const graphData = { nodes: [{ _id: "GS/CFTR" }], links: [] };
+  const adjacency = new Map([
+    ["GS/CFTR", [{ label: "PRODUCES", neighborId: "PR/P1", direction: "out" }]],
+  ]);
+  const { unmount } = render(<ResultsTable graphData={graphData} />);
+  fireEvent.click(screen.getByTitle(/Expand/));
+  expect(screen.queryByText("Linked nodes")).not.toBeInTheDocument();
+  unmount();
+
+  render(
+    <MemoryRouter>
+      <ResultsTable graphData={graphData} adjacency={adjacency} nodeIndex={new Map()} />
+    </MemoryRouter>,
+  );
+  fireEvent.click(screen.getByTitle(/Expand/));
+  expect(screen.getByText("Linked nodes")).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "PR/P1" })).toBeInTheDocument();
 });

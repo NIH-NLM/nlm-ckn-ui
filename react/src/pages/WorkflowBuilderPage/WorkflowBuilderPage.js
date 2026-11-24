@@ -17,7 +17,7 @@ import ResultsTabs, { resultsPanelProps } from "components/WorkflowBuilder/Resul
 import ResultsViewSwitch from "components/WorkflowBuilder/ResultsViewSwitch";
 import SolutionTable from "components/WorkflowBuilder/SolutionTable";
 import { GRAPH_STATUS } from "constants/index";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -28,7 +28,10 @@ import {
   setSolutionFields,
   setSolutionLinkedColumns,
 } from "store";
+
 import { phaseOriginsIn } from "utils";
+
+import { buildAdjacency, buildEdgePool, buildNodeIndex } from "utils/solution";
 
 const WorkflowBuilderPage = () => {
   const dispatch = useDispatch();
@@ -49,6 +52,11 @@ const WorkflowBuilderPage = () => {
   const { activeGraph, activePhaseId, phases, phaseResults, status, executingPhaseId, solution } =
     useSelector((state) => state.workflowBuilder);
   const nodeDetails = useSelector((state) => state.workflowBuilder.nodeDetails);
+  const adjacency = useMemo(() => buildAdjacency(buildEdgePool(phaseResults)), [phaseResults]);
+  const nodeIndex = useMemo(
+    () => buildNodeIndex(phaseResults, nodeDetails),
+    [phaseResults, nodeDetails],
+  );
   // Without a marked step there is no Results tab; the context view shows alone.
   const inContext = !solution || tab === "context";
   if (hasResults && inContext && view === "graph" && !hasShownGraph) setHasShownGraph(true);
@@ -227,6 +235,8 @@ const WorkflowBuilderPage = () => {
                       graphData={activeGraph}
                       collapseMode={activePhase?.settings?.collapseLeafNodes ?? "standard"}
                       originNodeIds={phaseOriginsIn(activePhase, activeGraph)}
+                      adjacency={adjacency}
+                      nodeIndex={nodeIndex}
                     />
                   </div>
                 )}
