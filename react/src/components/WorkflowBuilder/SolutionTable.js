@@ -4,6 +4,7 @@
  */
 
 import { memo, useCallback, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   downloadFile,
   generateCsv,
@@ -11,13 +12,23 @@ import {
   getCollectionFields,
   getNodeLabel,
 } from "utils";
-import { pickRowCollection } from "utils/solution";
+import {
+  buildAdjacency,
+  buildEdgePool,
+  buildNodeIndex,
+  formatLinkedLabels,
+  humanizeEdgeLabel,
+  pickRowCollection,
+  resolvePath,
+} from "utils/solution";
 import { formatFieldValue, SortableHeaders, sortRows } from "./ResultsTable";
 
 // The CSV joins array elements with semicolons.
 const csvValue = (v) => (Array.isArray(v) ? v.join("; ") : v);
 
 const collectionOf = (node) => String(node._id).split("/")[0];
+
+const pathKey = (path) => path.map((s) => `${s.label}|${s.collection}`).join(">");
 
 // Own fields shown when the solution does not choose any.
 const DEFAULT_FIELD_COUNT = 6;
@@ -40,6 +51,22 @@ const findLabelField = (fields, rows, collection) =>
 // Every array element is shown, and the cell wraps rather than truncating.
 const cellText = (v) => (Array.isArray(v) ? v.map(cellText).join(", ") : formatFieldValue(v));
 
+const LinkedCell = ({ nodes }) => {
+  const shown = nodes.slice(0, 3);
+  return (
+    <td title={nodes.map((n) => n.label).join(", ")}>
+      {nodes.length === 0 && formatLinkedLabels([])}
+      {shown.map((n, i) => (
+        <span key={n.id}>
+          {i > 0 && ", "}
+          <Link to={`/collections/${n.id}`}>{n.label}</Link>
+        </span>
+      ))}
+      {nodes.length > shown.length && ` +${nodes.length - shown.length}`}
+    </td>
+  );
+};
+
 const FieldCell = ({ value }) => {
   const text = cellText(value);
   return (
@@ -49,7 +76,13 @@ const FieldCell = ({ value }) => {
   );
 };
 
-const SolutionTable = ({ phaseResult, solution, onChangeCollection }) => {
+const SolutionTable = ({
+  phaseResult,
+  allPhaseResults,
+  nodeDetails,
+  solution,
+  onChangeCollection,
+}) => {
   const [sort, setSort] = useState({ column: null, direction: null });
   const nodes = phaseResult?.nodes;
 
@@ -67,6 +100,25 @@ const SolutionTable = ({ phaseResult, solution, onChangeCollection }) => {
   const rows = useMemo(
     () => (nodes || []).filter((n) => collectionOf(n) === collection),
     [nodes, collection],
+  );
+  const adjacency = useMemo(
+    () => buildAdjacency(buildEdgePool(allPhaseResults)),
+    [allPhaseResults],
+  );
+  const nodeIndex = useMemo(
+    () => buildNodeIndex(allPhaseResults, nodeDetails),
+    [allPhaseResults, nodeDetails],
+  );
+  const linkedColumns = solution?.linkedColumns || [];
+
+  const linkedNodes = useCallback(
+    (row, path) =>
+      // The full id is getNodeLabel's fallback for a missing node or label.
+      resolvePath(row._id, path, adjacency).map((id) => ({
+        id,
+        label: getNodeLabel(nodeIndex.get(id), id),
+      })),
+    [adjacency, nodeIndex],
   );
   const { header, ownFields } = useMemo(() => {
     const seen = new Set();
@@ -99,8 +151,23 @@ const SolutionTable = ({ phaseResult, solution, onChangeCollection }) => {
         label: displayName,
         accessor: (n) => n[fieldName],
       })),
+      ...linkedColumns.map(({ path }) => {
+        const last = path[path.length - 1];
+        return {
+          key: `link:${pathKey(path)}`,
+          label: getCollectionDisplayName(last.collection),
+          title: path
+            .map((s) => `${humanizeEdgeLabel(s.label)} → ${getCollectionDisplayName(s.collection)}`)
+            .join(" → "),
+          linked: path,
+          accessor: (n) => {
+            const labels = linkedNodes(n, path).map((l) => l.label);
+            return labels.length ? labels.join("; ") : undefined;
+          },
+        };
+      }),
     ];
-  }, [collection, header, shownFields]);
+  }, [collection, header, shownFields, linkedColumns, linkedNodes]);
 
   // Ascending, then descending, then back to the order the traversal returned.
   const handleSort = useCallback((column) => {
@@ -117,13 +184,14 @@ const SolutionTable = ({ phaseResult, solution, onChangeCollection }) => {
   };
 
   const handleDownloadCsv = () => {
+    const own = columns.filter((c) => !c.linked);
     // A repeated header (the fallback "Label" beside a field shown as "Label")
     // takes its field name, so neither column overwrites the other.
-    const headers = columns.map((c, i) =>
-      columns.findIndex((d) => d.label === c.label) === i ? c.label : `${c.label} (${c.key})`,
+    const headers = own.map((c, i) =>
+      own.findIndex((d) => d.label === c.label) === i ? c.label : `${c.label} (${c.key})`,
     );
     const data = rows.map((row) =>
-      Object.fromEntries(columns.map((c, i) => [headers[i], csvValue(c.accessor(row))])),
+      Object.fromEntries(own.map((c, i) => [headers[i], csvValue(c.accessor(row))])),
     );
     downloadFile(generateCsv(data), "workflow-results.csv");
   };
@@ -173,9 +241,13 @@ const SolutionTable = ({ phaseResult, solution, onChangeCollection }) => {
           <tbody>
             {sorted.map((node) => (
               <tr key={node._id}>
-                {columns.map((c) => (
-                  <FieldCell key={c.key} value={c.accessor(node)} />
-                ))}
+                {columns.map((c) =>
+                  c.linked ? (
+                    <LinkedCell key={c.key} nodes={linkedNodes(node, c.linked)} />
+                  ) : (
+                    <FieldCell key={c.key} value={c.accessor(node)} />
+                  ),
+                )}
               </tr>
             ))}
             {rows.length === 0 && (

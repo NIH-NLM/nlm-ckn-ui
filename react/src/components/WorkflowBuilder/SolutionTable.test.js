@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import SolutionTable from "components/WorkflowBuilder/SolutionTable";
+import { MemoryRouter } from "react-router-dom";
 import { downloadFile } from "utils";
 
 let mockFields = null;
@@ -22,15 +23,17 @@ const phaseResult = {
 };
 const renderTable = (props) =>
   render(
-    <SolutionTable
-      phaseResult={phaseResult}
-      allPhaseResults={{ p1: phaseResult }}
-      nodeDetails={{}}
-      solution={{ phaseId: "p1", collection: null, linkedColumns: [] }}
-      onChangeCollection={() => {}}
-      onChangeLinkedColumns={() => {}}
-      {...props}
-    />,
+    <MemoryRouter>
+      <SolutionTable
+        phaseResult={phaseResult}
+        allPhaseResults={{ p1: phaseResult }}
+        nodeDetails={{}}
+        solution={{ phaseId: "p1", collection: null, linkedColumns: [] }}
+        onChangeCollection={() => {}}
+        onChangeLinkedColumns={() => {}}
+        {...props}
+      />
+    </MemoryRouter>,
   );
 
 it("asks for a run when the step has no results", () => {
@@ -108,6 +111,55 @@ it("exports every element of an array field to CSV", () => {
   for (const t of terms) expect(csv).toContain(t);
 });
 
+describe("linked columns", () => {
+  const edge = (_id, _from, _to, Label) => ({ _id, _from, _to, Label });
+  const links = [
+    edge("e1", "CHEMBL/1", "PR/P1", "MOLECULARLY_INTERACTS_WITH"),
+    edge("e2", "GS/CFTR", "PR/P1", "PRODUCES"),
+  ];
+  const chembl = {
+    nodes: [
+      { _id: "CHEMBL/1", label: "drug" },
+      { _id: "CHEMBL/2", label: "other" },
+    ],
+    links,
+  };
+  const gs = { nodes: [{ _id: "GS/CFTR", _key: "CFTR" }], links };
+  const toGene = {
+    path: [
+      { label: "MOLECULARLY_INTERACTS_WITH", collection: "PR" },
+      { label: "PRODUCES", collection: "GS" },
+    ],
+  };
+  const renderLinked = (linkedColumns, extra) =>
+    renderTable({
+      phaseResult: chembl,
+      allPhaseResults: { p1: chembl, p2: gs },
+      solution: { phaseId: "p1", collection: "CHEMBL", linkedColumns },
+      ...extra,
+    });
+
+  it("renders a linked cell as a link, with a dash when nothing is linked", () => {
+    renderLinked([toGene]);
+    expect(screen.getByRole("button", { name: /Gene symbol/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "CFTR" })).toHaveAttribute(
+      "href",
+      "/collections/GS/CFTR",
+    );
+    expect(screen.getByText("–")).toBeInTheDocument();
+  });
+
+  it("falls back to the id for a node missing from results and details", () => {
+    renderLinked([{ path: [toGene.path[0]] }]);
+    expect(screen.getByRole("link", { name: "PR/P1" })).toBeInTheDocument();
+  });
+
+  it("falls back to the id for a node that has no label fields", () => {
+    renderLinked([{ path: [toGene.path[0]] }], { nodeDetails: { "PR/P1": { _id: "PR/P1" } } });
+    expect(screen.getByRole("link", { name: "PR/P1" })).toBeInTheDocument();
+  });
+});
+
 describe("column identity", () => {
   const edge = { _id: "e1", _from: "CHEMBL/1", _to: "PR/P1", Label: "MOLECULARLY_INTERACTS_WITH" };
   const chembl = {
@@ -133,6 +185,17 @@ describe("column identity", () => {
     expect(screen.getAllByRole("button", { name: /^Label/ })).toHaveLength(1);
     expect(spy.mock.calls.flat().join(" ")).not.toMatch(/same key/);
     spy.mockRestore();
+  });
+
+  it("sorts rows without links last when ascending", () => {
+    renderChembl();
+    fireEvent.click(screen.getAllByRole("button", { name: /^Protein/ }).at(-1));
+    const cells = screen
+      .getAllByRole("row")
+      .slice(1)
+      .map((r) => r.textContent);
+    expect(cells[0]).toContain("linked-protein");
+    expect(cells[1]).toContain("–");
   });
 });
 
