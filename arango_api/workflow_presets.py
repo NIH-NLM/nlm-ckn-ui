@@ -9,6 +9,8 @@ This module is consumed by WorkflowPresetsView to serve presets over the API,
 making them discoverable by non-browser clients (MCP tools, agents, etc.).
 """
 
+from arango_api.search_tiers import collection_field_names
+
 PRESET_SECTIONS = [
     {"id": "graph-results", "label": "Graph Result Examples"},
     {"id": "big-dipper", "label": "Big Dipper"},
@@ -188,6 +190,59 @@ def _hop(depth, direction, collection, *labels):
     }
 
 
+# Edge paths for solution columns. Named for what they reach, since several
+# share a label and differ only in the collection they end on.
+_TO_CELL_TYPE = {"label": "COMPOSED_PRIMARILY_OF", "collection": "CL"}
+_FROM_CELL_SET = {"label": "COMPOSED_PRIMARILY_OF", "collection": "CS"}
+_TO_MARKERS = [
+    {"label": "HAS_CHARACTERIZING_MARKER_SET", "collection": "BMC"},
+    {"label": "PART_OF", "collection": "GS"},
+]
+
+
+def _solution(phase_id, collection, *columns, fields=None):
+    """The table the Solution tab shows: *collection* nodes of one phase.
+
+    Each column is an edge path (one or two hops) whose end nodes are listed
+    beside each row. *fields* names the own fields to show, in order; without
+    it the table shows the first few that have values.
+    """
+    solution = {
+        "phaseId": phase_id,
+        "collection": collection,
+        "linkedColumns": [{"path": path} for path in columns],
+    }
+    if fields is not None:
+        solution["fields"] = list(fields)
+    return solution
+
+
+def _uc5_cell_types(phase_id, name, dataset):
+    """The cell types one dataset detects, through its cell sets."""
+    return {
+        "id": phase_id,
+        "name": name,
+        "originSource": "manual",
+        "originNodeIds": [dataset],
+        "previousPhaseId": None,
+        "originFilter": "all",
+        "settings": {
+            "depth": 2,
+            "edgeDirection": "ANY",
+            "allowedCollections": ["CS", "CL"],
+            "edgeFilters": {
+                "Label": ["IS_ABOUT", "COMPOSED_PRIMARILY_OF"],
+                "Source": [],
+            },
+            "returnCollections": ["CL"],
+            "setOperation": "Union",
+            "graphType": "phenotypes",
+            "includeInterNodeEdges": False,
+        },
+        "perNodeSettings": {},
+    }
+
+
 def _intersect(phase_id, name, sources):
     return _scan_phase(
         phase_id,
@@ -341,6 +396,7 @@ WORKFLOW_PRESETS = [
         ),
         "category": "Use Cases",
         "layoutMode": "force",
+        "solution": _solution("preset-uc1-phase-1", "CSD", fields=collection_field_names("CSD")),
         "phases": [
             {
                 "id": "preset-uc1-phase-1",
@@ -379,6 +435,12 @@ WORKFLOW_PRESETS = [
         ),
         "category": "Use Cases",
         "layoutMode": "force",
+        "solution": _solution(
+            "preset-hlca-lung-phase-1",
+            "CS",
+            [_TO_CELL_TYPE],
+            fields=["author_cell_term", "ontology_purl"],
+        ),
         "phases": [
             {
                 "id": "preset-hlca-lung-phase-1",
@@ -419,6 +481,13 @@ WORKFLOW_PRESETS = [
         ),
         "category": "Use Cases",
         "layoutMode": "force",
+        "solution": _solution(
+            "preset-uc3-phase-1",
+            "CS",
+            [_TO_CELL_TYPE],
+            _TO_MARKERS,
+            fields=collection_field_names("CS"),
+        ),
         "phases": [
             {
                 "id": "preset-uc3-phase-1",
@@ -482,6 +551,7 @@ WORKFLOW_PRESETS = [
         ),
         "category": "Use Cases",
         "layoutMode": "force",
+        "solution": _solution("preset-uc4-phase-1", "CS", [_TO_CELL_TYPE], _TO_MARKERS),
         "phases": [
             {
                 "id": "preset-uc4-phase-1",
@@ -635,7 +705,35 @@ WORKFLOW_PRESETS = [
         ),
         "category": "Use Cases",
         "layoutMode": "force",
+        "solution": _solution("preset-uc5-difference", "CL", [_FROM_CELL_SET]),
         "phases": [
+            _uc5_cell_types(
+                "preset-uc5-cellref",
+                "CellRef cell types",
+                "CSD/8b459307-bce0-45f9-9e45-a0a3673058a2__respiratory_system",
+            ),
+            _uc5_cell_types(
+                "preset-uc5-hlca",
+                "HLCA cell types",
+                "CSD/4cb45d80-499a-48ae-a056-c71ac3552c94__respiratory_system",
+            ),
+            {
+                "id": "preset-uc5-difference",
+                "name": "Cell types in CellRef but not in HLCA",
+                "originSource": "multiplePhases",
+                "originNodeIds": [],
+                "previousPhaseId": None,
+                "previousPhaseIds": ["preset-uc5-cellref", "preset-uc5-hlca"],
+                "phaseCombineOperation": "Difference",
+                "originFilter": "all",
+                "settings": {
+                    "returnCollections": ["CL"],
+                    "setOperation": "Union",
+                    "graphType": "phenotypes",
+                    "includeInterNodeEdges": False,
+                },
+                "perNodeSettings": {},
+            },
             {
                 "id": "preset-uc5-phase-1",
                 "name": "Show both datasets with their cell sets and cell types",

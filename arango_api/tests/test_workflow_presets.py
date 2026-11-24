@@ -11,6 +11,7 @@ in the data leaves the preset syntactically valid and silently wrong.
 import re
 from unittest import TestCase
 
+from arango_api.search_tiers import collection_field_names
 from arango_api.workflow_presets import PRESET_CATEGORIES, WORKFLOW_PRESETS
 
 # Depth selector maximum in the UI (DEPTH_OPTIONS in react/src/constants/graph.js).
@@ -198,8 +199,10 @@ class PresetSchemaDriftTests(TestCase):
             fields = solution.get("fields")
             if fields is not None:
                 self.assertIsInstance(fields, list, msg=preset["id"])
+                own = collection_field_names(solution["collection"])
                 for name in fields:
                     self.assertTrue(isinstance(name, str) and name, msg=preset["id"])
+                    self.assertIn(name, own, msg=f"{preset['id']} solution field")
             for column in solution.get("linkedColumns", []):
                 path = column["path"]
                 self.assertIn(len(path), (1, 2), msg=preset["id"])
