@@ -69,6 +69,53 @@ def _get_graph_vertex_collections(graph):
     return members
 
 
+_closing_ends_cache = {}
+
+
+def _closing_end_collections(graph, labels):
+    """Map each collection to the collections an edge with *labels* joins it to.
+
+    Read from the data, not the graph's edge definitions, since one edge
+    collection may hold several labels between different collection pairs.
+
+    Returns:
+        dict | None: e.g. {"MONDO": ["CHEMBL"], "CHEMBL": ["MONDO"]}, or None
+        if it could not be read, the caller's signal to skip the check.
+    """
+    key = (graph, tuple(sorted(labels)))
+    now = time.monotonic()
+    cached = _closing_ends_cache.get(key)
+    if cached and now < cached["expires_at"]:
+        return cached["value"]
+
+    try:
+        db, graph_name = get_db_and_graph(graph)
+        edge_collections = [
+            d["edge_collection"] for d in db.graph(graph_name).edge_definitions()
+        ]
+        if not edge_collections:
+            return None
+        # Names come from the graph definition, never from user input.
+        subqueries = ", ".join(
+            f"(FOR e IN `{name}` FILTER e.Label IN @labels "
+            "RETURN DISTINCT [PARSE_COLLECTION(e._from), PARSE_COLLECTION(e._to)])"
+            for name in edge_collections
+        )
+        query = f"RETURN UNIQUE(FLATTEN([{subqueries}], 1))"
+        pairs = list(db.aql.execute(query, bind_vars={"labels": list(labels)}))[0]
+    except Exception:
+        logger.warning("Could not read closing-edge collections", exc_info=True)
+        return None
+
+    ends = {}
+    for frm, to in pairs:
+        ends.setdefault(frm, set()).add(to)
+        ends.setdefault(to, set()).add(frm)
+    value = {name: sorted(others) for name, others in ends.items()}
+    _closing_ends_cache[key] = {"value": value, "expires_at": now + CACHE_TTL_SECONDS}
+    return value
+
+
 def _sanitize_allowed_collections(allowed_collections, graph):
     """Drop collections from allowed_collections that are not members of graph.
 
@@ -289,7 +336,8 @@ def traverse_graph(
         exclude_closing_edges (dict): Optional path-aware anti-edge (NAC) filter,
             shape {"Label": [...]}. When set, only full-depth paths are kept whose
             endpoint has NO edge of the given label(s) back to that path's own
-            origin (start node). Used to find "open" motifs, e.g. drug paths that
+            origin (start node), and whose endpoint is in a collection that such
+            an edge joins to the origin's. Used to find "open" motifs, e.g. drug paths that
             do not close back to the disease via IS_SUBSTANCE_THAT_TREATS.
         require_closing_edges (dict): Positive complement of
             exclude_closing_edges, same shape {"Label": [...]}. When set, only
@@ -440,9 +488,24 @@ def traverse_graph(
             path_label_filter = (
                 f"FILTER LENGTH(p.edges[* FILTER NOT ({path_conditions})]) == 0"
             )
+        # An endpoint that no closing edge could join to the origin, such as a
+        # gene when the label is IS_SUBSTANCE_THAT_TREATS, passes the anti-edge
+        # trivially. Keep only endpoints in a collection the label can reach.
+        end_let = end_filter = ""
+        closing_ends = (
+            None if require_mode else _closing_end_collections(graph, closing_labels)
+        )
+        if closing_ends is not None:
+            anti_bind_vars["closing_ends"] = closing_ends
+            end_let = (
+                "LET end_collections = "
+                "NOT_NULL(@closing_ends[PARSE_COLLECTION(start_node_id)], [])"
+            )
+            end_filter = "FILTER PARSE_COLLECTION(v) IN end_collections"
         aql_query = f"""
          FOR start_node_id IN @node_ids
              LET start_node_doc = DOCUMENT(start_node_id)
+             {end_let}
              LET closers = (
                  FOR cv, ce IN 1..1 ANY start_node_id GRAPH @graph
                      FILTER ce.Label IN @closing_labels
@@ -454,6 +517,7 @@ def traverse_graph(
                      OPTIONS {{ vertexCollections: @allowed_collections }}
                      {path_label_filter}
                      FILTER {'' if require_mode else 'NOT '}(v._id IN closers)
+                     {end_filter}
                      RETURN p
              )
              LET all_nodes = (

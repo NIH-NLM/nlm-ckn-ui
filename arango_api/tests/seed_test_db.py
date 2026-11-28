@@ -353,11 +353,12 @@ def seed_phenotypes_db(client):
     #   d2: complete (drug treats d2)                     -> gene g2 EXCLUDED
     #   d3: cross    (drug treats d4, a DIFFERENT disease) -> gene g3 KEPT
     # Edges use capitalized "Label" to match production semantics.
-    for key in ("nac_d1", "nac_d2", "nac_d3", "nac_d4"):
+    #   d5: no drug; g5 and g6 produce the same protein   -> neither KEPT
+    for key in ("nac_d1", "nac_d2", "nac_d3", "nac_d4", "nac_d5"):
         db.collection("MONDO").insert({"_key": key, "label": key}, overwrite=True)
-    for key in ("nac_g1", "nac_g2", "nac_g3"):
+    for key in ("nac_g1", "nac_g2", "nac_g3", "nac_g5", "nac_g6"):
         db.collection("GS").insert({"_key": key, "label": key}, overwrite=True)
-    for key in ("nac_p1", "nac_p2", "nac_p3"):
+    for key in ("nac_p1", "nac_p2", "nac_p3", "nac_p5"):
         db.collection("PR").insert({"_key": key, "label": key}, overwrite=True)
     for key in ("nac_dr1", "nac_dr2", "nac_dr3"):
         db.collection("CHEMBL").insert({"_key": key, "label": key}, overwrite=True)
@@ -378,6 +379,10 @@ def seed_phenotypes_db(client):
         ("nac_x2", "GS/nac_g3", "PR/nac_p3", "PRODUCES"),
         ("nac_x3", "CHEMBL/nac_dr3", "PR/nac_p3", "MOLECULARLY_INTERACTS_WITH"),
         ("nac_x4", "CHEMBL/nac_dr3", "MONDO/nac_d4", "IS_SUBSTANCE_THAT_TREATS"),
+        # sibling genes (one protein, two genes, no drug)
+        ("nac_s1", "GS/nac_g5", "MONDO/nac_d5", "ASSOCIATED_WITH"),
+        ("nac_s2", "GS/nac_g5", "PR/nac_p5", "PRODUCES"),
+        ("nac_s3", "GS/nac_g6", "PR/nac_p5", "PRODUCES"),
     ]
     for key, frm, to, label in nac_edges:
         db.collection("NAC_EDGES").insert(

@@ -752,6 +752,22 @@ class AntiEdgeTraversalTestCase(ArangoDBTestCase):
         self.assertIn("GS/nac_g3", genes)
         self.assertNotIn("GS/nac_g2", genes)
 
+    def test_anti_edge_drops_paths_ending_where_no_closing_edge_can_reach(self):
+        # d5 -> g5 -> p5 <- g6 ends on a gene, and no gene ever treats a
+        # disease, so the closing check passes trivially. Only an endpoint in a
+        # collection the closing label connects to the origin is a broken loop.
+        results = graph_service.traverse_graph(
+            node_ids=["MONDO/nac_d5"],
+            depth=3,
+            edge_direction="ANY",
+            allowed_collections=["GS", "PR", "CHEMBL"],
+            graph="phenotypes",
+            edge_filters={"Label": ["ASSOCIATED_WITH", "PRODUCES"]},
+            include_inter_node_edges=False,
+            exclude_closing_edges={"Label": ["IS_SUBSTANCE_THAT_TREATS"]},
+        )
+        self.assertEqual(results["MONDO/nac_d5"]["links"], [])
+
     def test_without_anti_edge_all_genes_present(self):
         genes = self._genes_from_diseases(exclude=None)
         self.assertIn("GS/nac_g1", genes)
